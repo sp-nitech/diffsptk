@@ -1,0 +1,17 @@
+# project
+*.egg-info/
+venv/
+
+# docs
+_build/
+
+# tools
+tools/SPTK/
+
+# misc
+__pycache__/
+*.pyc
+*~
+*.swp
+\#*#
+.\#*
