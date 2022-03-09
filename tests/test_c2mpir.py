@@ -14,17 +14,31 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import subprocess
-
 import numpy as np
+import torch
+
+import diffsptk
+from tests.utils import call
 
 
-def call(cmd):
-    res = subprocess.run(
-        cmd + " | x2x +da -f %.10f",
-        shell=True,
-        check=True,
-        text=True,
-        stdout=subprocess.PIPE,
-    )
-    return np.fromstring(res.stdout, sep="\n", dtype=np.float32)
+def test_compatibility(M=19, N=30, B=2):
+    c2ir = diffsptk.CepstrumToImpulseResponse(M, N)
+
+    x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
+    y = c2ir(x).cpu().numpy()
+
+    y_ = call(f"nrand -l {B*(M+1)} | c2mpir -m {M} -l {N}").reshape(-1, N)
+    assert np.allclose(y, y_)
+
+
+def test_differentiable(M=19, N=30, B=2):
+    c2ir = diffsptk.CepstrumToImpulseResponse(M, N)
+
+    x = torch.randn(B, M + 1, requires_grad=True)
+    y = c2ir(x)
+
+    optimizer = torch.optim.SGD([x], lr=0.001)
+    optimizer.zero_grad()
+    loss = y.mean()
+    loss.backward()
+    optimizer.step()

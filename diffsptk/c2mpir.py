@@ -14,57 +14,62 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
-class Frame(nn.Module):
-    def __init__(self, frame_length, frame_period, center=True):
+class CepstrumToImpulseResponse(nn.Module):
+    def __init__(self, cep_order, impulse_response_length):
         """Initialize module.
 
         Parameters
         ----------
-        frame_length : int >= 1 [scalar]
-            Frame length, L.
+        cep_order : int >= 1 [scalar]
+            Order of cepstrum, M.
 
-        frame_peirod : int >= 1 [scalar]
-            Frame period, P.
-
-        center : bool [scalar]
-            If true, assume that the center of data is the center of frame, otherwise
-            assume that the center of data is the left edge of frame.
+        impulse_response_length : int >= 1 [scalar]
+            Length of impulse response, N.
 
         """
-        super(Frame, self).__init__()
+        super(CepstrumToImpulseResponse, self).__init__()
 
-        self.frame_length = frame_length
-        self.frame_period = frame_period
-        self.center = center
+        self.cep_order = cep_order
+        self.impulse_response_length = impulse_response_length
 
-        assert 0 < self.frame_length
-        assert 0 < self.frame_period
+        assert 0 < self.cep_order
+        assert 0 < self.impulse_response_length
 
-        if self.center:
-            self.left_pad_width = self.frame_length // 2
-            self.right_pad_width = (self.frame_length - 1) // 2
-        else:
-            self.left_pad_width = 0
-            self.right_pad_width = self.frame_length - 1
+        self.register_buffer("arange", torch.arange(1, self.cep_order + 1))
 
-    def forward(self, x):
-        """Apply framing to given waveform.
+    def forward(self, c):
+        """Convert cepstrum to impulse response.
 
         Parameters
         ----------
-        x : Tensor [shape=(B, T)]
-            Waveform.
+        c : Tensor [shape=(B, M+1)]
+            Cesptral coefficients.
 
         Returns
         -------
-        y : Tensor [shape=(B, N, L)]
-            Framed waveform.
+        h : Tensor [shape=(B, N)]
+            Truncated impulse response.
 
         """
-        y = F.pad(x, (self.left_pad_width, self.right_pad_width))
-        y = y.unfold(-1, self.frame_length, self.frame_period)
-        return y
+        c0 = c[:, 0]
+        c1 = c[:, 1:] * self.arange
+        c1 = torch.flip(c1, [1])
+
+        h = []
+        h.append(torch.exp(c0))
+        for n in range(1, self.impulse_response_length):
+            idx = -min(n, self.cep_order)
+            h.append(
+                torch.einsum(
+                    "bd,bd->b",
+                    torch.stack(h[idx:], 1),
+                    c1[:, idx:],
+                )
+                / n
+            )
+        h = torch.stack(h, 1)
+        return h
