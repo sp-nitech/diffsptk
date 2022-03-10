@@ -14,19 +14,31 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import subprocess
-
 import numpy as np
+import torch
+
+import diffsptk
+from tests.utils import call
 
 
-def call(cmd):
-    res = subprocess.run(
-        cmd + " | x2x +da -f %.10f",
-        shell=True,
-        check=True,
-        text=True,
-        stdout=subprocess.PIPE,
-    )
-    data = np.fromstring(res.stdout, sep="\n", dtype=np.float32)
-    assert len(data) > 0, f"Failed to run command {cmd}"
-    return data
+def test_compatibility(M=9, alpha=0.1, B=2):
+    b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha)
+
+    x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
+    y = b2mc(x).cpu().numpy()
+
+    y_ = call(f"nrand -l {B*(M+1)} | b2mc -m {M} -a {alpha}").reshape(-1, M + 1)
+    assert np.allclose(y, y_)
+
+
+def test_differentiable(M=9, alpha=0.1, B=2):
+    b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha)
+
+    x = torch.randn(B, M + 1, requires_grad=True)
+    y = b2mc(x)
+
+    optimizer = torch.optim.SGD([x], lr=0.001)
+    optimizer.zero_grad()
+    loss = y.mean()
+    loss.backward()
+    optimizer.step()
