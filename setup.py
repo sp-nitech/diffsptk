@@ -33,9 +33,9 @@ setup(
             'flake8',
             'isort',
             'numpydoc',
+            'pydata-sphinx-theme',
             'pytest',
             'sphinx',
-            'pydata-sphinx-theme',
         ],
     },
 )
