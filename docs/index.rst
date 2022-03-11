@@ -7,7 +7,7 @@ The package is mainly developed by the members of Tokuda, Nankaku, and Hashimoto
 .. toctree::
    :glob:
    :maxdepth: 1
-   :caption: Package references
+   :caption: Package references:
 
    main/*
 

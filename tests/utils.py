@@ -24,7 +24,6 @@ def call(cmd):
     res = subprocess.run(
         cmd + " | x2x +da -f %.10f",
         shell=True,
-        check=True,
         text=True,
         stdout=subprocess.PIPE,
     )
