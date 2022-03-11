@@ -25,7 +25,7 @@ from tests.utils import call
 def test_compatibility(M=19, N=30, B=2):
     c2mpir = diffsptk.CepstrumToImpulseResponse(M, N)
     x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
-    y = c2ir(x).cpu().numpy()
+    y = c2mpir(x).cpu().numpy()
 
     y_ = call(f"nrand -l {B*(M+1)} | c2mpir -m {M} -l {N}").reshape(-1, N)
     assert np.allclose(y, y_)
