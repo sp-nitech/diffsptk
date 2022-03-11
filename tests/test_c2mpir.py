@@ -23,7 +23,7 @@ from tests.utils import call
 
 
 def test_compatibility(M=19, N=30, B=2):
-    c2ir = diffsptk.CepstrumToImpulseResponse(M, N)
+    c2mpir = diffsptk.CepstrumToImpulseResponse(M, N)
     x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
     y = c2ir(x).cpu().numpy()
 
@@ -33,9 +33,12 @@ def test_compatibility(M=19, N=30, B=2):
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, M=19, N=30, B=2):
-    c2ir = diffsptk.CepstrumToImpulseResponse(M, N).to(device)
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    c2mpir = diffsptk.CepstrumToImpulseResponse(M, N).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    y = c2ir(x)
+    y = c2mpir(x)
 
     optimizer = torch.optim.SGD([x], lr=0.001)
     optimizer.zero_grad()

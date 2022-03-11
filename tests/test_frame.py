@@ -37,6 +37,9 @@ def test_compatibility(fl, fp, center, T=20):
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, fl=5, fp=3, B=4, T=20):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     frame = diffsptk.Frame(fl, fp).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
     y = frame(x)

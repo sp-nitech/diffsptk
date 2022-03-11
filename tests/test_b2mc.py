@@ -33,6 +33,9 @@ def test_compatibility(M=9, alpha=0.1, B=2):
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, M=9, alpha=0.1, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
     y = b2mc(x)
