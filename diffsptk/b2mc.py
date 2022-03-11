@@ -25,7 +25,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
         Parameters
         ----------
-        cep_order : int >= 1 [scalar]
+        cep_order : int >= 0 [scalar]
             Order of cepstrum, M.
 
         alpha : float [-1 < alpha < 1]
