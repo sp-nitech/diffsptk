@@ -41,8 +41,8 @@ class Frame(nn.Module):
         self.frame_period = frame_period
         self.center = center
 
-        assert 0 < self.frame_length
-        assert 0 < self.frame_period
+        assert 1 <= self.frame_length
+        assert 1 <= self.frame_period
 
         if self.center:
             self.left_pad_width = self.frame_length // 2

@@ -36,8 +36,8 @@ class CepstrumToImpulseResponse(nn.Module):
         self.cep_order = cep_order
         self.impulse_response_length = impulse_response_length
 
-        assert 0 < self.cep_order
-        assert 0 < self.impulse_response_length
+        assert 1 <= self.cep_order
+        assert 1 <= self.impulse_response_length
 
         self.register_buffer("arange", torch.arange(1, self.cep_order + 1))
 
