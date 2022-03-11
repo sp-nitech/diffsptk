@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import subprocess
+import time
 
 import numpy as np
 
@@ -30,3 +31,7 @@ def call(cmd):
     data = np.fromstring(res.stdout, sep="\n", dtype=np.float32)
     assert len(data) > 0, f"Failed to run command {cmd}"
     return data
+
+
+def lap():
+    return time.process_time()

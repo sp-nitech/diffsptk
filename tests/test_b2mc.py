@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
+import pytest
 import torch
 
 import diffsptk
@@ -23,7 +24,6 @@ from tests.utils import call
 
 def test_compatibility(M=9, alpha=0.1, B=2):
     b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha)
-
     x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
     y = b2mc(x).cpu().numpy()
 
@@ -31,10 +31,10 @@ def test_compatibility(M=9, alpha=0.1, B=2):
     assert np.allclose(y, y_)
 
 
-def test_differentiable(M=9, alpha=0.1, B=2):
-    b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha)
-
-    x = torch.randn(B, M + 1, requires_grad=True)
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, M=9, alpha=0.1, B=2):
+    b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha).to(device)
+    x = torch.randn(B, M + 1, requires_grad=True, device=device)
     y = b2mc(x)
 
     optimizer = torch.optim.SGD([x], lr=0.001)

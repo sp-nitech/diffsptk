@@ -27,7 +27,6 @@ from tests.utils import call
 @pytest.mark.parametrize("center", [True, False])
 def test_compatibility(fl, fp, center, T=20):
     frame = diffsptk.Frame(fl, fp, center=center)
-
     x = torch.arange(T, dtype=torch.float32).view(1, -1)
     y = frame(x).cpu().numpy()
 
@@ -36,10 +35,10 @@ def test_compatibility(fl, fp, center, T=20):
     assert np.allclose(y, y_)
 
 
-def test_differentiable(fl=5, fp=3, B=4, T=20):
-    frame = diffsptk.Frame(fl, fp)
-
-    x = torch.randn(B, T, requires_grad=True)
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, fl=5, fp=3, B=4, T=20):
+    frame = diffsptk.Frame(fl, fp).to(device)
+    x = torch.randn(B, T, requires_grad=True, device=device)
     y = frame(x)
 
     optimizer = torch.optim.SGD([x], lr=0.001)
