@@ -59,17 +59,16 @@ class CepstrumToImpulseResponse(nn.Module):
         c1 = c[:, 1:] * self.arange
         c1 = torch.flip(c1, [1])
 
-        h = []
-        h.append(torch.exp(c0))
+        h = torch.empty((c.shape[0], self.impulse_response_length), device=c.device)
+        h[:, 0] = torch.exp(c0)
         for n in range(1, self.impulse_response_length):
-            idx = -min(n, self.cep_order)
-            h.append(
+            s = n - self.cep_order
+            h[:, n] = (
                 torch.einsum(
                     "bd,bd->b",
-                    torch.stack(h[idx:], 1),
-                    c1[:, idx:],
+                    h[:, max(0, s) : n].clone(),
+                    c1[:, max(0, -s) :],
                 )
                 / n
             )
-        h = torch.stack(h, 1)
         return h
