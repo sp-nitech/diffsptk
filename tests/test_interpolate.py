@@ -14,51 +14,34 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
+import pytest
 import torch
-import torch.nn as nn
+
+import diffsptk
+from tests.utils import call
 
 
-class Decimation(nn.Module):
-    def __init__(self, period, start=0):
-        """Initialize module.
+def test_compatibility(p=2, s=1, T=20, L=4):
+    interpolate = diffsptk.Interpolation(p, s)
+    x = torch.arange(T * L, dtype=torch.float32).view(T, L)
+    y = interpolate(x, dim=0).cpu().numpy()
 
-        Parameters
-        ----------
-        peirod : int >= 1 [scalar]
-            Decimation period, P.
+    y_ = call(f"ramp -l {T*L} | interpolate -l {L} -p {p} -s {s}").reshape(-1, L)
+    assert np.allclose(y, y_)
 
-        start : int >= 0 [scalar]
-            Start point, S.
 
-        """
-        super(Decimation, self).__init__()
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, p=3, B=2, T=20):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-        self.period = period
-        self.start = start
+    interpolate = diffsptk.Interpolation(p).to(device)
+    x = torch.randn(B, T, requires_grad=True, device=device)
+    y = interpolate(x, dim=-1)
 
-        assert 1 <= self.period
-        assert 0 <= self.start
-
-    def forward(self, x, dim=0):
-        """Decimate signal.
-
-        Parameters
-        ----------
-        x : Tensor [shape=(..., T, ...)]
-            Signal.
-
-        dim : int [scalar]
-            Dimension along which to decimate the tensors.
-
-        Returns
-        -------
-        y : Tensor [shape=(..., T/P-S, ...)]
-            Decimated signal.
-
-        """
-        T = x.shape[dim]
-        indices = torch.arange(
-            self.start, T, self.period, dtype=torch.long, device=x.device
-        )
-        y = torch.index_select(x, dim, indices)
-        return y
+    optimizer = torch.optim.SGD([x], lr=0.001)
+    optimizer.zero_grad()
+    loss = y.mean()
+    loss.backward()
+    optimizer.step()

@@ -18,20 +18,20 @@ import torch
 import torch.nn as nn
 
 
-class Decimation(nn.Module):
+class Interpolation(nn.Module):
     def __init__(self, period, start=0):
         """Initialize module.
 
         Parameters
         ----------
         peirod : int >= 1 [scalar]
-            Decimation period, P.
+            Interpolation period, P.
 
         start : int >= 0 [scalar]
             Start point, S.
 
         """
-        super(Decimation, self).__init__()
+        super(Interpolation, self).__init__()
 
         self.period = period
         self.start = start
@@ -40,7 +40,7 @@ class Decimation(nn.Module):
         assert 0 <= self.start
 
     def forward(self, x, dim=0):
-        """Decimate signal.
+        """Interpolate signal.
 
         Parameters
         ----------
@@ -48,17 +48,20 @@ class Decimation(nn.Module):
             Signal.
 
         dim : int [scalar]
-            Dimension along which to decimate the tensors.
+            Dimension along which to interpolate the tensors.
 
         Returns
         -------
-        y : Tensor [shape=(..., T/P-S, ...)]
-            Decimated signal.
+        y : Tensor [shape=(..., T*P+S, ...)]
+            Interpolated signal.
 
         """
-        T = x.shape[dim]
+        T = x.shape[dim] * self.period + self.start
         indices = torch.arange(
             self.start, T, self.period, dtype=torch.long, device=x.device
         )
-        y = torch.index_select(x, dim, indices)
+        size = list(x.shape)
+        size[dim] = T
+        y = torch.zeros(size, dtype=x.dtype, device=x.device)
+        y.index_add_(dim, indices, x)
         return y
