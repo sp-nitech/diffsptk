@@ -46,17 +46,17 @@ class FrequencyTransform(nn.Module):
         assert abs(self.alpha) < 1
 
         beta = 1 - self.alpha * self.alpha
-        K = self.in_order + 1
-        L = self.out_order + 1
+        L1 = self.in_order + 1
+        L2 = self.out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L, K), dtype=np.float32)
-        A[0, :] = self.alpha ** np.arange(K)
-        if 1 < L and 1 < K:
-            A[1, 1:] = self.alpha ** np.arange(K - 1) * np.arange(1, K) * beta
-        for i in range(2, L):
+        A = np.zeros((L2, L1), dtype=np.float32)
+        A[0, :] = self.alpha ** np.arange(L1)
+        if 1 < L2 and 1 < L1:
+            A[1, 1:] = self.alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta
+        for i in range(2, L2):
             i1 = i - 1
-            for j in range(1, K):
+            for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + self.alpha * (A[i, j1] - A[i1, j])
 
@@ -76,5 +76,5 @@ class FrequencyTransform(nn.Module):
             Warped sequence.
 
         """
-        y = torch.matmul(x, self.A)
+        y = torch.matmul(x, self.A if x.dtype == self.A.dtype else self.A.double())
         return y

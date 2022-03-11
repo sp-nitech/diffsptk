@@ -60,5 +60,5 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
             Mel-cepstral coefficients.
 
         """
-        c = torch.matmul(b, self.A)
+        c = torch.matmul(b, self.A if b.dtype == self.A.dtype else self.A.double())
         return c
