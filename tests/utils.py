@@ -20,16 +20,24 @@ import time
 import numpy as np
 
 
-def call(cmd):
-    res = subprocess.run(
-        cmd + " | x2x +da -f %.10f",
-        shell=True,
-        text=True,
-        stdout=subprocess.PIPE,
-    )
-    data = np.fromstring(res.stdout, sep="\n", dtype=np.float32)
-    assert len(data) > 0, f"Failed to run command {cmd}"
-    return data
+def call(cmd, get=True):
+    if get:
+        res = subprocess.run(
+            cmd + " | x2x +da -f %.10f",
+            shell=True,
+            text=True,
+            stdout=subprocess.PIPE,
+        )
+        data = np.fromstring(res.stdout, sep="\n", dtype=np.float32)
+        assert len(data) > 0, f"Failed to run command {cmd}"
+        return data
+    else:
+        res = subprocess.run(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+        )
+        return None
 
 
 def lap():
