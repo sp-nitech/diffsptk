@@ -19,18 +19,20 @@ import torch.nn as nn
 
 
 class Interpolation(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/interpolate.html>`_
+    for details.
+
+    Parameters
+    ----------
+    period : int >= 1 [scalar]
+        Interpolation period, :math:`P`.
+
+    start : int >= 0 [scalar]
+        Start point, :math:`S`.
+
+    """
+
     def __init__(self, period, start=0):
-        """Initialize module.
-
-        Parameters
-        ----------
-        peirod : int >= 1 [scalar]
-            Interpolation period, P.
-
-        start : int >= 0 [scalar]
-            Start point, S.
-
-        """
         super(Interpolation, self).__init__()
 
         self.period = period

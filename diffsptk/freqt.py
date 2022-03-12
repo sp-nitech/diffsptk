@@ -20,21 +20,23 @@ import torch.nn as nn
 
 
 class FrequencyTransform(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/freqt.html>`_
+    for details.
+
+    Parameters
+    ----------
+    in_order : int >= 0 [scalar]
+        Order of input sequence, :math:`M_1`.
+
+    out_order : int >= 0 [scalar]
+        Order of output sequence, :math:`M_2`.
+
+    alpha : float [-1 < alpha < 1]
+        Frequency warping factor, :math:`\\alpha`.
+
+    """
+
     def __init__(self, in_order, out_order, alpha):
-        """Initialize module.
-
-        Parameters
-        ----------
-        in_order : int >= 0 [scalar]
-            Order of input sequence, m.
-
-        out_order : int >= 0 [scalar]
-            Order of output sequence, M.
-
-        alpha : float [-1 < alpha < 1]
-            Frequency warping factor.
-
-        """
         super(FrequencyTransform, self).__init__()
 
         self.in_order = in_order
@@ -67,14 +69,15 @@ class FrequencyTransform(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(..., m+1)]
+        x : Tensor [shape=(..., M1+1)]
             Input sequence.
 
         Returns
         -------
-        y : Tensor [shape=(..., M+1)]
+        y : Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         """
-        y = torch.matmul(x, self.A if x.dtype == self.A.dtype else self.A.double())
+        A = self.A if x.dtype == self.A.dtype else self.A.double()
+        y = torch.matmul(x, A)
         return y

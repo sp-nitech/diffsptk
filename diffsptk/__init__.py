@@ -6,4 +6,6 @@ from .frame import Frame
 from .freqt import FrequencyTransform
 from .interpolate import Interpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
-from .version import __version__
+from .window import Window
+
+from .version import __version__  # isort:skip

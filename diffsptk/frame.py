@@ -19,22 +19,24 @@ import torch.nn.functional as F
 
 
 class Frame(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/frame.html>`_
+    for details.
+
+    Parameters
+    ----------
+    frame_length : int >= 1 [scalar]
+        Frame length, :math:`L`.
+
+    frame_peirod : int >= 1 [scalar]
+        Frame period, :math:`P`.
+
+    center : bool [scalar]
+        If true, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
+    """
+
     def __init__(self, frame_length, frame_period, center=True):
-        """Initialize module.
-
-        Parameters
-        ----------
-        frame_length : int >= 1 [scalar]
-            Frame length, L.
-
-        frame_peirod : int >= 1 [scalar]
-            Frame period, P.
-
-        center : bool [scalar]
-            If true, assume that the center of data is the center of frame, otherwise
-            assume that the center of data is the left edge of frame.
-
-        """
         super(Frame, self).__init__()
 
         self.frame_length = frame_length

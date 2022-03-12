@@ -19,18 +19,20 @@ import torch.nn as nn
 
 
 class Decimation(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/decimate.html>`_
+    for details.
+
+    Parameters
+    ----------
+    period : int >= 1 [scalar]
+        Decimation period, :math:`P`.
+
+    start : int >= 0 [scalar]
+        Start point, :math:`S`.
+
+    """
+
     def __init__(self, period, start=0):
-        """Initialize module.
-
-        Parameters
-        ----------
-        peirod : int >= 1 [scalar]
-            Decimation period, P.
-
-        start : int >= 0 [scalar]
-            Start point, S.
-
-        """
         super(Decimation, self).__init__()
 
         self.period = period

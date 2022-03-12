@@ -1,6 +1,9 @@
+.. _mc2b:
+
 mc2b
-====
+----
 
 .. automodule:: diffsptk.mc2b
    :members:
-   :special-members:
+
+.. seealso:: :ref:`b2mc`

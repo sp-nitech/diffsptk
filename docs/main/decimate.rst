@@ -1,6 +1,9 @@
+.. _decimate:
+
 decimate
-========
+--------
 
 .. automodule:: diffsptk.decimate
    :members:
-   :special-members:
+
+.. seealso:: :ref:`interpolate`

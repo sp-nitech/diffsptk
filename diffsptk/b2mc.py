@@ -20,18 +20,20 @@ import torch.nn as nn
 
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/b2mc.html>`_
+    for details.
+
+    Parameters
+    ----------
+    cep_order : int >= 0 [scalar]
+        Order of cepstrum, :math:`M`.
+
+    alpha : float [-1 < alpha < 1]
+        Frequency warping factor, :math:`\\alpha`.
+
+    """
+
     def __init__(self, cep_order, alpha):
-        """Initialize module.
-
-        Parameters
-        ----------
-        cep_order : int >= 0 [scalar]
-            Order of cepstrum, M.
-
-        alpha : float [-1 < alpha < 1]
-            Frequency warping factor.
-
-        """
         super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
 
         self.cep_order = cep_order
@@ -56,9 +58,10 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
         Returns
         -------
-        c : Tensor [shape=(..., M+1)]
+        mc : Tensor [shape=(..., M+1)]
             Mel-cepstral coefficients.
 
         """
-        c = torch.matmul(b, self.A if b.dtype == self.A.dtype else self.A.double())
-        return c
+        A = self.A if b.dtype == self.A.dtype else self.A.double()
+        mc = torch.matmul(b, A)
+        return mc

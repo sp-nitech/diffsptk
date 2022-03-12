@@ -19,18 +19,20 @@ import torch.nn as nn
 
 
 class CepstrumToImpulseResponse(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
+    for details.
+
+    Parameters
+    ----------
+    cep_order : int >= 1 [scalar]
+        Order of cepstrum, :math:`M`.
+
+    impulse_response_length : int >= 1 [scalar]
+        Length of impulse response, :math:`N`.
+
+    """
+
     def __init__(self, cep_order, impulse_response_length):
-        """Initialize module.
-
-        Parameters
-        ----------
-        cep_order : int >= 1 [scalar]
-            Order of cepstrum, M.
-
-        impulse_response_length : int >= 1 [scalar]
-            Length of impulse response, N.
-
-        """
         super(CepstrumToImpulseResponse, self).__init__()
 
         self.cep_order = cep_order
@@ -47,7 +49,7 @@ class CepstrumToImpulseResponse(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(B, M+1)]
-            Cesptral coefficients.
+            Cepstral coefficients.
 
         Returns
         -------

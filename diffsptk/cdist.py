@@ -21,18 +21,20 @@ import torch.nn as nn
 
 
 class CepstralDistance(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
+    for details.
+
+    Parameters
+    ----------
+    full : bool [scalar]
+        If true, include the constant term in the distance calculation.
+
+    reduction : ['none', 'mean', 'batchmean', 'sum']
+        Reduction type.
+
+    """
+
     def __init__(self, full=False, reduction="mean"):
-        """Initialize module.
-
-        Parameters
-        ----------
-        full : bool [scalar]
-            If true, include the constant term in the distance calculation.
-
-        reduction : ['none', 'mean', 'batchmean', 'sum']
-            A kind of reduction.
-
-        """
         super(CepstralDistance, self).__init__()
 
         self.full = full
@@ -54,7 +56,7 @@ class CepstralDistance(nn.Module):
 
         Returns
         -------
-        dist : Tensor [shape=(...) or scalar]
+        dist : Tensor [shape=(...,) or scalar]
             Cepstral distance.
 
         """

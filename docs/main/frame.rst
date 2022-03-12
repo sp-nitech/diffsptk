@@ -1,6 +1,9 @@
+.. _frame:
+
 frame
-=====
+-----
 
 .. automodule:: diffsptk.frame
    :members:
-   :special-members:
+
+.. seealso:: :ref:`window`
