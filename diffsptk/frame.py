@@ -58,12 +58,12 @@ class Frame(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, T)]
+        x : Tensor [shape=(..., T)]
             Waveform.
 
         Returns
         -------
-        y : Tensor [shape=(B, N, L)]
+        y : Tensor [shape=(..., N, L)]
             Framed waveform.
 
         """
