@@ -7,7 +7,7 @@ diffsptk
 
 Requirements
 ------------
-- PyTorch 1.5.0+
+- PyTorch 1.8.0+
 
 
 License
