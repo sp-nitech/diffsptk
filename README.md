@@ -20,7 +20,7 @@ pip install -e diffsptk
 
 Examples
 --------
-### Mel-cepstral analysis
+### Cepstral analysis
 ```python
 import diffsptk
 import torch
@@ -29,7 +29,11 @@ x = torch.randn(100)
 
 # Compute STFT of x.
 stft = diffsptk.STFT(frame_legnth=12, frame_period=10, fft_length=16)
-y = stft(x)
+X = stft(x)
+
+# Estimate 4-th order cepstrum of x.
+fftcep = diffsptk.CepstralAnalysis(cep_order=4, fft_length=16, n_iter=1)
+c = fftcep(x)
 ```
 
 

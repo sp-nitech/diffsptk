@@ -2,6 +2,7 @@ from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2mpir import CepstrumToImpulseResponse
 from .cdist import CepstralDistance
 from .decimate import Decimation
+from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .interpolate import Interpolation
