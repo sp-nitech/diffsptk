@@ -14,10 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import functools
 import subprocess
 import time
 
 import numpy as np
+import torch
 
 
 def call(cmd, get=True):
@@ -42,3 +44,24 @@ def call(cmd, get=True):
 
 def lap():
     return time.process_time()
+
+
+def check(func, *x, opt={}, load=1):
+    optimizer = torch.optim.SGD(x, lr=0.001)
+    s = lap()
+    for _ in range(load):
+        y = func(*x, **opt)
+        optimizer.zero_grad()
+        loss = y.mean()
+        loss.backward()
+        optimizer.step()
+    e = lap()
+    if load > 1:
+        print(f"time: {e - s}")
+
+
+def compose(*fs):
+    def compose2(f, g):
+        return lambda *args, **kwargs: f(g(*args, **kwargs))
+
+    return functools.reduce(compose2, fs)

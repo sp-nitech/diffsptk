@@ -20,6 +20,8 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
+from tests.utils import compose
 
 
 @pytest.mark.parametrize("n_iter", [0, 3])
@@ -43,10 +45,4 @@ def test_differentiable(device, n_iter=3, M=4, L=16, B=2):
     spec = diffsptk.Spectrum(L)
     fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter)
     x = torch.randn(B, L, requires_grad=True, device=device)
-    y = fftcep.forward(spec(x))
-
-    optimizer = torch.optim.SGD([x], lr=0.001)
-    optimizer.zero_grad()
-    loss = y.mean()
-    loss.backward()
-    optimizer.step()
+    check(compose(fftcep, spec), x)

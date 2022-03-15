@@ -20,6 +20,7 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
 
 
 @pytest.mark.parametrize("norm", [0, 1, 2])
@@ -42,10 +43,4 @@ def test_differentiable(device, L=10, B=2):
 
     window = diffsptk.Window(L).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
-    y = window(x)
-
-    optimizer = torch.optim.SGD([x], lr=0.001)
-    optimizer.zero_grad()
-    loss = y.mean()
-    loss.backward()
-    optimizer.step()
+    check(window, x)

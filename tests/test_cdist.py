@@ -20,6 +20,7 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
 
 
 @pytest.mark.parametrize("reduction", ["none", "batchmean"])
@@ -48,10 +49,4 @@ def test_differentiable(device, M=19, B=2):
     cdist = diffsptk.CepstralDistance().to(device)
     x1 = torch.randn(B, M + 1, requires_grad=True, device=device)
     x2 = torch.randn(B, M + 1, requires_grad=False, device=device)
-    y = cdist(x1, x2)
-
-    optimizer = torch.optim.SGD([x1], lr=0.001)
-    optimizer.zero_grad()
-    loss = y
-    loss.backward()
-    optimizer.step()
+    check(cdist, x1, x2)

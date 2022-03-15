@@ -20,6 +20,7 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
 
 
 def test_compatibility(M=19, N=30, B=2):
@@ -38,10 +39,4 @@ def test_differentiable(device, M=19, N=30, B=2):
 
     c2mpir = diffsptk.CepstrumToImpulseResponse(M, N).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    y = c2mpir(x)
-
-    optimizer = torch.optim.SGD([x], lr=0.001)
-    optimizer.zero_grad()
-    loss = y.mean()
-    loss.backward()
-    optimizer.step()
+    check(c2mpir, x)

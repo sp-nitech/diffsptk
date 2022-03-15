@@ -20,6 +20,7 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
 
 
 def test_compatibility(m=19, M=29, alpha=0.1, B=2):
@@ -38,10 +39,4 @@ def test_differentiable(device, m=19, M=29, alpha=0.1, B=2):
 
     freqt = diffsptk.FrequencyTransform(m, M, alpha).to(device)
     x = torch.randn(B, m + 1, requires_grad=True, device=device)
-    y = freqt(x)
-
-    optimizer = torch.optim.SGD([x], lr=0.001)
-    optimizer.zero_grad()
-    loss = y.mean()
-    loss.backward()
-    optimizer.step()
+    check(freqt, x)

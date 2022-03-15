@@ -20,6 +20,7 @@ import torch
 
 import diffsptk
 from tests.utils import call
+from tests.utils import check
 
 
 def test_compatibility(p=2, s=1, T=20, L=4):
@@ -38,10 +39,4 @@ def test_differentiable(device, p=3, B=2, T=20):
 
     interpolate = diffsptk.Interpolation(p).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
-    y = interpolate(x, dim=-1)
-
-    optimizer = torch.optim.SGD([x], lr=0.001)
-    optimizer.zero_grad()
-    loss = y.mean()
-    loss.backward()
-    optimizer.step()
+    check(interpolate, x, opt={"dim": -1})
