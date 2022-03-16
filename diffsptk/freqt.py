@@ -39,28 +39,24 @@ class FrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha):
         super(FrequencyTransform, self).__init__()
 
-        self.in_order = in_order
-        self.out_order = out_order
-        self.alpha = alpha
+        assert 0 <= in_order
+        assert 0 <= out_order
+        assert abs(alpha) < 1
 
-        assert 0 <= self.in_order
-        assert 0 <= self.out_order
-        assert abs(self.alpha) < 1
-
-        beta = 1 - self.alpha * self.alpha
-        L1 = self.in_order + 1
-        L2 = self.out_order + 1
+        beta = 1 - alpha * alpha
+        L1 = in_order + 1
+        L2 = out_order + 1
 
         # Make transform matrix.
         A = np.zeros((L2, L1), dtype=np.float32)
-        A[0, :] = self.alpha ** np.arange(L1)
+        A[0, :] = alpha ** np.arange(L1)
         if 1 < L2 and 1 < L1:
-            A[1, 1:] = self.alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta
+            A[1, 1:] = alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta
         for i in range(2, L2):
             i1 = i - 1
             for j in range(1, L1):
                 j1 = j - 1
-                A[i, j] = A[i1, j1] + self.alpha * (A[i, j1] - A[i1, j])
+                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
         self.register_buffer("A", torch.from_numpy(A).t())
 

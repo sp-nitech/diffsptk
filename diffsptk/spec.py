@@ -35,7 +35,7 @@ class Spectrum(nn.Module):
 
     """
 
-    def __init__(self, fft_length, out_format="pow", eps=1e-8):
+    def __init__(self, fft_length, out_format="power", eps=1e-8):
         super(Spectrum, self).__init__()
 
         self.fft_length = fft_length
@@ -46,11 +46,11 @@ class Spectrum(nn.Module):
 
         if out_format == 0 or out_format == "db":
             self.convert = lambda x: 10 * torch.log10(x)
-        elif out_format == 1 or out_format == "logamp":
+        elif out_format == 1 or out_format == "log":
             self.convert = lambda x: 0.5 * torch.log(x)
-        elif out_format == 2 or out_format == "amp":
+        elif out_format == 2 or out_format == "magnitude":
             self.convert = lambda x: torch.sqrt(x)
-        elif out_format == 3 or out_format == "pow":
+        elif out_format == 3 or out_format == "power":
             self.convert = lambda x: x
         else:
             raise ValueError(f"out_format {out_format} is not supported")

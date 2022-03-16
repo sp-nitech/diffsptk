@@ -36,17 +36,14 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
     def __init__(self, cep_order, alpha):
         super(MelCepstrumToMLSADigitalFilterCoefficients, self).__init__()
 
-        self.cep_order = cep_order
-        self.alpha = alpha
-
-        assert 0 <= self.cep_order
-        assert abs(self.alpha) < 1
+        assert 0 <= cep_order
+        assert abs(alpha) < 1
 
         # Make transform matrix.
-        A = np.eye(self.cep_order + 1, dtype=np.float32)
+        A = np.eye(cep_order + 1, dtype=np.float32)
         a = 1
         for m in range(1, len(A)):
-            a *= -self.alpha
+            a *= -alpha
             np.fill_diagonal(A[:, m:], a)
 
         self.register_buffer("A", torch.from_numpy(A).t())

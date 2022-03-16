@@ -35,9 +35,9 @@ class STFT(nn.Module):
         frame_length,
         frame_period,
         fft_length,
-        norm="pow",
+        norm="power",
         window="blackman",
-        out_format="pow",
+        out_format="power",
         eps=1e-8,
     ):
         super(STFT, self).__init__()

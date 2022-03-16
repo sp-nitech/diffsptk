@@ -31,7 +31,7 @@ class Window(nn.Module):
     out_length : int >= L1 [scalar]
         Output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
 
-    norm : ['none', 'pow', 'mag']
+    norm : ['none', 'power', 'magnitude']
         Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
@@ -40,40 +40,43 @@ class Window(nn.Module):
 
     """
 
-    def __init__(self, in_length, out_length=None, norm="pow", window="blackman"):
+    def __init__(self, in_length, out_length=None, norm="power", window="blackman"):
         super(Window, self).__init__()
 
-        self.in_length = in_length
-        self.out_length = in_length if out_length is None else out_length
+        assert 1 <= in_length
 
         if window == 0 or window == "blackman":
-            w = np.blackman(self.in_length)
+            w = np.blackman(in_length)
         elif window == 1 or window == "hamming":
-            w = np.hamming(self.in_length)
+            w = np.hamming(in_length)
         elif window == 2 or window == "hanning":
-            w = np.hanning(self.in_length)
+            w = np.hanning(in_length)
         elif window == 3 or window == "bartlett":
-            w = np.bartlett(self.in_length)
+            w = np.bartlett(in_length)
         elif window == 4 or window == "trapezoidal":
-            slope = np.linspace(0, 4, self.in_length)
+            slope = np.linspace(0, 4, in_length)
             w = np.minimum(np.clip(slope, 0, 1), np.flip(slope))
         elif window == 5 or window == "rectangular":
-            w = np.ones(self.in_length)
+            w = np.ones(in_length)
         else:
             raise ValueError(f"window {window} is not supported")
 
         if norm == 0 or norm == "none":
             pass
-        elif norm == 1 or norm == "pow":
+        elif norm == 1 or norm == "power":
             w /= np.sqrt(np.sum(w**2))
-        elif norm == 2 or norm == "mag":
+        elif norm == 2 or norm == "magnitude":
             w /= np.sum(w)
         else:
             raise ValueError(f"norm {norm} is not supported")
 
         self.register_buffer("window", torch.from_numpy(w.astype(np.float32)))
 
-        self.pad = nn.ConstantPad1d((0, self.out_length - self.in_length), 0)
+        if out_length is None or in_length == out_length:
+            self.pad = lambda x: x
+        else:
+            assert in_length <= out_length
+            self.pad = nn.ConstantPad1d((0, out_length - in_length), 0)
 
     def forward(self, x):
         """Apply a window function to given waveform.

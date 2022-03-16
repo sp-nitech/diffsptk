@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Frame(nn.Module):
@@ -41,17 +40,17 @@ class Frame(nn.Module):
 
         self.frame_length = frame_length
         self.frame_period = frame_period
-        self.center = center
 
         assert 1 <= self.frame_length
         assert 1 <= self.frame_period
 
-        if self.center:
-            self.left_pad_width = self.frame_length // 2
-            self.right_pad_width = (self.frame_length - 1) // 2
+        if center:
+            left_pad_width = self.frame_length // 2
+            right_pad_width = (self.frame_length - 1) // 2
         else:
-            self.left_pad_width = 0
-            self.right_pad_width = self.frame_length - 1
+            left_pad_width = 0
+            right_pad_width = self.frame_length - 1
+        self.pad = nn.ConstantPad1d((left_pad_width, right_pad_width), 0)
 
     def forward(self, x):
         """Apply framing to given waveform.
@@ -67,6 +66,6 @@ class Frame(nn.Module):
             Framed waveform.
 
         """
-        y = F.pad(x, (self.left_pad_width, self.right_pad_width))
+        y = self.pad(x)
         y = y.unfold(-1, self.frame_length, self.frame_period)
         return y
