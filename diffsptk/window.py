@@ -17,7 +17,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 
 class Window(nn.Module):
@@ -74,6 +73,8 @@ class Window(nn.Module):
 
         self.register_buffer("window", torch.from_numpy(w.astype(np.float32)))
 
+        self.pad = nn.ConstantPad1d((0, self.out_length - self.in_length), 0)
+
     def forward(self, x):
         """Apply a window function to given waveform.
 
@@ -88,6 +89,5 @@ class Window(nn.Module):
             Windowed waveform.
 
         """
-        w = self.window if x.dtype == self.window.dtype else self.window.double()
-        y = F.pad(x * w, (0, self.out_length - self.in_length))
+        y = self.pad(x * self.window)
         return y

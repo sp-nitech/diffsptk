@@ -78,6 +78,5 @@ class FrequencyTransform(nn.Module):
             Warped sequence.
 
         """
-        A = self.A if x.dtype == self.A.dtype else self.A.double()
-        y = torch.matmul(x, A)
+        y = torch.matmul(x, self.A)
         return y

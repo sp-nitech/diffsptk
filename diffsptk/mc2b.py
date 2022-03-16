@@ -65,6 +65,5 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
             MLSA filter coefficients.
 
         """
-        A = self.A if mc.dtype == self.A.dtype else self.A.double()
-        b = torch.matmul(mc, A)
+        b = torch.matmul(mc, self.A)
         return b
