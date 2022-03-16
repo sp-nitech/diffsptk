@@ -14,56 +14,34 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import functools
-import subprocess
-import time
-
 import numpy as np
+import pytest
 import torch
 
-
-def call(cmd, get=True, double=False):
-    if get:
-        res = subprocess.run(
-            cmd + " | x2x +da -f %.12f",
-            shell=True,
-            text=True,
-            stdout=subprocess.PIPE,
-        )
-        data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.float64 if double else np.float32
-        )
-        assert len(data) > 0, f"Failed to run command {cmd}"
-        return data
-    else:
-        res = subprocess.run(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-        )
-        return None
+import diffsptk
+from tests.utils import call
+from tests.utils import check
 
 
-def lap():
-    return time.process_time()
+@pytest.mark.parametrize("m", [10, 11])
+def test_compatibility(m, n_band=4, L=20):
+    ipqmf = diffsptk.IPQMF(n_band, filter_order=m).double()
+    x = (
+        torch.from_numpy(call(f"nrand -l {n_band*L}", double=True).reshape(L, n_band))
+        .t()
+        .unsqueeze(0)
+    )
+    y = ipqmf(x, keep_dims=False).cpu().numpy()
+
+    y_ = call(f"nrand -l {n_band*L} | ipqmf -k {n_band} -m {m}").reshape(1, -1)
+    assert np.allclose(y, y_)
 
 
-def check(func, *x, opt={}, load=1):
-    optimizer = torch.optim.SGD(x, lr=0.001)
-    s = lap()
-    for _ in range(load):
-        y = func(*x, **opt)
-        optimizer.zero_grad()
-        loss = y.mean()
-        loss.backward()
-        optimizer.step()
-    e = lap()
-    if load > 1:
-        print(f"time: {e - s}")
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, n_band=4, m=8, B=2, L=20):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-
-def compose(*fs):
-    def compose2(f, g):
-        return lambda *args, **kwargs: f(g(*args, **kwargs))
-
-    return functools.reduce(compose2, fs)
+    ipqmf = diffsptk.IPQMF(n_band, filter_order=m)
+    x = torch.randn(B, n_band, L, requires_grad=True, device=device)
+    check(ipqmf, x)
