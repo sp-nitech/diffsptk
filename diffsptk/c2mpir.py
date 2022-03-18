@@ -59,10 +59,10 @@ class CepstrumToImpulseResponse(nn.Module):
         """
         c0 = c[..., 0]
         c1 = c[..., 1:] * self.ramp
-        c1 = torch.flip(c1, [-1])
+        c1 = c1.flip(-1)
 
         h = torch.empty(
-            (*(c.shape[0:-1]), self.impulse_response_length), device=c.device
+            (*(c.shape[:-1]), self.impulse_response_length), device=c.device
         )
         h[..., 0] = torch.exp(c0)
         for n in range(1, self.impulse_response_length):
