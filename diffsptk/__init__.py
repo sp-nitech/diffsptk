@@ -1,3 +1,4 @@
+from .acorr import AutocorrelationAnalysis
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2mpir import CepstrumToImpulseResponse
 from .cdist import CepstralDistance

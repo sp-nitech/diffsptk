@@ -6,4 +6,4 @@ fftcep
 .. automodule:: diffsptk.fftcep
    :members:
 
-.. seealso:: :ref:`cdist`
+.. seealso:: :ref:`cdist`  :ref:`stft`
