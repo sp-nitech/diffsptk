@@ -73,7 +73,7 @@ Status
 - [ ] acr2csm
 - [x] ~~aeq~~
 - [x] ~~amgcep~~
-- [ ] ~~average~~ (*torch.mean*)
+- [x] ~~average~~ (*torch.mean*)
 - [x] b2mc
 - [x] ~~bcp~~
 - [x] ~~bcut~~
@@ -153,7 +153,7 @@ Status
 - [ ] mgcep
 - [ ] mglsadf
 - [ ] mglsp2sp
-- [ ] minmax
+- [x] ~~minmax~~
 - [ ] mlpg
 - [ ] mlsacheck
 - [ ] mpir2c
@@ -191,7 +191,7 @@ Status
 - [x] ulaw
 - [x] ~~vc~~
 - [x] ~~vopr~~
-- [ ] vstat
+- [x] ~~vstat~~
 - [x] ~~vsum~~ (*torch.sum*)
 - [x] window
 - [x] ~~x2x~~
