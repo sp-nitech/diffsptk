@@ -37,6 +37,6 @@ def test_differentiable(device, M=3, L=14, B=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    acorr = diffsptk.AutocorrelationAnalysis(M, L)
+    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
     check(acorr, x)

@@ -42,7 +42,7 @@ def test_differentiable(device, n_iter=3, M=4, L=16, B=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    spec = diffsptk.Spectrum(L)
-    fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter)
+    spec = diffsptk.Spectrum(L).to(device)
+    fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
     check(compose(fftcep, spec), x)
