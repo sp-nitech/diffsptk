@@ -9,6 +9,7 @@ from .freqt import FrequencyTransform
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
+from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .spec import Spectrum

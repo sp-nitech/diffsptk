@@ -6,4 +6,4 @@ acorr
 .. automodule:: diffsptk.acorr
    :members:
 
-.. seealso:: :ref:`frame`
+.. seealso:: :ref:`frame`  :ref:`levdur`

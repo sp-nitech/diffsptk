@@ -14,56 +14,32 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import functools
-import subprocess
-import time
-
 import numpy as np
+import pytest
 import torch
 
-
-def call(cmd, get=True, double=False):
-    if get:
-        res = subprocess.run(
-            cmd + " | x2x +da -f %.12f",
-            shell=True,
-            text=True,
-            stdout=subprocess.PIPE,
-        )
-        data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.float64 if double else np.float32
-        )
-        assert len(data) > 0, f"Failed to run command {cmd}"
-        return data
-    else:
-        res = subprocess.run(
-            cmd,
-            shell=True,
-            stdout=subprocess.PIPE,
-        )
-        return None
+import diffsptk
+from tests.utils import call
+from tests.utils import check
+from tests.utils import compose
 
 
-def lap():
-    return time.process_time()
+def test_compatibility(M=30, L=52, B=1):
+    acorr = diffsptk.AutocorrelationAnalysis(M, L)
+    levdur = diffsptk.LevinsonDurbinRecursion()
+    x = acorr(torch.from_numpy(call(f"nrand -l {B*L}").reshape(-1, L)))
+    y = levdur.forward(x, n_out=1).cpu().numpy()
+
+    y_ = call(f"nrand -l {B*L} | lpc -m {M} -l {L}").reshape(-1, M + 1)
+    assert np.allclose(y, y_)
 
 
-def check(func, *x, opt={}, load=1):
-    optimizer = torch.optim.SGD(x, lr=0.001)
-    s = lap()
-    for _ in range(load):
-        y = func(*x, **opt)
-        optimizer.zero_grad()
-        loss = y.mean()
-        loss.backward()
-        optimizer.step()
-    e = lap()
-    if load > 1:
-        print(f"time: {e - s}")
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, M=30, L=52, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-
-def compose(*fs):
-    def compose2_outer_kwargs(f, g):
-        return lambda *args, **kwargs: f(g(*args), **kwargs)
-
-    return functools.reduce(compose2_outer_kwargs, fs)
+    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
+    levdur = diffsptk.LevinsonDurbinRecursion().to(device)
+    x = torch.randn(B, L, requires_grad=True, device=device)
+    check(compose(levdur, acorr), x, opt={"n_out": 1})
