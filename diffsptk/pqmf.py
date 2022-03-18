@@ -136,7 +136,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, 1, T) or (B, T)]
+        x : Tensor [shape=(B, 1, T) or (B, T) or (T,) ]
             Original waveform.
 
         Returns
@@ -145,7 +145,9 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
             Subband waveforms.
 
         """
-        if x.dim() == 2:
+        if x.dim() == 1:
+            x = x.view(1, 1, -1)
+        elif x.dim() == 2:
             x = x.unsqueeze(1)
         assert x.dim() == 3
 
