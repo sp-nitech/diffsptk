@@ -27,7 +27,7 @@ from tests.utils import check
 @pytest.mark.parametrize("fp", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("center", [True, False])
 def test_compatibility(fl, fp, center, T=20):
-    frame = diffsptk.Frame(fl, fp, center=center)
+    frame = diffsptk.Frame(fl, fp, center=center, zmean=False)
     x = torch.arange(T, dtype=torch.float32).view(1, -1)
     y = frame(x).cpu().numpy()
 
@@ -41,6 +41,6 @@ def test_differentiable(device, fl=5, fp=3, B=4, T=20):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    frame = diffsptk.Frame(fl, fp).to(device)
+    frame = diffsptk.Frame(fl, fp, zmean=True).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
     check(frame, x)

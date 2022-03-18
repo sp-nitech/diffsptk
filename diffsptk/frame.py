@@ -33,13 +33,17 @@ class Frame(nn.Module):
         If true, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
+    zmean : bool [scalar]
+        If true, perform mean subtraction on each frame.
+
     """
 
-    def __init__(self, frame_length, frame_period, center=True):
+    def __init__(self, frame_length, frame_period, center=True, zmean=False):
         super(Frame, self).__init__()
 
         self.frame_length = frame_length
         self.frame_period = frame_period
+        self.zmean = zmean
 
         assert 1 <= self.frame_length
         assert 1 <= self.frame_period
@@ -70,4 +74,6 @@ class Frame(nn.Module):
         """
         y = self.pad(x)
         y = y.unfold(-1, self.frame_length, self.frame_period)
+        if self.zmean:
+            y = y - y.mean(-1, keepdim=True)
         return y
