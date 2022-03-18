@@ -71,17 +71,17 @@ Status
 ------
 - [x] acorr
 - [ ] acr2csm
-- [ ] ~~aeq~~
-- ~~[ ] amgcep~~
-- [ ] average
+- [x] ~~aeq~~
+- [x] ~~amgcep~~
+- [ ] ~~average~~ (*torch.mean*)
 - [x] b2mc
-- [ ] bcp
-- [ ] bcut
+- [x] ~~bcp~~
+- [x] ~~bcut~~
 - [ ] c2acr
 - [x] c2mpir
 - [ ] c2ndps
 - [x] cdist
-- [ ] clip
+- [x] ~~clip~~ (*torch.clip*)
 - [ ] csm2acr
 - [ ] dct
 - [x] decimate
@@ -90,48 +90,48 @@ Status
 - [ ] dequantize
 - [ ] df2
 - [ ] dfs
-- [ ] dmp
+- [x] ~~dmp~~
 - [ ] dtw
 - [ ] dtw_merge
 - [ ] entropy
 - [ ] excite
-- [ ] extract
+- [x] ~~extract~~
 - [ ] fbank
-- [ ] fd
-- [ ] fdrw
-- [ ] fft
-- [ ] fft2
+- [x] ~~fd~~
+- [x] ~~fdrw~~
+- [x] ~~fft~~ (*torch.fft.fft*)
+- [x] ~~fft2~~ (*torch.fft.fft2*)
 - [x] fftcep
-- [ ] fftr
-- [ ] fftr2
+- [x] ~~fftr~~ (*torch.fft.rfft*)
+- [x] ~~fftr2~~ (*torch.fft.rfft2*)
 - [x] frame
 - [x] freqt
-- [ ] glogsp
-- [ ] gmm
-- [ ] gmmp
+- [x] ~~glogsp~~
+- [x] ~~gmm~~
+- [x] ~~gmmp~~
 - [ ] gnorm
-- [ ] gpolezero
-- [ ] grlogsp
+- [x] ~~gpolezero~~
+- [x] ~~grlogsp~~
 - [ ] grpdelay
-- [ ] gseries
-- [ ] gspecgram
-- [ ] gwave
-- [ ] histogram
-- [ ] huffman
-- [ ] huffman_decode
-- [ ] huffman_encode
+- [x] ~~gseries~~
+- [x] ~~gspecgram~~
+- [x] ~~gwave~~
+- [x] ~~histogram~~ (*torch.histogram*)
+- [x] ~~huffman~~
+- [x] ~~huffman_decode~~
+- [x] ~~huffman_encode~~
 - [ ] idct
-- [ ] ifft
-- [ ] ifft2
+- [x] ~~ifft~~ (*torch.fft.ifft*)
+- [x] ~~ifft2~~ (*torch.fft.ifft2*)
 - [ ] ignorm
 - [ ] imglsadf
 - [ ] impulse
 - [ ] imsvq
-- [ ] interpolate
+- [x] interpolate
 - [x] ipqmf
 - [x] iulaw
 - [ ] lar2par
-- [ ] lbg
+- [x] ~~lbg~~
 - [x] levdur
 - [ ] linear_intpl
 - [ ] lpc
@@ -145,8 +145,8 @@ Status
 - [ ] ltcdf
 - [x] mc2b
 - [ ] mcpf
-- [ ] median
-- [ ] merge
+- [x] ~~median~~ (*torch.median*)
+- [x] ~~merge~~
 - [ ] mfcc
 - [ ] mgc2mgc
 - [ ] mgc2sp
@@ -159,7 +159,7 @@ Status
 - [ ] mpir2c
 - [ ] mseq
 - [ ] msvq
-- [ ] nan
+- [x] ~~nan~~
 - [ ] ndps2c
 - [ ] norm0
 - [ ] nrand
@@ -169,32 +169,32 @@ Status
 - [ ] pcas
 - [ ] phase
 - [ ] pitch
-- [ ] pitch_mark
+- [x] ~~pitch_mark~~
 - [ ] poledf
 - [x] pqmf
 - [ ] quantize
 - [ ] ramp
-- [ ] reverse
+- [x] ~~reverse~~
 - [ ] rlevdur
-- [ ] rmse
+- [x] ~~rmse~~
 - [ ] root_pol
 - [ ] sin
 - [ ] smcep
 - [ ] snr
-- [ ] sopr
+- [x] ~~sopr~~
 - [ ] spec
 - [ ] step
-- [ ] swab
-- [ ] symmetrize
+- [x] ~~swab~~
+- [x] ~~symmetrize~~
 - [ ] train
-- [ ] transpose
+- [x] ~~transpose~~
 - [x] ulaw
-- [ ] vc
-- [ ] vopr
+- [x] ~~vc~~
+- [x] ~~vopr~~
 - [ ] vstat
-- [ ] vsum
+- [x] ~~vsum~~ (*torch.sum*)
 - [x] window
-- [ ] x2x
+- [x] ~~x2x~~
 - [ ] zcross
 - [ ] zerodf
 
