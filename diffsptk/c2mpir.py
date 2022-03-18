@@ -48,28 +48,30 @@ class CepstrumToImpulseResponse(nn.Module):
 
         Parameters
         ----------
-        c : Tensor [shape=(B, M+1)]
+        c : Tensor [shape=(..., M+1)]
             Cepstral coefficients.
 
         Returns
         -------
-        h : Tensor [shape=(B, N)]
+        h : Tensor [shape=(..., N)]
             Truncated impulse response.
 
         """
-        c0 = c[:, 0]
-        c1 = c[:, 1:] * self.ramp
-        c1 = torch.flip(c1, [1])
+        c0 = c[..., 0]
+        c1 = c[..., 1:] * self.ramp
+        c1 = torch.flip(c1, [-1])
 
-        h = torch.empty((c.shape[0], self.impulse_response_length), device=c.device)
-        h[:, 0] = torch.exp(c0)
+        h = torch.empty(
+            (*(c.shape[0:-1]), self.impulse_response_length), device=c.device
+        )
+        h[..., 0] = torch.exp(c0)
         for n in range(1, self.impulse_response_length):
             s = n - self.cep_order
-            h[:, n] = (
+            h[..., n] = (
                 torch.einsum(
-                    "bd,bd->b",
-                    h[:, max(0, s) : n].clone(),
-                    c1[:, max(0, -s) :],
+                    "...d,...d->...",
+                    h[..., max(0, s) : n].clone(),
+                    c1[..., max(0, -s) :],
                 )
                 / n
             )
