@@ -25,9 +25,9 @@ class Spectrum(nn.Module):
     Parameters
     ----------
     fft_length : int >= 2 [scalar]
-        Number of FFT bins, :math:`L`.
+        Number of FFT bins, :math:`L_2`.
 
-    out_format : ['db', 'logamp', 'amp', 'pow']
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
 
     eps : float >= 0 [scalar]
@@ -35,7 +35,7 @@ class Spectrum(nn.Module):
 
     """
 
-    def __init__(self, fft_length, out_format="power", eps=1e-8):
+    def __init__(self, fft_length, out_format="power", eps=0):
         super(Spectrum, self).__init__()
 
         self.fft_length = fft_length
@@ -46,7 +46,7 @@ class Spectrum(nn.Module):
 
         if out_format == 0 or out_format == "db":
             self.convert = lambda x: 10 * torch.log10(x)
-        elif out_format == 1 or out_format == "log":
+        elif out_format == 1 or out_format == "log-magnitude":
             self.convert = lambda x: 0.5 * torch.log(x)
         elif out_format == 2 or out_format == "magnitude":
             self.convert = lambda x: torch.sqrt(x)
@@ -60,12 +60,12 @@ class Spectrum(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L)]
+        x : Tensor [shape=(..., L1)]
             Framed waveform.
 
         Returns
         -------
-        y : Tensor [shape=(..., L/2+1)]
+        y : Tensor [shape=(..., L2/2+1)]
             Spectrum.
 
         """

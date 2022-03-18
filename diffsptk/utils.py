@@ -14,30 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
-import pytest
-import torch
 
-import diffsptk
-from tests.utils import call
-from tests.utils import check
+def is_power_of_two(n):
+    return (n != 0) and (n & (n - 1) == 0)
 
 
-@pytest.mark.parametrize("m", [10, 11])
-def test_compatibility(m, n_band=4, L=20):
-    pqmf = diffsptk.PQMF(n_band, filter_order=m).double()
-    x = torch.from_numpy(call(f"nrand -l {L}", double=True).reshape(-1, L))
-    y = pqmf(x).cpu().numpy()
-
-    y_ = call(f"nrand -l {L} | pqmf -k {n_band} -m {m}").reshape(-1, n_band).T
-    assert np.allclose(y, y_)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, n_band=4, m=8, B=2, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    pqmf = diffsptk.PQMF(n_band, filter_order=m).to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    check(pqmf, x)
+def next_power_of_two(n):
+    return 1 << (n - 1).bit_length()

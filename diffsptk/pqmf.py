@@ -19,6 +19,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils import next_power_of_two
+
 
 def make_filter_banks(
     n_band,
@@ -39,9 +41,6 @@ def make_filter_banks(
         else:
             a = alpha - 8.7
             return 0.1102 * a
-
-    def next_power_of_two(x):
-        return 1 << (x - 1).bit_length()
 
     w = np.kaiser(filter_order + 1, alpha_to_beta(alpha))
     x = np.arange(filter_order + 1) - 0.5 * filter_order
@@ -78,7 +77,7 @@ def make_filter_banks(
     elif mode == "synthesis":
         sign = -1
     else:
-        raise ValueError
+        raise ValueError("analysis or synthesis is expected")
 
     filters = []
     for k in range(n_band):
@@ -120,13 +119,14 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
         filters = np.flip(filters, 2).copy()
         self.register_buffer("filters", torch.from_numpy(filters))
 
-        # Make padding modules.
+        # Make padding module.
         if filter_order % 2 == 0:
             delay_left = filter_order // 2
             delay_right = filter_order // 2
         else:
             delay_left = (filter_order + 1) // 2
             delay_right = (filter_order - 1) // 2
+
         self.pad = nn.Sequential(
             nn.ConstantPad1d((delay_left, 0), 0), nn.ReplicationPad1d((0, delay_right))
         )

@@ -44,12 +44,14 @@ class Frame(nn.Module):
         assert 1 <= self.frame_length
         assert 1 <= self.frame_period
 
+        # Make padding module.
         if center:
             left_pad_width = self.frame_length // 2
             right_pad_width = (self.frame_length - 1) // 2
         else:
             left_pad_width = 0
             right_pad_width = self.frame_length - 1
+
         self.pad = nn.ConstantPad1d((left_pad_width, right_pad_width), 0)
 
     def forward(self, x):

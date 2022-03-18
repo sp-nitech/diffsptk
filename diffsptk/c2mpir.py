@@ -41,7 +41,7 @@ class CepstrumToImpulseResponse(nn.Module):
         assert 1 <= self.cep_order
         assert 1 <= self.impulse_response_length
 
-        self.register_buffer("arange", torch.arange(1, self.cep_order + 1))
+        self.register_buffer("ramp", torch.arange(1, self.cep_order + 1))
 
     def forward(self, c):
         """Convert cepstrum to impulse response.
@@ -58,7 +58,7 @@ class CepstrumToImpulseResponse(nn.Module):
 
         """
         c0 = c[:, 0]
-        c1 = c[:, 1:] * self.arange
+        c1 = c[:, 1:] * self.ramp
         c1 = torch.flip(c1, [1])
 
         h = torch.empty((c.shape[0], self.impulse_response_length), device=c.device)

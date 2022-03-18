@@ -45,6 +45,7 @@ class Window(nn.Module):
 
         assert 1 <= in_length
 
+        # Make window.
         if window == 0 or window == "blackman":
             w = np.blackman(in_length)
         elif window == 1 or window == "hamming":
@@ -61,6 +62,7 @@ class Window(nn.Module):
         else:
             raise ValueError(f"window {window} is not supported")
 
+        # Normalize window.
         if norm == 0 or norm == "none":
             pass
         elif norm == 1 or norm == "power":
@@ -72,6 +74,7 @@ class Window(nn.Module):
 
         self.register_buffer("window", torch.from_numpy(w.astype(np.float32)))
 
+        # Make padding module.
         if out_length is None or in_length == out_length:
             self.pad = lambda x: x
         else:

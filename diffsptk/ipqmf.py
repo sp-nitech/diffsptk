@@ -52,13 +52,14 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         filters = np.flip(filters, 2).copy()
         self.register_buffer("filters", torch.from_numpy(filters))
 
-        # Make padding modules.
+        # Make padding module.
         if filter_order % 2 == 0:
             delay_left = filter_order // 2
             delay_right = filter_order // 2
         else:
             delay_left = (filter_order - 1) // 2
             delay_right = (filter_order + 1) // 2
+
         self.pad = nn.Sequential(
             nn.ConstantPad1d((delay_left, 0), 0), nn.ReplicationPad1d((0, delay_right))
         )

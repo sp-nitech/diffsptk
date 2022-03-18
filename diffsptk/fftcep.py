@@ -18,6 +18,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from .utils import is_power_of_two
+
 
 class CepstralAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/fftcep.html>`_
@@ -49,6 +51,7 @@ class CepstralAnalysis(nn.Module):
 
         assert 0 <= self.cep_order
         assert self.cep_order <= self.fft_length // 2
+        assert is_power_of_two(self.fft_length)
         assert 0 <= self.n_iter
         assert 1 <= self.accel
 

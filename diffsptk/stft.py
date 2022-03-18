@@ -62,4 +62,5 @@ class STFT(nn.Module):
             Spectrum.
 
         """
-        return self.stft(x)
+        y = self.stft(x)
+        return y

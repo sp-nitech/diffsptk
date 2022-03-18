@@ -42,6 +42,6 @@ def test_differentiable(device, n_band=4, m=8, B=2, L=20):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    ipqmf = diffsptk.IPQMF(n_band, filter_order=m)
+    ipqmf = diffsptk.IPQMF(n_band, filter_order=m).to(device)
     x = torch.randn(B, n_band, L, requires_grad=True, device=device)
     check(ipqmf, x)

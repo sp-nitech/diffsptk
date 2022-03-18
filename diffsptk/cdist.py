@@ -70,7 +70,7 @@ class CepstralDistance(nn.Module):
         elif self.reduction == "batchmean":
             dist = dist.mean()
         else:
-            raise NotImplementedError
+            raise ValueError("none, sum, mean, or batchmean is expected")
 
         if self.full:
             dist *= self.const
