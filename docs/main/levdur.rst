@@ -6,4 +6,4 @@ levdur
 .. automodule:: diffsptk.levdur
    :members:
 
-.. seealso:: :ref:`acorr`
+.. seealso:: :ref:`acorr`  :ref:`lpc`
