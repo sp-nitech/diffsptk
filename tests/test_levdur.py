@@ -28,7 +28,7 @@ def test_compatibility(M=30, L=52, B=2):
     acorr = diffsptk.AutocorrelationAnalysis(M, L)
     levdur = diffsptk.LevinsonDurbinRecursion(out_format="Ka")
     x = acorr(torch.from_numpy(call(f"nrand -l {B*L}").reshape(-1, L)))
-    y = levdur.forward(x, n_out=1).cpu().numpy()
+    y = levdur.forward(x).cpu().numpy()
 
     y_ = call(f"nrand -l {B*L} | lpc -m {M} -l {L}").reshape(-1, M + 1)
     assert np.allclose(y, y_)

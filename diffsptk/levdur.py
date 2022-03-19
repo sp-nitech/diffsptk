@@ -37,7 +37,7 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         self.out_format = out_format
         assert any([self.out_format == i for i in ["K", "a", "Ka", "K,a"]])
 
-    def forward(self, r, n_out=2):
+    def forward(self, r):
         """Solve a Yule-Walker linear system.
 
         Parameters
