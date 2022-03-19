@@ -134,7 +134,7 @@ Status
 - [x] ~~lbg~~
 - [x] levdur
 - [ ] linear_intpl
-- [ ] lpc
+- [x] lpc
 - [ ] lpc2c
 - [ ] lpc2lsp
 - [ ] lpc2par
@@ -182,7 +182,7 @@ Status
 - [ ] smcep
 - [ ] snr
 - [x] ~~sopr~~
-- [ ] spec
+- [x] spec
 - [ ] step
 - [x] ~~swab~~
 - [x] ~~symmetrize~~
