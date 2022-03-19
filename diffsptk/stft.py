@@ -21,8 +21,32 @@ from diffsptk.spec import Spectrum
 from diffsptk.window import Window
 
 
-class STFT(nn.Module):
+class ShortTermFourierTransform(nn.Module):
     """This module is a simple cascade of framing, windowing, and spectrum calculation.
+
+    Parameters
+    ----------
+    frame_length : int >= 1 [scalar]
+        Frame length, :math:`L_1`.
+
+    frame_peirod : int >= 1 [scalar]
+        Frame period, :math:`P`.
+
+    fft_length : int >= L1 [scalar]
+        Number of FFT bins, :math:`L_2`.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+        'rectangular']
+        Window type.
+
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power']
+        Output format.
+
+    eps : float >= 0 [scalar]
+        A small value added to power spectrum.
 
     See also
     --------
@@ -40,7 +64,7 @@ class STFT(nn.Module):
         out_format="power",
         eps=1e-8,
     ):
-        super(STFT, self).__init__()
+        super(ShortTermFourierTransform, self).__init__()
 
         self.stft = nn.Sequential(
             Frame(frame_length, frame_period),

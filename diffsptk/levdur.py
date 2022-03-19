@@ -22,10 +22,20 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
     for details. Note that the current implementation does not use the Durbin's
     algorithm though the class name includes it.
+
+    Parameters
+    ----------
+    out_format : ['K', 'a', 'Ka', 'K,a']
+        `K` is gain and `a` is LPC coefficients. If this is `Ka`, the two output
+        tensors are concatenated and return the tensor instead of the tuple.
+
     """
 
-    def __init__(self):
+    def __init__(self, out_format="K,a"):
         super(PseudoLevinsonDurbinRecursion, self).__init__()
+
+        self.out_format = out_format
+        assert any([self.out_format == i for i in ["K", "a", "Ka", "K,a"]])
 
     def forward(self, r, n_out=2):
         """Solve a Yule-Walker linear system.
@@ -35,13 +45,9 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         r : Tensor [shape=(..., M+1)]
             Autocorrelation.
 
-        n_out : int [1 <= n_out <= 2]
-            If `n_out` is 1, the two output tensors are concatenated and
-            return the tensor instead of tuple.
-
         Returns
         -------
-        g : Tensor [shape=(..., 1)]
+        K : Tensor [shape=(..., 1)]
             Gain.
 
         a : Tensor [shape=(..., M)]
@@ -62,12 +68,15 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         a = torch.einsum("...mn,...m->...n", R.inverse(), -r_1L)
 
         # Compute gain.
-        g = torch.sqrt(torch.einsum("...m,...m->...", r_1L, a) + r_0)
-        g = g.unsqueeze(-1)
+        if "K" in self.out_format:
+            K = torch.sqrt(torch.einsum("...m,...m->...", r_1L, a) + r_0)
+            K = K.unsqueeze(-1)
 
-        if n_out == 1:
-            return torch.cat((g, a), dim=-1)
-        elif n_out == 2:
-            return g, a
-        else:
-            ValueError
+        if self.out_format == "K":
+            return K
+        elif self.out_format == "a":
+            return a
+        elif self.out_format == "Ka":
+            return torch.cat((K, a), dim=-1)
+        elif self.out_format == "K,a":
+            return K, a
