@@ -162,7 +162,7 @@ Status
 - [x] ~~nan~~ (*torch.isnan*)
 - [ ] ndps2c
 - [ ] norm0
-- [x] ~~nrand~~ (*torch.randn*)
+- [ ] nrand
 - [ ] par2lar
 - [ ] par2lpc
 - [ ] pca
