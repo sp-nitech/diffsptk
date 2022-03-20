@@ -34,7 +34,7 @@ import torch
 x = torch.randn(100)
 
 # Compute STFT of x.
-stft = diffsptk.STFT(frame_legnth=12, frame_period=10, fft_length=16)
+stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=16)
 X = stft(x)
 
 # Estimate 4-th order cepstrum of x.
@@ -162,7 +162,7 @@ Status
 - [x] ~~nan~~
 - [ ] ndps2c
 - [ ] norm0
-- [ ] nrand
+- [x] ~~nrand~~ (*torch.randn*)
 - [ ] par2lar
 - [ ] par2lpc
 - [ ] pca
@@ -173,7 +173,7 @@ Status
 - [ ] poledf
 - [x] pqmf
 - [ ] quantize
-- [ ] ramp
+- [x] ramp
 - [x] ~~reverse~~
 - [ ] rlevdur
 - [x] ~~rmse~~
@@ -183,7 +183,7 @@ Status
 - [ ] snr
 - [x] ~~sopr~~
 - [x] spec
-- [ ] step
+- [x] step
 - [x] ~~swab~~
 - [x] ~~symmetrize~~
 - [ ] train

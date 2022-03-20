@@ -1,0 +1,9 @@
+.. _frame:
+
+frame
+-----
+
+.. autoclass:: diffsptk.Frame
+   :members:
+
+.. seealso:: :ref:`window`
