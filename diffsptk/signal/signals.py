@@ -17,6 +17,32 @@
 import torch
 
 
+def impulse(order, **kwargs):
+    """Generate impulse sequence.
+
+    See `impulse <https://sp-nitech.github.io/sptk/latest/main/impulse.html>`_
+    for details.
+
+    Parameters
+    ----------
+    order : int >= 0 [scalar]
+        Order of sequence, :math:`M`.
+
+    Returns
+    -------
+    x : Tensor [shape=(M+1,)]
+        Impulse sequence.
+
+    Examples
+    --------
+    >>> x = diffsptk.signal.impulse(4)
+    >>> x
+    tensor([1., 0., 0., 0., 0.])
+
+    """
+    return torch.eye(n=1, m=order + 1, **kwargs)
+
+
 def step(order, value=1, **kwargs):
     """Generate step sequence.
 

@@ -20,6 +20,12 @@ import diffsptk.signal
 from tests.utils import call
 
 
+def test_impulse(m=5):
+    y = diffsptk.signal.impulse(m)
+    y_ = call(f"impulse -m {m}")
+    assert np.allclose(y, y_)
+
+
 def test_step(m=5, v=-1):
     y = diffsptk.signal.step(m, v)
     y_ = call(f"step -m {m} -v {v}")

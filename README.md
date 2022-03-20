@@ -92,7 +92,7 @@ Status
 - [ ] dfs
 - [x] ~~dmp~~
 - [ ] dtw
-- [ ] dtw_merge
+- [x] ~~dtw_merge~~
 - [ ] entropy
 - [ ] excite
 - [x] ~~extract~~
@@ -125,7 +125,7 @@ Status
 - [x] ~~ifft2~~ (*torch.fft.ifft2*)
 - [ ] ignorm
 - [ ] imglsadf
-- [ ] impulse
+- [x] impulse
 - [ ] imsvq
 - [x] interpolate
 - [x] ipqmf
@@ -159,7 +159,7 @@ Status
 - [ ] mpir2c
 - [ ] mseq
 - [ ] msvq
-- [x] ~~nan~~
+- [x] ~~nan~~ (*torch.isnan*)
 - [ ] ndps2c
 - [ ] norm0
 - [x] ~~nrand~~ (*torch.randn*)
@@ -191,7 +191,7 @@ Status
 - [x] ulaw
 - [x] ~~vc~~
 - [x] ~~vopr~~
-- [x] ~~vstat~~
+- [x] ~~vstat~~ (*torch.var_mean*)
 - [x] ~~vsum~~ (*torch.sum*)
 - [x] window
 - [x] ~~x2x~~
