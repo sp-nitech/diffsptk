@@ -12,6 +12,7 @@ from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
+from .linear_intpl import LinearInterpolation
 from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients

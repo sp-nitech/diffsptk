@@ -133,7 +133,7 @@ Status
 - [ ] lar2par
 - [x] ~~lbg~~
 - [x] levdur
-- [ ] linear_intpl
+- [x] linear_intpl
 - [x] lpc
 - [ ] lpc2c
 - [ ] lpc2lsp
