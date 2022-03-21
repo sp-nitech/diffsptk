@@ -23,3 +23,4 @@ from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
 from .ulaw import MuLawCompression
 from .window import Window
+from .zerodf import AllZeroDigitalFilter

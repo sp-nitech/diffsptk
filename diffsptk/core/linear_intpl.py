@@ -28,7 +28,7 @@ class LinearInterpolation(nn.Module):
 
     Parameters
     ----------
-    upsampling_factor : int >= 2 [scalar]
+    upsampling_factor : int >= 1 [scalar]
         Upsampling factor, :math:`P`.
 
     """
@@ -36,7 +36,7 @@ class LinearInterpolation(nn.Module):
     def __init__(self, upsampling_factor):
         super(LinearInterpolation, self).__init__()
 
-        assert 2 <= upsampling_factor
+        assert 1 <= upsampling_factor
 
         # Make upsampling filter.
         w = np.linspace(1, 0, upsampling_factor + 1, dtype=np.float32)[:-1]
@@ -71,7 +71,11 @@ class LinearInterpolation(nn.Module):
         tensor([[0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000]])
 
         """
-        assert x.dim() == 3
+        # Return copy if upsampling factor is one.
+        if self.upsampling_filter.size(0) == 1:
+            return x
+
+        assert x.dim() == 3, "Input must be 3D tensor"
         B, _, D = x.shape
 
         x = x.unsqueeze(1)  # (B, 1, N, D)

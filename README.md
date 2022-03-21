@@ -196,7 +196,7 @@ Status
 - [x] window
 - [x] ~~x2x~~
 - [ ] zcross
-- [ ] zerodf
+- [x] zerodf
 
 
 License

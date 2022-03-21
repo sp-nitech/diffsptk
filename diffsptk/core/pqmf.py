@@ -158,7 +158,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
             x = x.view(1, 1, -1)
         elif x.dim() == 2:
             x = x.unsqueeze(1)
-        assert x.dim() == 3
+        assert x.dim() == 3, "Input must be 3D tensor"
 
         y = F.conv1d(self.pad(x), self.filters)
         return y

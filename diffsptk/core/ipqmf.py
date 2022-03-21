@@ -92,7 +92,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         tensor([[[8.1887e-04, 2.4754e-01, 5.0066e-01, 7.4732e-01, 9.9419e-01]]])
 
         """
-        assert y.dim() == 3
+        assert y.dim() == 3, "Input must be 3D tensor"
 
         x = F.conv1d(self.pad(y), self.filters)
         if not keep_dims:
