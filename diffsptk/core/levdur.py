@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import symmetric_toeplitz
+
 
 class PseudoLevinsonDurbinRecursion(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
@@ -64,22 +66,17 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         (tensor([0.8726]), tensor([0.1475, 0.5270]))
 
         """
-        M = r.size(-1) - 1
-
         # Make Toeplitz matrix.
-        r_0M = r[..., :-1]
-        r_M1 = r_0M[..., 1:].flip(-1)
-        r_MM = torch.cat((r_M1, r_0M), dim=-1)
-        R = r_MM.unfold(-1, M, 1).flip(-2)
+        R = symmetric_toeplitz(r[..., :-1])
 
         # Solve system.
-        r_0 = r[..., 0]
-        r_1L = r[..., 1:]
-        a = torch.einsum("...mn,...m->...n", R.inverse(), -r_1L)
+        r1 = r[..., 1:]
+        a = torch.einsum("...mn,...m->...n", R.inverse(), -r1)
 
         # Compute gain.
         if "K" in self.out_format:
-            K = torch.sqrt(torch.einsum("...m,...m->...", r_1L, a) + r_0)
+            r0 = r[..., 0]
+            K = torch.sqrt(torch.einsum("...m,...m->...", r1, a) + r0)
             K = K.unsqueeze(-1)
 
         if self.out_format == "K":

@@ -16,6 +16,7 @@ from .linear_intpl import LinearInterpolation
 from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
+from .mgcep import MelCepstralAnalysis
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .spec import Spectrum

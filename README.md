@@ -93,7 +93,7 @@ Status
 - [x] ~~dmp~~
 - [ ] dtw
 - [x] ~~dtw_merge~~
-- [ ] entropy
+- [x] entropy (*torch.special.entr*)
 - [ ] excite
 - [x] ~~extract~~
 - [ ] fbank
@@ -150,7 +150,7 @@ Status
 - [ ] mfcc
 - [ ] mgc2mgc
 - [ ] mgc2sp
-- [ ] mgcep
+- [ ] mgcep (mcep is now available)
 - [ ] mglsadf
 - [ ] mglsp2sp
 - [x] ~~minmax~~
