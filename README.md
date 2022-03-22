@@ -8,7 +8,7 @@ diffsptk (UNDER CONSTRUCTION)
 
 Requirements
 ------------
-- PyTorch 1.8.0+
+- PyTorch 1.9.0+
 
 
 Documentation
@@ -71,7 +71,7 @@ Status
 ------
 - [x] acorr
 - [ ] acr2csm
-- [x] ~~aeq~~
+- [x] ~~aeq~~ (*torch.allclose*)
 - [x] ~~amgcep~~
 - [x] ~~average~~ (*torch.mean*)
 - [x] b2mc
