@@ -8,6 +8,7 @@ diffsptk (UNDER CONSTRUCTION)
 
 Requirements
 ------------
+- Python 3.8+
 - PyTorch 1.9.0+
 
 
@@ -194,7 +195,7 @@ Status
 - [ ] rlevdur
 - [x] ~~rmse~~
 - [ ] root_pol
-- [ ] sin
+- [x] sin
 - [ ] smcep
 - [ ] snr
 - [x] ~~sopr~~

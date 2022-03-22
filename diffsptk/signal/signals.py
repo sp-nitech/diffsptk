@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import math
 import torch
 
 
@@ -114,3 +115,39 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
     else:
         end -= eps
     return torch.arange(start, end, step, **kwargs)
+
+
+def sin(order, period=None, magnitude=1, **kwargs):
+    """Generate sinusoidal sequence.
+
+    See `sin <https://sp-nitech.github.io/sptk/latest/main/sin.html>`_
+    for details.
+
+    Parameters
+    ----------
+    order : int >= 0 [scalar]
+        Order of sequence, :math:`M`.
+
+    period : float > 0 [scalar]
+        Period.
+
+    magnitude : float [scalar]
+        Magnitude.
+
+    Returns
+    -------
+    x : Tensor [shape=(M+1,)]
+        Sinusoidal sequence.
+
+    Examples
+    --------
+    >>> x = diffsptk.signal.sin(4)
+    >>> x
+    tensor([ 0.0000,  0.9511,  0.5878, -0.5878, -0.9511])
+
+    """
+    if period is None:
+        period = order + 1
+    x = torch.arange(order + 1, **kwargs)
+    x = torch.sin(x * (2 * math.pi / period))
+    return magnitude * x
