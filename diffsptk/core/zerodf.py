@@ -31,13 +31,19 @@ class AllZeroDigitalFilter(nn.Module):
     frame_period : int >= 1 [scalar]
         Frame period, :math:`P`.
 
+    ignore_gain : bool [scalar]
+        If true, perform filtering without gain.
+
     """
 
-    def __init__(self, filter_order, frame_period=1):
+    def __init__(self, filter_order, frame_period=1, ignore_gain=False):
         super(AllZeroDigitalFilter, self).__init__()
 
         self.filter_order = filter_order
+        self.ignore_gain = ignore_gain
+
         assert 0 <= self.filter_order
+        assert 1 <= frame_period
 
         self.pad = nn.ConstantPad1d((self.filter_order, 0), 0)
         self.intpl = LinearInterpolation(frame_period)
@@ -69,6 +75,9 @@ class AllZeroDigitalFilter(nn.Module):
 
         """
         x = self.pad(x)
-        x = x.unfold(-1, self.filter_order + 1, 1)
-        y = (x.flip(-1) * self.intpl(h)).sum(-1)
+        x = x.unfold(-1, self.filter_order + 1, 1).flip(-1)
+        h = self.intpl(h)
+        if self.ignore_gain:
+            h = h / h[..., :1]
+        y = (x * h).sum(-1)
         return y
