@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import is_in
 from ..misc.utils import symmetric_toeplitz
 
 
@@ -37,7 +38,7 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         super(PseudoLevinsonDurbinRecursion, self).__init__()
 
         self.out_format = out_format
-        assert any([self.out_format == i for i in ["K", "a", "Ka", "K,a"]])
+        assert is_in(self.out_format, ["K", "a", "Ka", "K,a"])
 
     def forward(self, r):
         """Solve a Yule-Walker linear system.
@@ -87,3 +88,5 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
             return torch.cat((K, a), dim=-1)
         elif self.out_format == "K,a":
             return K, a
+        else:
+            raise RuntimeError

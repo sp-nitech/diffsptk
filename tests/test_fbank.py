@@ -14,41 +14,37 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
+import pytest
 import torch
 
-
-def is_power_of_two(n):
-    return (n != 0) and (n & (n - 1) == 0)
-
-
-def next_power_of_two(n):
-    return 1 << (n - 1).bit_length()
+import diffsptk
+import tests.utils as U
 
 
-def is_in(x, ary):
-    return any([x == a for a in ary])
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, C=10, L=32, sr=8000, f_min=300, f_max=3400, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    spec = diffsptk.Spectrum(L, eps=0).to(device)
+    fbank = diffsptk.MelFilterBankAnalysis(
+        C, L, sr, f_min=f_min, f_max=f_max, out_format="yE"
+    ).to(device)
+    x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
+    cmd = (
+        f"nrand -l {B*L} | "
+        f"fbank -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -o 1"
+    )
+    y = U.call(cmd).reshape(-1, C + 1)
+    U.check_compatibility(y, fbank, x)
 
 
-def default_dtype():
-    t = torch.get_default_dtype()
-    if t == torch.float32:
-        return np.float32
-    elif t == torch.float64:
-        return np.float64
-    else:
-        raise RuntimeError("Unknown default dtype: {t}")
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, C=10, L=32, sr=8000, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-
-def symmetric_toeplitz(x):
-    d = x.size(-1)
-    xx = torch.cat((x[..., 1:].flip(-1), x), dim=-1)
-    X = xx.unfold(-1, d, 1).flip(-2)
-    return X
-
-
-def hankel(x):
-    d = x.size(-1)
-    assert d % 2 == 1
-    X = x.unfold(-1, (d + 1) // 2, 1)
-    return X
+    spec = diffsptk.Spectrum(L).to(device)
+    fbank = diffsptk.MelFilterBankAnalysis(C, L, sr, out_format="yE").to(device)
+    x = torch.randn(B, L, requires_grad=True, device=device)
+    U.check_differentiable(U.compose(fbank, spec), x)

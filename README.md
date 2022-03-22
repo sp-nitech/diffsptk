@@ -42,6 +42,22 @@ mcep = diffsptk.MelCepstralAnalysis(cep_order=4, fft_length=16, alpha=0.1, n_ite
 mc = mcep(X)
 ```
 
+### Mel-spectrogram extraction
+```python
+import diffsptk
+import torch
+
+x = torch.randn(100)
+
+# Compute STFT of x.
+stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=32)
+X = stft(x)
+
+# Apply 4 mel-filter banks to the STFT.
+fbank = diffsptk.MelFilterBankAnalysis(n_channel=4, fft_length=32, sample_rate=8000)
+Y = fbank(X)
+```
+
 ### Subband decomposition
 ```python
 import diffsptk
@@ -96,7 +112,7 @@ Status
 - [x] ~~entropy~~ (*torch.special.entr*)
 - [ ] excite
 - [x] ~~extract~~
-- [ ] fbank
+- [x] fbank
 - [x] ~~fd~~
 - [x] ~~fdrw~~
 - [x] ~~fft~~ (*torch.fft.fft*)
