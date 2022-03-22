@@ -30,7 +30,7 @@ def test_compatibility(device, fl, fp, center, T=20):
         return
 
     frame = diffsptk.Frame(fl, fp, center=center, zmean=False).to(device)
-    x = torch.arange(T, dtype=torch.float32).view(1, -1).to(device)
+    x = torch.arange(T).view(1, -1).to(device)
     n = 0 if center else 1
     y = U.call(f"ramp -l {T} | frame -l {fl} -p {fp} -n {n}").reshape(-1, fl)
     U.check_compatibility(y, frame, x)

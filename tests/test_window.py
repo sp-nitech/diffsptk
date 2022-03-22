@@ -29,7 +29,7 @@ def test_compatibility(device, norm, win, L1=10, L2=12):
         return
 
     window = diffsptk.Window(L1, L2, norm=norm, window=win).to(device)
-    x = torch.ones(L1, dtype=torch.float64).view(1, L1).to(device)
+    x = torch.ones(L1).view(1, L1).to(device)
     y = U.call(f"step -l {L1} | window -n {norm} -w {win} -l {L1} -L {L2}").reshape(
         -1, L2
     )
