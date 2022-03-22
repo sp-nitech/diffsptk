@@ -19,6 +19,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..misc.utils import default_dtype
+
 
 class LinearInterpolation(nn.Module):
     """Perform linear interpolation.
@@ -39,7 +41,7 @@ class LinearInterpolation(nn.Module):
         assert 1 <= upsampling_factor
 
         # Make upsampling filter.
-        w = np.linspace(1, 0, upsampling_factor + 1, dtype=np.float32)[:-1]
+        w = np.linspace(1, 0, upsampling_factor + 1, dtype=default_dtype())[:-1]
         upsampling_filter = np.stack((w, 1 - w), axis=1)
         upsampling_filter = np.expand_dims(
             upsampling_filter, (1, 3)

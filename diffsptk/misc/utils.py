@@ -14,6 +14,9 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
+import torch
+
 
 def is_power_of_two(n):
     return (n != 0) and (n & (n - 1) == 0)
@@ -21,3 +24,27 @@ def is_power_of_two(n):
 
 def next_power_of_two(n):
     return 1 << (n - 1).bit_length()
+
+
+def default_dtype():
+    t = torch.get_default_dtype()
+    if t == torch.float32:
+        return np.float32
+    elif t == torch.float64:
+        return np.float64
+    else:
+        raise RuntimeError("Unknown default dtype: {t}")
+
+
+def symmetric_toeplitz(x):
+    d = x.size(-1)
+    xx = torch.cat((x[..., 1:].flip(-1), x), dim=-1)
+    X = xx.unfold(-1, d, 1).flip(-2)
+    return X
+
+
+def hankel(x):
+    d = x.size(-1)
+    assert d % 2 == 1
+    X = x.unfold(-1, (d + 1) // 2, 1)
+    return X

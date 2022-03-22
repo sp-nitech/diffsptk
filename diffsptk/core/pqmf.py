@@ -19,6 +19,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..misc.utils import default_dtype
 from ..misc.utils import next_power_of_two
 
 
@@ -86,7 +87,7 @@ def make_filter_banks(
         c = 2 * prototype_filter
         filters.append(c * np.cos(a + b))
 
-    return np.asarray(filters, dtype=np.float32)
+    return np.asarray(filters, dtype=default_dtype())
 
 
 class PseudoQuadratureMirrorFilterBanks(nn.Module):

@@ -18,6 +18,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import default_dtype
+
 
 class FrequencyTransform(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/freqt.html>`_
@@ -48,7 +50,7 @@ class FrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1), dtype=np.float32)
+        A = np.zeros((L2, L1), dtype=default_dtype())
         A[0, :] = alpha ** np.arange(L1)
         if 1 < L2 and 1 < L1:
             A[1, 1:] = alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta

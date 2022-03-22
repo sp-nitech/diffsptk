@@ -18,6 +18,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import default_dtype
+
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/b2mc.html>`_
@@ -40,7 +42,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         assert abs(alpha) < 1
 
         # Make transform matrix.
-        A = np.eye(cep_order + 1, dtype=np.float32)
+        A = np.eye(cep_order + 1, dtype=default_dtype())
         np.fill_diagonal(A[:, 1:], alpha)
 
         self.register_buffer("A", torch.from_numpy(A).t())
