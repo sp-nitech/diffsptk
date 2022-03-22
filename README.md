@@ -26,7 +26,7 @@ pip install -e diffsptk
 
 Examples
 --------
-### Cepstral analysis
+### Mel-cepstral analysis
 ```python
 import diffsptk
 import torch
@@ -37,9 +37,9 @@ x = torch.randn(100)
 stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=16)
 X = stft(x)
 
-# Estimate 4-th order cepstrum of x.
-fftcep = diffsptk.CepstralAnalysis(cep_order=4, fft_length=16, n_iter=1)
-c = fftcep(X)
+# Estimate 4-th order mel-cepstrum of x.
+mcep = diffsptk.MelCepstralAnalysis(cep_order=4, fft_length=16, alpha=0.1, n_iter=1)
+mc = mcep(X)
 ```
 
 ### Subband decomposition
