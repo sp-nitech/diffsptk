@@ -14,27 +14,26 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
-from tests.utils import compose
+import tests.utils as U
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("n_iter", [0, 3])
-def test_compatibility(n_iter, M=8, L=16, B=2, accel=0.001):
-    spec = diffsptk.Spectrum(L, eps=0)
-    fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter, accel=accel)
-    x = spec(torch.from_numpy(call(f"nrand -l {B*L}").reshape(-1, L)))
-    y = fftcep.forward(x).cpu().numpy()
+def test_compatibility(device, n_iter, M=8, L=16, B=2, accel=0.001):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"nrand -l {B*L} | fftcep -i {n_iter} -l {L} -m {M} -a {accel}").reshape(
+    spec = diffsptk.Spectrum(L, eps=0).to(device)
+    fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter, accel=accel).to(device)
+    x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
+    y = U.call(f"nrand -l {B*L} | fftcep -i {n_iter} -l {L} -m {M} -a {accel}").reshape(
         -1, M + 1
     )
-    assert np.allclose(y, y_)
+    U.check_compatibility(y, fftcep, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -45,4 +44,4 @@ def test_differentiable(device, n_iter=3, M=4, L=16, B=2):
     spec = diffsptk.Spectrum(L).to(device)
     fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
-    check(compose(fftcep, spec), x)
+    U.check_differentiable(U.compose(fftcep, spec), x)

@@ -14,31 +14,32 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("reduction", ["none", "batchmean"])
-def test_compatibility(reduction, M=19, B=2):
+def test_compatibility(device, reduction, M=19, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     tmp1 = "cdist.tmp1"
     tmp2 = "cdist.tmp2"
-    call(f"nrand -s 1 -l {B*(M+1)} > {tmp1}", get=False)
-    call(f"nrand -s 2 -l {B*(M+1)} > {tmp2}", get=False)
+    U.call(f"nrand -s 1 -l {B*(M+1)} > {tmp1}", get=False)
+    U.call(f"nrand -s 2 -l {B*(M+1)} > {tmp2}", get=False)
 
-    cdist = diffsptk.CepstralDistance(full=True, reduction=reduction)
-    x1 = torch.from_numpy(call(f"cat {tmp1}").reshape(-1, M + 1))
-    x2 = torch.from_numpy(call(f"cat {tmp2}").reshape(-1, M + 1))
-    y = cdist(x1, x2).cpu().numpy()
+    cdist = diffsptk.CepstralDistance(full=True, reduction=reduction).to(device)
+    x1 = torch.from_numpy(U.call(f"cat {tmp1}").reshape(-1, M + 1)).to(device)
+    x2 = torch.from_numpy(U.call(f"cat {tmp2}").reshape(-1, M + 1)).to(device)
 
     opt = "-f" if reduction == "none" else ""
-    y_ = call(f"cdist {opt} -m {M} {tmp1} {tmp2}").reshape(-1)
-    call(f"rm {tmp1} {tmp2}", get=False)
-    assert np.allclose(y, y_)
+    y = U.call(f"cdist {opt} -m {M} {tmp1} {tmp2}")
+    U.call(f"rm {tmp1} {tmp2}", get=False)
+    U.check_compatibility(y, cdist, x1, x2)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -49,4 +50,4 @@ def test_differentiable(device, M=19, B=2):
     cdist = diffsptk.CepstralDistance().to(device)
     x1 = torch.randn(B, M + 1, requires_grad=True, device=device)
     x2 = torch.randn(B, M + 1, requires_grad=False, device=device)
-    check(cdist, x1, x2)
+    U.check_differentiable(cdist, x1, x2)

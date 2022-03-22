@@ -14,22 +14,22 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
-def test_compatibility(M=19, N=30, B=2):
-    c2mpir = diffsptk.CepstrumToImpulseResponse(M, N)
-    x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
-    y = c2mpir(x).cpu().numpy()
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, M=19, N=30, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"nrand -l {B*(M+1)} | c2mpir -m {M} -l {N}").reshape(-1, N)
-    assert np.allclose(y, y_)
+    c2mpir = diffsptk.CepstrumToImpulseResponse(M, N).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
+    y = U.call(f"nrand -l {B*(M+1)} | c2mpir -m {M} -l {N}").reshape(-1, N)
+    U.check_compatibility(y, c2mpir, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -39,4 +39,4 @@ def test_differentiable(device, M=19, N=30, B=2):
 
     c2mpir = diffsptk.CepstrumToImpulseResponse(M, N).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    check(c2mpir, x)
+    U.check_differentiable(c2mpir, x)

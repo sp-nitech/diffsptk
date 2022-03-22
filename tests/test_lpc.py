@@ -14,17 +14,14 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 
 import diffsptk
-from tests.utils import call
+import tests.utils as U
 
 
 def test_compatibility(M=14, L=30, B=2):
     lpc = diffsptk.LPC(M, L, out_format="Ka")
-    x = torch.from_numpy(call(f"nrand -l {B*L}")).reshape(-1, L)
-    y = lpc(x).cpu().numpy()
-
-    y_ = call(f"nrand -l {B*L} | lpc -l {L} -m {M}").reshape(-1, M + 1)
-    assert np.allclose(y, y_)
+    x = torch.from_numpy(U.call(f"nrand -l {B*L}")).reshape(-1, L)
+    y = U.call(f"nrand -l {B*L} | lpc -l {L} -m {M}").reshape(-1, M + 1)
+    U.check_compatibility(y, lpc, x)

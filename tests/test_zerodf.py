@@ -14,29 +14,30 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
-def test_compatibility(M=3, T=100, P=10):
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, M=3, T=100, P=10):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     tmp1 = "zerodf.tmp1"
     tmp2 = "zerodf.tmp2"
-    call(f"nrand -l {T} > {tmp1}", get=False)
-    call(f"nrand -l {T//P*(M+1)} > {tmp2}", get=False)
+    U.call(f"nrand -l {T} > {tmp1}", get=False)
+    U.call(f"nrand -l {T//P*(M+1)} > {tmp2}", get=False)
 
-    zerodf = diffsptk.AllZeroDigitalFilter(M, P)
-    x = torch.from_numpy(call(f"cat {tmp1}").reshape(1, -1))
-    h = torch.from_numpy(call(f"cat {tmp2}").reshape(1, -1, M + 1))
-    y = zerodf(x, h).cpu().numpy()
+    zerodf = diffsptk.AllZeroDigitalFilter(M, P).to(device)
+    x = torch.from_numpy(U.call(f"cat {tmp1}").reshape(1, -1)).to(device)
+    h = torch.from_numpy(U.call(f"cat {tmp2}").reshape(1, -1, M + 1)).to(device)
+    y = U.call(f"zerodf {tmp2} < {tmp1} -i 1 -m {M} -p {P}").reshape(1, -1)
 
-    y_ = call(f"zerodf {tmp2} < {tmp1} -i 1 -m {M} -p {P}").reshape(1, -1)
-    call(f"rm {tmp1} {tmp2}", get=False)
-    assert np.allclose(y, y_, atol=1e-6)
+    U.call(f"rm {tmp1} {tmp2}", get=False)
+    U.check_compatibility(y, zerodf, x, h)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -47,4 +48,4 @@ def test_differentiable(device, B=4, T=20, D=2):
     zerodf = diffsptk.AllZeroDigitalFilter(D - 1).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
     h = torch.randn(B, T, D, requires_grad=True, device=device)
-    check(zerodf, x, h)
+    U.check_differentiable(zerodf, x, h)

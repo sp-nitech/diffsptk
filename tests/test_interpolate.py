@@ -14,29 +14,29 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
-
-
-def test_compatibility(p=2, s=1, T=20, L=4):
-    interpolate = diffsptk.Interpolation(p, s)
-    x = torch.arange(T * L, dtype=torch.float32).view(T, L)
-    y = interpolate(x, dim=0).cpu().numpy()
-
-    y_ = call(f"ramp -l {T*L} | interpolate -l {L} -p {p} -s {s}").reshape(-1, L)
-    assert np.allclose(y, y_)
+import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, p=3, B=2, T=20):
+def test_compatibility(device, P=2, S=1, T=20, L=4):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    interpolate = diffsptk.Interpolation(p).to(device)
+    interpolate = diffsptk.Interpolation(P, S).to(device)
+    x = torch.arange(T * L).view(T, L).to(device)
+    y = U.call(f"ramp -l {T*L} | interpolate -l {L} -p {P} -s {S}").reshape(-1, L)
+    U.check_compatibility(y, interpolate, x)
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, P=3, S=1, B=2, T=20):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    interpolate = diffsptk.Interpolation(P, S).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
-    check(interpolate, x, opt={"dim": -1})
+    U.check_differentiable(interpolate, x, opt={"dim": -1})

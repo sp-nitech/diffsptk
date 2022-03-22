@@ -14,25 +14,25 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility(out_format, L=16, B=2, eps=0.01):
-    spec = diffsptk.Spectrum(L, out_format=out_format, eps=eps)
-    x = torch.from_numpy(call(f"nrand -l {B*L}").reshape(-1, L))
-    y = spec(x).cpu().numpy()
+def test_compatibility(device, out_format, L=16, B=2, eps=0.01):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"nrand -l {B*L} | spec -l {L} -o {out_format} -e {eps}").reshape(
+    spec = diffsptk.Spectrum(L, out_format=out_format, eps=eps).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device)
+    y = U.call(f"nrand -l {B*L} | spec -l {L} -o {out_format} -e {eps}").reshape(
         -1, L // 2 + 1
     )
-    assert np.allclose(y, y_)
+    U.check_compatibility(y, spec, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -42,4 +42,4 @@ def test_differentiable(device, L=16, B=2):
 
     spec = diffsptk.Spectrum(L).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
-    check(spec, x)
+    U.check_differentiable(spec, x)

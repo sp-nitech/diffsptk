@@ -22,7 +22,7 @@ import numpy as np
 import torch
 
 
-def call(cmd, get=True, double=False):
+def call(cmd, get=True, double=True):
     if get:
         res = subprocess.run(
             cmd + " | x2x +da -f %.12f",
@@ -48,8 +48,14 @@ def lap():
     return time.process_time()
 
 
-def check(func, *x, opt={}, load=1):
+def check_compatibility(y_, module, *x, opt={}):
+    y = module(*x, **opt).cpu().numpy()
+    assert np.allclose(y, y_)
+
+
+def check_differentiable(func, *x, opt={}, load=1):
     optimizer = torch.optim.SGD(x, lr=0.001)
+
     s = lap()
     for _ in range(load):
         y = func(*x, **opt)
@@ -58,6 +64,7 @@ def check(func, *x, opt={}, load=1):
         loss.backward()
         optimizer.step()
     e = lap()
+
     if load > 1:
         print(f"time: {e - s}")
 

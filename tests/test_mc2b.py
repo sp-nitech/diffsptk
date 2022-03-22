@@ -14,22 +14,22 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
-def test_compatibility(M=9, alpha=0.1, B=2):
-    mc2b = diffsptk.MelCepstrumToMLSADigitalFilterCoefficients(M, alpha)
-    x = torch.from_numpy(call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1))
-    y = mc2b(x).cpu().numpy()
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, M=9, alpha=0.1, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"nrand -l {B*(M+1)} | mc2b -m {M} -a {alpha}").reshape(-1, M + 1)
-    assert np.allclose(y, y_)
+    mc2b = diffsptk.MelCepstrumToMLSADigitalFilterCoefficients(M, alpha).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
+    y = U.call(f"nrand -l {B*(M+1)} | mc2b -m {M} -a {alpha}").reshape(-1, M + 1)
+    U.check_compatibility(y, mc2b, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -39,4 +39,4 @@ def test_differentiable(device, M=9, alpha=0.1, B=2):
 
     mc2b = diffsptk.MelCepstrumToMLSADigitalFilterCoefficients(M, alpha).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    check(mc2b, x)
+    U.check_differentiable(mc2b, x)

@@ -14,22 +14,22 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
-def test_compatibility(v=10, u=255, L=10):
-    ulaw = diffsptk.MuLawCompression(v, u)
-    x = torch.arange(L, dtype=torch.float32)
-    y = ulaw(x).cpu().numpy()
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, v=10, u=255, L=10):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"ramp -l {L} | ulaw -v {v} -u {u}")
-    assert np.allclose(y, y_)
+    ulaw = diffsptk.MuLawCompression(v, u).to(device)
+    x = torch.arange(L).to(device)
+    y = U.call(f"ramp -l {L} | ulaw -v {v} -u {u}")
+    U.check_compatibility(y, ulaw, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -39,4 +39,4 @@ def test_differentiable(device, L=20):
 
     ulaw = diffsptk.MuLawCompression().to(device)
     x = torch.randn(L, requires_grad=True, device=device)
-    check(ulaw, x)
+    U.check_differentiable(ulaw, x)

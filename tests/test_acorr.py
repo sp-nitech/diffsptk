@@ -14,22 +14,22 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
+import tests.utils as U
 
 
-def test_compatibility(M=3, L=14, B=2):
-    acorr = diffsptk.AutocorrelationAnalysis(M, L).double()
-    x = torch.from_numpy(call(f"nrand -l {B*L}", double=True).reshape(-1, L))
-    y = acorr.forward(x).cpu().numpy()
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, M=3, L=14, B=2):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    y_ = call(f"nrand -l {B*L} | acorr -l {L} -m {M}").reshape(-1, M + 1)
-    assert np.allclose(y, y_)
+    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device)
+    y = U.call(f"nrand -l {B*L} | acorr -l {L} -m {M}").reshape(-1, M + 1)
+    U.check_compatibility(y, acorr, x)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -39,4 +39,4 @@ def test_differentiable(device, M=3, L=14, B=2):
 
     acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
-    check(acorr, x)
+    U.check_differentiable(acorr, x)

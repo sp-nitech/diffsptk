@@ -14,34 +14,31 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
-from tests.utils import check
-
-
-@pytest.mark.parametrize("m", [10, 11])
-def test_compatibility(m, n_band=4, L=20):
-    ipqmf = diffsptk.IPQMF(n_band, filter_order=m).double()
-    x = (
-        torch.from_numpy(call(f"nrand -l {n_band*L}", double=True).reshape(L, n_band))
-        .t()
-        .unsqueeze(0)
-    )
-    y = ipqmf(x, keep_dims=False).cpu().numpy()
-
-    y_ = call(f"nrand -l {n_band*L} | ipqmf -k {n_band} -m {m}").reshape(1, -1)
-    assert np.allclose(y, y_)
+import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, n_band=4, m=8, B=2, L=20):
+@pytest.mark.parametrize("M", [10, 11])
+def test_compatibility(device, M, K=4, L=20):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    ipqmf = diffsptk.IPQMF(n_band, filter_order=m).to(device)
-    x = torch.randn(B, n_band, L, requires_grad=True, device=device)
-    check(ipqmf, x)
+    ipqmf = diffsptk.IPQMF(K, M).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {K*L}").reshape(L, K)).t()
+    x = x.unsqueeze(0).to(device)
+    y = U.call(f"nrand -l {K*L} | ipqmf -k {K} -m {M}").reshape(1, 1, -1)
+    U.check_compatibility(y, ipqmf, x)
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, K=4, M=8, B=2, L=20):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    ipqmf = diffsptk.IPQMF(K, M).to(device)
+    x = torch.randn(B, K, L, requires_grad=True, device=device)
+    U.check_differentiable(ipqmf, x)
