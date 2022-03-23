@@ -2,11 +2,15 @@ from .acorr import AutocorrelationAnalysis
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2mpir import CepstrumToImpulseResponse
 from .cdist import CepstralDistance
+from .dct import DiscreteCosineTransform
+from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
 from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
+from .idct import InverseDiscreteCosineTransform
+from .idct import InverseDiscreteCosineTransform as IDCT
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF

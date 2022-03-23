@@ -100,7 +100,7 @@ Status
 - [x] cdist
 - [x] ~~clip~~ (*torch.clip*)
 - [ ] csm2acr
-- [ ] dct
+- [x] dct
 - [x] decimate
 - [ ] delay
 - [ ] delta
@@ -137,7 +137,7 @@ Status
 - [x] ~~huffman~~
 - [x] ~~huffman_decode~~
 - [x] ~~huffman_encode~~
-- [ ] idct
+- [x] idct
 - [x] ~~ifft~~ (*torch.fft.ifft*)
 - [x] ~~ifft2~~ (*torch.fft.ifft2*)
 - [ ] ignorm
