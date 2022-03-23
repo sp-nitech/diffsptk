@@ -164,7 +164,7 @@ Status
 - [ ] mcpf
 - [x] ~~median~~ (*torch.median*)
 - [x] ~~merge~~
-- [ ] mfcc
+- [x] mfcc
 - [ ] mgc2mgc
 - [ ] mgc2sp
 - [ ] mgcep (*mcep is now available*)

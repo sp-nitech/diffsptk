@@ -6,4 +6,4 @@ fbank
 .. autoclass:: diffsptk.MelFilterBankAnalysis
    :members:
 
-.. seealso:: :ref:`stft`
+.. seealso:: :ref:`stft`  :ref:`mfcc`
