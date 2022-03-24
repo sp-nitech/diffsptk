@@ -97,7 +97,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., C)]
+        y : Tensor [shape=(..., M)]
             MFCC without C0.
 
         E : Tensor [shape=(..., 1)]

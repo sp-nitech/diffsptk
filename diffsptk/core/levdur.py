@@ -61,7 +61,7 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         >>> x = torch.nrand(5)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> acorr = diffsptk.AutocorrelationAnalysis(2, 5)
-        >>> levdur = diffsptk.LevinsonDurbinRecursion()
+        >>> levdur = diffsptk.LevinsonDurbinRecursion(out_format="K,a")
         >>> a = levdur(acorr(x))
         >>> a
         (tensor([0.8726]), tensor([0.1475, 0.5270]))
