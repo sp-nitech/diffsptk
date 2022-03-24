@@ -12,7 +12,6 @@ setup(
     author="SPTK Working Group",
     author_email="takenori@sp.nitech.ac.jp",
     url="https://github.com/sp-nitech/diffsptk",
-    download_url="",
     packages=find_packages(exclude=("docs", "tests", "tools")),
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -36,6 +35,7 @@ setup(
             "pydata-sphinx-theme",
             "pytest",
             "sphinx",
+            "twine",
         ],
     },
 )

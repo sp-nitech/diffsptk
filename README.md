@@ -1,9 +1,12 @@
-diffsptk (UNDER CONSTRUCTION)
-=============================
+diffsptk
+========
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
-[![](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
-[![](http://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
+[![Latest Manual](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
+[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/0.1.0/)
+[![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
+[![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
+[![License](http://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
 
 
 Requirements
@@ -19,6 +22,11 @@ See [this page](https://sp-nitech.github.io/diffsptk/latest/) for a reference ma
 
 Installation
 ------------
+The latest stable release can be installed through PyPI by running
+```sh
+pip install diffsptk
+```
+Alternatively,
 ```sh
 git clone https://github.com/sp-nitech/diffsptk.git
 pip install -e diffsptk

@@ -1,5 +1,7 @@
 # project
 *.egg-info/
+build/
+dist/
 venv/
 
 # docs

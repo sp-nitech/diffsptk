@@ -29,6 +29,14 @@ dev:
 	. venv/bin/activate; pip install pip --upgrade; pip install -e .[dev]
 	touch venv/bin/activate
 
+dist:
+	./venv/bin/python setup.py bdist_wheel
+	./venv/bin/twine check dist/*
+
+dist-clean:
+	./venv/bin/python setup.py clean --all
+	rm -rf dist
+
 doc:
 	. venv/bin/activate; cd docs; make html
 
@@ -48,4 +56,4 @@ clean: doc-clean
 	rm -rf *.egg-info venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev doc doc-clean format test clean
+.PHONY: init dev dist doc doc-clean format test clean
