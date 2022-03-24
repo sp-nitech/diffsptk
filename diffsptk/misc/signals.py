@@ -42,7 +42,7 @@ def impulse(order, **kwargs):
     tensor([1., 0., 0., 0., 0.])
 
     """
-    return torch.eye(n=1, m=order + 1, **kwargs)
+    return torch.eye(n=1, m=order + 1, **kwargs).squeeze(0)
 
 
 def step(order, value=1, **kwargs):
