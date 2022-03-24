@@ -52,10 +52,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         Maximum frequency in Hz.
 
     floor : float > 0 [scalar]
-        Floor value to prevent NaN.
+        Floor value of raw filter bank output.
 
-    out_format : ['y', 'E', 'yE', 'y,E']
-        `y` is MFCC and `E` is energy. If this is `yE`, the two output
+    out_format : ['y', 'yE', 'yc', 'y,E', 'y,c']
+        `y` is MFCC, `c` is C0, and `E` is energy. If this is `y?`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
     """
@@ -75,8 +75,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         self.mfcc_order = mfcc_order
         self.out_format = out_format
 
-        assert 1 <= self.mfcc_order and self.mfcc_order <= n_channel
-        assert is_in(self.out_format, ["y", "E", "yE", "y,E"])
+        assert 1 <= self.mfcc_order and self.mfcc_order < n_channel
+        assert is_in(self.out_format, ["y", "yE", "yc", "y,E", "y,c"])
 
         self.fbank = MelFilterBankAnalysis(
             n_channel, fft_length, sample_rate, out_format="y,E", **fbank_kwargs
@@ -84,7 +84,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         self.dct = DiscreteCosineTransform(n_channel)
 
         m = np.arange(1, mfcc_order + 1, dtype=default_dtype())
-        liftering_vector = 1 + lifter / 2 * np.sin(np.pi * m / lifter)
+        liftering_vector = 1 + (lifter / 2) * np.sin((np.pi / lifter) * m)
         self.register_buffer("liftering_vector", torch.from_numpy(liftering_vector))
 
     def forward(self, x):
@@ -103,6 +103,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         E : Tensor [shape=(..., 1)]
             Energy.
 
+        c : Tensor [shape=(..., 1)]
+            C0.
+
         Examples
         --------
         >>> x = diffsptk.signal.ramp(19)
@@ -115,16 +118,19 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
         """
         y, E = self.fbank(x)
-        y = self.dct(y)[..., 1 : self.mfcc_order + 1]
-        y = y * self.liftering_vector
+        y = self.dct(y)
+        c = y[..., :1] * np.sqrt(2)
+        y = y[..., 1 : self.mfcc_order + 1] * self.liftering_vector
 
         if self.out_format == "y":
             return y
-        elif self.out_format == "E":
-            return E
         elif self.out_format == "yE":
             return torch.cat((y, E), dim=-1)
+        elif self.out_format == "yc":
+            return torch.cat((y, c), dim=-1)
         elif self.out_format == "y,E":
             return y, E
+        elif self.out_format == "y,c":
+            return y, c
         else:
             raise RuntimeError

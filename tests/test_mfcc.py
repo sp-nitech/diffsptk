@@ -30,14 +30,14 @@ def test_compatibility(
 
     spec = diffsptk.Spectrum(L, eps=0).to(device)
     mfcc = diffsptk.MFCC(
-        M, C, L, sr, lifter=lifter, f_min=f_min, f_max=f_max, out_format="y"
+        M, C, L, sr, lifter=lifter, f_min=f_min, f_max=f_max, out_format="yc"
     ).to(device)
     x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
     cmd = (
         f"nrand -l {B*L} | "
-        f"mfcc -m {M} -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -c {lifter}"
+        f"mfcc -m {M} -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -c {lifter} -o2"
     )
-    y = U.call(cmd).reshape(-1, M)
+    y = U.call(cmd).reshape(-1, M + 1)
     U.check_compatibility(y, mfcc, x)
 
 
@@ -47,6 +47,6 @@ def test_differentiable(device, M=4, C=10, L=32, sr=8000, B=2):
         return
 
     spec = diffsptk.Spectrum(L).to(device)
-    mfcc = diffsptk.MFCC(M, C, L, sr, out_format="yE").to(device)
+    mfcc = diffsptk.MFCC(M, C, L, sr, out_format="yc").to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
     U.check_differentiable(U.compose(mfcc, spec), x)
