@@ -60,7 +60,7 @@ class MuLawCompression(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(4)
+        >>> x = diffsptk.ramp(4)
         >>> ulaw = diffsptk.MuLawCompression(4)
         >>> y = ulaw(x)
         >>> y

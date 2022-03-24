@@ -132,7 +132,7 @@ class MelFilterBankAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(19)
+        >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
         >>> fbank = diffsptk.MelFilterBankAnalysis(4, 32, 8000)
         >>> y = fbank(stft(x))

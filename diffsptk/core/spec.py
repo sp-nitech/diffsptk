@@ -70,7 +70,7 @@ class Spectrum(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(1, 3)
+        >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
         >>> spec = diffsptk.Spectrum(fft_length=8)

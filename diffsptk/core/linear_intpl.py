@@ -66,7 +66,7 @@ class LinearInterpolation(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(2)
+        >>> x = diffsptk.ramp(2)
         >>> linear_intpl = diffsptk.LinearInterpolation(2)
         >>> y = linear_intpl(x.view(1, -1, 1))
         >>> y.reshape(-1)

@@ -66,8 +66,8 @@ class AllZeroDigitalFilter(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.step(4)
-        >>> h = diffsptk.signal.ramp(4)
+        >>> x = diffsptk.step(4)
+        >>> h = diffsptk.ramp(4)
         >>> zerodf = diffsptk.AllZeroDigitalFilter(0)
         >>> y = zerodf(x.view(1, -1), h.view(1, -1, 1))
         >>> y

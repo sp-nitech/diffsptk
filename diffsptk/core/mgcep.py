@@ -105,7 +105,7 @@ class MelCepstralAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(19)
+        >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
         >>> mcep = diffsptk.MelCepstralAnalysis(3, 16, 0.1, n_iter=1)
         >>> mc = mcep(stft(x))

@@ -58,7 +58,7 @@ class CepstrumToImpulseResponse(nn.Module):
 
         Examples
         --------
-        >>> c = diffsptk.signal.ramp(3)
+        >>> c = diffsptk.ramp(3)
         >>> c2mpir = diffsptk.CepstrumToImpulseResponse(3, 5)
         >>> h = c2mpir(c)
         >>> h

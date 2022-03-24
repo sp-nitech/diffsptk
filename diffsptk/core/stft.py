@@ -83,7 +83,7 @@ class ShortTermFourierTransform(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(1, 3)
+        >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
         >>> stft = diffsptk.STFT(frame_length=3, frame_period=1, fft_length=8)

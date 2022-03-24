@@ -54,7 +54,7 @@ class InverseDiscreteCosineTransform(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(3)
+        >>> x = diffsptk.ramp(3)
         >>> dct = diffsptk.DCT(4)
         >>> idct = diffsptk.IDCT(4)
         >>> x2 = idct(dct(x))

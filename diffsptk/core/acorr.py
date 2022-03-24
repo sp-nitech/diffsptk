@@ -82,7 +82,7 @@ class AutocorrelationAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(4)
+        >>> x = diffsptk.ramp(4)
         >>> acorr = diffsptk.AutocorrelationAnalysis(3, 5)
         >>> r = acorr(x)
         >>> r

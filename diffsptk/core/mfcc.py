@@ -108,7 +108,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(19)
+        >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
         >>> mfcc = diffsptk.MFCC(4, 8, 32, 8000)
         >>> y = mfcc(stft(x))

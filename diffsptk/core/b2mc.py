@@ -62,7 +62,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
         Examples
         --------
-        >>> b = diffsptk.signal.ramp(4)
+        >>> b = diffsptk.ramp(4)
         >>> mc2b = diffsptk.MelCepstrumToMLSADigitalFilterCoefficients(4, 0.3)
         >>> b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(4, 0.3)
         >>> b2 = mc2b(b2mc(b))

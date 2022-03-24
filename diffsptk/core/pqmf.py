@@ -147,7 +147,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(0, 1, 0.25)
+        >>> x = diffsptk.ramp(0, 1, 0.25)
         >>> pqmf = diffsptk.PQMF(2, 10)
         >>> y = pmqf(x)
         >>> y

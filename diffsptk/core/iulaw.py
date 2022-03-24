@@ -58,7 +58,7 @@ class MuLawExpansion(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(4)
+        >>> x = diffsptk.ramp(4)
         >>> ulaw = diffsptk.MuLawCompression(4)
         >>> iulaw = diffsptk.MuLawExpansion(4)
         >>> x2 = iulaw(ulaw(x))

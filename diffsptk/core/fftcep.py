@@ -70,7 +70,7 @@ class CepstralAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(19)
+        >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
         >>> fftcep = diffsptk.CepstralAnalysis(3, 16)
         >>> c = fftcep(stft(x))

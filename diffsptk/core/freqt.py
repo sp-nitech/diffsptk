@@ -77,7 +77,7 @@ class FrequencyTransform(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(3)
+        >>> x = diffsptk.ramp(3)
         tensor([0., 1., 2., 3.])
         >>> freqt = diffsptk.FrequencyTransform(3, 4, 0.02)
         >>> y = freqt(x)

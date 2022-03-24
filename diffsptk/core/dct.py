@@ -65,7 +65,7 @@ class DiscreteCosineTransform(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.signal.ramp(3)
+        >>> x = diffsptk.ramp(3)
         >>> dct = diffsptk.DCT(4)
         >>> y = dct(x)
         >>> y
