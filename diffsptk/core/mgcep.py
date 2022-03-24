@@ -50,7 +50,8 @@ class CoefficientsFrequencyTransform(nn.Module):
 
 class MelCepstralAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgcep.html>`_
-    for details.
+    for details. Note that the current implementation does not use the efficient
+    Toeplitz-plus-Hankel system solver.
 
     Parameters
     ----------
