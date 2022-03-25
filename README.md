@@ -102,7 +102,7 @@ Status
 - [x] b2mc
 - [x] ~~bcp~~
 - [x] ~~bcut~~
-- [ ] c2acr
+- [x] c2acr
 - [x] c2mpir
 - [x] c2ndps
 - [x] cdist

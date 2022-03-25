@@ -1,5 +1,6 @@
 from .acorr import AutocorrelationAnalysis
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
+from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToImpulseResponse
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
