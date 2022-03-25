@@ -16,29 +16,29 @@
 
 import numpy as np
 
-import diffsptk.signal
+import diffsptk
 from tests.utils import call
 
 
 def test_impulse(m=5):
-    y = diffsptk.signal.impulse(m)
+    y = diffsptk.impulse(m)
     y_ = call(f"impulse -m {m}")
     assert np.allclose(y, y_)
 
 
 def test_step(m=5, v=-1):
-    y = diffsptk.signal.step(m, v)
+    y = diffsptk.step(m, v)
     y_ = call(f"step -m {m} -v {v}")
     assert np.allclose(y, y_)
 
 
 def test_ramp(s=5, e=3, t=-1):
-    y = diffsptk.signal.ramp(s, e, t)
+    y = diffsptk.ramp(s, e, t)
     y_ = call(f"ramp -s {s} -e {e} -t {t}")
     assert np.allclose(y, y_)
 
 
 def test_sin(m=5, p=0.1, a=-1):
-    y = diffsptk.signal.sin(m, p, a)
+    y = diffsptk.sin(m, p, a)
     y_ = call(f"sin -m {m} -p {p} -a {a}")
     assert np.allclose(y, y_)
