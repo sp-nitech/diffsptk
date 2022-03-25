@@ -11,8 +11,10 @@ from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
+from .gnorm import GeneralizedCepstrumGainNormalization
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
+from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
