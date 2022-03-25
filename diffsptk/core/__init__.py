@@ -1,6 +1,7 @@
 from .acorr import AutocorrelationAnalysis
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2mpir import CepstrumToImpulseResponse
+from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
@@ -24,6 +25,7 @@ from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgcep import MelCepstralAnalysis
+from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .spec import Spectrum

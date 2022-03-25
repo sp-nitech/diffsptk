@@ -6,4 +6,4 @@ fftcep
 .. autoclass:: diffsptk.CepstralAnalysis
    :members:
 
-.. seealso:: :ref:`cdist`  :ref:`stft`
+.. seealso:: :ref:`cdist`  :ref:`stft`  :ref:`freqt`

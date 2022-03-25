@@ -104,7 +104,7 @@ Status
 - [x] ~~bcut~~
 - [ ] c2acr
 - [x] c2mpir
-- [ ] c2ndps
+- [x] c2ndps
 - [x] cdist
 - [x] ~~clip~~ (*torch.clip*)
 - [ ] csm2acr
@@ -185,7 +185,7 @@ Status
 - [ ] mseq
 - [ ] msvq
 - [x] ~~nan~~ (*torch.isnan*)
-- [ ] ndps2c
+- [x] ndps2c
 - [ ] norm0
 - [x] ~~nrand~~ (*torch.randn*)
 - [ ] par2lar
