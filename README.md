@@ -134,7 +134,7 @@ Status
 - [x] ~~glogsp~~
 - [x] ~~gmm~~
 - [x] ~~gmmp~~
-- [ ] gnorm
+- [x] gnorm
 - [x] ~~gpolezero~~
 - [x] ~~grlogsp~~
 - [ ] grpdelay
@@ -148,7 +148,7 @@ Status
 - [x] idct
 - [x] ~~ifft~~ (*torch.fft.ifft*)
 - [x] ~~ifft2~~ (*torch.fft.ifft2*)
-- [ ] ignorm
+- [x] ignorm
 - [ ] imglsadf
 - [x] impulse
 - [ ] imsvq
