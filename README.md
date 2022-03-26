@@ -112,7 +112,7 @@ Status
 - [x] decimate
 - [ ] ~~delay~~
 - [x] delta
-- [ ] dequantize
+- [x] dequantize
 - [ ] df2
 - [ ] dfs
 - [ ] ~~dmp~~
@@ -197,7 +197,7 @@ Status
 - [ ] ~~pitch_mark~~
 - [ ] poledf
 - [x] pqmf
-- [ ] quantize
+- [x] quantize
 - [x] ramp
 - [ ] ~~reverse~~
 - [ ] rlevdur
