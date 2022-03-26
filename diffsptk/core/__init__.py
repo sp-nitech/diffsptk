@@ -7,6 +7,7 @@ from .cdist import CepstralDistance
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
+from .delta import Delta
 from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
 from .frame import Frame

@@ -111,7 +111,7 @@ Status
 - [x] dct
 - [x] decimate
 - [ ] delay
-- [ ] delta
+- [x] delta
 - [ ] dequantize
 - [ ] df2
 - [ ] dfs
