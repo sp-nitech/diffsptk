@@ -96,58 +96,58 @@ Status
 ------
 - [x] acorr
 - [ ] acr2csm
-- [x] ~~aeq~~ (*torch.allclose*)
-- [x] ~~amgcep~~
-- [x] ~~average~~ (*torch.mean*)
+- [ ] ~~aeq~~ (*torch.allclose*)
+- [ ] ~~amgcep~~
+- [ ] ~~average~~ (*torch.mean*)
 - [x] b2mc
-- [x] ~~bcp~~
-- [x] ~~bcut~~
+- [ ] ~~bcp~~
+- [ ] ~~bcut~~
 - [x] c2acr
 - [x] c2mpir
 - [x] c2ndps
 - [x] cdist
-- [x] ~~clip~~ (*torch.clip*)
+- [ ] ~~clip~~ (*torch.clip*)
 - [ ] csm2acr
 - [x] dct
 - [x] decimate
-- [ ] delay
+- [ ] ~~delay~~
 - [x] delta
 - [ ] dequantize
 - [ ] df2
 - [ ] dfs
-- [x] ~~dmp~~
+- [ ] ~~dmp~~
 - [ ] dtw
-- [x] ~~dtw_merge~~
-- [x] ~~entropy~~ (*torch.special.entr*)
+- [ ] ~~dtw_merge~~
+- [ ] ~~entropy~~ (*torch.special.entr*)
 - [ ] excite
-- [x] ~~extract~~
+- [ ] ~~extract~~
 - [x] fbank
-- [x] ~~fd~~
-- [x] ~~fdrw~~
-- [x] ~~fft~~ (*torch.fft.fft*)
-- [x] ~~fft2~~ (*torch.fft.fft2*)
+- [ ] ~~fd~~
+- [ ] ~~fdrw~~
+- [ ] ~~fft~~ (*torch.fft.fft*)
+- [ ] ~~fft2~~ (*torch.fft.fft2*)
 - [x] fftcep
-- [x] ~~fftr~~ (*torch.fft.rfft*)
-- [x] ~~fftr2~~ (*torch.fft.rfft2*)
+- [ ] ~~fftr~~ (*torch.fft.rfft*)
+- [ ] ~~fftr2~~ (*torch.fft.rfft2*)
 - [x] frame
 - [x] freqt
-- [x] ~~glogsp~~
-- [x] ~~gmm~~
-- [x] ~~gmmp~~
+- [ ] ~~glogsp~~
+- [ ] ~~gmm~~
+- [ ] ~~gmmp~~
 - [x] gnorm
-- [x] ~~gpolezero~~
-- [x] ~~grlogsp~~
+- [ ] ~~gpolezero~~
+- [ ] ~~grlogsp~~
 - [ ] grpdelay
-- [x] ~~gseries~~
-- [x] ~~gspecgram~~
-- [x] ~~gwave~~
-- [x] ~~histogram~~ (*torch.histogram*)
-- [x] ~~huffman~~
-- [x] ~~huffman_decode~~
-- [x] ~~huffman_encode~~
+- [ ] ~~gseries~~
+- [ ] ~~gspecgram~~
+- [ ] ~~gwave~~
+- [ ] ~~histogram~~ (*torch.histogram*)
+- [ ] ~~huffman~~
+- [ ] ~~huffman_decode~~
+- [ ] ~~huffman_encode~~
 - [x] idct
-- [x] ~~ifft~~ (*torch.fft.ifft*)
-- [x] ~~ifft2~~ (*torch.fft.ifft2*)
+- [ ] ~~ifft~~ (*torch.fft.ifft*)
+- [ ] ~~ifft2~~ (*torch.fft.ifft2*)
 - [x] ignorm
 - [ ] imglsadf
 - [x] impulse
@@ -156,7 +156,7 @@ Status
 - [x] ipqmf
 - [x] iulaw
 - [ ] lar2par
-- [x] ~~lbg~~
+- [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
 - [x] lpc
@@ -170,56 +170,56 @@ Status
 - [ ] ltcdf
 - [x] mc2b
 - [ ] mcpf
-- [x] ~~median~~ (*torch.median*)
-- [x] ~~merge~~
+- [ ] ~~median~~ (*torch.median*)
+- [ ] ~~merge~~
 - [x] mfcc
 - [ ] mgc2mgc
 - [ ] mgc2sp
 - [ ] mgcep (*mcep is now available*)
 - [ ] mglsadf
 - [ ] mglsp2sp
-- [x] ~~minmax~~
+- [ ] ~~minmax~~
 - [ ] mlpg
 - [ ] mlsacheck
 - [ ] mpir2c
 - [ ] mseq
 - [ ] msvq
-- [x] ~~nan~~ (*torch.isnan*)
+- [ ] ~~nan~~ (*torch.isnan*)
 - [x] ndps2c
 - [ ] norm0
-- [x] ~~nrand~~ (*torch.randn*)
+- [ ] ~~nrand~~ (*torch.randn*)
 - [ ] par2lar
 - [ ] par2lpc
 - [ ] pca
 - [ ] pcas
 - [ ] phase
 - [ ] pitch
-- [x] ~~pitch_mark~~
+- [ ] ~~pitch_mark~~
 - [ ] poledf
 - [x] pqmf
 - [ ] quantize
 - [x] ramp
-- [x] ~~reverse~~
+- [ ] ~~reverse~~
 - [ ] rlevdur
-- [x] ~~rmse~~
+- [ ] ~~rmse~~
 - [ ] root_pol
 - [x] sin
 - [ ] smcep
 - [ ] snr
-- [x] ~~sopr~~
+- [ ] ~~sopr~~
 - [x] spec
 - [x] step
-- [x] ~~swab~~
-- [x] ~~symmetrize~~
+- [ ] ~~swab~~
+- [ ] ~~symmetrize~~
 - [ ] train
-- [x] ~~transpose~~
+- [ ] ~~transpose~~
 - [x] ulaw
-- [x] ~~vc~~
-- [x] ~~vopr~~
-- [x] ~~vstat~~ (*torch.var_mean*)
-- [x] ~~vsum~~ (*torch.sum*)
+- [ ] ~~vc~~
+- [ ] ~~vopr~~
+- [ ] ~~vstat~~ (*torch.var_mean*)
+- [ ] ~~vsum~~ (*torch.sum*)
 - [x] window
-- [x] ~~x2x~~
+- [ ] ~~x2x~~
 - [ ] zcross
 - [x] zerodf
 
