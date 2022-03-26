@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import warnings
+
 import torch
 import torch.nn as nn
 
@@ -38,6 +40,8 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         if c is None:
             self.gamma = gamma
         else:
+            if gamma != 0:
+                warnings.warn("gamma is given, but not used")
             self.gamma = 1 / c
 
     def forward(self, y):
