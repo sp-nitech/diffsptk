@@ -39,4 +39,5 @@ from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
 from .ulaw import MuLawCompression
 from .window import Window
+from .zcross import ZeroCrossingAnalysis
 from .zerodf import AllZeroDigitalFilter

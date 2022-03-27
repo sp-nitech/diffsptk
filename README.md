@@ -220,7 +220,7 @@ Status
 - [ ] ~~vsum~~ (*torch.sum*)
 - [x] window
 - [ ] ~~x2x~~
-- [ ] zcross
+- [x] zcross
 - [x] zerodf
 
 
