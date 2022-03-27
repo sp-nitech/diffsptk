@@ -137,7 +137,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, 1, T) or (B, T) or (T,) ]
+        x : Tensor [shape=(B, 1, T) or (B, T) or (T,)]
             Original waveform.
 
         Returns
