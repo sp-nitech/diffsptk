@@ -26,9 +26,9 @@ def test_compatibility(device, L=10, T=50):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    zcross = diffsptk.ZeroCrossingAnalysis(L).to(device)
+    zcross = diffsptk.ZeroCrossingAnalysis(L, norm=True).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {T}")).to(device)
-    y = U.call(f"nrand -l {T} | zcross -l {L}")
+    y = U.call(f"nrand -l {T} | zcross -l {L} -o 1")
     U.check_compatibility(y, zcross, x)
 
 
