@@ -41,7 +41,7 @@ class Decimation(nn.Module):
         assert 1 <= self.period
         assert 0 <= self.start
 
-    def forward(self, x, dim=0):
+    def forward(self, x, dim=-1):
         """Decimate signal.
 
         Parameters
