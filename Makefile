@@ -27,7 +27,6 @@ dev:
 		test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	fi
 	. venv/bin/activate; pip install pip --upgrade; pip install -e .[dev]
-	touch venv/bin/activate
 
 dist:
 	./venv/bin/python setup.py bdist_wheel
@@ -58,8 +57,14 @@ tool:
 tool-clean:
 	cd tools; make clean
 
+update:
+	@for package in $$(cat setup.py | grep "           " | sed "s/\s//g" | \
+	sed 's/"//g' | tr ",\n" " "); do \
+		./venv/bin/pip install --upgrade $$package; \
+	done
+
 clean: dist-clean doc-clean tool-clean
 	rm -rf *.egg-info venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev dist dist-clean doc doc-clean format test tool tool-clean clean
+.PHONY: init dev dist dist-clean doc doc-clean format test tool tool-clean update clean
