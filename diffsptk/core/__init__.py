@@ -31,6 +31,7 @@ from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgcep import MelCepstralAnalysis
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
+from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
