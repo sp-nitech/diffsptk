@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
-      max-parallel 4
+      max-parallel: 4
       matrix:
-        python-version [3.8]
-        pytorch-version [1.9.0, 1.11.0]
+        python-version: [3.8]
+        pytorch-version: [1.9.0, 1.11.0]
 
     steps:
       - uses: actions/checkout@v3
