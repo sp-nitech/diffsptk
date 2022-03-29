@@ -29,7 +29,7 @@ def test_compatibility(device, P=2, S=1, T=20, L=4):
     interpolate = diffsptk.Interpolation(P, S).to(device)
     x = torch.arange(T * L).view(T, L).to(device)
     y = U.call(f"ramp -l {T*L} | interpolate -l {L} -p {P} -s {S}").reshape(-1, L)
-    U.check_compatibility(y, interpolate, x)
+    U.check_compatibility(y, interpolate, x, opt={"dim": 0})
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

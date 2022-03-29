@@ -34,6 +34,9 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         a : Tensor [shape=(..., M+1, ...)]
             All-pole or all-zero filter coefficients.
 
+        dim : int [scalar]
+            The axis to be converted.
+
         Returns
         -------
         b : Tensor [shape=(..., M+1, ...)]
