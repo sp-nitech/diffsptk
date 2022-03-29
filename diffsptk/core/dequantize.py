@@ -84,6 +84,9 @@ class InverseUniformQuantization(nn.Module):
             y = y - (self.level // 2 - 0.5)
         elif self.quantizer == "mid-tread":
             y = y - (self.level - 1) // 2
+        else:
+            raise RuntimeError
+
         x = y * (2 * self.abs_max / self.level)
         x = torch.clip(x, min=-self.abs_max, max=self.abs_max)
         return x

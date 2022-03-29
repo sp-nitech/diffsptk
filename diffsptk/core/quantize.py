@@ -87,6 +87,9 @@ class UniformQuantization(nn.Module):
         elif self.quantizer == "mid-tread":
             x = x + (self.level - 1) // 2
             y = (x + 0.5 * torch.sign(x)).trunc()  # round
+        else:
+            raise RuntimeError
+
         if int_out:
             y = y.int()
         y = torch.clip(y, min=0, max=self.level - 1)
