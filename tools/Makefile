@@ -14,9 +14,9 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-all: sptk
+all: SPTK
 
-sptk:
+SPTK:
 	git clone https://github.com/sp-nitech/SPTK.git
 	cd SPTK; make
 

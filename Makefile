@@ -52,8 +52,14 @@ format:
 test:
 	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; pytest -s
 
-clean: doc-clean
+tool:
+	cd tools; make
+
+tool-clean:
+	cd tools; make clean
+
+clean: dist-clean doc-clean tool-clean
 	rm -rf *.egg-info venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev dist doc doc-clean format test clean
+.PHONY: init dev dist dist-clean doc doc-clean format test tool tool-clean clean
