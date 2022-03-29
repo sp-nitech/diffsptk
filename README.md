@@ -7,6 +7,7 @@ diffsptk
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![License](http://img.shields.io/badge/license-Apache%202.0-green.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
+[![GitHub Action](https://github.com/sp-nitech/diffsptk/workflows/ubuntu/badge.svg)](https://github.com/sp-nitech/diffsptk/actions)
 
 
 Requirements
