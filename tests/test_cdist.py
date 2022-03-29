@@ -49,5 +49,5 @@ def test_differentiable(device, M=19, B=2):
 
     cdist = diffsptk.CepstralDistance().to(device)
     x1 = torch.randn(B, M + 1, requires_grad=True, device=device)
-    x2 = torch.randn(B, M + 1, requires_grad=False, device=device)
+    x2 = torch.randn(B, M + 1, requires_grad=True, device=device)
     U.check_differentiable(cdist, x1, x2)

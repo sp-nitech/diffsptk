@@ -17,6 +17,7 @@
 import functools
 import subprocess
 import time
+import warnings
 
 import numpy as np
 import torch
@@ -67,6 +68,14 @@ def check_differentiable(func, *x, opt={}, load=1):
 
     if load > 1:
         print(f"time: {e - s}")
+
+    class_name = func.__class__.__name__
+    reserved_class_names = ("ZeroCrossingAnalysis", "UniformQuantization")
+    if not any([class_name == name for name in reserved_class_names]):
+        for i in range(len(x)):
+            g = x[i].grad.cpu().numpy()
+            if np.all(g == 0):
+                warnings.warn(f"cannot compute gradient for {i}-th input")
 
 
 def compose(*fs):

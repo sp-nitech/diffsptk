@@ -22,7 +22,7 @@ import torch.nn as nn
 
 class UniformQuantization(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/quantize.html>`_
-    for details.
+    for details. **Note that this module cannot compute gradient**.
 
     Parameters
     ----------
