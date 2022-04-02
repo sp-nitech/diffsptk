@@ -171,17 +171,18 @@ Status
 - [ ] lspdf
 - [ ] ltcdf
 - [x] mc2b
+- [x] mcep
 - [ ] mcpf
 - [ ] ~~median~~ (*torch.median*)
 - [ ] ~~merge~~
 - [x] mfcc
 - [ ] mgc2mgc
 - [ ] mgc2sp
-- [ ] mgcep (*mcep is now available*)
+- [ ] mgcep
 - [ ] mglsadf
 - [ ] mglsp2sp
 - [ ] ~~minmax~~
-- [ ] mlpg
+- [x] mlpg (*support only unit variance*)
 - [ ] mlsacheck
 - [ ] mpir2c
 - [ ] mseq

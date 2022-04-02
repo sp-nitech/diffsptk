@@ -49,8 +49,11 @@ def lap():
     return time.process_time()
 
 
-def check_compatibility(y_, module, *x, opt={}):
+def check_compatibility(y_, module, *x, opt={}, verbose=False):
     y = module(*x, **opt).cpu().numpy()
+    if verbose:
+        print(f"Output: {y}")
+        print(f"Target: {y_}")
     assert np.allclose(y, y_)
 
 

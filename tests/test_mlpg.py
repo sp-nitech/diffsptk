@@ -22,34 +22,39 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, seed=[[-1, 1], [-1, 0, 1]], T=10, L=2):
+def test_compatibility(
+    device, delta=[[-0.5, 0, 0.5], [1, -2, 1]], T=100, D=2, k=39, trim=15
+):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    delta = diffsptk.Delta(seed).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {T*L}").reshape(1, -1, L)).to(device)
-    d = " ".join(["-d " + " ".join([str(w) for w in window]) for window in seed])
-    y = U.call(f"nrand -l {T*L} | delta -l {L} {d}").reshape(-1, L * (1 + len(seed)))
-    U.check_compatibility(y, delta, x)
+    tmp1 = "mlpg.tmp1"
+    tmp2 = "mlpg.tmp2"
+    tmp3 = "mlpg.tmp3"
+    H = len(delta) + 1
+    U.call(f"nrand -s 1 -l {T*H*D} > {tmp1}", get=False)
+    U.call(f"step -l {T*H*D} > {tmp2}", get=False)
+    U.call(f"merge -l {H*D} -L {H*D} {tmp1} {tmp2} > {tmp3}", get=False)
+
+    mlpg = diffsptk.MaximumLikelihoodParameterGeneration(T, seed=delta).to(device)
+    mean = torch.from_numpy(U.call(f"cat {tmp1}").reshape(1, T, H * D)).to(device)
+    d = " ".join(["-d " + " ".join([str(x) for x in c]) for c in delta])
+    y = U.call(f"mlpg -l {D} {d} -R 0 {tmp3}").reshape(-1, D)
+    U.call(f"rm {tmp1} {tmp2} {tmp3}", get=False)
+    U.check_compatibility(y, mlpg, mean)
+
+    mlpg = diffsptk.ConvolutionalMaximumLikelihoodParameterGeneration(
+        kernel_size=k, seed=delta
+    ).to(device)
+    U.check_compatibility(y[trim:-trim], mlpg, mean, opt={"trim": trim})
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility2(device, seed=[2, 3], T=10, L=2):
+def test_differentiable(device, B=2, T=20, D=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    delta = diffsptk.Delta(seed).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {T*L}").reshape(1, -1, L)).to(device)
-    r = " ".join([str(width) for width in seed])
-    y = U.call(f"nrand -l {T*L} | delta -l {L} -r {r}").reshape(-1, L * (1 + len(seed)))
-    U.check_compatibility(y, delta, x)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, seed=[[1, 1, 1]], B=2, T=10, L=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    delta = diffsptk.Delta(seed).to(device)
-    x = torch.randn(B, T, L, requires_grad=True, device=device)
-    U.check_differentiable(delta, x)
+    delta = diffsptk.Delta().to(device)
+    mlpg = diffsptk.MLPG(T).to(device)
+    x = torch.randn(B, T, D, requires_grad=True, device=device)
+    U.check_differentiable(U.compose(mlpg, delta), x)
