@@ -46,12 +46,29 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         # Make window matrix.
         window = make_window(seed)
         H, L = window.shape
+        L1 = (L - 1) // 2
         T = size
+
+        # Make window used at edges.
+        if isinstance(seed[0], tuple) or isinstance(seed[0], list):
+            seed = [[1]] + list(seed)
+            static_only = [len(coefficients) == 1 for coefficients in seed]
+        else:
+            static_only = [True] + [False] * len(seed)
+        edge_window = window * np.expand_dims(static_only, 1)
+
         W = np.zeros((T * H, T), dtype=window.dtype)
-        W[0, 0] = window[0, (L - 1) // 2]
-        W[-H, -1] = W[0, 0]
-        for t in range(1, T - 1):
-            W[H * t : H * t + H, t - 1 : t - 1 + L] = window
+        for t in range(T):
+            hs = H * t
+            he = hs + H
+            ts = t - L1
+            te = ts + L
+            if ts < 0:
+                W[hs:he, :te] = edge_window[:, -ts:]
+            elif T < te:
+                W[hs:he, ts:] = edge_window[:, : T - ts]
+            else:
+                W[hs:he, ts:te] = window
 
         WS = W.T  # Assume unit variance.
         WSW = np.matmul(WS, W)
@@ -135,12 +152,15 @@ class ConvolutionalMaximumLikelihoodParameterGeneration(nn.Module):
         # Make window matrix.
         window = make_window(seed)
         H, L = window.shape
+        L1 = (L - 1) // 2
         T = max(L, kernel_size)
         W = np.zeros((T * H, T), dtype=window.dtype)
-        W[:H, : (L + 1) // 2] = window[:, (L - 1) // 2 :]
-        W[-H:, -(L + 1) // 2 :] = window[:, : -(L - 1) // 2]
-        for t in range(1, T - 1):
-            W[H * t : H * t + H, t - 1 : t - 1 + L] = window
+        for t in range(T):
+            hs = H * t
+            he = hs + H
+            ts = t - L1
+            te = ts + L
+            W[hs:he, max(0, ts) : min(T, te)] = window[:, max(0, -ts) : min(L, T - ts)]
 
         WS = W.T  # Assume unit variance.
         WSW = np.matmul(WS, W)

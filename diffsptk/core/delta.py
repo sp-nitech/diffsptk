@@ -29,7 +29,7 @@ def make_window(seed, static_out=True):
     if isinstance(seed[0], tuple) or isinstance(seed[0], list):
         # Make window from delta coefficients.
         if static_out:
-            seed = [[1]] + seed
+            seed = [[1]] + list(seed)
 
         max_len = max([len(coefficients) for coefficients in seed])
         if max_len % 2 == 0:
@@ -48,6 +48,7 @@ def make_window(seed, static_out=True):
     else:
         # Make window from width of regression coefficients.
         max_len = max(seed) * 2 + 1
+        assert 1 <= np.min(seed), "width must be greater than zero"
 
         window = []
         if static_out:
