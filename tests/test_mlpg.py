@@ -25,7 +25,7 @@ import tests.utils as U
 @pytest.mark.parametrize(
     "delta", [([-0.5, 0, 0.5], [1, -2, 1]), ([3, 0, 1, 2, 0], [-1])]
 )
-def test_compatibility(device, delta, T=100, D=2, k=39, trim=15):
+def test_compatibility(device, delta, T=100, D=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -43,11 +43,6 @@ def test_compatibility(device, delta, T=100, D=2, k=39, trim=15):
     y = U.call(f"mlpg -l {D} {d} -R 1 {tmp3}").reshape(-1, D)
     U.call(f"rm {tmp1} {tmp2} {tmp3}", get=False)
     U.check_compatibility(y, mlpg, mean)
-
-    mlpg = diffsptk.ConvolutionalMaximumLikelihoodParameterGeneration(
-        kernel_size=k, seed=delta
-    ).to(device)
-    U.check_compatibility(y[trim:-trim], mlpg, mean, opt={"trim": trim})
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

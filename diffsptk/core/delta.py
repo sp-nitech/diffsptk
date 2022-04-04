@@ -89,7 +89,7 @@ class Delta(nn.Module):
     Parameters
     ----------
     seed : list[list[float]] or list[int]
-        Delta coefficients or width of 1st (and 2nd) regression coefficients.
+        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
 
     static_out : bool [scalar]
         If false, output only delta components.

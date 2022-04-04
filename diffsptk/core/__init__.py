@@ -30,7 +30,6 @@ from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgcep import MelCepstralAnalysis
-from .mlpg import ConvolutionalMaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
