@@ -96,8 +96,9 @@ error = torch.abs(x_hat - x).sum()
 
 Status
 ------
+~~module~~ will not be implemented in this repository.
 - [x] acorr
-- [ ] acr2csm
+- [ ] ~~acr2csm~~
 - [ ] ~~aeq~~ (*torch.allclose*)
 - [ ] ~~amgcep~~
 - [ ] ~~average~~ (*torch.mean*)
@@ -109,7 +110,7 @@ Status
 - [x] c2ndps
 - [x] cdist
 - [ ] ~~clip~~ (*torch.clip*)
-- [ ] csm2acr
+- [ ] ~~csm2acr~~
 - [x] dct
 - [x] decimate
 - [ ] ~~delay~~
