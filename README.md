@@ -164,12 +164,12 @@ Status
 - [x] linear_intpl
 - [x] lpc
 - [ ] lpc2c
-- [ ] lpc2lsp
+- [ ] ~~lpc2lsp~~
 - [ ] lpc2par
 - [ ] lpccheck
-- [ ] lsp2lpc
-- [ ] lspcheck
-- [ ] lspdf
+- [ ] ~~lsp2lpc~~
+- [ ] ~~lspcheck~~
+- [ ] ~~lspdf~~
 - [ ] ltcdf
 - [x] mc2b
 - [x] mcep
@@ -181,7 +181,7 @@ Status
 - [ ] mgc2sp
 - [ ] mgcep
 - [ ] mglsadf
-- [ ] mglsp2sp
+- [ ] ~~mglsp2sp~~
 - [ ] ~~minmax~~
 - [x] mlpg (*support only unit variance*)
 - [ ] mlsacheck
