@@ -209,7 +209,7 @@ Status
 - [ ] root_pol
 - [x] sin
 - [ ] smcep
-- [ ] snr
+- [x] snr
 - [ ] ~~sopr~~
 - [x] spec
 - [x] step
