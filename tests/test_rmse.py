@@ -23,32 +23,31 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("reduction", ["none", "mean"])
-def test_compatibility(device, reduction, B=2, T=100, L=20):
+def test_compatibility(device, reduction, B=2, L=10):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    tmp1 = "snr.tmp1"
-    tmp2 = "snr.tmp2"
-    U.call(f"nrand -s 1 -l {B*T} > {tmp1}", get=False)
-    U.call(f"nrand -s 2 -l {B*T} > {tmp2}", get=False)
+    tmp1 = "rmse.tmp1"
+    tmp2 = "rmse.tmp2"
+    U.call(f"nrand -s 1 -l {B*L} > {tmp1}", get=False)
+    U.call(f"nrand -s 2 -l {B*L} > {tmp2}", get=False)
 
-    snr = diffsptk.SignalToNoiseRatio(L, full=True, reduction=reduction).to(device)
-    x1 = torch.from_numpy(U.call(f"cat {tmp1}").reshape(B, -1, L)).to(device)
-    x2 = torch.from_numpy(U.call(f"cat {tmp2}").reshape(B, -1, L)).to(device)
+    rmse = diffsptk.RMSE(reduction=reduction).to(device)
+    x1 = torch.from_numpy(U.call(f"cat {tmp1}").reshape(-1, L)).to(device)
+    x2 = torch.from_numpy(U.call(f"cat {tmp2}").reshape(-1, L)).to(device)
 
-    o = 2 if reduction == "none" else 1
-    b = B if reduction == "none" else 1
-    y = U.call(f"snr -o {o} -l {L} {tmp1} {tmp2}").reshape(b, -1)
+    opt = "-f" if reduction == "none" else ""
+    y = U.call(f"rmse {opt} -l {L} {tmp1} {tmp2}")
     U.call(f"rm {tmp1} {tmp2}", get=False)
-    U.check_compatibility(y, snr, x1, x2)
+    U.check_compatibility(y, rmse, x1, x2)
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=2, T=10):
+def test_differentiable(device, B=2, L=10):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    snr = diffsptk.SignalToNoiseRatio().to(device)
-    x1 = torch.randn(B, T, requires_grad=True, device=device)
-    x2 = torch.randn(B, T, requires_grad=True, device=device)
-    U.check_differentiable(snr, x1, x2)
+    rmse = diffsptk.RMSE().to(device)
+    x1 = torch.randn(B, L, requires_grad=True, device=device)
+    x2 = torch.randn(B, L, requires_grad=True, device=device)
+    U.check_differentiable(rmse, x1, x2)

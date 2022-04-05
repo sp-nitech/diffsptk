@@ -14,22 +14,17 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
 import torch
 import torch.nn as nn
 
 
-class CepstralDistance(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
+class RootMeanSquaredError(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
     for details.
 
     Parameters
     ----------
-    full : bool [scalar]
-        If true, include the constant term in the distance calculation.
-
-    reduction : ['none', 'mean', 'batchmean', 'sum']
+    reduction : ['none', 'mean', 'sum']
         Reduction type.
 
     eps : float >= 0 [scalar]
@@ -37,60 +32,52 @@ class CepstralDistance(nn.Module):
 
     """
 
-    def __init__(self, full=False, reduction="mean", eps=1e-8):
-        super(CepstralDistance, self).__init__()
+    def __init__(self, reduction="mean", eps=1e-8):
+        super(RootMeanSquaredError, self).__init__()
 
-        self.full = full
         self.reduction = reduction
         self.eps = eps
 
         assert 0 <= self.eps
 
-        if self.full:
-            self.const = 10 * math.sqrt(2) / math.log(10)
-
-    def forward(self, c1, c2):
-        """Calculate cepstral distance between two inputs.
+    def forward(self, x, y):
+        """Calculate RMSE.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M+1)]
-            Input cepstral coefficients.
+        x : Tensor [shape=(...,)]
+            Input.
 
-        c2 : Tensor [shape=(..., M+1)]
-            Target cepstral coefficients.
+        y : Tensor [shape=(...,)]
+            Target.
 
         Returns
         -------
-        dist : Tensor [shape=(...,) or scalar]
-            Cepstral distance.
+        e : Tensor [shape=(...,) or scalar]
+            RMSE.
 
         Examples
         --------
-        >>> c1 = torch.randn(2, 3)
-        tensor([[ 0.4296,  1.6517, -0.6022],
-                [-1.0464, -0.6088, -0.9274]])
-        >>> c2 = torch.randn(2, 3)
-        tensor([[ 1.6441, -0.6962, -0.2524],
-                [ 0.9344,  0.3965,  1.1494]])
-        >>> cdist = diffsptk.CepstralDistance()
-        >>> dist = cdist(c1,c2)
-        >>> dist
-        tensor(1.6551)
+        >>> x = torch.randn(5)
+        >>> x
+        tensor([-0.5945, -0.2401,  0.8633, -0.6464,  0.4515])
+        >>> y = torch.randn(5)
+        >>> y
+        tensor([-0.4025,  0.9367,  1.1299,  3.1986, -0.2832])
+        >>> rmse = diffsptk.RootMeanSquaredError()
+        >>> e = rmse(x, y)
+        >>> e
+        tensor(1.8340)
 
         """
-        dist = torch.sqrt(torch.square(c1[..., 1:] - c2[..., 1:]).sum(-1) + self.eps)
+        e = torch.sqrt(torch.square(x - y).mean(-1) + self.eps)
         if self.reduction == "none":
             pass
         elif self.reduction == "sum":
-            dist = dist.sum()
+            e = e.sum()
         elif self.reduction == "mean":
-            dist = dist.mean() / math.sqrt(c1.shape[-1] - 1)
-        elif self.reduction == "batchmean":
-            dist = dist.mean()
+            e = e.mean()
         else:
             raise ValueError("none, sum, mean, or batchmean is expected")
 
-        if self.full:
-            dist *= self.const
-        return dist
+        return e

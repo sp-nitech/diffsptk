@@ -37,6 +37,8 @@ from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
+from .rmse import RootMeanSquaredError
+from .rmse import RootMeanSquaredError as RMSE
 from .snr import SignalToNoiseRatio
 from .spec import Spectrum
 from .stft import ShortTermFourierTransform

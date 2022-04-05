@@ -205,7 +205,7 @@ Status
 - [x] ramp
 - [ ] ~~reverse~~
 - [ ] rlevdur
-- [ ] ~~rmse~~
+- [x] rmse
 - [ ] ~~root_pol~~
 - [x] sin
 - [ ] smcep
