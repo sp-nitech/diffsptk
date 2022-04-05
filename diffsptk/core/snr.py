@@ -33,16 +33,22 @@ class SignalToNoiseRatio(nn.Module):
     reduction : ['none', 'mean', 'sum']
         Reduction type.
 
+    eps : float >= 0 [scalar]
+        A small value to prevent NaN.
+
     """
 
-    def __init__(self, frame_length=None, full=False, reduction="mean"):
+    def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
         super(SignalToNoiseRatio, self).__init__()
 
         self.frame_length = frame_length
-        if self.frame_length is not None:
-            assert 1 <= self.frame_length
         self.full = full
         self.reduction = reduction
+        self.eps = eps
+
+        if self.frame_length is not None:
+            assert 1 <= self.frame_length
+        assert 0 <= self.eps
 
     def forward(self, s, sn):
         """Calculate SNR.
@@ -80,7 +86,7 @@ class SignalToNoiseRatio(nn.Module):
 
         s2 = torch.square(s).sum(-1)
         n2 = torch.square(sn - s).sum(-1)
-        y = torch.log10(s2 / n2).squeeze(-1)
+        y = torch.log10((s2 + self.eps) / (n2 + self.eps)).squeeze(-1)
         if self.reduction == "none":
             pass
         elif self.reduction == "sum":

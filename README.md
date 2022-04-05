@@ -206,7 +206,7 @@ Status
 - [ ] ~~reverse~~
 - [ ] rlevdur
 - [ ] ~~rmse~~
-- [ ] root_pol
+- [ ] ~~root_pol~~
 - [x] sin
 - [ ] smcep
 - [x] snr

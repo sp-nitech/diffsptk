@@ -73,12 +73,17 @@ def check_differentiable(func, *x, opt={}, load=1):
         print(f"time: {e - s}")
 
     class_name = func.__class__.__name__
-    reserved_class_names = ("ZeroCrossingAnalysis", "UniformQuantization")
-    if not any([class_name == name for name in reserved_class_names]):
+    zero_grad_class_names = ("ZeroCrossingAnalysis", "UniformQuantization")
+    if not any([class_name == name for name in zero_grad_class_names]):
         for i in range(len(x)):
             g = x[i].grad.cpu().numpy()
-            if np.all(g == 0):
-                warnings.warn(f"cannot compute gradient for {i}-th input")
+            if not np.any(g):
+                warnings.warn(f"detect zero-gradient at {i}-th input")
+    if True:
+        for i in range(len(x)):
+            g = x[i].grad.cpu().numpy()
+            if np.any(np.isnan(g)):
+                warnings.warn(f"detect NaN-gradient at {i}-th input")
 
 
 def compose(*fs):
