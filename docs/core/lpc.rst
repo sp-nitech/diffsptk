@@ -8,4 +8,4 @@ lpc
 .. autoclass:: diffsptk.LinearPredictiveCodingAnalysis
    :members:
 
-.. seealso:: :ref:`acorr`  :ref:`levdur`
+.. seealso:: :ref:`acorr`  :ref:`levdur`  :ref:`lpc2par`

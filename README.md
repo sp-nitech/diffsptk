@@ -165,7 +165,7 @@ Status
 - [x] lpc
 - [ ] lpc2c
 - [ ] ~~lpc2lsp~~
-- [ ] lpc2par
+- [x] lpc2par
 - [ ] lpccheck
 - [ ] ~~lsp2lpc~~
 - [ ] ~~lspcheck~~
