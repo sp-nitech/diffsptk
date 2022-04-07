@@ -73,7 +73,7 @@ def check_differentiable(func, *x, opt={}, load=1):
         print(f"time: {e - s}")
 
     class_name = func.__class__.__name__
-    zero_grad_class_names = ("ZeroCrossingAnalysis", "UniformQuantization")
+    zero_grad_class_names = ("ZeroCrossingAnalysis",)
     if not any([class_name == name for name in zero_grad_class_names]):
         for i in range(len(x)):
             g = x[i].grad.cpu().numpy()

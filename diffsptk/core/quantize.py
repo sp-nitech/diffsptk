@@ -20,9 +20,29 @@ import torch
 import torch.nn as nn
 
 
+class Floor(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        return x.floor()
+
+    @staticmethod
+    def backward(ctx, grad):
+        return grad
+
+
+class Round(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        return (x + 0.5 * torch.sign(x)).trunc()
+
+    @staticmethod
+    def backward(ctx, grad):
+        return grad
+
+
 class UniformQuantization(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/quantize.html>`_
-    for details. **Note that this module cannot compute gradient**.
+    for details. The gradient is copied from the next module.
 
     Parameters
     ----------
@@ -55,7 +75,7 @@ class UniformQuantization(nn.Module):
         else:
             raise ValueError("quantizer {quantizer} is not supported")
 
-    def forward(self, x, int_out=True):
+    def forward(self, x, int_out=False):
         """Quantize input.
 
         Parameters
@@ -75,7 +95,7 @@ class UniformQuantization(nn.Module):
         --------
         >>> x = diffsptk.ramp(-4, 4)
         >>> quantize = diffsptk.UniformQuantization(4, 2)
-        >>> y = quantize(x)
+        >>> y = quantize(x, int_out=True)
         >>> y
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
@@ -83,10 +103,10 @@ class UniformQuantization(nn.Module):
         x = x * self.level / (2 * self.abs_max)
         if self.quantizer == "mid-rise":
             x = x + self.level // 2
-            y = x.floor()
+            y = Floor.apply(x)
         elif self.quantizer == "mid-tread":
             x = x + (self.level - 1) // 2
-            y = (x + 0.5 * torch.sign(x)).trunc()  # round
+            y = Round.apply(x)
         else:
             raise RuntimeError
 
