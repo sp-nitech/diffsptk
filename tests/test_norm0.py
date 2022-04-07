@@ -26,7 +26,7 @@ def test_compatibility(device, B=2, M=4):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients().to(device)
+    norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(M).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
     y = U.call(f"nrand -l {B*(M+1)} | norm0 -m {M}").reshape(-1, M + 1)
     U.check_compatibility(y, norm0, x)
@@ -37,6 +37,6 @@ def test_differentiable(device, B=2, M=4):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients().to(device)
+    norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(M).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
     U.check_differentiable(norm0, x)

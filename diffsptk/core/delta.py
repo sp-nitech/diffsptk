@@ -92,7 +92,7 @@ class Delta(nn.Module):
         Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
 
     static_out : bool [scalar]
-        If false, output only delta components.
+        If False, output only delta components.
 
     """
 

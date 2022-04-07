@@ -30,11 +30,11 @@ class Frame(nn.Module):
         Frame period, :math:`P`.
 
     center : bool [scalar]
-        If true, assume that the center of data is the center of frame, otherwise
+        If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
     zmean : bool [scalar]
-        If true, perform mean subtraction on each frame.
+        If True, perform mean subtraction on each frame.
 
     """
 

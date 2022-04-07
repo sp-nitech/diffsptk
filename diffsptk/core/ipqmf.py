@@ -73,7 +73,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
             Subband waveforms.
 
         keep_dims : bool [scalar]
-            If true, the output shape is (B, 1, T) instead (B, T).
+            If True, the output shape is (B, 1, T) instead (B, T).
 
         Returns
         -------

@@ -26,6 +26,9 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
 
     Parameters
     ----------
+    cep_order : int >= 0 [scalar]
+        Order of cepstrum, :math:`M`.
+
     gamma : float [-1 <= gamma <= 1]
         Gamma.
 
@@ -34,8 +37,10 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
 
     """
 
-    def __init__(self, gamma=0, c=None):
+    def __init__(self, cep_order, gamma=0, c=None):
         super(GeneralizedCepstrumInverseGainNormalization, self).__init__()
+
+        self.cep_order = cep_order
 
         if c is None:
             self.gamma = gamma
@@ -43,6 +48,9 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
             if gamma != 0:
                 warnings.warn("gamma is given, but not used")
             self.gamma = 1 / c
+
+        assert 0 <= self.cep_order
+        assert abs(gamma) <= 1
 
     def forward(self, y):
         """Perform cepstrum inverse gain normalization.
@@ -60,15 +68,14 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         Examples
         --------
         >>> x = diffsptk.ramp(1, 4)
-        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(c=2)
-        >>> ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(c=2)
+        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, c=2)
+        >>> ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(3, c=2)
         >>> x2 = ignorm(gnorm(x))
         >>> x2
         tensor([1., 2., 3., 4.])
 
         """
-        K = y[..., :1]
-        y = y[..., 1:]
+        K, y = torch.split(y, [1, self.cep_order], dim=-1)
         if self.gamma == 0:
             x0 = torch.log(K)
             x1 = y

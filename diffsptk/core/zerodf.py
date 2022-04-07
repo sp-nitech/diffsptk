@@ -32,7 +32,7 @@ class AllZeroDigitalFilter(nn.Module):
         Frame period, :math:`P`.
 
     ignore_gain : bool [scalar]
-        If true, perform filtering without gain.
+        If True, perform filtering without gain.
 
     """
 

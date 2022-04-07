@@ -17,7 +17,6 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import is_in
 from ..misc.utils import symmetric_toeplitz
 
 
@@ -25,20 +24,10 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
     for details. Note that the current implementation does not use the Durbin's
     algorithm though the class name includes it.
-
-    Parameters
-    ----------
-    out_format : ['K', 'a', 'Ka', 'K,a']
-        `K` is gain and `a` is LPC coefficients. If this is `Ka`, the two output
-        tensors are concatenated and return the tensor instead of the tuple.
-
     """
 
-    def __init__(self, out_format="K,a"):
+    def __init__(self):
         super(PseudoLevinsonDurbinRecursion, self).__init__()
-
-        self.out_format = out_format
-        assert is_in(self.out_format, ["K", "a", "Ka", "K,a"])
 
     def forward(self, r):
         """Solve a Yule-Walker linear system.
@@ -50,21 +39,18 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
 
         Returns
         -------
-        K : Tensor [shape=(..., 1)]
-            Gain.
-
-        a : Tensor [shape=(..., M)]
-            LPC coefficients.
+        a : Tensor [shape=(..., M+1)]
+            Gain and LPC coefficients.
 
         Examples
         --------
-        >>> x = torch.nrand(5)
+        >>> x = torch.randn(5)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> acorr = diffsptk.AutocorrelationAnalysis(2, 5)
-        >>> levdur = diffsptk.LevinsonDurbinRecursion(out_format="K,a")
+        >>> levdur = diffsptk.LevinsonDurbinRecursion()
         >>> a = levdur(acorr(x))
         >>> a
-        (tensor([0.8726]), tensor([0.1475, 0.5270]))
+        tensor([0.8726, 0.1475, 0.5270])
 
         """
         # Make Toeplitz matrix.
@@ -75,18 +61,9 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
         a = torch.einsum("...mn,...m->...n", R.inverse(), -r1)
 
         # Compute gain.
-        if "K" in self.out_format:
-            r0 = r[..., 0]
-            K = torch.sqrt(torch.einsum("...m,...m->...", r1, a) + r0)
-            K = K.unsqueeze(-1)
+        r0 = r[..., 0]
+        K = torch.sqrt(torch.einsum("...m,...m->...", r1, a) + r0)
+        K = K.unsqueeze(-1)
 
-        if self.out_format == "K":
-            return K
-        elif self.out_format == "a":
-            return a
-        elif self.out_format == "Ka":
-            return torch.cat((K, a), dim=-1)
-        elif self.out_format == "K,a":
-            return K, a
-        else:
-            raise RuntimeError
+        a = torch.cat((K, a), dim=-1)
+        return a

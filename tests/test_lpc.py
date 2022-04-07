@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 def test_compatibility(M=14, L=30, B=2):
-    lpc = diffsptk.LPC(M, L, out_format="Ka")
+    lpc = diffsptk.LPC(M, L)
     x = torch.from_numpy(U.call(f"nrand -l {B*L}")).reshape(-1, L)
     y = U.call(f"nrand -l {B*L} | lpc -l {L} -m {M}").reshape(-1, M + 1)
     U.check_compatibility(y, lpc, x)

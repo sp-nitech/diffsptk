@@ -33,7 +33,7 @@ class AutocorrelationAnalysis(nn.Module):
         Frame length, :math:`L`.
 
     norm : bool [scalar]
-        If true, normalize autocorrelation.
+        If True, normalize autocorrelation.
 
     acf : ['none', 'biased', 'unbiased']
         Type of autocorrelation function.

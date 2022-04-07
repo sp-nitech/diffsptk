@@ -19,6 +19,8 @@ import math
 import torch
 import torch.nn as nn
 
+from ..misc.utils import is_in
+
 
 class CepstralDistance(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
@@ -27,7 +29,7 @@ class CepstralDistance(nn.Module):
     Parameters
     ----------
     full : bool [scalar]
-        If true, include the constant term in the distance calculation.
+        If True, include the constant term in the distance calculation.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
@@ -44,6 +46,7 @@ class CepstralDistance(nn.Module):
         self.reduction = reduction
         self.eps = eps
 
+        assert is_in(self.reduction, ["none", "mean", "batchmean", "sum"])
         assert 0 <= self.eps
 
         if self.full:
@@ -89,7 +92,7 @@ class CepstralDistance(nn.Module):
         elif self.reduction == "batchmean":
             dist = dist.mean()
         else:
-            raise ValueError("none, sum, mean, or batchmean is expected")
+            raise RuntimeError
 
         if self.full:
             dist *= self.const

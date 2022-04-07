@@ -27,7 +27,7 @@ def test_compatibility(device, gamma, B=2, M=4):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(gamma).to(device)
+    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
     y = U.call(f"nrand -l {B*(M+1)} | gnorm -g {gamma} -m {M}").reshape(-1, M + 1)
     U.check_compatibility(y, gnorm, x)
@@ -38,6 +38,6 @@ def test_differentiable(device, gamma=1, B=2, M=4):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(gamma).to(device)
+    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma).to(device)
     x = torch.randn(B, M + 1, requires_grad=True, device=device)
     U.check_differentiable(gnorm, x)

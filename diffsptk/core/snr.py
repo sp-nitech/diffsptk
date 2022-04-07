@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import is_in
+
 
 class SignalToNoiseRatio(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/snr.html>`_
@@ -28,7 +30,7 @@ class SignalToNoiseRatio(nn.Module):
         Frame length, :math:`L`. If given, calculates segmental SNR.
 
     full : bool [scalar]
-        If true, include the constant term in the SNR calculation.
+        If True, include the constant term in the SNR calculation.
 
     reduction : ['none', 'mean', 'sum']
         Reduction type.
@@ -48,6 +50,7 @@ class SignalToNoiseRatio(nn.Module):
 
         if self.frame_length is not None:
             assert 1 <= self.frame_length
+        assert is_in(self.reduction, ["none", "mean", "sum"])
         assert 0 <= self.eps
 
     def forward(self, s, sn):
@@ -94,7 +97,7 @@ class SignalToNoiseRatio(nn.Module):
         elif self.reduction == "mean":
             y = y.mean()
         else:
-            raise ValueError("none, sum, or mean is expected")
+            raise RuntimeError
 
         if self.full:
             y *= 10

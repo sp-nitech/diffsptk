@@ -21,21 +21,27 @@ import torch.nn as nn
 class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/norm0.html>`_
     for details.
+
+    Parameters
+    ----------
+    filter_order : int >= 0 [scalar]
+        Order of filter coefficients, :math:`M`.
+
     """
 
-    def __init__(self):
+    def __init__(self, filter_order):
         super(AllPoleToAllZeroDigitalFilterCoefficients, self).__init__()
 
-    def forward(self, a, dim=-1):
+        self.filter_order = filter_order
+        assert 0 <= self.filter_order
+
+    def forward(self, a):
         """Convert all-pole to all-zero filter coefficients vice versa.
 
         Parameters
         ----------
         a : Tensor [shape=(..., M+1, ...)]
             All-pole or all-zero filter coefficients.
-
-        dim : int [scalar]
-            The axis to be converted.
 
         Returns
         -------
@@ -45,14 +51,14 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         Examples
         --------
         >>> a = diffsptk.ramp(4, 1, -1)
-        >>> norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients()
+        >>> norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(3)
         >>> b = norm0(a)
         >>> b
         tensor([0.2500, 0.7500, 0.5000, 0.2500])
 
         """
-        K, a1 = torch.split(a, [1, a.size(dim) - 1], dim=dim)
+        K, a1 = torch.split(a, [1, self.filter_order], dim=-1)
         b0 = torch.reciprocal(K)
         b1 = a1 * b0
-        b = torch.cat([b0, b1], dim=dim)
+        b = torch.cat((b0, b1), dim=-1)
         return b

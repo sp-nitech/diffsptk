@@ -26,6 +26,9 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
 
     Parameters
     ----------
+    cep_order : int >= 0 [scalar]
+        Order of cepstrum, :math:`M`.
+
     gamma : float [-1 <= gamma <= 1]
         Gamma.
 
@@ -34,8 +37,10 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
 
     """
 
-    def __init__(self, gamma=0, c=None):
+    def __init__(self, cep_order, gamma=0, c=None):
         super(GeneralizedCepstrumGainNormalization, self).__init__()
+
+        self.cep_order = cep_order
 
         if c is None:
             self.gamma = gamma
@@ -43,6 +48,9 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
             if gamma != 0:
                 warnings.warn("gamma is given, but not used")
             self.gamma = 1 / c
+
+        assert 0 <= self.cep_order
+        assert abs(gamma) <= 1
 
     def forward(self, x):
         """Perform cepstrum gain normalization.
@@ -60,14 +68,13 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         Examples
         --------
         >>> x = diffsptk.ramp(1, 4)
-        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(c=2)
+        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, c=2)
         >>> y = gnorm(x)
         >>> y
         tensor([2.2500, 1.3333, 2.0000, 2.6667])
 
         """
-        x0 = x[..., :1]
-        x1 = x[..., 1:]
+        x0, x1 = torch.split(x, [1, self.cep_order], dim=-1)
         if self.gamma == 0:
             K = torch.exp(x0)
             y = x1

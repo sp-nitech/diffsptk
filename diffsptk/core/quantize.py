@@ -64,7 +64,7 @@ class UniformQuantization(nn.Module):
             Input.
 
         int_out : bool [scalar]
-            If true, return int-type tensor.
+            If True, return int-type tensor.
 
         Returns
         -------

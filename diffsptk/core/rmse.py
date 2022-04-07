@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import is_in
+
 
 class RootMeanSquaredError(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
@@ -38,6 +40,7 @@ class RootMeanSquaredError(nn.Module):
         self.reduction = reduction
         self.eps = eps
 
+        assert is_in(self.reduction, ["none", "mean", "sum"])
         assert 0 <= self.eps
 
     def forward(self, x, y):
@@ -78,6 +81,6 @@ class RootMeanSquaredError(nn.Module):
         elif self.reduction == "mean":
             e = e.mean()
         else:
-            raise ValueError("none, sum, mean, or batchmean is expected")
+            raise RuntimeError
 
         return e

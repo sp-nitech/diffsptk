@@ -28,7 +28,7 @@ class ZeroCrossingAnalysis(nn.Module):
         Frame length, :math:`L`.
 
     norm : bool [scalar]
-        If true, divide zero-crossing rate by frame length.
+        If True, divide zero-crossing rate by frame length.
 
     """
 

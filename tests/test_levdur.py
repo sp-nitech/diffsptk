@@ -27,7 +27,7 @@ def test_compatibility(device, M=30, L=52, B=2):
         return
 
     acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
-    levdur = diffsptk.LevinsonDurbinRecursion(out_format="Ka").to(device)
+    levdur = diffsptk.LevinsonDurbinRecursion().to(device)
     x = acorr(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
     y = U.call(f"nrand -l {B*L} | lpc -m {M} -l {L}").reshape(-1, M + 1)
     U.check_compatibility(y, levdur, x)
@@ -39,6 +39,6 @@ def test_differentiable(device, M=30, L=52, B=2):
         return
 
     acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
-    levdur = diffsptk.LevinsonDurbinRecursion(out_format="Ka").to(device)
+    levdur = diffsptk.LevinsonDurbinRecursion().to(device)
     x = torch.randn(B, L, requires_grad=True, device=device)
     U.check_differentiable(U.compose(levdur, acorr), x)

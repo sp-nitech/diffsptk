@@ -26,24 +26,20 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
     Parameters
     ----------
-    acr_order : int >= 0 [scalar]
-        Order of autocorrelation, :math:`M`.
+    lpc_order : int >= 0 [scalar]
+        Order of LPC, :math:`M`.
 
     frame_length : int > M [scalar]
         Frame length, :math:`L`.
 
-    out_format : ['K', 'a', 'Ka', 'K,a']
-        `K` is gain and `a` is LPC coefficients. If this is `Ka`, the two output
-        tensors are concatenated and return the tensor instead of the tuple.
-
     """
 
-    def __init__(self, acr_order, frame_length, out_format="K,a"):
+    def __init__(self, lpc_order, frame_length):
         super(LinearPredictiveCodingAnalysis, self).__init__()
 
         self.lpc = nn.Sequential(
-            AutocorrelationAnalysis(acr_order, frame_length),
-            PseudoLevinsonDurbinRecursion(out_format),
+            AutocorrelationAnalysis(lpc_order, frame_length),
+            PseudoLevinsonDurbinRecursion(),
         )
 
     def forward(self, x):
@@ -56,17 +52,17 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
         Returns
         -------
-        a : Tensor or tuple[Tensor]
-            Gain and/or LPC coefficients.
+        a : Tensor [shape=(..., M+1)]
+            Gain and LPC coefficients.
 
         Examples
         --------
-        >>> x = torch.nrand(5)
+        >>> x = torch.randn(5)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> lpc = diffsptk.LPC(2, 5)
         >>> a = lpc(x)
         >>> a
-        (tensor([0.8726]), tensor([0.1475, 0.5270]))
+        tensor([0.8726, 0.1475, 0.5270])
 
         """
         a = self.lpc(x)
