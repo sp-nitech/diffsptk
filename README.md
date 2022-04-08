@@ -158,7 +158,7 @@ Status
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
-- [ ] lar2par
+- [x] lar2par
 - [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
@@ -216,7 +216,7 @@ Status
 - [ ] ~~swab~~
 - [ ] ~~symmetrize~~
 - [ ] train
-- [ ] ~~transpose~~
+- [ ] ~~transpose~~ (*torch.transpose*)
 - [x] ulaw
 - [ ] ~~vc~~
 - [ ] ~~vopr~~
