@@ -158,7 +158,7 @@ Status
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
-- [x] lar2par
+- [ ] lar2par
 - [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
@@ -193,7 +193,7 @@ Status
 - [x] norm0
 - [ ] ~~nrand~~ (*torch.randn*)
 - [ ] par2lar
-- [ ] par2lpc
+- [x] par2lpc
 - [ ] pca
 - [ ] pcas
 - [ ] phase
