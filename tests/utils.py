@@ -58,7 +58,7 @@ def check_compatibility(y_, module, *x, opt={}, verbose=False):
 
 
 def check_differentiable(func, *x, opt={}, load=1):
-    optimizer = torch.optim.SGD(x, lr=0.001)
+    optimizer = torch.optim.SGD(x, lr=0.01)
 
     s = lap()
     for _ in range(load):
@@ -74,14 +74,12 @@ def check_differentiable(func, *x, opt={}, load=1):
 
     class_name = func.__class__.__name__
     zero_grad_class_names = ("ZeroCrossingAnalysis",)
-    if not any([class_name == name for name in zero_grad_class_names]):
-        for i in range(len(x)):
-            g = x[i].grad.cpu().numpy()
+    for i in range(len(x)):
+        g = x[i].grad.cpu().numpy()
+        if not any([class_name == name for name in zero_grad_class_names]):
             if not np.any(g):
                 warnings.warn(f"detect zero-gradient at {i}-th input")
-    if True:
-        for i in range(len(x)):
-            g = x[i].grad.cpu().numpy()
+        if True:
             if np.any(np.isnan(g)):
                 warnings.warn(f"detect NaN-gradient at {i}-th input")
 

@@ -119,8 +119,8 @@ class MelCepstralAnalysis(nn.Module):
 
         log_x = torch.log(x)
         c = torch.fft.irfft(log_x)
-        c[..., 0] = 0.5 * c[..., 0].clone()
-        c[..., H] = 0.5 * c[..., H].clone()
+        c[..., 0] *= 0.5
+        c[..., H] *= 0.5
         mc = self.freqt(c[..., : H + 1])
 
         for _ in range(self.n_iter):

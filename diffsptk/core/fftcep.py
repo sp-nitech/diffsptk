@@ -102,7 +102,7 @@ class CepstralAnalysis(nn.Module):
 
         indices = [0, M] if H == M else [0]
         for m in indices:
-            v[..., m] = 0.5 * v[..., m].clone()
+            v[..., m] *= 0.5
 
         # Revert shape.
         for _ in range(3 - d):

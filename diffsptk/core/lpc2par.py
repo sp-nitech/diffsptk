@@ -92,8 +92,8 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
                     raise RuntimeError("unstable LPC")
                 else:
                     raise RuntimeError
-
             ks.append(km)
+
             z = 1 - km * km
             k = a[..., :-1]
             a = (k - km * k.flip(-1)) / z
