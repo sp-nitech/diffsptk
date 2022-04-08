@@ -35,6 +35,7 @@ from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
+from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization

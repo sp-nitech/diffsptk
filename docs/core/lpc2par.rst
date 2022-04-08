@@ -6,4 +6,4 @@ lpc2par
 .. autoclass:: diffsptk.LinearPredictiveCoefficientsToParcorCoefficients
    :members:
 
-.. seealso:: :ref:`lpc`
+.. seealso:: :ref:`lpc`  :ref:`par2lpc`
