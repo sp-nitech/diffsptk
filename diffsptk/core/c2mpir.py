@@ -20,7 +20,7 @@ import torch.nn as nn
 
 class CepstrumToImpulseResponse(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
-    for details.
+    for details. This module may be slow due to recursive computation.
 
     Parameters
     ----------
@@ -66,8 +66,7 @@ class CepstrumToImpulseResponse(nn.Module):
 
         """
         c0 = c[..., 0]
-        c1 = c[..., 1:] * self.ramp
-        c1 = c1.flip(-1)
+        c1 = (c[..., 1:] * self.ramp).flip(-1)
 
         h = torch.empty(
             (*(c.shape[:-1]), self.impulse_response_length), device=c.device
@@ -75,12 +74,7 @@ class CepstrumToImpulseResponse(nn.Module):
         h[..., 0] = torch.exp(c0)
         for n in range(1, self.impulse_response_length):
             s = n - self.cep_order
-            h[..., n] = (
-                torch.einsum(
-                    "...d,...d->...",
-                    h[..., max(0, s) : n].clone(),
-                    c1[..., max(0, -s) :],
-                )
-                / n
-            )
+            h[..., n] = (h[..., max(0, s) : n].clone() * c1[..., max(0, -s) :]).sum(
+                -1
+            ) / n
         return h

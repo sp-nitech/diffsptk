@@ -24,7 +24,7 @@ from ..misc.utils import is_in
 
 class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc2par.html>`_
-    for details.
+    for details. This module may be slow due to recursive computation.
 
     Parameters
     ----------

@@ -79,9 +79,10 @@ def check_differentiable(func, *x, opt={}, load=1):
         if not any([class_name == name for name in zero_grad_class_names]):
             if not np.any(g):
                 warnings.warn(f"detect zero-gradient at {i}-th input")
-        if True:
-            if np.any(np.isnan(g)):
-                warnings.warn(f"detect NaN-gradient at {i}-th input")
+        if np.any(np.isnan(g)):
+            warnings.warn(f"detect nan-gradient at {i}-th input")
+        if np.any(np.isinf(g)):
+            warnings.warn(f"detect inf-gradient at {i}-th input")
 
 
 def compose(*fs):

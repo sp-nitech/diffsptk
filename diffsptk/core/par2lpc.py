@@ -19,7 +19,7 @@ import torch.nn as nn
 
 class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/par2lpc.html>`_
-    for details.
+    for details. This module may be slow due to recursive computation.
 
     Parameters
     ----------
