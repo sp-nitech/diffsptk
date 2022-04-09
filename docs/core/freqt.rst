@@ -6,4 +6,4 @@ freqt
 .. autoclass:: diffsptk.FrequencyTransform
    :members:
 
-.. seealso:: :ref:`mgcep`
+.. seealso:: :ref:`mgc2mgc`  :ref:`mgcep`

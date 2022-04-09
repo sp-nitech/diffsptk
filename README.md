@@ -158,7 +158,7 @@ Status
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
-- [ ] lar2par
+- [ ] ~~lar2par~~
 - [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
@@ -177,7 +177,7 @@ Status
 - [ ] ~~median~~ (*torch.median*)
 - [ ] ~~merge~~
 - [x] mfcc
-- [ ] mgc2mgc
+- [x] mgc2mgc
 - [ ] mgc2sp
 - [ ] mgcep
 - [ ] mglsadf
@@ -192,7 +192,7 @@ Status
 - [x] ndps2c
 - [x] norm0
 - [ ] ~~nrand~~ (*torch.randn*)
-- [ ] par2lar
+- [ ] ~~par2lar~~
 - [x] par2lpc
 - [ ] pca
 - [ ] pcas

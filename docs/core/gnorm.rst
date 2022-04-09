@@ -6,4 +6,4 @@ gnorm
 .. autoclass:: diffsptk.GeneralizedCepstrumGainNormalization
    :members:
 
-.. seealso:: :ref:`ignorm`
+.. seealso:: :ref:`ignorm`  :ref:`mgc2mgc`

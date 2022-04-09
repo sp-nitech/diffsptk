@@ -44,8 +44,7 @@ doc-clean:
 
 format:
 	./venv/bin/black $(PROJECT) tests
-	./venv/bin/isort $(PROJECT) tests \
-		--sl --fss --sort-order native --project $(PROJECT)
+	./venv/bin/isort $(PROJECT) tests --project $(PROJECT)
 	./venv/bin/flake8 $(PROJECT) tests --exclude __init__.py
 
 test:

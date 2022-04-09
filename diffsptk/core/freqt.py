@@ -62,32 +62,32 @@ class FrequencyTransform(nn.Module):
 
         self.register_buffer("A", torch.from_numpy(A).t())
 
-    def forward(self, x):
+    def forward(self, c1):
         """Perform frequency transform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., M1+1)]
+        c1 : Tensor [shape=(..., M1+1)]
             Input sequence.
 
         Returns
         -------
-        y : Tensor [shape=(..., M2+1)]
+        c2 : Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> c1 = diffsptk.ramp(3)
         tensor([0., 1., 2., 3.])
         >>> freqt = diffsptk.FrequencyTransform(3, 4, 0.02)
-        >>> y = freqt(x)
-        >>> y
+        >>> c2 = freqt(c1)
+        >>> c2
         tensor([ 0.0208,  1.0832,  2.1566,  2.9097, -0.1772])
         >>> freqt2 = diffsptk.FrequencyTransform(4, 3, -0.02)
-        >>> x2 = freqt2(y)
-        >>> x2
+        >>> c3 = freqt2(c2)
+        >>> c3
         tensor([-9.8953e-10,  1.0000e+00,  2.0000e+00,  3.0000e+00])
 
         """
-        y = torch.matmul(x, self.A)
-        return y
+        c2 = torch.matmul(c1, self.A)
+        return c2
