@@ -161,8 +161,9 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     ):
         super(MelGeneralizedCepstrumToMelGeneralizedCepstrum, self).__init__()
 
-        modules = []
+        assert not (0 == in_gamma and in_mul)
 
+        modules = []
         if not in_norm and in_mul:
             modules.append(ZerothGammaDivision(in_order, in_gamma))
 

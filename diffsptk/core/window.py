@@ -35,7 +35,7 @@ class Window(nn.Module):
         Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular']
         Window type.
 
     """

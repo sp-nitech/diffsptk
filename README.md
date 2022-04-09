@@ -163,7 +163,7 @@ Status
 - [x] levdur
 - [x] linear_intpl
 - [x] lpc
-- [ ] lpc2c
+- [ ] ~~lpc2c~~
 - [ ] ~~lpc2lsp~~
 - [x] lpc2par
 - [ ] lpccheck
@@ -178,7 +178,7 @@ Status
 - [ ] ~~merge~~
 - [x] mfcc
 - [x] mgc2mgc
-- [ ] mgc2sp
+- [x] mgc2sp
 - [ ] mgcep
 - [ ] mglsadf
 - [ ] ~~mglsp2sp~~

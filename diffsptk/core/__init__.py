@@ -31,6 +31,7 @@ from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
+from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .mgcep import MelCepstralAnalysis
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
