@@ -22,22 +22,24 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("o", [0, 1, 2, 3])
 def test_compatibility(
-    device, M=4, C=10, L=32, sr=8000, lifter=20, f_min=300, f_max=3400, B=2
+    device, o, M=4, C=10, L=32, sr=8000, lifter=20, f_min=300, f_max=3400, B=2
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     spec = diffsptk.Spectrum(L, eps=0).to(device)
     mfcc = diffsptk.MFCC(
-        M, C, L, sr, lifter=lifter, f_min=f_min, f_max=f_max, out_format="yc"
+        M, C, L, sr, lifter=lifter, f_min=f_min, f_max=f_max, out_format=o
     ).to(device)
     x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
     cmd = (
         f"nrand -l {B*L} | "
-        f"mfcc -m {M} -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -c {lifter} -o2"
+        f"mfcc -m {M} -n {C} -l {L} -s {sr//1000} -c {lifter} -L {f_min} -H {f_max} "
+        f"-q 4 -o {o}"
     )
-    y = U.call(cmd).reshape(-1, M + 1)
+    y = U.call(cmd).reshape(-1, M + (o if o <= 1 else o - 1))
     U.check_compatibility(y, mfcc, x)
 
 

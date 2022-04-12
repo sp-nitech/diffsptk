@@ -19,7 +19,6 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import default_dtype
-from ..misc.utils import is_in
 
 
 def hz_to_mel(x):
@@ -55,7 +54,7 @@ class MelFilterBankAnalysis(nn.Module):
     floor : float > 0 [scalar]
         Floor value to prevent NaN.
 
-    out_format : ['y', 'E', 'yE', 'y,E']
+    out_format : ['y', 'yE', 'y,E']
         `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
@@ -85,7 +84,15 @@ class MelFilterBankAnalysis(nn.Module):
         assert 0 <= f_min and f_min < f_max
         assert f_max <= sample_rate / 2
         assert 0 < self.floor
-        assert is_in(self.out_format, ["y", "E", "yE", "y,E"])
+
+        if out_format == 0 or out_format == "y":
+            self.format_func = lambda y, E: y
+        elif out_format == 1 or out_format == "yE":
+            self.format_func = lambda y, E: torch.cat((y, E), dim=-1)
+        elif out_format == 2 or out_format == "y,E":
+            self.format_func = lambda y, E: (y, E)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported")
 
         lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
         upper_bin_index = min(
@@ -145,14 +152,4 @@ class MelFilterBankAnalysis(nn.Module):
         y = torch.log(torch.clip(y, min=self.floor))
         E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
         E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
-
-        if self.out_format == "y":
-            return y
-        elif self.out_format == "E":
-            return E
-        elif self.out_format == "yE":
-            return torch.cat((y, E), dim=-1)
-        elif self.out_format == "y,E":
-            return y, E
-        else:
-            raise RuntimeError
+        return self.format_func(y, E)
