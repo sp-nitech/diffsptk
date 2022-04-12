@@ -19,7 +19,6 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import default_dtype
-from ..misc.utils import is_in
 from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
 
@@ -54,9 +53,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
     floor : float > 0 [scalar]
         Floor value of raw filter bank output.
 
-    out_format : ['y', 'yE', 'yc', 'y,E', 'y,c']
-        `y` is MFCC, `c` is C0, and `E` is energy. If this is `y?`, the two output
-        tensors are concatenated and return the tensor instead of the tuple.
+    out_format : ['y', 'yE', 'yc', 'ycE']
+        `y` is MFCC, `c` is C0, and `E` is energy.
 
     """
 
@@ -73,10 +71,19 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         super(MelFrequencyCepstralCoefficientsAnalysis, self).__init__()
 
         self.mfcc_order = mfcc_order
-        self.out_format = out_format
 
         assert 1 <= self.mfcc_order and self.mfcc_order < n_channel
-        assert is_in(self.out_format, ["y", "yE", "yc", "y,E", "y,c"])
+
+        if out_format == 0 or out_format == "y":
+            self.format_func = lambda y, c, E: y
+        elif out_format == 1 or out_format == "yE":
+            self.format_func = lambda y, c, E: torch.cat((y, E), dim=-1)
+        elif out_format == 2 or out_format == "yc":
+            self.format_func = lambda y, c, E: torch.cat((y, c), dim=-1)
+        elif out_format == 3 or out_format == "ycE":
+            self.format_func = lambda y, c, E: torch.cat((y, c, E), dim=-1)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported")
 
         self.fbank = MelFilterBankAnalysis(
             n_channel, fft_length, sample_rate, out_format="y,E", **fbank_kwargs
@@ -121,16 +128,4 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         y = self.dct(y)
         c = y[..., :1] * np.sqrt(2)
         y = y[..., 1 : self.mfcc_order + 1] * self.liftering_vector
-
-        if self.out_format == "y":
-            return y
-        elif self.out_format == "yE":
-            return torch.cat((y, E), dim=-1)
-        elif self.out_format == "yc":
-            return torch.cat((y, c), dim=-1)
-        elif self.out_format == "y,E":
-            return y, E
-        elif self.out_format == "y,c":
-            return y, c
-        else:
-            raise RuntimeError
+        return self.format_func(y, c, E)

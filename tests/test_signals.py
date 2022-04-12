@@ -37,6 +37,10 @@ def test_ramp(s=5, e=3, t=-1):
     y_ = call(f"ramp -s {s} -e {e} -t {t}")
     assert np.allclose(y, y_)
 
+    y = diffsptk.ramp(s)
+    y_ = call(f"ramp -m {s}")
+    assert np.allclose(y, y_)
+
 
 def test_sin(m=5, p=0.1, a=-1):
     y = diffsptk.sin(m, p, a)

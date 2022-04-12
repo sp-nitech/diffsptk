@@ -22,13 +22,22 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=3, L=14, B=2):
+@pytest.mark.parametrize("o", [0, 1, 2, 3])
+def test_compatibility(device, o, M=3, L=14, B=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
+    if o == 0:
+        opt = {"norm": False}
+    elif o == 1:
+        opt = {"norm": True}
+    elif o == 2:
+        opt = {"acf": "biased"}
+    elif o == 3:
+        opt = {"acf": "unbiased"}
+    acorr = diffsptk.AutocorrelationAnalysis(M, L, **opt).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device)
-    y = U.call(f"nrand -l {B*L} | acorr -l {L} -m {M}").reshape(-1, M + 1)
+    y = U.call(f"nrand -l {B*L} | acorr -l {L} -m {M} -o {o}").reshape(-1, M + 1)
     U.check_compatibility(y, acorr, x)
 
 

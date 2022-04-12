@@ -22,20 +22,21 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, C=10, L=32, sr=8000, f_min=300, f_max=3400, B=2):
+@pytest.mark.parametrize("o", [0, 1])
+def test_compatibility(device, o, C=10, L=32, sr=8000, f_min=300, f_max=3400, B=2):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     spec = diffsptk.Spectrum(L, eps=0).to(device)
     fbank = diffsptk.MelFilterBankAnalysis(
-        C, L, sr, f_min=f_min, f_max=f_max, out_format="yE"
+        C, L, sr, f_min=f_min, f_max=f_max, out_format=o
     ).to(device)
     x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
     cmd = (
         f"nrand -l {B*L} | "
-        f"fbank -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -o 1"
+        f"fbank -n {C} -l {L} -s {sr//1000} -L {f_min} -H {f_max} -o {o}"
     )
-    y = U.call(cmd).reshape(-1, C + 1)
+    y = U.call(cmd).reshape(-1, C + o)
     U.check_compatibility(y, fbank, x)
 
 

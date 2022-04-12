@@ -34,6 +34,17 @@ def test_compatibility(device, gamma, B=2, M=4):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility2(device, c=2, B=2, M=4):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, c=c).to(device)
+    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
+    y = U.call(f"nrand -l {B*(M+1)} | gnorm -c {c} -m {M}").reshape(-1, M + 1)
+    U.check_compatibility(y, gnorm, x)
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, gamma=1, B=2, M=4):
     if device == "cuda" and not torch.cuda.is_available():
         return

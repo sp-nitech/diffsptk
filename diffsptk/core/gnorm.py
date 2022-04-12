@@ -47,7 +47,7 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         else:
             if gamma != 0:
                 warnings.warn("gamma is given, but not used")
-            self.gamma = 1 / c
+            self.gamma = -1 / c
 
         assert 0 <= self.cep_order
         assert abs(gamma) <= 1
