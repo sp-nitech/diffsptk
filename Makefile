@@ -48,7 +48,8 @@ format:
 	./venv/bin/flake8 $(PROJECT) tests --exclude __init__.py
 
 test:
-	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; pytest -s
+	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
+		pytest -s --cov=./ --cov-report=xml
 
 tool:
 	cd tools; make

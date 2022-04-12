@@ -34,6 +34,7 @@ setup(
             "numpydoc",
             "pydata-sphinx-theme",
             "pytest",
+            "pytest-cov",
             "sphinx",
             "twine",
         ],

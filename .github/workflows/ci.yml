@@ -34,3 +34,11 @@ jobs:
         run: make format
       - name: make test
         run: make test
+      - name: coverage
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          verbose: true

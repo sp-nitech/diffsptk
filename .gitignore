@@ -4,6 +4,10 @@ build/
 dist/
 venv/
 
+# codecov
+.coverage
+coverage.xml
+
 # docs
 _build/
 
