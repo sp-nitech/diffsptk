@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import warnings
+
 import numpy as np
 import torch
 
@@ -38,6 +40,15 @@ def default_dtype():
         return np.float64
     else:
         raise RuntimeError("Unknown default dtype: {t}")
+
+
+def get_gamma(gamma, c):
+    if c is None or c == 0:
+        return gamma
+    if gamma != 0:
+        warnings.warn("gamma is given, but will be ignored")
+    assert 1 <= c
+    return -1 / c
 
 
 def symmetric_toeplitz(x):

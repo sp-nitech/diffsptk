@@ -14,10 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 import torch
 import torch.nn as nn
+
+from ..misc.utils import get_gamma
 
 
 class GeneralizedCepstrumInverseGainNormalization(nn.Module):
@@ -32,8 +32,8 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
     gamma : float [-1 <= gamma <= 1]
         Gamma.
 
-    c : int >= 1
-        Inverse gamma.
+    c : int >= 1 [scalar]
+        Number of stages.
 
     """
 
@@ -41,16 +41,10 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         super(GeneralizedCepstrumInverseGainNormalization, self).__init__()
 
         self.cep_order = cep_order
-
-        if c is None:
-            self.gamma = gamma
-        else:
-            if gamma != 0:
-                warnings.warn("gamma is given, but not used")
-            self.gamma = -1 / c
+        self.gamma = get_gamma(gamma, c)
 
         assert 0 <= self.cep_order
-        assert abs(gamma) <= 1
+        assert abs(self.gamma) <= 1
 
     def forward(self, y):
         """Perform cepstrum inverse gain normalization.
