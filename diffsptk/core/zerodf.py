@@ -56,7 +56,7 @@ class AllZeroDigitalFilter(nn.Module):
         x : Tensor [shape=(B, T)]
             Excitation signal.
 
-        h : Tensor [shape=(B, T/P, D)]
+        h : Tensor [shape=(B, T/P, M+1)]
             Filter coefficients.
 
         Returns
@@ -75,9 +75,9 @@ class AllZeroDigitalFilter(nn.Module):
 
         """
         x = self.pad(x)
-        x = x.unfold(-1, self.filter_order + 1, 1).flip(-1)
-        h = self.intpl(h)
+        x = x.unfold(-1, self.filter_order + 1, 1)
+        h = self.intpl(h.flip(-1))
         if self.ignore_gain:
-            h = h / h[..., :1]
+            h = h / h[..., -1:]
         y = (x * h).sum(-1)
         return y
