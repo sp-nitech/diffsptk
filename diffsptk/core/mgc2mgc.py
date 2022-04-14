@@ -48,7 +48,6 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 
         copy_length = min(1, min(self.in_order, self.out_order)) + 1
         c2[..., :copy_length] = c1[..., :copy_length]
-
         for m in range(2, self.out_order + 1):
             n = max(1, m - self.in_order)
             cc = c1[..., 1:m] * c2[..., n:m].flip(-1)
@@ -205,7 +204,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
             if in_gamma != out_gamma:
                 modules.append(
                     GeneralizedCepstrumToGeneralizedCepstrum(
-                        in_order, out_order, in_gamma, out_gamma
+                        out_order, out_order, in_gamma, out_gamma
                     )
                 )
             if not out_norm and in_gamma != out_gamma:

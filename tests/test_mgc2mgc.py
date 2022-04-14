@@ -27,7 +27,7 @@ import tests.utils as U
 @pytest.mark.parametrize("in_mul", [False, True])
 @pytest.mark.parametrize("out_mul", [False, True])
 @pytest.mark.parametrize(
-    "M, A, G", [[4, 0, 0.1], [4, 0, 0.2], [2, 0.1, 0.1], [2, 0.1, 0.2]]
+    "M, A, G", [[4, 0, 0.1], [4, 0, 0.2], [2, 0.1, 0.1], [6, 0.1, 0.2]]
 )
 def test_compatibility(
     device, in_norm, out_norm, in_mul, out_mul, M, A, G, m=4, a=0, g=0.1, B=2
