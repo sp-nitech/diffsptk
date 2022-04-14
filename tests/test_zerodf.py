@@ -43,11 +43,11 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=4, T=20, D=2):
+def test_differentiable(device, B=4, T=20, M=3):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    zerodf = diffsptk.AllZeroDigitalFilter(D - 1).to(device)
+    zerodf = diffsptk.AllZeroDigitalFilter(M).to(device)
     x = torch.randn(B, T, requires_grad=True, device=device)
-    h = torch.randn(B, T, D, requires_grad=True, device=device)
+    h = torch.randn(B, T, M + 1, requires_grad=True, device=device)
     U.check_differentiable(zerodf, x, h)
