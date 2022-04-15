@@ -41,4 +41,4 @@ def test_differentiable(device, quantizer, L=20):
 
     quantize = diffsptk.UniformQuantization(quantizer=quantizer).to(device)
     x = torch.randn(L, requires_grad=True, device=device)
-    U.check_differentiable(quantize, x, opt={"int_out": False})
+    U.check_differentiable(quantize, x)
