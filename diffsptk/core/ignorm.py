@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from ..misc.utils import get_gamma
 
 
@@ -69,6 +70,8 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         tensor([1., 2., 3., 4.])
 
         """
+        check_size(y.size(-1), self.cep_order + 1, "dimension of cepstrum")
+
         K, y = torch.split(y, [1, self.cep_order], dim=-1)
         if self.gamma == 0:
             x0 = torch.log(K)

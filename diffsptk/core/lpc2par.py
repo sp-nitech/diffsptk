@@ -19,6 +19,7 @@ import warnings
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from ..misc.utils import is_in
 
 
@@ -47,7 +48,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         self.warn_type = warn_type
 
         assert 0 <= self.lpc_order
-        assert -1 <= self.gamma and self.gamma <= 1
+        assert abs(self.gamma) <= 1
         assert is_in(self.warn_type, ["ignore", "warn", "exit"])
 
     def forward(self, a):
@@ -77,6 +78,8 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         tensor([ 1.6036,  0.0491, -0.5601, -0.0638])
 
         """
+        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
+
         K, a = torch.split(a, [1, self.lpc_order], dim=-1)
 
         ks = []
@@ -92,8 +95,8 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
                     raise RuntimeError("unstable LPC")
                 else:
                     raise RuntimeError
-            ks.append(km)
 
+            ks.append(km)
             z = 1 - km * km
             k = a[..., :-1]
             a = (k - km * k.flip(-1)) / z
