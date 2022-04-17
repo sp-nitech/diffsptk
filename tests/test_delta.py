@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("seed", [[[-1, 1], [-1, 0, 1]], [3, 2]])
+@pytest.mark.parametrize("seed", [[[-1, 1], [-1, 0]], [3, 2]])
 def test_compatibility(device, seed, T=10, L=2):
     delta = diffsptk.Delta(seed)
 

@@ -68,7 +68,7 @@ class Window(nn.Module):
 
         # Normalize window.
         if norm == 0 or norm == "none":
-            pass
+            w /= 1
         elif norm == 1 or norm == "power":
             w /= np.sqrt(np.sum(w**2))
         elif norm == 2 or norm == "magnitude":

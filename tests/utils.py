@@ -109,9 +109,9 @@ def check_compatibility(
         print(f"Target: {y}")
 
     if eq is None:
-        assert np.allclose(y_hat, y)
+        assert np.allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
     else:
-        assert eq(y_hat, y)
+        assert eq(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
 
 
 def check_differentiable(device, modules, shapes, opt={}, load=1):

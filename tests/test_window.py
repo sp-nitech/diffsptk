@@ -23,7 +23,8 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("norm", [0, 1, 2])
 @pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5])
-def test_compatibility(device, norm, w, L1=10, L2=12, B=2):
+@pytest.mark.parametrize("L1", [8, 10])
+def test_compatibility(device, norm, w, L1, L2=10, B=2):
     window = diffsptk.Window(L1, L2, norm=norm, window=w)
 
     U.check_compatibility(
