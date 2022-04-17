@@ -25,13 +25,18 @@ import tests.utils as U
     "seed",
     [
         [[-0.5, 0, 0.5], [1, -2, 1]],
-        [[3, 0, 1, 2, 0], [-1]],
+        [[3, 0, 1, 2, 0], [0, -1, 0]],
+        [2, 3],
     ],
 )
 def test_compatibility(device, seed, T=100, D=2):
     mlpg = diffsptk.MaximumLikelihoodParameterGeneration(T, seed=seed)
 
-    opt = " ".join(["-d " + " ".join([str(x) for x in c]) for c in seed])
+    if U.is_array(seed[0]):
+        opt = " ".join(["-d " + " ".join([str(w) for w in window]) for window in seed])
+    else:
+        opt = "-r " + " ".join([str(width) for width in seed])
+
     H = len(seed) + 1
     tmp1 = "mlpg.tmp1"
     tmp2 = "mlpg.tmp2"
