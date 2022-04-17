@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,25 +22,21 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, P=4, N=10):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    linear_intpl = diffsptk.LinearInterpolation(P)
 
     tmp = "linear_intpl.tmp"
-    U.call(f"ramp -s 1 -e {N} > {tmp}", get=False)
+    U.check_compatibility(
+        device,
+        linear_intpl,
+        [f"ramp -s 1 -e {N} > {tmp}"],
+        f"cat {tmp}",
+        f"step -v 1 -l {N*P} | zerodf {tmp} -i 1 -m 0 -p {P}",
+        [f"rm {tmp}"],
+    )
 
-    linear_intpl = diffsptk.LinearInterpolation(P).to(device)
-    x = torch.from_numpy(U.call(f"cat {tmp}").reshape(1, -1, 1)).to(device)
-    y = U.call(f"step -v 1 -l {N*P} | zerodf {tmp} -i 1 -m 0 -p {P}").reshape(-1, 1)
-
-    U.call(f"rm {tmp}", get=False)
-    U.check_compatibility(y, linear_intpl, x)
+    U.check_differentiable(device, linear_intpl, [N])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, P=4, B=2, N=10, D=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    linear_intpl = diffsptk.LinearInterpolation(P).to(device)
-    x = torch.randn(B, N, D, requires_grad=True, device=device)
-    U.check_differentiable(linear_intpl, x)
+def test_various_shape(P=4, N=10):
+    linear_intpl = diffsptk.LinearInterpolation(P)
+    U.check_various_shape(linear_intpl, [(N,), (N, 1), (1, N, 1)])

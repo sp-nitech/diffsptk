@@ -15,40 +15,26 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("gamma", [0, 1])
-def test_compatibility(device, gamma, B=2, M=4):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+@pytest.mark.parametrize("gamma, c", [[0, None], [1, None], [0, 2]])
+def test_compatibility(device, gamma, c, M=4, B=2):
+    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma, c)
 
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
-    y = U.call(f"nrand -l {B*(M+1)} | gnorm -g {gamma} -m {M}").reshape(-1, M + 1)
-    U.check_compatibility(y, gnorm, x)
+    opt = f"-g {gamma}" if c is None else f"-c {c}"
+    U.check_compatibility(
+        device,
+        gnorm,
+        [],
+        f"nrand -l {B*(M+1)}",
+        f"gnorm {opt} -m {M}",
+        [],
+        dx=M + 1,
+        dy=M + 1,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility2(device, c=2, B=2, M=4):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, c=c).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
-    y = U.call(f"nrand -l {B*(M+1)} | gnorm -c {c} -m {M}").reshape(-1, M + 1)
-    U.check_compatibility(y, gnorm, x)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, gamma=1, B=2, M=4):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma).to(device)
-    x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(gnorm, x)
+    U.check_differentiable(device, gnorm, [B, M + 1])

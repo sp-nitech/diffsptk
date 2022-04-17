@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
+
 
 class CepstrumToImpulseResponse(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
@@ -65,6 +67,8 @@ class CepstrumToImpulseResponse(nn.Module):
         tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
 
         """
+        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
+
         c0 = c[..., 0]
         c1 = (c[..., 1:] * self.ramp).flip(-1)
 

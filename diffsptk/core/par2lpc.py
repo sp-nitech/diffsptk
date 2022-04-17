@@ -16,6 +16,8 @@
 
 import torch.nn as nn
 
+from ..misc.utils import check_size
+
 
 class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/par2lpc.html>`_
@@ -56,15 +58,14 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
         >>> a
         tensor([ 1.6036,  0.0573, -0.5615, -0.0638])
         >>> lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(3)
-        >>> k = lpc2par(a)
-        >>> k
-        tensor([ 1.6036,  0.0491, -0.5601, -0.0638])
         >>> par2lpc = diffsptk.ParcorCoefficientsToLinearPredictiveCoefficients(3)
-        >>> a2 = par2lpc(k)
+        >>> a2 = par2lpc(lpc2par(a))
         >>> a2
         tensor([ 1.6036,  0.0573, -0.5615, -0.0638])
 
         """
+        check_size(k.size(-1), self.lpc_order + 1, "dimension of PARCOR")
+
         a = k.clone()
         for m in range(2, self.lpc_order + 1):
             km = k[..., m : m + 1]

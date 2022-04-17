@@ -18,6 +18,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
+
 
 class Window(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/window.html>`_
@@ -43,6 +45,8 @@ class Window(nn.Module):
     def __init__(self, in_length, out_length=None, norm="power", window="blackman"):
         super(Window, self).__init__()
 
+        self.in_length = in_length
+
         assert 1 <= in_length
 
         # Make window.
@@ -64,14 +68,13 @@ class Window(nn.Module):
 
         # Normalize window.
         if norm == 0 or norm == "none":
-            pass
+            w /= 1
         elif norm == 1 or norm == "power":
             w /= np.sqrt(np.sum(w**2))
         elif norm == 2 or norm == "magnitude":
             w /= np.sum(w)
         else:
             raise ValueError(f"norm {norm} is not supported")
-
         self.register_buffer("window", torch.from_numpy(w.astype(np.float32)))
 
         # Make padding module.
@@ -103,5 +106,7 @@ class Window(nn.Module):
         tensor([0.0800, 0.5400, 1.0000, 0.5400, 0.0800, 0.0000, 0.0000])
 
         """
+        check_size(x.size(-1), self.in_length, "input length")
+
         y = self.pad(x * self.window)
         return y

@@ -16,6 +16,7 @@
 
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from .linear_intpl import LinearInterpolation
 
 
@@ -40,28 +41,28 @@ class AllZeroDigitalFilter(nn.Module):
         super(AllZeroDigitalFilter, self).__init__()
 
         self.filter_order = filter_order
+        self.frame_period = frame_period
         self.ignore_gain = ignore_gain
 
         assert 0 <= self.filter_order
-        assert 1 <= frame_period
 
         self.pad = nn.ConstantPad1d((self.filter_order, 0), 0)
-        self.intpl = LinearInterpolation(frame_period)
+        self.linear_intpl = LinearInterpolation(self.frame_period)
 
     def forward(self, x, h):
         """Apply an all-zero digital filter.
 
         Parameters
         ----------
-        x : Tensor [shape=(B, T)]
+        x : Tensor [shape=(..., T)]
             Excitation signal.
 
-        h : Tensor [shape=(B, T/P, M+1)]
+        h : Tensor [shape=(..., T/P, M+1)]
             Filter coefficients.
 
         Returns
         -------
-        y : Tensor [shape=(B, T)]
+        y : Tensor [shape=(..., T)]
             Output signal.
 
         Examples
@@ -69,14 +70,17 @@ class AllZeroDigitalFilter(nn.Module):
         >>> x = diffsptk.step(4)
         >>> h = diffsptk.ramp(4)
         >>> zerodf = diffsptk.AllZeroDigitalFilter(0)
-        >>> y = zerodf(x.view(1, -1), h.view(1, -1, 1))
+        >>> y = zerodf(x, h.view(-1, 1))
         >>> y
         tensor([[0., 1., 2., 3., 4.]])
 
         """
+        check_size(h.size(-1), self.filter_order + 1, "dimension of impulse response")
+        check_size(x.size(-1), h.size(-2) * self.frame_period, "sequence length")
+
         x = self.pad(x)
         x = x.unfold(-1, self.filter_order + 1, 1)
-        h = self.intpl(h.flip(-1))
+        h = self.linear_intpl(h.flip(-1))
         if self.ignore_gain:
             h = h / h[..., -1:]
         y = (x * h).sum(-1)

@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -26,21 +25,21 @@ import tests.utils as U
 @pytest.mark.parametrize("fp", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("center", [True, False])
 def test_compatibility(device, fl, fp, center, T=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    frame = diffsptk.Frame(fl, fp, center=center, zmean=True).to(device)
 
-    frame = diffsptk.Frame(fl, fp, center=center, zmean=False).to(device)
-    x = torch.arange(T).view(1, -1).to(device)
     n = 0 if center else 1
-    y = U.call(f"ramp -l {T} | frame -l {fl} -p {fp} -n {n}").reshape(-1, fl)
-    U.check_compatibility(y, frame, x)
+    U.check_compatibility(
+        device,
+        frame,
+        [],
+        f"ramp -l {T}",
+        f"frame -l {fl} -p {fp} -n {n} -z",
+        [],
+        dy=fl,
+    )
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, fl=5, fp=3, B=4, T=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    frame = diffsptk.Frame(fl, fp).to(device)
-    x = torch.randn(B, T, requires_grad=True, device=device)
-    U.check_differentiable(frame, x)
+    frame = diffsptk.Frame(fl, fp, zmean=False)
+    U.check_differentiable(device, frame, [B, T])

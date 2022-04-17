@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,24 +22,19 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, M=9, gamma=0.9, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
     lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(
         M, gamma=gamma, warn_type="ignore"
-    ).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
-    y = U.call(f"nrand -l {B*(M+1)} | lpc2par -m {M} -g {gamma}").reshape(-1, M + 1)
-    U.check_compatibility(y, lpc2par, x)
+    )
 
+    U.check_compatibility(
+        device,
+        lpc2par,
+        [],
+        f"nrand -l {B*(M+1)}",
+        f"lpc2par -m {M} -g {gamma}",
+        [],
+        dx=M + 1,
+        dy=M + 1,
+    )
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, M=9, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(
-        M, warn_type="ignore"
-    ).to(device)
-    x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(lpc2par, x)
+    U.check_differentiable(device, lpc2par, [B, M + 1])

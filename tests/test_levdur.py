@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,22 +22,18 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, M=30, L=52, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    acorr = diffsptk.AutocorrelationAnalysis(M, L)
+    levdur = diffsptk.LevinsonDurbinRecursion()
 
-    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
-    levdur = diffsptk.LevinsonDurbinRecursion().to(device)
-    x = acorr(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
-    y = U.call(f"nrand -l {B*L} | lpc -m {M} -l {L}").reshape(-1, M + 1)
-    U.check_compatibility(y, levdur, x)
+    U.check_compatibility(
+        device,
+        [levdur, acorr],
+        [],
+        f"nrand -l {B*L}",
+        f"lpc -m {M} -l {L}",
+        [],
+        dx=L,
+        dy=M + 1,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, M=30, L=52, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    acorr = diffsptk.AutocorrelationAnalysis(M, L).to(device)
-    levdur = diffsptk.LevinsonDurbinRecursion().to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    U.check_differentiable(U.compose(levdur, acorr), x)
+    U.check_differentiable(device, [levdur, acorr], [B, L])

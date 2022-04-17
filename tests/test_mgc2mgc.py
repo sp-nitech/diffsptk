@@ -32,9 +32,6 @@ import tests.utils as U
 def test_compatibility(
     device, in_norm, out_norm, in_mul, out_mul, M, A, G, m=4, a=0, g=0.1, B=2
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
     mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(
         in_order=m,
         out_order=M,
@@ -46,10 +43,8 @@ def test_compatibility(
         out_norm=out_norm,
         in_mul=in_mul,
         out_mul=out_mul,
-    ).to(device)
-    x = torch.from_numpy(
-        U.call(f"nrand -l {B*(m+1)} | sopr -ABS").reshape(-1, m + 1)
-    ).to(device)
+    )
+
     opt = f"-m {m} -M {M} -a {a} -A {A} -g {g} -G {G} "
     if in_norm:
         opt += "-n "
@@ -59,32 +54,16 @@ def test_compatibility(
         opt += "-u "
     if out_mul:
         opt += "-U "
-    y = U.call(f"nrand -l {B*(m+1)} | sopr -ABS | mgc2mgc {opt}").reshape(-1, M + 1)
-    U.check_compatibility(y, mgc2mgc, x)
 
+    U.check_compatibility(
+        device,
+        mgc2mgc,
+        [],
+        f"nrand -l {B*(m+1)} | sopr -ABS",
+        f"mgc2mgc {opt}",
+        [],
+        dx=m + 1,
+        dy=M + 1,
+    )
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("in_norm", [False, True])
-@pytest.mark.parametrize("out_norm", [False, True])
-@pytest.mark.parametrize("in_mul", [False, True])
-@pytest.mark.parametrize("out_mul", [False, True])
-def test_differentiable(
-    device, in_norm, out_norm, in_mul, out_mul, m=9, M=9, a=0, A=0.3, g=0.2, G=0.2, B=2
-):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-        in_order=m,
-        out_order=M,
-        in_alpha=a,
-        out_alpha=A,
-        in_gamma=g,
-        out_gamma=G,
-        in_norm=in_norm,
-        out_norm=out_norm,
-        in_mul=in_mul,
-        out_mul=out_mul,
-    ).to(device)
-    x = torch.randn(B, m + 1, requires_grad=True, device=device)
-    U.check_differentiable(U.compose(mgc2mgc, torch.abs), x)
+    U.check_differentiable(device, [mgc2mgc, torch.abs], [B, m + 1])

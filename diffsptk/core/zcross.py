@@ -40,8 +40,6 @@ class ZeroCrossingAnalysis(nn.Module):
 
         assert 1 <= self.frame_length
 
-        self.pad = nn.ReplicationPad1d((1, 0))
-
     def forward(self, x):
         """Compute zero-crossing rate.
 
@@ -66,17 +64,10 @@ class ZeroCrossingAnalysis(nn.Module):
         tensor([2., 1.])
 
         """
-        d = x.dim()
-        for _ in range(3 - d):
-            x = x.unsqueeze(0)
-
         x = torch.sign(x)
-        x = self.pad(x)
+        x = torch.cat((x[..., :1], x), dim=-1)
         x = x.unfold(-1, self.frame_length + 1, self.frame_length)
         z = 0.5 * torch.abs(x[..., 1:] - x[..., :-1]).sum(-1)
-
         if self.norm:
             z = z / self.frame_length
-        for _ in range(3 - d):
-            z = z.squeeze(0)
         return z

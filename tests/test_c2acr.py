@@ -15,28 +15,24 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=4, L=16, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+def test_compatibility(device, m=4, M=5, L=16, B=2):
+    c2acr = diffsptk.CepstrumToAutocorrelation(M, L)
 
-    c2acr = diffsptk.CepstrumToAutocorrelation(M, L).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
-    y = U.call(f"nrand -l {B*(M+1)} | c2acr -m {M} -M {M} -l {L}").reshape(-1, M + 1)
-    U.check_compatibility(y, c2acr, x)
+    U.check_compatibility(
+        device,
+        c2acr,
+        [],
+        f"nrand -l {B*(m+1)}",
+        f"c2acr -m {m} -M {M} -l {L}",
+        [],
+        dx=m + 1,
+        dy=M + 1,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, M=4, L=16, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    c2acr = diffsptk.CepstrumToAutocorrelation(M, L).to(device)
-    x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(c2acr, x)
+    U.check_differentiable(device, c2acr, [B, m + 1])

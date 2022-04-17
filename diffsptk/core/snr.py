@@ -89,7 +89,11 @@ class SignalToNoiseRatio(nn.Module):
 
         s2 = torch.square(s).sum(-1)
         n2 = torch.square(sn - s).sum(-1)
-        y = torch.log10((s2 + self.eps) / (n2 + self.eps)).squeeze(-1)
+        y = torch.log10((s2 + self.eps) / (n2 + self.eps))
+
+        if self.frame_length is not None:
+            y = y.squeeze(-1)
+
         if self.reduction == "none":
             pass
         elif self.reduction == "sum":

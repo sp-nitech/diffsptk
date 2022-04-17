@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
+
 
 class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/norm0.html>`_
@@ -40,12 +42,12 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
 
         Parameters
         ----------
-        a : Tensor [shape=(..., M+1, ...)]
+        a : Tensor [shape=(..., M+1)]
             All-pole or all-zero filter coefficients.
 
         Returns
         -------
-        b : Tensor [shape=(..., M+1, ...)]
+        b : Tensor [shape=(..., M+1)]
             All-zero or all-pole filter coefficients.
 
         Examples
@@ -57,6 +59,8 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         tensor([0.2500, 0.7500, 0.5000, 0.2500])
 
         """
+        check_size(a.size(-1), self.filter_order + 1, "dimension of coefficients")
+
         K, a1 = torch.split(a, [1, self.filter_order], dim=-1)
         b0 = torch.reciprocal(K)
         b1 = a1 * b0

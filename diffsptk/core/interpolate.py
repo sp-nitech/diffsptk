@@ -54,7 +54,7 @@ class Interpolation(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T*P+S, ...)]
+        y : Tensor [shape=(..., TxP+S, ...)]
             Interpolated signal.
 
         Examples

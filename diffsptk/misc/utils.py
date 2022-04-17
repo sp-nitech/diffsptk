@@ -63,3 +63,7 @@ def hankel(x):
     assert d % 2 == 1
     X = x.unfold(-1, (d + 1) // 2, 1)
     return X
+
+
+def check_size(x, y, cause):
+    assert x == y, f"Unexpected {cause} (input {x} vs target {y})"

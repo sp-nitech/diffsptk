@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,22 +22,17 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, m=19, M=29, alpha=0.1, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    freqt = diffsptk.FrequencyTransform(m, M, alpha)
 
-    freqt = diffsptk.FrequencyTransform(m, M, alpha).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(m+1)}").reshape(-1, m + 1)).to(device)
-    y = U.call(f"nrand -l {B*(m+1)} | freqt -m {m} -M {M} -A {alpha}").reshape(
-        -1, M + 1
+    U.check_compatibility(
+        device,
+        freqt,
+        [],
+        f"nrand -l {B*(m+1)}",
+        f"freqt -m {m} -M {M} -A {alpha}",
+        [],
+        dx=m + 1,
+        dy=M + 1,
     )
-    U.check_compatibility(y, freqt, x)
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, m=19, M=29, alpha=0.1, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    freqt = diffsptk.FrequencyTransform(m, M, alpha).to(device)
-    x = torch.randn(B, m + 1, requires_grad=True, device=device)
-    U.check_differentiable(freqt, x)
+    U.check_differentiable(device, freqt, [B, m + 1])

@@ -23,21 +23,24 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("M", [10, 11])
-def test_compatibility(device, M, K=4, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+@pytest.mark.parametrize("a", [10, 50, 100])
+def test_compatibility(device, a, M, K=4, T=20):
+    pqmf = diffsptk.PQMF(K, M, alpha=a)
 
-    pqmf = diffsptk.PQMF(K, M).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {L}").reshape(-1, L)).to(device)
-    y = U.call(f"nrand -l {L} | pqmf -k {K} -m {M}").reshape(-1, K).T
-    U.check_compatibility(y, pqmf, x)
+    U.check_compatibility(
+        device,
+        [lambda x: torch.transpose(x, 1, 2), pqmf],
+        [],
+        f"nrand -l {T}",
+        f"pqmf -k {K} -m {M} -a {a}",
+        [],
+        dx=T,
+        dy=K,
+    )
+
+    U.check_differentiable(device, pqmf, [T])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, K=4, M=8, B=2, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    pqmf = diffsptk.PQMF(K, M).to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    U.check_differentiable(pqmf, x)
+def test_various_shape(K=4, M=10, T=20):
+    pqmf = diffsptk.PQMF(K, M)
+    U.check_various_shape(pqmf, [(T,), (1, T), (1, 1, T)])

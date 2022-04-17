@@ -75,16 +75,13 @@ class UniformQuantization(nn.Module):
         else:
             raise ValueError("quantizer {quantizer} is not supported")
 
-    def forward(self, x, int_out=False):
+    def forward(self, x):
         """Quantize input.
 
         Parameters
         ----------
         x : Tensor [shape=(...,)]
             Input.
-
-        int_out : bool [scalar]
-            If True, return int-type tensor.
 
         Returns
         -------
@@ -95,7 +92,7 @@ class UniformQuantization(nn.Module):
         --------
         >>> x = diffsptk.ramp(-4, 4)
         >>> quantize = diffsptk.UniformQuantization(4, 2)
-        >>> y = quantize(x, int_out=True)
+        >>> y = quantize(x).int()
         >>> y
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
@@ -110,7 +107,5 @@ class UniformQuantization(nn.Module):
         else:
             raise RuntimeError
 
-        if int_out:
-            y = y.int()
         y = torch.clip(y, min=0, max=self.level - 1)
         return y

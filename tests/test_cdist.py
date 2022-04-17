@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,30 +23,19 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("reduction", ["none", "batchmean"])
 def test_compatibility(device, reduction, B=2, M=19):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    tmp1 = "cdist.tmp1"
-    tmp2 = "cdist.tmp2"
-    U.call(f"nrand -s 1 -l {B*(M+1)} > {tmp1}", get=False)
-    U.call(f"nrand -s 2 -l {B*(M+1)} > {tmp2}", get=False)
-
-    cdist = diffsptk.CepstralDistance(full=True, reduction=reduction).to(device)
-    x1 = torch.from_numpy(U.call(f"cat {tmp1}").reshape(-1, M + 1)).to(device)
-    x2 = torch.from_numpy(U.call(f"cat {tmp2}").reshape(-1, M + 1)).to(device)
+    cdist = diffsptk.CepstralDistance(full=True, reduction=reduction)
 
     opt = "-f" if reduction == "none" else ""
-    y = U.call(f"cdist {opt} -m {M} {tmp1} {tmp2}")
-    U.call(f"rm {tmp1} {tmp2}", get=False)
-    U.check_compatibility(y, cdist, x1, x2)
+    tmp1 = "cdist.tmp1"
+    tmp2 = "cdist.tmp2"
+    U.check_compatibility(
+        device,
+        cdist,
+        [f"nrand -s 1 -l {B*(M+1)} > {tmp1}", f"nrand -s 2 -l {B*(M+1)} > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"cdist -m {M} {opt} {tmp1} {tmp2}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=M + 1,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=2, M=19):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    cdist = diffsptk.CepstralDistance().to(device)
-    x1 = torch.randn(B, M + 1, requires_grad=True, device=device)
-    x2 = torch.randn(B, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(cdist, x1, x2)
+    U.check_differentiable(device, cdist, [(B, M + 1), (B, M + 1)])

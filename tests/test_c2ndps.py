@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,20 +22,17 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, M=8, L=16, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(M, L)
 
-    c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(M, L).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}").reshape(-1, M + 1)).to(device)
-    y = U.call(f"nrand -l {B*(M+1)} | c2ndps -m {M} -l {L}").reshape(-1, L // 2 + 1)
-    U.check_compatibility(y, c2ndps, x)
+    U.check_compatibility(
+        device,
+        c2ndps,
+        [],
+        f"nrand -l {B*(M+1)}",
+        f"c2ndps -m {M} -l {L}",
+        [],
+        dx=M + 1,
+        dy=L // 2 + 1,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, M=4, L=16, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(M, L).to(device)
-    x = torch.randn(B, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(c2ndps, x)
+    U.check_differentiable(device, c2ndps, [B, M + 1])

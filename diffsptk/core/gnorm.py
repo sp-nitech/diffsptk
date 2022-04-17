@@ -14,10 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from ..misc.utils import get_gamma
 
 
@@ -69,6 +69,8 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         tensor([2.2500, 1.3333, 2.0000, 2.6667])
 
         """
+        check_size(x.size(-1), self.cep_order + 1, "dimension of cepstrum")
+
         x0, x1 = torch.split(x, [1, self.cep_order], dim=-1)
         if self.gamma == 0:
             K = torch.exp(x0)

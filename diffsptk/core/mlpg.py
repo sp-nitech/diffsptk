@@ -40,31 +40,31 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
 
         assert 1 <= size
 
-        # Make window matrix.
+        # Make window.
         window = make_window(seed)
 
-        # Make window used at edges.
+        # Compute threshold.
         if isinstance(seed[0], tuple) or isinstance(seed[0], list):
-            seed = [[1]] + list(seed)
-            static_only = [len(coefficients) == 1 for coefficients in seed]
+            th = [0] + [len(coefficients) // 2 for coefficients in seed]
         else:
-            static_only = [True] + [False] * len(seed)
-        edge_window = window * np.expand_dims(static_only, 1)
+            th = [0] + list(seed)
+        th = np.expand_dims(np.asarray(th), 1)
 
         H, L = window.shape
         N = (L - 1) // 2
         T = size
         W = np.zeros((T * H, T), dtype=window.dtype)
 
+        # Make window matrix
         for t in range(T):
             hs = H * t
             he = hs + H
             ts = t - N
             te = ts + L
             if ts < 0:
-                W[hs:he, :te] = edge_window[:, -ts:]
+                W[hs:he, :te] = window[:, -ts:] * (th <= t)
             elif T < te:
-                W[hs:he, ts:] = edge_window[:, : T - ts]
+                W[hs:he, ts:] = window[:, : T - ts] * (th < T - t)
             else:
                 W[hs:he, ts:te] = window
 
@@ -82,12 +82,12 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
 
         Parameters
         ----------
-        mean : Tensor [shape=(B, T, DxH)]
+        mean : Tensor [shape=(..., T, DxH)]
             Time-variant mean vectors with delta components.
 
         Returns
         -------
-        c : Tensor [shape=(B, T, D)]
+        c : Tensor [shape=(..., T, D)]
             Static components.
 
         Examples
@@ -114,7 +114,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
                  [7., 8.]]])
 
         """
-        B, T, _ = mean.shape
-        mean = mean.reshape(B, T * self.H, -1)
-        c = torch.einsum("bTd,tT->btd", mean, self.M)
+        T = mean.size(-2)
+        u = mean.reshape(*mean.shape[:-2], T * self.H, -1)
+        c = torch.einsum("...Td,tT->...td", u, self.M)
         return c
