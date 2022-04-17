@@ -23,6 +23,17 @@ import numpy as np
 import torch
 
 
+def is_array(x):
+    return type(x) is list or type(x) is tuple
+
+
+def compose(*fs):
+    def compose2_outer_kwargs(f, g):
+        return lambda *args, **kwargs: f(g(*args), **kwargs)
+
+    return functools.reduce(compose2_outer_kwargs, fs)
+
+
 def call(cmd, get=True, double=True):
     if get:
         res = subprocess.run(
@@ -45,48 +56,108 @@ def call(cmd, get=True, double=True):
         return None
 
 
-def lap():
-    return time.process_time()
+def check_compatibility(
+    device,
+    modules,
+    setup,
+    inputs,
+    target,
+    teardown,
+    dx=None,
+    dy=None,
+    eq=None,
+    opt={},
+    verbose=False,
+):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
+    for cmd in setup:
+        call(cmd, get=False)
 
-def check_compatibility(y_, module, *x, opt={}, verbose=False):
-    y = module(*x, **opt).cpu().numpy()
+    if not is_array(modules):
+        modules = [modules]
+    if not is_array(inputs):
+        inputs = [inputs]
+
+    x = []
+    for i, cmd in enumerate(inputs):
+        x.append(torch.from_numpy(call(cmd)).to(device))
+        if is_array(dx):
+            if dx[i] is not None:
+                x[-1] = x[-1].reshape(-1, dx[i])
+        elif dx is not None:
+            x[-1] = x[-1].reshape(-1, dx)
+        else:
+            raise NotImplementedError
+
+    if len(setup) == 0:
+        y = call(f"{inputs[0]} | {target}")
+    else:
+        y = call(target)
+    if dy is not None:
+        y = y.reshape(-1, dy)
+
+    for cmd in teardown:
+        call(cmd, get=False)
+
+    module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
+    y_hat = module(*x, **opt).cpu().numpy()
+
     if verbose:
-        print(f"Output: {y}")
-        print(f"Target: {y_}")
-    assert np.allclose(y, y_)
+        print(f"Output: {y_hat}")
+        print(f"Target: {y}")
+
+    if eq is None:
+        assert np.allclose(y_hat, y)
+    else:
+        assert eq(y_hat, y)
 
 
-def check_differentiable(func, *x, opt={}, load=1):
+def check_differentiable(device, modules, shapes, opt={}, load=1):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    if not is_array(modules):
+        modules = [modules]
+    if not is_array(shapes[0]):
+        shapes = [shapes]
+
+    x = []
+    for shape in shapes:
+        x.append(torch.randn(*shape, requires_grad=True, device=device))
+
+    module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
     optimizer = torch.optim.SGD(x, lr=0.01)
 
-    s = lap()
+    s = time.process_time()
     for _ in range(load):
-        y = func(*x, **opt)
+        y = module(*x, **opt)
         optimizer.zero_grad()
         loss = y.mean()
         loss.backward()
         optimizer.step()
-    e = lap()
+    e = time.process_time()
 
     if load > 1:
         print(f"time: {e - s}")
 
-    class_name = func.__class__.__name__
-    zero_grad_class_names = ("ZeroCrossingAnalysis",)
     for i in range(len(x)):
         g = x[i].grad.cpu().numpy()
-        if not any([class_name == name for name in zero_grad_class_names]):
-            if not np.any(g):
-                warnings.warn(f"detect zero-gradient at {i}-th input")
+        if not np.any(g):
+            warnings.warn(f"detect zero gradient at {i}-th input")
         if np.any(np.isnan(g)):
-            warnings.warn(f"detect nan-gradient at {i}-th input")
+            warnings.warn(f"detect NaN-gradient at {i}-th input")
         if np.any(np.isinf(g)):
-            warnings.warn(f"detect inf-gradient at {i}-th input")
+            warnings.warn(f"detect Inf-gradient at {i}-th input")
 
 
-def compose(*fs):
-    def compose2_outer_kwargs(f, g):
-        return lambda *args, **kwargs: f(g(*args), **kwargs)
-
-    return functools.reduce(compose2_outer_kwargs, fs)
+def check_various_shape(module, shapes):
+    x = torch.randn(*shapes[0])
+    for i, shape in enumerate(shapes):
+        x = x.view(shape)
+        y = module(x).view(-1)
+        if i == 0:
+            target = y
+        else:
+            assert torch.allclose(y, target)

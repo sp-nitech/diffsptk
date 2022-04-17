@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,22 +23,17 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(device, out_format, L=16, B=2, eps=0.01):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
     spec = diffsptk.Spectrum(L, out_format=out_format, eps=eps).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device)
-    y = U.call(f"nrand -l {B*L} | spec -l {L} -o {out_format} -e {eps}").reshape(
-        -1, L // 2 + 1
+
+    U.check_compatibility(
+        device,
+        spec,
+        [],
+        f"nrand -l {B*L}",
+        f"spec -l {L} -o {out_format} -e {eps}",
+        [],
+        dx=L,
+        dy=L // 2 + 1,
     )
-    U.check_compatibility(y, spec, x)
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, L=16, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    spec = diffsptk.Spectrum(L).to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    U.check_differentiable(spec, x)
+    U.check_differentiable(device, spec, [B, L])

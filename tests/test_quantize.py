@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,21 +23,15 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("quantizer", [0, 1])
 def test_compatibility(device, quantizer, v=3, n_bit=8, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    quantize = diffsptk.UniformQuantization(v, n_bit, quantizer)
 
-    quantize = diffsptk.UniformQuantization(v, n_bit, quantizer).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {L}")).to(device)
-    y = U.call(f"nrand -l {L} | quantize -v {v} -b {n_bit} -t {quantizer} | x2x +id")
-    U.check_compatibility(y, quantize, x)
+    U.check_compatibility(
+        device,
+        quantize,
+        [],
+        f"nrand -l {L}",
+        f"quantize -v {v} -b {n_bit} -t {quantizer} | x2x +id",
+        [],
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("quantizer", [0, 1])
-def test_differentiable(device, quantizer, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    quantize = diffsptk.UniformQuantization(quantizer=quantizer).to(device)
-    x = torch.randn(L, requires_grad=True, device=device)
-    U.check_differentiable(quantize, x)
+    U.check_differentiable(device, quantize, [L])

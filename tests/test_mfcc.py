@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -26,29 +25,21 @@ import tests.utils as U
 def test_compatibility(
     device, o, M=4, C=10, L=32, sr=8000, lifter=20, f_min=300, f_max=3400, B=2
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    spec = diffsptk.Spectrum(L, eps=0).to(device)
+    spec = diffsptk.Spectrum(L, eps=0)
     mfcc = diffsptk.MFCC(
         M, C, L, sr, lifter=lifter, f_min=f_min, f_max=f_max, out_format=o
-    ).to(device)
-    x = spec(torch.from_numpy(U.call(f"nrand -l {B*L}").reshape(-1, L)).to(device))
-    cmd = (
-        f"nrand -l {B*L} | "
-        f"mfcc -m {M} -n {C} -l {L} -s {sr//1000} -c {lifter} -L {f_min} -H {f_max} "
-        f"-q 4 -o {o}"
     )
-    y = U.call(cmd).reshape(-1, M + (o if o <= 1 else o - 1))
-    U.check_compatibility(y, mfcc, x)
 
+    s = sr // 1000
+    U.check_compatibility(
+        device,
+        [mfcc, spec],
+        [],
+        f"nrand -l {B*L}",
+        f"mfcc -m {M} -n {C} -l {L} -s {s} -c {lifter} -L {f_min} -H {f_max} -o {o}",
+        [],
+        dx=L,
+        dy=M + (o if o <= 1 else o - 1),
+    )
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, M=4, C=10, L=32, sr=8000, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    spec = diffsptk.Spectrum(L).to(device)
-    mfcc = diffsptk.MFCC(M, C, L, sr, out_format="yc").to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    U.check_differentiable(U.compose(mfcc, spec), x)
+    U.check_differentiable(device, [mfcc, spec], [B, L])

@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,20 +22,13 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, L=10, T=50):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    zcross = diffsptk.ZeroCrossingAnalysis(L, norm=True)
 
-    zcross = diffsptk.ZeroCrossingAnalysis(L, norm=True).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {T}")).to(device)
-    y = U.call(f"nrand -l {T} | zcross -l {L} -o 1")
-    U.check_compatibility(y, zcross, x)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, L=10, T=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    zcross = diffsptk.ZeroCrossingAnalysis(L).to(device)
-    x = torch.randn(T, requires_grad=True, device=device)
-    U.check_differentiable(zcross, x)
+    U.check_compatibility(
+        device,
+        zcross,
+        [],
+        f"nrand -l {T}",
+        f"zcross -l {L} -o 1",
+        [],
+    )

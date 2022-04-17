@@ -14,20 +14,19 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
-
 import diffsptk
 import tests.utils as U
 
 
 def test_compatibility(T=100, P=10, L1=12, L2=16, eps=1e-6):
     stft = diffsptk.STFT(L1, P, L2, eps=eps)
-    x = torch.from_numpy(U.call(f"nrand -l {T}"))
-    cmd = (
-        f"nrand -l {T} | "
-        f"frame -l {L1} -p {P} | "
-        f"window -l {L1} -L {L2} | "
-        f"spec -l {L2} -e {eps} -o 3"
+
+    U.check_compatibility(
+        "cpu",
+        stft,
+        [],
+        f"nrand -l {T}",
+        f"frame -l {L1} -p {P} | window -l {L1} -L {L2} | spec -l {L2} -e {eps} -o 3",
+        [],
+        dy=L2 // 2 + 1,
     )
-    y = U.call(cmd).reshape(-1, L2 // 2 + 1)
-    U.check_compatibility(y, stft, x)

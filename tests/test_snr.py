@@ -15,40 +15,41 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("reduction", ["none", "mean"])
-def test_compatibility(device, reduction, B=2, T=100, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+@pytest.mark.parametrize("o", [0, 1, 2])
+def test_compatibility(device, o, B=2, T=100, L=20):
+    if o == 0:
+        frame_length = None
+        reduction = "mean"
+        dim = None
+        B = 1
+    elif o == 1:
+        frame_length = L
+        reduction = "mean"
+        dim = None
+    elif o == 2:
+        frame_length = L
+        reduction = "none"
+        dim = T // L
+
+    snr = diffsptk.SignalToNoiseRatio(frame_length, full=True, reduction=reduction)
 
     tmp1 = "snr.tmp1"
     tmp2 = "snr.tmp2"
-    U.call(f"nrand -s 1 -l {B*T} > {tmp1}", get=False)
-    U.call(f"nrand -s 2 -l {B*T} > {tmp2}", get=False)
+    U.check_compatibility(
+        device,
+        snr,
+        [f"nrand -s 1 -l {B*T} > {tmp1}", f"nrand -s 2 -l {B*T} > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"snr -o {o} -l {L} {tmp1} {tmp2}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=T,
+        dy=dim,
+    )
 
-    snr = diffsptk.SignalToNoiseRatio(L, full=True, reduction=reduction).to(device)
-    x1 = torch.from_numpy(U.call(f"cat {tmp1}").reshape(B, -1, L)).to(device)
-    x2 = torch.from_numpy(U.call(f"cat {tmp2}").reshape(B, -1, L)).to(device)
-
-    o = 2 if reduction == "none" else 1
-    b = B if reduction == "none" else 1
-    y = U.call(f"snr -o {o} -l {L} {tmp1} {tmp2}").reshape(b, -1)
-    U.call(f"rm {tmp1} {tmp2}", get=False)
-    U.check_compatibility(y, snr, x1, x2)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=2, T=10):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    snr = diffsptk.SignalToNoiseRatio().to(device)
-    x1 = torch.randn(B, T, requires_grad=True, device=device)
-    x2 = torch.randn(B, T, requires_grad=True, device=device)
-    U.check_differentiable(snr, x1, x2)
+    U.check_differentiable(device, snr, [(B, T), (B, T)])

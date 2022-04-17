@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,30 +23,19 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    zerodf = diffsptk.AllZeroDigitalFilter(M, P, ignore_gain=ignore_gain)
 
     tmp1 = "zerodf.tmp1"
     tmp2 = "zerodf.tmp2"
-    U.call(f"nrand -l {T} > {tmp1}", get=False)
-    U.call(f"nrand -l {T//P*(M+1)} > {tmp2}", get=False)
-
-    zerodf = diffsptk.AllZeroDigitalFilter(M, P, ignore_gain=ignore_gain).to(device)
-    x = torch.from_numpy(U.call(f"cat {tmp1}").reshape(1, -1)).to(device)
-    h = torch.from_numpy(U.call(f"cat {tmp2}").reshape(1, -1, M + 1)).to(device)
     opt = "-k" if ignore_gain else ""
-    y = U.call(f"zerodf {tmp2} < {tmp1} -i 1 -m {M} -p {P} {opt}").reshape(1, -1)
+    U.check_compatibility(
+        device,
+        zerodf,
+        [f"nrand -l {T} > {tmp1}", f"nrand -l {T//P*(M+1)} > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"zerodf {tmp2} < {tmp1} -i 1 -m {M} -p {P} {opt}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=[None, M + 1],
+    )
 
-    U.call(f"rm {tmp1} {tmp2}", get=False)
-    U.check_compatibility(y, zerodf, x, h)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=4, T=20, M=3):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    zerodf = diffsptk.AllZeroDigitalFilter(M).to(device)
-    x = torch.randn(B, T, requires_grad=True, device=device)
-    h = torch.randn(B, T, M + 1, requires_grad=True, device=device)
-    U.check_differentiable(zerodf, x, h)
+    U.check_differentiable(device, zerodf, [(T,), (T // P, M + 1)])

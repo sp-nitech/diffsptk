@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,24 +22,19 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("norm", [0, 1, 2])
-@pytest.mark.parametrize("win", [0, 1, 2, 3, 4, 5])
-def test_compatibility(device, norm, win, L1=10, L2=12):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+@pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5])
+def test_compatibility(device, norm, w, L1=10, L2=12, B=2):
+    window = diffsptk.Window(L1, L2, norm=norm, window=w)
 
-    window = diffsptk.Window(L1, L2, norm=norm, window=win).to(device)
-    x = torch.ones(L1).view(1, L1).to(device)
-    y = U.call(f"step -l {L1} | window -n {norm} -w {win} -l {L1} -L {L2}").reshape(
-        -1, L2
+    U.check_compatibility(
+        device,
+        window,
+        [],
+        f"step -l {L1}",
+        f"window -n {norm} -w {w} -l {L1} -L {L2}",
+        [],
+        dx=L1,
+        dy=L2,
     )
-    U.check_compatibility(y, window, x)
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, L=10, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    window = diffsptk.Window(L).to(device)
-    x = torch.randn(B, L, requires_grad=True, device=device)
-    U.check_differentiable(window, x)
+    U.check_differentiable(device, window, [B, L1])

@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,22 +22,17 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("M", [10, 11])
-def test_compatibility(device, M, K=4, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+def test_compatibility(device, M, K=4, T=20):
+    ipqmf = diffsptk.IPQMF(K, M)
 
-    ipqmf = diffsptk.IPQMF(K, M).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {K*L}").reshape(L, K)).t()
-    x = x.unsqueeze(0).to(device)
-    y = U.call(f"nrand -l {K*L} | ipqmf -k {K} -m {M}").reshape(1, 1, -1)
-    U.check_compatibility(y, ipqmf, x)
+    U.check_compatibility(
+        device,
+        ipqmf,
+        [],
+        f"nrand -l {K*T}",
+        f"transpose -r {K} -c {T} | ipqmf -k {K} -m {M}",
+        [],
+        dx=T,
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, K=4, M=8, B=2, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    ipqmf = diffsptk.IPQMF(K, M).to(device)
-    x = torch.randn(B, K, L, requires_grad=True, device=device)
-    U.check_differentiable(ipqmf, x)
+    U.check_differentiable(device, ipqmf, [K, T])

@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,20 +22,15 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, v=10, u=255, L=10):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    iulaw = diffsptk.MuLawExpansion(v, u)
 
-    iulaw = diffsptk.MuLawExpansion(v, u).to(device)
-    x = torch.arange(L).to(device)
-    y = U.call(f"ramp -l {L} | iulaw -v {v} -u {u}")
-    U.check_compatibility(y, iulaw, x)
+    U.check_compatibility(
+        device,
+        iulaw,
+        [],
+        f"ramp -l {L}",
+        f"iulaw -v {v} -u {u}",
+        [],
+    )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, L=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    iulaw = diffsptk.MuLawExpansion().to(device)
-    x = torch.randn(L, requires_grad=True, device=device)
-    U.check_differentiable(iulaw, x)
+    U.check_differentiable(device, iulaw, [L])
