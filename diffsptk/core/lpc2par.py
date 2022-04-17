@@ -89,10 +89,10 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
             if torch.any(1 <= torch.abs(km)):
                 if self.warn_type == "ignore":
                     pass
-                elif self.warn_type == "warn":
-                    warnings.warn("detect unstable LPC")
-                elif self.warn_type == "exit":
-                    raise RuntimeError("unstable LPC")
+                elif self.warn_type == "warn":  # pragma: no cover
+                    warnings.warn("Unstable LPC is detected")
+                elif self.warn_type == "exit":  # pragma: no cover
+                    raise RuntimeError("Unstable LPC is detected")
                 else:
                     raise RuntimeError
 
