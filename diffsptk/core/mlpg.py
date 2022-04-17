@@ -82,12 +82,12 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
 
         Parameters
         ----------
-        mean : Tensor [shape=(B, T, DxH)]
+        mean : Tensor [shape=(..., T, DxH)]
             Time-variant mean vectors with delta components.
 
         Returns
         -------
-        c : Tensor [shape=(B, T, D)]
+        c : Tensor [shape=(..., T, D)]
             Static components.
 
         Examples
@@ -114,7 +114,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
                  [7., 8.]]])
 
         """
-        B, T, _ = mean.shape
-        mean = mean.reshape(B, T * self.H, -1)
-        c = torch.einsum("bTd,tT->btd", mean, self.M)
+        T = mean.size(-2)
+        u = mean.reshape(*mean.shape[:-2], T * self.H, -1)
+        c = torch.einsum("...Td,tT->...td", u, self.M)
         return c

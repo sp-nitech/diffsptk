@@ -56,27 +56,34 @@ class LinearInterpolation(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, N, D)]
+        x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
             Filter coefficients.
 
         Returns
         -------
-        y : Tensor [shape=(B, NxP, D)]
+        y : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
             Upsampled filter coefficients.
 
         Examples
         --------
         >>> x = diffsptk.ramp(2)
+        >>> x
+        tensor([0., 1., 2.])
         >>> linear_intpl = diffsptk.LinearInterpolation(2)
-        >>> y = linear_intpl(x.view(1, -1, 1))
-        >>> y.reshape(-1)
-        tensor([[0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000]])
+        >>> y = linear_intpl(x)
+        >>> y
+        tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
 
         """
         # Return copy if upsampling factor is one.
         if self.upsampling_filter.size(0) == 1:
             return x
 
+        d = x.dim()
+        if d == 1:
+            x = x.view(1, -1, 1)
+        elif d == 2:
+            x = x.unsqueeze(0)
         assert x.dim() == 3, "Input must be 3D tensor"
         B, _, D = x.shape
 
@@ -85,4 +92,9 @@ class LinearInterpolation(nn.Module):
 
         y = F.conv2d(x, self.upsampling_filter)  # (B, P, N, D)
         y = y.permute(0, 2, 1, 3).reshape(B, -1, D)
+
+        if d == 1:
+            y = y.view(-1)
+        elif d == 2:
+            y = y.squeeze(0)
         return y

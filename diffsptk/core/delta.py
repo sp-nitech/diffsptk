@@ -113,12 +113,12 @@ class Delta(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, T, D)]
+        x : Tensor [shape=(B, T, D) or (T, D)]
             Static components.
 
         Returns
         -------
-        y : Tensor [shape=(B, T, DxH)]
+        y : Tensor [shape=(B, T, DxH) or (T, DxH)]
             Delta (and static) components.
 
         Examples
@@ -138,12 +138,19 @@ class Delta(nn.Module):
                  [ 7.0000,  8.0000, -2.5000, -3.0000,  3.5000,  4.0000]]])
 
         """
-        assert x.dim() == 3
+        d = x.dim()
+        if d == 2:
+            x = x.unsqueeze(0)
+        assert x.dim() == 3, "Input must be 3D tensor"
         B, T, _ = x.shape
 
         x = x.unsqueeze(1)
         x = self.pad(x)
+
         y = F.conv2d(x, self.window, padding="valid")  # (B, H, T, D)
         y = y.permute(0, 2, 1, 3)
         y = y.reshape(B, T, -1)
+
+        if d == 2:
+            y = y.squeeze(0)
         return y

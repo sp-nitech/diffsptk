@@ -84,7 +84,7 @@ class CepstralDistance(nn.Module):
         """
         dist = torch.sqrt(torch.square(c1[..., 1:] - c2[..., 1:]).sum(-1) + self.eps)
         if self.reduction == "none":
-            pass
+            dist = dist + 0
         elif self.reduction == "sum":
             dist = dist.sum()
         elif self.reduction == "mean":
