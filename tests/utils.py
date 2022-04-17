@@ -89,7 +89,7 @@ def check_compatibility(
         elif dx is not None:
             x[-1] = x[-1].reshape(-1, dx)
         else:
-            raise NotImplementedError
+            pass
 
     if len(setup) == 0:
         y = call(f"{inputs[0]} | {target}")
