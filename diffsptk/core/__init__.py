@@ -36,6 +36,7 @@ from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .mgcep import MelCepstralAnalysis
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
+from .mlsacheck import MLSADigitalFilterStabilityCheck
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
