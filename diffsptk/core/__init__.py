@@ -27,6 +27,7 @@ from .linear_intpl import LinearInterpolation
 from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
+from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC

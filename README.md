@@ -167,7 +167,7 @@ Status
 - [ ] ~~lpc2c~~
 - [ ] ~~lpc2lsp~~
 - [x] lpc2par
-- [ ] lpccheck
+- [x] lpccheck
 - [ ] ~~lsp2lpc~~
 - [ ] ~~lspcheck~~
 - [ ] ~~lspdf~~
@@ -187,7 +187,7 @@ Status
 - [x] mlpg (*support only unit variance*)
 - [ ] mlsacheck
 - [ ] mpir2c
-- [ ] mseq
+- [ ] ~~mseq~~
 - [ ] msvq
 - [ ] ~~nan~~ (*torch.isnan*)
 - [x] ndps2c

@@ -40,7 +40,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
 
     """
 
-    def __init__(self, lpc_order, gamma=1, warn_type="warn"):
+    def __init__(self, lpc_order, gamma=1, warn_type="ignore"):
         super(LinearPredictiveCoefficientsToParcorCoefficients, self).__init__()
 
         self.lpc_order = lpc_order
