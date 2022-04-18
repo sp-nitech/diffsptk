@@ -123,7 +123,7 @@ Status
 - [ ] dtw
 - [ ] ~~dtw_merge~~
 - [ ] ~~entropy~~ (*torch.special.entr*)
-- [ ] excite
+- [ ] ~~excite~~
 - [ ] ~~extract~~
 - [x] fbank
 - [ ] ~~fd~~
@@ -216,7 +216,7 @@ Status
 - [x] step
 - [ ] ~~swab~~
 - [ ] ~~symmetrize~~
-- [ ] train
+- [ ] ~~train~~
 - [ ] ~~transpose~~ (*torch.transpose*)
 - [x] ulaw
 - [ ] ~~vc~~
