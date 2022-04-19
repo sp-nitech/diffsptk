@@ -197,7 +197,7 @@ Status
 - [x] par2lpc
 - [ ] pca
 - [ ] pcas
-- [ ] phase
+- [x] phase
 - [ ] pitch
 - [ ] ~~pitch_mark~~
 - [ ] poledf
