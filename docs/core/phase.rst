@@ -6,4 +6,4 @@ phase
 .. autoclass:: diffsptk.Phase
    :members:
 
-.. seealso:: :ref:`spec`
+.. seealso:: :ref:`spec`  :ref:`grpdelay`

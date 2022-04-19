@@ -14,6 +14,7 @@ from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization
+from .grpdelay import GroupDelay
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
 from .ignorm import GeneralizedCepstrumInverseGainNormalization

@@ -141,7 +141,7 @@ Status
 - [x] gnorm
 - [ ] ~~gpolezero~~
 - [ ] ~~grlogsp~~
-- [ ] grpdelay
+- [x] grpdelay
 - [ ] ~~gseries~~
 - [ ] ~~gspecgram~~
 - [ ] ~~gwave~~
