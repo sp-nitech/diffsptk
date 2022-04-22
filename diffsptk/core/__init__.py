@@ -1,7 +1,7 @@
 from .acorr import AutocorrelationAnalysis
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
-from .c2mpir import CepstrumToImpulseResponse
+from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
 from .dct import DiscreteCosineTransform
@@ -37,6 +37,7 @@ from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .mgcep import MelCepstralAnalysis
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
+from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients

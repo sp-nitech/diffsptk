@@ -3,5 +3,7 @@
 c2mpir
 ------
 
-.. autoclass:: diffsptk.CepstrumToImpulseResponse
+.. autoclass:: diffsptk.CepstrumToMinimumPhaseImpulseResponse
    :members:
+
+.. seealso:: :ref:`mpir2c`  :ref:`mgc2mgc`

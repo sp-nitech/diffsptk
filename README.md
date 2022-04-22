@@ -186,7 +186,7 @@ Status
 - [ ] ~~minmax~~
 - [x] mlpg (*support only unit variance*)
 - [ ] mlsacheck
-- [ ] mpir2c
+- [x] mpir2c
 - [ ] ~~mseq~~
 - [ ] msvq
 - [ ] ~~nan~~ (*torch.isnan*)

@@ -14,14 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 import torch.nn as nn
 
-from ..misc.utils import check_size
+from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
-class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
+class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/mpir2c.html>`_
     for details. This module may be slow due to recursive computation.
 
     Parameters
@@ -35,50 +34,38 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     """
 
     def __init__(self, cep_order, impulse_response_length):
-        super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
+        super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
-        self.cep_order = cep_order
-        self.impulse_response_length = impulse_response_length
+        self.ir2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+            impulse_response_length - 1,
+            cep_order,
+            in_gamma=1,
+            out_gamma=0,
+            in_mul=True,
+            out_mul=False,
+        )
 
-        assert 0 <= self.cep_order
-        assert 1 <= self.impulse_response_length
-
-        self.register_buffer("ramp", torch.arange(1, self.cep_order + 1))
-
-    def forward(self, c):
-        """Convert cepstrum to impulse response.
+    def forward(self, h):
+        """Convert impulse response to cepstrum.
 
         Parameters
         ----------
-        c : Tensor [shape=(..., M+1)]
-            Cepstral coefficients.
-
-        Returns
-        -------
         h : Tensor [shape=(..., N)]
             Truncated impulse response.
 
+        Returns
+        -------
+        c : Tensor [shape=(..., M+1)]
+            Cepstral coefficients.
+
         Examples
         --------
-        >>> c = diffsptk.ramp(3)
-        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5)
-        >>> h = c2mpir(c)
-        >>> h
-        tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
+        >>> h = diffsptk.ramp(4, 0, -1)
+        >>> mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(3, 5)
+        >>> c = mpir2c(h)
+        >>> c
+        tensor([1.3863, 0.7500, 0.2188, 0.0156])
 
         """
-        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
-
-        c0 = c[..., 0]
-        c1 = (c[..., 1:] * self.ramp).flip(-1)
-
-        h = torch.empty(
-            (*(c.shape[:-1]), self.impulse_response_length), device=c.device
-        )
-        h[..., 0] = torch.exp(c0)
-        for n in range(1, self.impulse_response_length):
-            s = n - self.cep_order
-            h[..., n] = (h[..., max(0, s) : n].clone() * c1[..., max(0, -s) :]).sum(
-                -1
-            ) / n
-        return h
+        c = self.ir2c(h)
+        return c
