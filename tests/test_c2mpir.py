@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, M=19, N=30, B=2):
-    c2mpir = diffsptk.CepstrumToImpulseResponse(M, N)
+    c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(M, N)
 
     U.check_compatibility(
         device,
