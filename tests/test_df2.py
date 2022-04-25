@@ -21,24 +21,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, b=[-0.42, 1], a=[1, -0.42], T=100):
-    dfs = diffsptk.IIR(b, a, 30)
-
-    bb = " ".join([str(x) for x in b])
-    aa = " ".join([str(x) for x in a])
+def test_compatibility(device, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100):
+    df2 = diffsptk.SecondOrderDigitalFilter(
+        sample_rate=sr,
+        pole_frequency=pf,
+        pole_bandwidth=pb,
+        zero_frequency=zf,
+        zero_bandwidth=zb,
+        impulse_response_length=T,
+    )
 
     U.check_compatibility(
         device,
-        dfs,
+        df2,
         [],
         f"nrand -l {T}",
-        f"dfs -b {bb} -a {aa}",
+        f"df2 -s {sr//1000} -p {pf} {pb} -z {zf} {zb}",
         [],
     )
 
-    U.check_differentiable(device, dfs, [T])
-
-
-def test_various_shape(T=10):
-    pqmf = diffsptk.IIR()
-    U.check_various_shape(pqmf, [(T,), (1, T), (1, 1, T)])
+    U.check_differentiable(device, df2, [T])

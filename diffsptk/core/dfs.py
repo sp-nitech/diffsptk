@@ -71,7 +71,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         self.pad = nn.ConstantPad1d((impulse_response_length - 1, 0), 0)
 
     def forward(self, x):
-        """Apply approximated IIR filter to input signal.
+        """Apply an approximated IIR digital filter.
 
         Parameters
         ----------

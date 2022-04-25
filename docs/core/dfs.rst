@@ -7,3 +7,5 @@ dfs
 
 .. autoclass:: diffsptk.InfiniteImpulseResponseDigitalFilter
    :members:
+
+.. seealso:: :ref:`df2`

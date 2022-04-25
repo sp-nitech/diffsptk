@@ -117,7 +117,7 @@ Status
 - [ ] ~~delay~~
 - [x] delta
 - [x] dequantize
-- [ ] df2
+- [x] df2
 - [x] dfs
 - [ ] ~~dmp~~
 - [ ] dtw
@@ -205,11 +205,11 @@ Status
 - [x] quantize
 - [x] ramp
 - [ ] ~~reverse~~ (*torch.flip*)
-- [ ] rlevdur
+- [ ] ~~rlevdur~~
 - [x] rmse
 - [ ] ~~root_pol~~
 - [x] sin
-- [ ] smcep
+- [ ] ~~smcep~~
 - [x] snr
 - [ ] ~~sopr~~
 - [x] spec

@@ -9,6 +9,7 @@ from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
 from .delta import Delta
 from .dequantize import InverseUniformQuantization
+from .df2 import SecondOrderDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
 from .fbank import MelFilterBankAnalysis
