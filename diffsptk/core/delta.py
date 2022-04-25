@@ -70,7 +70,7 @@ def make_window(seed, static_out=True):
             a0 = 2 * n + 1
             a1 = a0 * n * (n + 1) / 3
             a2 = a1 * (3 * n * n + 3 * n - 1) / 5
-            z = 2 / (a2 * a0 - a1 * a1)
+            z = 1 / (2 * (a2 * a0 - a1 * a1))
             j = np.arange(-n, n + 1)
             pad_width = (max_len - (n * 2 + 1)) // 2
             window.append(np.pad((a0 * j * j - a1) * z, pad_width))
