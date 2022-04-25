@@ -118,7 +118,7 @@ Status
 - [x] delta
 - [x] dequantize
 - [ ] df2
-- [ ] dfs
+- [x] dfs
 - [ ] ~~dmp~~
 - [ ] dtw
 - [ ] ~~dtw_merge~~
@@ -198,13 +198,13 @@ Status
 - [ ] pca
 - [ ] pcas
 - [x] phase
-- [ ] pitch
+- [ ] ~~pitch~~
 - [ ] ~~pitch_mark~~
 - [ ] poledf
 - [x] pqmf
 - [x] quantize
 - [x] ramp
-- [ ] ~~reverse~~
+- [ ] ~~reverse~~ (*torch.flip*)
 - [ ] rlevdur
 - [x] rmse
 - [ ] ~~root_pol~~
