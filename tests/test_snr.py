@@ -37,7 +37,7 @@ def test_compatibility(device, o, B=2, T=100, L=20):
         reduction = "none"
         dim = T // L
 
-    snr = diffsptk.SignalToNoiseRatio(frame_length, full=True, reduction=reduction)
+    snr = diffsptk.SNR(frame_length, full=True, reduction=reduction)
 
     tmp1 = "snr.tmp1"
     tmp2 = "snr.tmp2"

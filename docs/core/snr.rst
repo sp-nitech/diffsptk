@@ -3,6 +3,8 @@
 snr
 ---
 
+.. autoclass:: diffsptk.SNR
+
 .. autoclass:: diffsptk.SignalToNoiseRatio
    :members:
 
