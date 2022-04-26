@@ -58,7 +58,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         Returns
         -------
         x : Tensor [shape=(..., M+1)]
-            Generalized cepstrum
+            Generalized cepstrum.
 
         Examples
         --------

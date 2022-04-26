@@ -53,7 +53,7 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Generalized cepstrum
+            Generalized cepstrum.
 
         Returns
         -------
