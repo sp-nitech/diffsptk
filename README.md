@@ -174,7 +174,7 @@ Status
 - [ ] ltcdf
 - [x] mc2b
 - [x] mcep
-- [ ] mcpf
+- [x] mcpf
 - [ ] ~~median~~ (*torch.median*)
 - [ ] ~~merge~~
 - [x] mfcc

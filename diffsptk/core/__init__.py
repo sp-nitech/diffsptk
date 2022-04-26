@@ -33,6 +33,7 @@ from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
+from .mcpf import MelCepstrumPostfiltering
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum

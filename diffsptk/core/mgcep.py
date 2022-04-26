@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from ..misc.utils import default_dtype
 from ..misc.utils import hankel
 from ..misc.utils import is_power_of_two
@@ -116,6 +117,7 @@ class MelCepstralAnalysis(nn.Module):
         """
         M = self.cep_order
         H = self.fft_length // 2
+        check_size(x.size(-1), H + 1, "dimension of spectrum")
 
         log_x = torch.log(x)
         c = torch.fft.irfft(log_x)

@@ -6,4 +6,4 @@ mgcep
 .. autoclass:: diffsptk.MelCepstralAnalysis
    :members:
 
-.. seealso:: :ref:`cdist`  :ref:`stft`  :ref:`freqt`
+.. seealso:: :ref:`cdist`  :ref:`stft`  :ref:`freqt`  :ref:`fftcep`  :ref:`mcpf`
