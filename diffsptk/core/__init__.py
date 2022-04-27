@@ -33,12 +33,12 @@ from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
+from .mcep import MelCepstralAnalysis
 from .mcpf import MelCepstrumPostfiltering
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 from .mgc2sp import MelGeneralizedCepstrumToSpectrum
-from .mgcep import MelCepstralAnalysis
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
