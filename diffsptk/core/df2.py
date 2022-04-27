@@ -67,17 +67,19 @@ class SecondOrderDigitalFilter(nn.Module):
             theta = 2 * math.pi * frequency / sample_rate
             return [1, -2 * r * math.cos(theta), r * r]
 
-        if pole_frequency is None:
-            a = None
-        else:
-            a = get_filter_coefficients(pole_frequency, pole_bandwidth, sample_rate)
+        param = {}
+        if pole_frequency is not None:
+            param["a"] = get_filter_coefficients(
+                pole_frequency, pole_bandwidth, sample_rate
+            )
+        if zero_frequency is not None:
+            param["b"] = get_filter_coefficients(
+                zero_frequency, zero_bandwidth, sample_rate
+            )
+        if impulse_response_length is not None:
+            param["impulse_response_length"] = impulse_response_length
 
-        if zero_frequency is None:
-            b = None
-        else:
-            b = get_filter_coefficients(zero_frequency, zero_bandwidth, sample_rate)
-
-        self.dfs = InfiniteImpulseResponseDigitalFilter(b, a, impulse_response_length)
+        self.dfs = InfiniteImpulseResponseDigitalFilter(**param)
 
     def forward(self, x):
         """Apply a second order digital filter.
