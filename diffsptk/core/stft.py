@@ -67,7 +67,7 @@ class ShortTermFourierTransform(nn.Module):
         super(ShortTermFourierTransform, self).__init__()
 
         self.stft = nn.Sequential(
-            Frame(frame_length, frame_period),
+            Frame(frame_length, frame_period, zmean=zmean),
             Window(frame_length, fft_length, norm=norm, window=window),
             Spectrum(fft_length, out_format=out_format, eps=eps),
         )

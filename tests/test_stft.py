@@ -18,15 +18,22 @@ import diffsptk
 import tests.utils as U
 
 
-def test_compatibility(T=100, P=10, L1=12, L2=16, eps=1e-6):
-    stft = diffsptk.STFT(L1, P, L2, eps=eps)
+def test_compatibility(T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
+    stft = diffsptk.STFT(
+        L1, P, L2, zmean=True, norm=n, window=w, eps=eps, out_format="power"
+    )
 
+    cmd = (
+        f"frame -l {L1} -p {P} -z | "
+        f"window -l {L1} -L {L2} -n {n} -w {w} |"
+        f"spec -l {L2} -e {eps} -o 3"
+    )
     U.check_compatibility(
         "cpu",
         stft,
         [],
         f"nrand -l {T}",
-        f"frame -l {L1} -p {P} | window -l {L1} -L {L2} | spec -l {L2} -e {eps} -o 3",
+        cmd,
         [],
         dy=L2 // 2 + 1,
     )
