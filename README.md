@@ -43,6 +43,7 @@ Examples
 import diffsptk
 import torch
 
+# Generate waveform.
 x = torch.randn(100)
 
 # Compute STFT of x.
@@ -59,6 +60,7 @@ mc = mcep(X)
 import diffsptk
 import torch
 
+# Generate waveform.
 x = torch.randn(100)
 
 # Compute STFT of x.
@@ -66,7 +68,7 @@ stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=32)
 X = stft(x)
 
 # Apply 4 mel-filter banks to the STFT.
-fbank = diffsptk.MelFilterBankAnalysis(n_channel=4, fft_length=32, sample_rate=8000)
+fbank = diffsptk.MelFilterBankAnalysis(n_channel=4, fft_length=32, sample_rate=8000, floor=1e-1)
 Y = fbank(X)
 ```
 
@@ -78,6 +80,7 @@ import torch
 K = 4   # Number of subbands.
 M = 40  # Order of filter.
 
+# Generate waveform.
 x = torch.randn(100)
 
 # Decompose x.
@@ -176,7 +179,7 @@ Status
 - [x] mcep
 - [x] mcpf
 - [ ] ~~median~~ (*torch.median*)
-- [ ] ~~merge~~
+- [ ] ~~merge~~ (*torch.cat*)
 - [x] mfcc
 - [x] mgc2mgc
 - [x] mgc2sp

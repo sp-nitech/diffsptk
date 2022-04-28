@@ -51,7 +51,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         Maximum frequency in Hz.
 
     floor : float > 0 [scalar]
-        Floor value of raw filter bank output.
+        Minimum mel-filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.

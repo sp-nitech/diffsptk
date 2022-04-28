@@ -35,6 +35,9 @@ class ShortTermFourierTransform(nn.Module):
     fft_length : int >= L1 [scalar]
         Number of FFT bins, :math:`L_2`.
 
+    zmean : bool [scalar]
+        If True, perform mean subtraction on each frame.
+
     norm : ['none', 'power', 'magnitude']
         Normalization type of window.
 
@@ -55,10 +58,11 @@ class ShortTermFourierTransform(nn.Module):
         frame_length,
         frame_period,
         fft_length,
+        zmean=False,
         norm="power",
         window="blackman",
         out_format="power",
-        eps=1e-8,
+        eps=1e-9,
     ):
         super(ShortTermFourierTransform, self).__init__()
 

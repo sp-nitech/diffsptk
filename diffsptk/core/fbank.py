@@ -52,7 +52,7 @@ class MelFilterBankAnalysis(nn.Module):
         Maximum frequency in Hz.
 
     floor : float > 0 [scalar]
-        Floor value to prevent NaN.
+        Minimum mel-filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'y,E']
         `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
@@ -67,7 +67,7 @@ class MelFilterBankAnalysis(nn.Module):
         sample_rate,
         f_min=0,
         f_max=None,
-        floor=1,
+        floor=1e-5,
         out_format="y",
     ):
         super(MelFilterBankAnalysis, self).__init__()
