@@ -22,19 +22,20 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("n_iter", [0, 3])
-def test_compatibility(device, n_iter, M=8, L=16, B=2, alpha=0.1):
+@pytest.mark.parametrize("gamma", [0, -0.5, -1])
+def test_compatibility(device, n_iter, gamma, M=8, L=16, B=2, alpha=0.1):
     spec = diffsptk.Spectrum(L, eps=0)
-    mcep = diffsptk.MelCepstralAnalysis(M, L, alpha, n_iter=n_iter)
+    mgcep = diffsptk.MelGeneralizedCepstralAnalysis(M, L, alpha, gamma, n_iter=n_iter)
 
     U.check_compatibility(
         device,
-        [mcep, spec],
+        [mgcep, spec],
         [],
         f"nrand -l {B*L}",
-        f"mgcep -g 0 -d 0 -i {n_iter} -l {L} -m {M} -a {alpha}",
+        f"mgcep -d 0 -i {n_iter} -l {L} -m {M} -a {alpha} -g {gamma}",
         [],
         dx=L,
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [mcep, spec], [B, L])
+    U.check_differentiable(device, [mgcep, spec], [B, L])

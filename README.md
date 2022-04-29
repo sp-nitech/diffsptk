@@ -176,14 +176,13 @@ Status
 - [ ] ~~lspdf~~
 - [ ] ltcdf
 - [x] mc2b
-- [x] mcep
 - [x] mcpf
 - [ ] ~~median~~ (*torch.median*)
 - [ ] ~~merge~~ (*torch.cat*)
 - [x] mfcc
 - [x] mgc2mgc
 - [x] mgc2sp
-- [ ] mgcep
+- [x] mgcep
 - [ ] mglsadf
 - [ ] ~~mglsp2sp~~
 - [ ] ~~minmax~~
