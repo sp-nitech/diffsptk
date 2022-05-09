@@ -46,6 +46,8 @@ from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
+from .pca import PrincipalComponentAnalysis
+from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
