@@ -36,4 +36,17 @@ def test_compatibility(device, out_format, L=16, B=2, eps=0.01):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiable(device, spec, [B, L])
+    tmp1 = "spec.tmp1"
+    tmp2 = "spec.tmp2"
+    U.check_compatibility(
+        device,
+        spec,
+        [f"nrand -s 1 -l {B*L} > {tmp1}", f"nrand -s 2 -l {B*L} > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"spec -l {L} -o {out_format} -e {eps} -m {L-1} -z {tmp1} -n {L-1} -p {tmp2}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=L,
+        dy=L // 2 + 1,
+    )
+
+    U.check_differentiable(device, spec, [(B, L), (B, L)])
