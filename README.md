@@ -117,7 +117,7 @@ Status
 - [ ] ~~csm2acr~~
 - [x] dct
 - [x] decimate
-- [ ] ~~delay~~
+- [x] delay
 - [x] delta
 - [x] dequantize
 - [x] df2

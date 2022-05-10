@@ -7,6 +7,7 @@ from .cdist import CepstralDistance
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
+from .delay import Delay
 from .delta import Delta
 from .dequantize import InverseUniformQuantization
 from .df2 import SecondOrderDigitalFilter
