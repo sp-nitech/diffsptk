@@ -107,7 +107,7 @@ Status
 - [ ] ~~amgcep~~
 - [ ] ~~average~~ (*torch.mean*)
 - [x] b2mc
-- [ ] ~~bcp~~
+- [ ] ~~bcp~~ (*torch.split*)
 - [ ] ~~bcut~~
 - [x] c2acr
 - [x] c2mpir
@@ -162,7 +162,7 @@ Status
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
-- [ ] ~~lar2par~~
+- [x] lar2par
 - [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
@@ -195,7 +195,7 @@ Status
 - [x] ndps2c
 - [x] norm0
 - [ ] ~~nrand~~ (*torch.randn*)
-- [ ] ~~par2lar~~
+- [x] par2lar
 - [x] par2lpc
 - [ ] pca
 - [ ] pcas

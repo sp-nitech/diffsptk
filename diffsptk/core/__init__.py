@@ -26,6 +26,7 @@ from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
+from .lar2par import LogAreaRatioToParcorCoefficients
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
 from .linear_intpl import LinearInterpolation
@@ -46,6 +47,7 @@ from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
+from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 from .phase import Phase
 from .pqmf import PseudoQuadratureMirrorFilterBanks
