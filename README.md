@@ -123,7 +123,7 @@ Status
 - [x] df2
 - [x] dfs
 - [ ] ~~dmp~~
-- [ ] dtw
+- [ ] ~~dtw~~
 - [ ] ~~dtw_merge~~
 - [ ] ~~entropy~~ (*torch.special.entr*)
 - [ ] ~~excite~~
@@ -156,9 +156,9 @@ Status
 - [ ] ~~ifft~~ (*torch.fft.ifft*)
 - [ ] ~~ifft2~~ (*torch.fft.ifft2*)
 - [x] ignorm
-- [ ] imglsadf
+- [ ] imglsadf (*will be appeared*)
 - [x] impulse
-- [ ] imsvq
+- [x] imsvq
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
@@ -174,7 +174,7 @@ Status
 - [ ] ~~lsp2lpc~~
 - [ ] ~~lspcheck~~
 - [ ] ~~lspdf~~
-- [ ] ltcdf
+- [ ] ~~ltcdf~~
 - [x] mc2b
 - [x] mcpf
 - [ ] ~~median~~ (*torch.median*)
@@ -183,14 +183,14 @@ Status
 - [x] mgc2mgc
 - [x] mgc2sp
 - [x] mgcep
-- [ ] mglsadf
+- [ ] mglsadf (*will be appeared*)
 - [ ] ~~mglsp2sp~~
 - [ ] ~~minmax~~
 - [x] mlpg (*support only unit variance*)
-- [ ] mlsacheck
+- [ ] ~~mlsacheck~~
 - [x] mpir2c
 - [ ] ~~mseq~~
-- [ ] msvq
+- [ ] ~~msvq~~
 - [ ] ~~nan~~ (*torch.isnan*)
 - [x] ndps2c
 - [x] norm0
@@ -200,9 +200,9 @@ Status
 - [ ] pca
 - [ ] pcas
 - [x] phase
-- [ ] ~~pitch~~
+- [x] pitch
 - [ ] ~~pitch_mark~~
-- [ ] poledf
+- [ ] ~~poledf~~
 - [x] pqmf
 - [x] quantize
 - [x] ramp

@@ -24,6 +24,7 @@ setup(
     python_requires=">= 3.8",
     install_requires=[
         "torch >= 1.9.0",
+        "torchcrepe >= 0.0.16",
         "numpy",
     ],
     extras_require={

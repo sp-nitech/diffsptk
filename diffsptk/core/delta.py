@@ -23,10 +23,10 @@ from ..misc.utils import default_dtype
 
 
 def make_window(seed, static_out=True):
-    if not (isinstance(seed, tuple) or isinstance(seed, list)):
+    if not isinstance(seed, (tuple, list)):
         raise ValueError("seed must be tuple or list")
 
-    if isinstance(seed[0], tuple) or isinstance(seed[0], list):
+    if isinstance(seed[0], (tuple, list)):
         # Make window from delta coefficients.
         if static_out:
             seed = [[1]] + list(seed)
