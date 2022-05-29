@@ -50,6 +50,7 @@ from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 from .phase import Phase
+from .pitch import Pitch
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
