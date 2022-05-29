@@ -44,7 +44,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         window = make_window(seed)
 
         # Compute threshold.
-        if isinstance(seed[0], tuple) or isinstance(seed[0], list):
+        if isinstance(seed[0], (tuple, list)):
             th = [0] + [len(coefficients) // 2 for coefficients in seed]
         else:
             th = [0] + list(seed)
