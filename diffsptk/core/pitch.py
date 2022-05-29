@@ -99,7 +99,8 @@ class Pitch(nn.Module):
         Returns
         -------
         y : Tensor [shape=(B, N, C) or (N, C)]
-            Pitch probability or embedding.
+            Pitch probability or embedding, where N is the number of frames and
+            C is the number of classes or the dimension of embedding.
 
         Examples
         --------
@@ -130,7 +131,7 @@ class Pitch(nn.Module):
         Returns
         -------
         pitch : Tensor [shape=(B, N) or (N,)]
-            Pitch.
+            Pitch in seconds, Hz, or log Hz.
 
         Examples
         --------

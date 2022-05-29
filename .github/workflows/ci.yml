@@ -27,7 +27,7 @@ jobs:
       - name: install packages
         run: |
           sudo apt-get update -qq
-          sudo apt-get install libsndfile1
+          sudo apt-get install -qq -y libsndfile1
           pip3 install torch==${{ matrix.pytorch-version }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - name: install diffsptk
         run: make dev tool
