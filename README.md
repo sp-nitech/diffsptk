@@ -213,7 +213,7 @@ Status
 - [x] sin
 - [ ] ~~smcep~~
 - [x] snr
-- [ ] ~~sopr~~
+- [x] sopr
 - [x] spec
 - [x] step
 - [ ] ~~swab~~

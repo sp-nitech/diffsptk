@@ -41,7 +41,7 @@ class Pitch(nn.Module):
     algorithm : ['crepe']
         Algorithm.
 
-    opt : str, Any [dict]
+    option : str -> Any [dict]
         Algorithm-dependent options.
 
     """
@@ -54,7 +54,7 @@ class Pitch(nn.Module):
         f_max=None,
         algorithm="crepe",
         out_format="f0",
-        **opt,
+        **option,
     ):
         super(Pitch, self).__init__()
 
@@ -71,7 +71,7 @@ class Pitch(nn.Module):
                 sample_rate,
                 f_min=f_min,
                 f_max=f_max,
-                **opt,
+                **option,
             )
         else:
             raise ValueError(f"algorithm {algorithm} is not supported")

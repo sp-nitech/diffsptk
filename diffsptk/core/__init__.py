@@ -58,6 +58,7 @@ from .rmse import RootMeanSquaredError
 from .rmse import RootMeanSquaredError as RMSE
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
+from .sopr import ScalarOperation
 from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
