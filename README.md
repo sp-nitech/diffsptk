@@ -211,7 +211,7 @@ Status
 - [x] rmse
 - [ ] ~~root_pol~~
 - [x] sin
-- [ ] ~~smcep~~
+- [x] smcep
 - [x] snr
 - [x] sopr
 - [x] spec

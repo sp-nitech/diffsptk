@@ -70,7 +70,7 @@ class MelCepstralAnalysis(nn.Module):
 
     """
 
-    def __init__(self, cep_order, fft_length, alpha, n_iter=0):
+    def __init__(self, cep_order, fft_length, alpha=0, n_iter=0):
         super(MelCepstralAnalysis, self).__init__()
 
         self.cep_order = cep_order
