@@ -118,7 +118,7 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
 
     """
 
-    def __init__(self, cep_order, fft_length, alpha, gamma=0, n_iter=0):
+    def __init__(self, cep_order, fft_length, alpha=0, gamma=0, n_iter=0):
         super(MelGeneralizedCepstralAnalysis, self).__init__()
 
         self.cep_order = cep_order
