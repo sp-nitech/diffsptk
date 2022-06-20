@@ -34,7 +34,7 @@ def compose(*fs):
     return functools.reduce(compose2_outer_kwargs, fs)
 
 
-def call(cmd, get=True, double=True):
+def call(cmd, get=True):
     if get:
         res = subprocess.run(
             cmd + " | x2x +da -f %.12f",
@@ -42,8 +42,9 @@ def call(cmd, get=True, double=True):
             text=True,
             stdout=subprocess.PIPE,
         )
+        is_double = torch.get_default_dtype() == torch.float64
         data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.float64 if double else np.float32
+            res.stdout, sep="\n", dtype=np.float64 if is_double else np.float32
         )
         assert len(data) > 0, f"Failed to run command {cmd}"
         return data
