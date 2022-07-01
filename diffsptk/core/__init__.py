@@ -49,6 +49,8 @@ from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
+from .pca import PrincipalComponentAnalysis
+from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
 from .pqmf import PseudoQuadratureMirrorFilterBanks

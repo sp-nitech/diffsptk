@@ -23,7 +23,7 @@ setup(
     ],
     python_requires=">= 3.8",
     install_requires=[
-        "torch >= 1.9.0",
+        "torch >= 1.10.0",
         "torchcrepe >= 0.0.16",
         "numpy",
     ],
