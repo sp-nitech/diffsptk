@@ -15,38 +15,51 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility(device, out_format, L=16, B=2, eps=0.01):
-    spec = diffsptk.Spectrum(L, out_format=out_format, eps=eps).to(device)
+@pytest.mark.parametrize(
+    "operation, option",
+    [
+        ("a", 1),
+        ("s", 1),
+        ("m", 2),
+        ("d", 2),
+        ("r", 0.1),
+        ("l", 0.1),
+        ("u", 1),
+        ("ABS", None),
+        ("INV", None),
+        ("SQR", None),
+        ("SQRT", None),
+        ("LN", None),
+        ("LOG2", None),
+        ("LOG10", None),
+        ("LOGX", 3),
+        ("EXP", None),
+        ("POW2", None),
+        ("POW10", None),
+        ("POWX", 3),
+        ("SIN", None),
+        ("COS", None),
+        ("TAN", None),
+    ],
+)
+def test_compatibility(device, operation, option, L=10):
+    sopr = diffsptk.ScalarOperation(operation, option)
 
+    opt = "" if option is None else option
     U.check_compatibility(
         device,
-        spec,
+        [sopr, torch.abs],
         [],
-        f"nrand -l {B*L}",
-        f"spec -l {L} -o {out_format} -e {eps}",
+        f"nrand -l {L} | sopr -ABS",
+        f"sopr -{operation} {opt}",
         [],
-        dx=L,
-        dy=L // 2 + 1,
     )
 
-    tmp1 = "spec.tmp1"
-    tmp2 = "spec.tmp2"
-    U.check_compatibility(
-        device,
-        spec,
-        [f"nrand -s 1 -l {B*L} > {tmp1}", f"nrand -s 2 -l {B*L} > {tmp2}"],
-        [f"cat {tmp1}", f"cat {tmp2}"],
-        f"spec -l {L} -o {out_format} -e {eps} -m {L-1} -z {tmp1} -n {L-1} -p {tmp2}",
-        [f"rm {tmp1} {tmp2}"],
-        dx=L,
-        dy=L // 2 + 1,
-    )
-
-    U.check_differentiable(device, spec, [(B, L), (B, L)])
+    U.check_differentiable(device, [sopr, torch.abs], [L])

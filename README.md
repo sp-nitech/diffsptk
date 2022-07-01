@@ -107,7 +107,7 @@ Status
 - [ ] ~~amgcep~~
 - [ ] ~~average~~ (*torch.mean*)
 - [x] b2mc
-- [ ] ~~bcp~~
+- [ ] ~~bcp~~ (*torch.split*)
 - [ ] ~~bcut~~
 - [x] c2acr
 - [x] c2mpir
@@ -117,7 +117,7 @@ Status
 - [ ] ~~csm2acr~~
 - [x] dct
 - [x] decimate
-- [ ] ~~delay~~
+- [x] delay
 - [x] delta
 - [x] dequantize
 - [x] df2
@@ -156,13 +156,13 @@ Status
 - [ ] ~~ifft~~ (*torch.fft.ifft*)
 - [ ] ~~ifft2~~ (*torch.fft.ifft2*)
 - [x] ignorm
-- [ ] imglsadf
+- [ ] imglsadf (*will be appeared*)
 - [x] impulse
-- [ ] imsvq
+- [x] imsvq
 - [x] interpolate
 - [x] ipqmf
 - [x] iulaw
-- [ ] ~~lar2par~~
+- [x] lar2par
 - [ ] ~~lbg~~
 - [x] levdur
 - [x] linear_intpl
@@ -174,7 +174,7 @@ Status
 - [ ] ~~lsp2lpc~~
 - [ ] ~~lspcheck~~
 - [ ] ~~lspdf~~
-- [ ] ltcdf
+- [ ] ~~ltcdf~~
 - [x] mc2b
 - [x] mcpf
 - [ ] ~~median~~ (*torch.median*)
@@ -183,26 +183,26 @@ Status
 - [x] mgc2mgc
 - [x] mgc2sp
 - [x] mgcep
-- [ ] mglsadf
+- [ ] mglsadf (*will be appeared*)
 - [ ] ~~mglsp2sp~~
 - [ ] ~~minmax~~
 - [x] mlpg (*support only unit variance*)
-- [ ] mlsacheck
+- [ ] ~~mlsacheck~~
 - [x] mpir2c
 - [ ] ~~mseq~~
-- [ ] msvq
+- [ ] ~~msvq~~
 - [ ] ~~nan~~ (*torch.isnan*)
 - [x] ndps2c
 - [x] norm0
 - [ ] ~~nrand~~ (*torch.randn*)
-- [ ] ~~par2lar~~
+- [x] par2lar
 - [x] par2lpc
 - [x] pca
 - [ ] ~~pcas~~
 - [x] phase
-- [ ] ~~pitch~~
+- [x] pitch
 - [ ] ~~pitch_mark~~
-- [ ] poledf
+- [ ] ~~poledf~~
 - [x] pqmf
 - [x] quantize
 - [x] ramp
@@ -211,9 +211,9 @@ Status
 - [x] rmse
 - [ ] ~~root_pol~~
 - [x] sin
-- [ ] ~~smcep~~
+- [x] smcep
 - [x] snr
-- [ ] ~~sopr~~
+- [x] sopr
 - [x] spec
 - [x] step
 - [ ] ~~swab~~

@@ -81,8 +81,7 @@ class MelFilterBankAnalysis(nn.Module):
         assert 1 <= n_channel
         assert 2 <= fft_length
         assert 1 <= sample_rate
-        assert 0 <= f_min and f_min < f_max
-        assert f_max <= sample_rate / 2
+        assert 0 <= f_min < f_max <= sample_rate / 2
         assert 0 < self.floor
 
         if out_format == 0 or out_format == "y":

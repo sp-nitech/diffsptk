@@ -7,6 +7,7 @@ from .cdist import CepstralDistance
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
+from .delay import Delay
 from .delta import Delta
 from .dequantize import InverseUniformQuantization
 from .df2 import SecondOrderDigitalFilter
@@ -25,6 +26,7 @@ from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
+from .lar2par import LogAreaRatioToParcorCoefficients
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
 from .linear_intpl import LinearInterpolation
@@ -45,17 +47,21 @@ from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
+from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
+from .pitch import Pitch
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
 from .rmse import RootMeanSquaredError
 from .rmse import RootMeanSquaredError as RMSE
+from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
+from .sopr import ScalarOperation
 from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT

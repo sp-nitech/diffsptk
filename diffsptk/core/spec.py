@@ -25,7 +25,7 @@ class Spectrum(nn.Module):
     Parameters
     ----------
     fft_length : int >= 2 [scalar]
-        Number of FFT bins, :math:`L_2`.
+        Number of FFT bins, :math:`L`.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
@@ -55,17 +55,20 @@ class Spectrum(nn.Module):
         else:
             raise ValueError(f"out_format {out_format} is not supported")
 
-    def forward(self, x):
+    def forward(self, b, a=None):
         """Convert waveform to spectrum.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L1)]
-            Framed waveform.
+        b : Tensor [shape=(..., M+1)]
+            Framed waveform or numerator coefficients.
+
+        a : Tensor [shape=(..., N+1)]
+            Denominator coefficients.
 
         Returns
         -------
-        y : Tensor [shape=(..., L2/2+1)]
+        y : Tensor [shape=(..., L/2+1)]
             Spectrum.
 
         Examples
@@ -79,7 +82,14 @@ class Spectrum(nn.Module):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        X = torch.fft.rfft(x, n=self.fft_length)
-        y = torch.square(torch.abs(X)) + self.eps
+        X = torch.abs(torch.fft.rfft(b, n=self.fft_length))
+
+        if a is not None:
+            K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
+            a = torch.cat((K * 0 + 1, a1), dim=-1)
+            X /= torch.abs(torch.fft.rfft(a, n=self.fft_length))
+            X *= K
+
+        y = torch.square(X) + self.eps
         y = self.convert(y)
         return y

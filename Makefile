@@ -33,14 +33,18 @@ dist:
 	./venv/bin/twine check dist/*
 
 dist-clean:
-	./venv/bin/python setup.py clean --all
+	@if [ -f ./venv/bin/python ]; then \
+		./venv/bin/python setup.py clean --all; \
+	fi
 	rm -rf dist
 
 doc:
 	. venv/bin/activate; cd docs; make html
 
 doc-clean:
-	. venv/bin/activate; cd docs; make clean
+	@if [ -f ./venv/bin/activate ]; then \
+		. venv/bin/activate; cd docs; make clean; \
+	fi
 
 format:
 	./venv/bin/black $(PROJECT) tests
