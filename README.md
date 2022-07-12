@@ -38,50 +38,83 @@ pip install -e diffsptk
 
 Examples
 --------
-### Mel-cepstral analysis
+### Mel-cepstral analysis and synthesis
 ```python
 import diffsptk
+import soundfile as sf
 import torch
 
-# Generate waveform.
-x = torch.randn(100)
+# Set analysis condition.
+fl = 400
+fp = 80
+n_fft = 512
+M = 24
+alpha = 0.42
+
+# Read waveform.
+x, sr = sf.read("assets/data.wav")
+x = torch.FloatTensor(x)
 
 # Compute STFT of x.
-stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=16)
+stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
-# Estimate 4-th order mel-cepstrum of x.
-mcep = diffsptk.MelCepstralAnalysis(cep_order=4, fft_length=16, alpha=0.1, n_iter=1)
+# Estimate mel-cepstrum of x.
+mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
 mc = mcep(X)
+
+# Generate excitation.
+e = torch.randn(x.size(0))
+
+# Apply MLSA filter to the excitation.
+mlsa = diffsptk.MLSA(filter_order=M, alpha=alpha, frame_period=fp)
+y = mlsa(e, mc)
+
+# Write waveform.
+sf.write("unvoice.wav", y.cpu().numpy(), sr)
 ```
 
 ### Mel-spectrogram extraction
 ```python
 import diffsptk
+import soundfile as sf
 import torch
 
-# Generate waveform.
-x = torch.randn(100)
+# Set analysis condition.
+fl = 400
+fp = 80
+n_fft = 512
+n_channel = 80
+
+# Read waveform.
+x, sr = sf.read("assets/data.wav")
+x = torch.FloatTensor(x)
 
 # Compute STFT of x.
-stft = diffsptk.STFT(frame_length=12, frame_period=10, fft_length=32)
+stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
-# Apply 4 mel-filter banks to the STFT.
-fbank = diffsptk.MelFilterBankAnalysis(n_channel=4, fft_length=32, sample_rate=8000, floor=1e-1)
+# Apply mel-filter banks to the STFT.
+fbank = diffsptk.MelFilterBankAnalysis(
+    n_channel=n_channel,
+    fft_length=n_fft,
+    sample_rate=sr,
+)
 Y = fbank(X)
 ```
 
 ### Subband decomposition
 ```python
 import diffsptk
+import soundfile as sf
 import torch
 
 K = 4   # Number of subbands.
 M = 40  # Order of filter.
 
-# Generate waveform.
-x = torch.randn(100)
+# Read waveform.
+x, sr = sf.read("assets/data.wav")
+x = torch.FloatTensor(x)
 
 # Decompose x.
 pqmf = diffsptk.PQMF(K, M)
@@ -91,144 +124,14 @@ y = decimate(pqmf(x), dim=-1)
 # Reconstruct x.
 interpolate = diffsptk.Interpolation(K)
 ipqmf = diffsptk.IPQMF(K, M)
-x_hat = ipqmf(interpolate(K * y, dim=-1))
+x_hat = ipqmf(interpolate(K * y, dim=-1)).reshape(-1)
 
 # Compute error between two signals.
 error = torch.abs(x_hat - x).sum()
+
+# Write reconstructed waveform.
+sf.write("reconst.wav", x_hat.cpu().numpy(), sr)
 ```
-
-
-Status
-------
-~~module~~ will not be implemented in this repository.
-- [x] acorr
-- [ ] ~~acr2csm~~
-- [ ] ~~aeq~~ (*torch.allclose*)
-- [ ] ~~amgcep~~
-- [ ] ~~average~~ (*torch.mean*)
-- [x] b2mc
-- [ ] ~~bcp~~ (*torch.split*)
-- [ ] ~~bcut~~
-- [x] c2acr
-- [x] c2mpir
-- [x] c2ndps
-- [x] cdist
-- [ ] ~~clip~~ (*torch.clip*)
-- [ ] ~~csm2acr~~
-- [x] dct
-- [x] decimate
-- [x] delay
-- [x] delta
-- [x] dequantize
-- [x] df2
-- [x] dfs
-- [ ] ~~dmp~~
-- [ ] ~~dtw~~
-- [ ] ~~dtw_merge~~
-- [ ] ~~entropy~~ (*torch.special.entr*)
-- [ ] ~~excite~~
-- [ ] ~~extract~~
-- [x] fbank
-- [ ] ~~fd~~
-- [ ] ~~fdrw~~
-- [ ] ~~fft~~ (*torch.fft.fft*)
-- [ ] ~~fft2~~ (*torch.fft.fft2*)
-- [x] fftcep
-- [ ] ~~fftr~~ (*torch.fft.rfft*)
-- [ ] ~~fftr2~~ (*torch.fft.rfft2*)
-- [x] frame
-- [x] freqt
-- [ ] ~~glogsp~~
-- [ ] ~~gmm~~
-- [ ] ~~gmmp~~
-- [x] gnorm
-- [ ] ~~gpolezero~~
-- [ ] ~~grlogsp~~
-- [x] grpdelay
-- [ ] ~~gseries~~
-- [ ] ~~gspecgram~~
-- [ ] ~~gwave~~
-- [ ] ~~histogram~~ (*torch.histogram*)
-- [ ] ~~huffman~~
-- [ ] ~~huffman_decode~~
-- [ ] ~~huffman_encode~~
-- [x] idct
-- [ ] ~~ifft~~ (*torch.fft.ifft*)
-- [ ] ~~ifft2~~ (*torch.fft.ifft2*)
-- [x] ignorm
-- [ ] imglsadf (*will be appeared*)
-- [x] impulse
-- [x] imsvq
-- [x] interpolate
-- [x] ipqmf
-- [x] iulaw
-- [x] lar2par
-- [ ] ~~lbg~~
-- [x] levdur
-- [x] linear_intpl
-- [x] lpc
-- [ ] ~~lpc2c~~
-- [ ] ~~lpc2lsp~~
-- [x] lpc2par
-- [x] lpccheck
-- [ ] ~~lsp2lpc~~
-- [ ] ~~lspcheck~~
-- [ ] ~~lspdf~~
-- [ ] ~~ltcdf~~
-- [x] mc2b
-- [x] mcpf
-- [ ] ~~median~~ (*torch.median*)
-- [ ] ~~merge~~ (*torch.cat*)
-- [x] mfcc
-- [x] mgc2mgc
-- [x] mgc2sp
-- [x] mgcep
-- [ ] mglsadf (*will be appeared*)
-- [ ] ~~mglsp2sp~~
-- [ ] ~~minmax~~
-- [x] mlpg (*support only unit variance*)
-- [ ] ~~mlsacheck~~
-- [x] mpir2c
-- [ ] ~~mseq~~
-- [ ] ~~msvq~~
-- [ ] ~~nan~~ (*torch.isnan*)
-- [x] ndps2c
-- [x] norm0
-- [ ] ~~nrand~~ (*torch.randn*)
-- [x] par2lar
-- [x] par2lpc
-- [x] pca
-- [ ] ~~pcas~~
-- [x] phase
-- [x] pitch
-- [ ] ~~pitch_mark~~
-- [ ] ~~poledf~~
-- [x] pqmf
-- [x] quantize
-- [x] ramp
-- [ ] ~~reverse~~ (*torch.flip*)
-- [ ] ~~rlevdur~~
-- [x] rmse
-- [ ] ~~root_pol~~
-- [x] sin
-- [x] smcep
-- [x] snr
-- [x] sopr
-- [x] spec
-- [x] step
-- [ ] ~~swab~~
-- [ ] ~~symmetrize~~
-- [ ] ~~train~~
-- [ ] ~~transpose~~ (*torch.transpose*)
-- [x] ulaw
-- [ ] ~~vc~~
-- [ ] ~~vopr~~
-- [ ] ~~vstat~~ (*torch.var_mean*)
-- [ ] ~~vsum~~ (*torch.sum*)
-- [x] window
-- [ ] ~~x2x~~
-- [x] zcross
-- [x] zerodf
 
 
 License
