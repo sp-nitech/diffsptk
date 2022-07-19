@@ -44,7 +44,7 @@ def test_compatibility(device, ignore_gain, c, alpha=0.42, M=24, P=80):
         f"x2x +sd tools/SPTK/asset/data.short | "
         f"frame -p {P} -l 400 | "
         f"window -w 1 -n 1 -l 400 -L 512 | "
-        f"mgcep -c {c} -a {alpha} -m {M} -l 512 > {tmp2}"
+        f"mgcep -c {c} -a {alpha} -m {M} -l 512 -E -60 > {tmp2}"
     )
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
     U.check_compatibility(
@@ -55,7 +55,7 @@ def test_compatibility(device, ignore_gain, c, alpha=0.42, M=24, P=80):
         f"mglsadf {tmp2} < {tmp1} -i 1 -m {M} -p {P} -c {c} -a {alpha} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
-        eq=lambda a, b: np.max(np.abs(a - b)) < 1000,
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
     )
 
 
