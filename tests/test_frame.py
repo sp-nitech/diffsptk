@@ -25,7 +25,7 @@ import tests.utils as U
 @pytest.mark.parametrize("fp", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("center", [True, False])
 def test_compatibility(device, fl, fp, center, T=20):
-    frame = diffsptk.Frame(fl, fp, center=center, zmean=True).to(device)
+    frame = diffsptk.Frame(fl, fp, center=center, zmean=True)
 
     n = 0 if center else 1
     U.check_compatibility(

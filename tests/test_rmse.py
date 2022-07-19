@@ -23,7 +23,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("reduction", ["none", "mean"])
 def test_compatibility(device, reduction, B=2, L=10):
-    rmse = diffsptk.RMSE(reduction=reduction).to(device)
+    rmse = diffsptk.RMSE(reduction=reduction)
 
     opt = "-f" if reduction == "none" else ""
     tmp1 = "rmse.tmp1"
