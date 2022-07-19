@@ -22,7 +22,7 @@ from ..misc.utils import check_size
 
 class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details.
 
     Parameters
     ----------
@@ -32,18 +32,21 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     impulse_response_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
+    fft_length : int >= 2 [scalar]
+        Number of FFT bins, :math:`L`.
+
     """
 
-    def __init__(self, cep_order, impulse_response_length):
+    def __init__(self, cep_order, impulse_response_length, fft_length):
         super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
 
         self.cep_order = cep_order
         self.impulse_response_length = impulse_response_length
+        self.fft_length = fft_length
 
         assert 0 <= self.cep_order
         assert 1 <= self.impulse_response_length
-
-        self.register_buffer("ramp", torch.arange(1, self.cep_order + 1))
+        assert self.impulse_response_length * 2 <= self.fft_length
 
     def forward(self, c):
         """Convert cepstrum to impulse response.
@@ -69,16 +72,11 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         """
         check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
 
-        c0 = c[..., 0]
-        c1 = (c[..., 1:] * self.ramp).flip(-1)
-
-        h = torch.empty(
-            (*(c.shape[:-1]), self.impulse_response_length), device=c.device
-        )
-        h[..., 0] = torch.exp(c0)
-        for n in range(1, self.impulse_response_length):
-            s = n - self.cep_order
-            h[..., n] = (h[..., max(0, s) : n].clone() * c1[..., max(0, -s) :]).sum(
-                -1
-            ) / n
+        C = torch.fft.fft(c, n=self.fft_length)
+        # Compute complex exponential.
+        r = torch.exp(C.real)
+        real = r * torch.cos(C.imag)
+        imag = r * torch.sin(C.imag)
+        S = torch.complex(real, imag)
+        h = torch.fft.ifft(S)[..., : self.impulse_response_length].real
         return h
