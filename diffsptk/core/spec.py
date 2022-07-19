@@ -33,9 +33,12 @@ class Spectrum(nn.Module):
     eps : float >= 0 [scalar]
         A small value added to power spectrum.
 
+    relative_floor : float < 0 [scalar]
+        Relative floor in decibels.
+
     """
 
-    def __init__(self, fft_length, out_format="power", eps=0):
+    def __init__(self, fft_length, out_format="power", eps=0, relative_floor=None):
         super(Spectrum, self).__init__()
 
         self.fft_length = fft_length
@@ -43,6 +46,12 @@ class Spectrum(nn.Module):
 
         assert 2 <= self.fft_length
         assert 0 <= self.eps
+
+        if relative_floor is None:
+            self.relative_floor = None
+        else:
+            assert relative_floor < 0
+            self.relative_floor = 10 ** (relative_floor / 10)
 
         if out_format == 0 or out_format == "db":
             self.convert = lambda x: 10 * torch.log10(x)
@@ -91,5 +100,8 @@ class Spectrum(nn.Module):
             X *= K
 
         y = torch.square(X) + self.eps
+        if self.relative_floor is not None:
+            m, _ = torch.max(y, dim=-1, keepdim=True)
+            y = torch.maximum(y, m * self.relative_floor)
         y = self.convert(y)
         return y
