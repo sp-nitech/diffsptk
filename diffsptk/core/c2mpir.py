@@ -32,7 +32,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     impulse_response_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >> :math:`M` [scalar]
         Number of FFT bins, :math:`L`.
 
     """
@@ -46,10 +46,10 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
 
         assert 0 <= self.cep_order
         assert 1 <= self.impulse_response_length
-        assert self.impulse_response_length * 2 <= self.fft_length
+        assert self.impulse_response_length <= self.fft_length // 2
 
     def forward(self, c):
-        """Convert cepstrum to impulse response.
+        """Convert cepstrum to minimum phase impulse response.
 
         Parameters
         ----------
@@ -59,12 +59,12 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         Returns
         -------
         h : Tensor [shape=(..., N)]
-            Truncated impulse response.
+            Truncated minimum phase impulse response.
 
         Examples
         --------
         >>> c = diffsptk.ramp(3)
-        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5)
+        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5, 64)
         >>> h = c2mpir(c)
         >>> h
         tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
