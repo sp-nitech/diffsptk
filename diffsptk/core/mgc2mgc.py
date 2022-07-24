@@ -18,6 +18,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import cexp
+from ..misc.utils import clog
 from ..misc.utils import default_dtype
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
@@ -27,37 +29,43 @@ from .ignorm import (
 
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
-    def __init__(self, in_order, out_order, in_gamma, out_gamma):
+    def __init__(self, in_order, out_order, in_gamma, out_gamma, fft_length):
         super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
 
         self.in_order = in_order
         self.out_order = out_order
         self.in_gamma = in_gamma
         self.out_gamma = out_gamma
+        self.fft_length = fft_length
 
         assert 0 <= self.in_order
         assert 0 <= self.out_order
         assert abs(self.in_gamma) <= 1
         assert abs(self.out_gamma) <= 1
-
-        ramp = np.arange(self.in_order + 1, dtype=default_dtype())
-        self.register_buffer("k", torch.from_numpy(ramp))
+        assert max(self.in_order, self.out_order) + 1 < fft_length
 
     def forward(self, c1):
-        c2 = torch.zeros((*(c1.shape[:-1]), self.out_order + 1), device=c1.device)
+        c01 = torch.cat((c1[..., :1] * 0, c1[..., 1:]), dim=-1)
+        C1 = torch.fft.fft(c01, n=self.fft_length)
 
-        copy_length = min(1, min(self.in_order, self.out_order)) + 1
-        c2[..., :copy_length] = c1[..., :copy_length]
-        for m in range(2, self.out_order + 1):
-            n = max(1, m - self.in_order)
-            cc = c1[..., 1:m] * c2[..., n:m].flip(-1)
-            s2 = (self.k[1:m] * cc).sum(-1) / m
-            s1 = cc.sum(-1) - s2
-            ss = self.out_gamma * s2 - self.in_gamma * s1
-            if m <= self.in_order:
-                c2[..., m] = ss + c1[..., m]
-            else:
-                c2[..., m] = ss
+        if self.in_gamma == 0:
+            sC1 = cexp(C1)
+        else:
+            C1 *= self.in_gamma
+            C1.real += 1
+            r = C1.abs() ** (1 / self.in_gamma)
+            theta = C1.angle() / self.in_gamma
+            sC1 = torch.polar(r, theta)
+
+        if self.out_gamma == 0:
+            C2 = clog(sC1)
+        else:
+            r = sC1.abs() ** self.out_gamma
+            theta = sC1.angle() * self.out_gamma
+            C2 = (r * torch.cos(theta) - 1) / self.out_gamma
+
+        c02 = torch.fft.ifft(C2)[..., : self.out_order + 1].real
+        c2 = torch.cat((c1[..., :1], 2 * c02[..., 1:]), dim=-1)
         return c2
 
 
@@ -143,6 +151,9 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     out_mul : bool [scalar]
         If True, assume gamma-multiplied output.
 
+    fft_length : int [scalar]
+        Number of FFT bins, :math:`L`.
+
     """
 
     def __init__(
@@ -157,6 +168,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         out_norm=False,
         in_mul=False,
         out_mul=False,
+        fft_length=512,
     ):
         super(MelGeneralizedCepstrumToMelGeneralizedCepstrum, self).__init__()
 
@@ -185,7 +197,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
                 if True:
                     modules.append(
                         GeneralizedCepstrumToGeneralizedCepstrum(
-                            in_order, out_order, in_gamma, out_gamma
+                            in_order, out_order, in_gamma, out_gamma, fft_length
                         )
                     )
                 if not out_norm:
@@ -204,7 +216,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
             if in_gamma != out_gamma:
                 modules.append(
                     GeneralizedCepstrumToGeneralizedCepstrum(
-                        out_order, out_order, in_gamma, out_gamma
+                        out_order, out_order, in_gamma, out_gamma, fft_length
                     )
                 )
             if not out_norm and in_gamma != out_gamma:
@@ -233,7 +245,6 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         Examples
         --------
         >>> c1 = diffsptk.ramp(3)
-        tensor([0., 1., 2., 3.])
         >>> mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(3, 4, 0.1)
         >>> c2 = mgc2mgc(c1)
         >>> c2

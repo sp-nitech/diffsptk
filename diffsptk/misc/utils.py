@@ -65,5 +65,13 @@ def hankel(x):
     return X
 
 
+def cexp(x):
+    return torch.polar(torch.exp(x.real), x.imag)
+
+
+def clog(x):
+    return torch.log(x.abs())
+
+
 def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})"

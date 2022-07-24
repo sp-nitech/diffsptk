@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import cexp
 from ..misc.utils import check_size
 
 
@@ -37,7 +38,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
 
     """
 
-    def __init__(self, cep_order, impulse_response_length, fft_length):
+    def __init__(self, cep_order, impulse_response_length, fft_length=512):
         super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
 
         self.cep_order = cep_order
@@ -64,7 +65,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         Examples
         --------
         >>> c = diffsptk.ramp(3)
-        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5, 64)
+        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5)
         >>> h = c2mpir(c)
         >>> h
         tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
@@ -73,10 +74,5 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
 
         C = torch.fft.fft(c, n=self.fft_length)
-        # Compute complex exponential.
-        r = torch.exp(C.real)
-        real = r * torch.cos(C.imag)
-        imag = r * torch.sin(C.imag)
-        S = torch.complex(real, imag)
-        h = torch.fft.ifft(S)[..., : self.impulse_response_length].real
+        h = torch.fft.ifft(cexp(C))[..., : self.impulse_response_length].real
         return h

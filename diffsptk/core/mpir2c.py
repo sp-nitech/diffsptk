@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
+from ..misc.utils import clog
 
 
 class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
@@ -37,7 +38,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, impulse_response_length, fft_length):
+    def __init__(self, cep_order, impulse_response_length, fft_length=512):
         super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
         self.cep_order = cep_order
@@ -64,7 +65,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         Examples
         --------
         >>> h = diffsptk.ramp(4, 0, -1)
-        >>> mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(3, 5, 64)
+        >>> mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(3, 5)
         >>> c = mpir2c(h)
         >>> c
         tensor([1.3863, 0.7500, 0.2188, 0.0156])
@@ -73,7 +74,6 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         check_size(h.size(-1), self.impulse_response_length, "impulse response length")
 
         H = torch.fft.fft(h, n=self.fft_length)
-        C = torch.log(H.abs())
-        c = torch.fft.ifft(C)[..., : self.cep_order + 1].real
+        c = torch.fft.ifft(clog(H))[..., : self.cep_order + 1].real
         c[..., 1:] *= 2
         return c
