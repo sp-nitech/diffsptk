@@ -14,53 +14,14 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
-import torch.nn as nn
+import pytest
 
-from .dct import make_dct_matrix
+import diffsptk
+import tests.utils as U
 
 
-class InverseDiscreteCosineTransform(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/idct.html>`_
-    for details.
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_differentiable(device, fp=100, sr=16000, T=1000):
+    cqt = diffsptk.ConstantQTransform(fp, sr)
 
-    Parameters
-    ----------
-    dct_length : int >= 1 [scalar]
-        DCT length, :math:`L`.
-
-    """
-
-    def __init__(self, dct_length):
-        super(InverseDiscreteCosineTransform, self).__init__()
-
-        assert 1 <= dct_length
-
-        W = make_dct_matrix(dct_length).T
-        self.register_buffer("W", torch.from_numpy(W))
-
-    def forward(self, y):
-        """Apply inverse DCT to input.
-
-        Parameters
-        ----------
-        y : Tensor [shape=(..., L)]
-            Input.
-
-        Returns
-        -------
-        x : Tensor [shape=(..., L)]
-            Inverse DCT output.
-
-        Examples
-        --------
-        >>> x = diffsptk.ramp(3)
-        >>> dct = diffsptk.DCT(4)
-        >>> idct = diffsptk.IDCT(4)
-        >>> x2 = idct(dct(x))
-        >>> x2
-        tensor([-4.4703e-08,  1.0000e+00,  2.0000e+00,  3.0000e+00])
-
-        """
-        x = torch.matmul(y, self.W)
-        return x
+    U.check_differentiable(device, cqt, [T])

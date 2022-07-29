@@ -91,12 +91,12 @@ class Spectrum(nn.Module):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        X = torch.abs(torch.fft.rfft(b, n=self.fft_length))
+        X = torch.fft.rfft(b, n=self.fft_length).abs()
 
         if a is not None:
             K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
             a = torch.cat((K * 0 + 1, a1), dim=-1)
-            X /= torch.abs(torch.fft.rfft(a, n=self.fft_length))
+            X /= torch.fft.rfft(a, n=self.fft_length).abs()
             X *= K
 
         y = torch.square(X) + self.eps
