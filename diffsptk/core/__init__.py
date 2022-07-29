@@ -4,6 +4,8 @@ from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
+from .cqt import ConstantQTransform
+from .cqt import ConstantQTransform as CQT
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation

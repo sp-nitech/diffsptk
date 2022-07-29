@@ -42,6 +42,16 @@ def default_dtype():
         raise RuntimeError("Unknown default dtype: {t}")
 
 
+def default_complex_dtype():
+    t = torch.get_default_dtype()
+    if t == torch.float32:
+        return np.complex64
+    elif t == torch.float64:
+        return np.complex128
+    else:
+        raise RuntimeError("Unknown default dtype: {t}")
+
+
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
