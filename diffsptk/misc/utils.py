@@ -34,9 +34,9 @@ def is_in(x, ary):
 
 def default_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:
+    if t == torch.float32:  # pragma: no cover
         return np.float32
-    elif t == torch.float64:
+    elif t == torch.float64:  # pragma: no cover
         return np.float64
     else:
         raise RuntimeError("Unknown default dtype: {t}")
@@ -44,9 +44,9 @@ def default_dtype():
 
 def default_complex_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:
+    if t == torch.float32:  # pragma: no cover
         return np.complex64
-    elif t == torch.float64:
+    elif t == torch.float64:  # pragma: no cover
         return np.complex128
     else:
         raise RuntimeError("Unknown default dtype: {t}")
