@@ -81,8 +81,8 @@ class ConstantQTransform(nn.Module):
                 (2 * np.pi * 1j * Q / N_k) * n
             )
 
-        # Note the imaginary part is zero.
         spectral_kernels = np.fft.fft(temporal_kernels, axis=-1) / fft_length
+        assert np.all(spectral_kernels.imag == 0)
         spectral_kernels = spectral_kernels.astype(default_complex_dtype())
         self.register_buffer("kernel", torch.from_numpy(spectral_kernels).t())
 
