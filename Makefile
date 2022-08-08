@@ -16,6 +16,7 @@
 
 PROJECT        := diffsptk
 PYTHON_VERSION := 3.8
+MODULE         :=
 
 init:
 	pip install -e .
@@ -52,8 +53,9 @@ format:
 	./venv/bin/flake8 $(PROJECT) tests --exclude __init__.py
 
 test:
+	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		pytest -s --cov=./ --cov-report=xml
+		pytest -s --cov=./ --cov-report=xml $$module
 
 tool:
 	cd tools; make

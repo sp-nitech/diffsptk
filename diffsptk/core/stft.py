@@ -51,6 +51,9 @@ class ShortTermFourierTransform(nn.Module):
     eps : float >= 0 [scalar]
         A small value added to power spectrum.
 
+    relative_floor : float < 0 [scalar]
+        Relative floor in decibels.
+
     """
 
     def __init__(
@@ -63,13 +66,19 @@ class ShortTermFourierTransform(nn.Module):
         window="blackman",
         out_format="power",
         eps=1e-9,
+        relative_floor=None,
     ):
         super(ShortTermFourierTransform, self).__init__()
 
         self.stft = nn.Sequential(
             Frame(frame_length, frame_period, zmean=zmean),
             Window(frame_length, fft_length, norm=norm, window=window),
-            Spectrum(fft_length, out_format=out_format, eps=eps),
+            Spectrum(
+                fft_length,
+                out_format=out_format,
+                eps=eps,
+                relative_floor=relative_floor,
+            ),
         )
 
     def forward(self, x):
