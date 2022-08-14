@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
+import pytest
 
 import diffsptk
 from tests.utils import call
@@ -45,4 +46,11 @@ def test_ramp(s=5, e=3, t=-1):
 def test_sin(m=5, p=0.1, a=-1):
     y = diffsptk.sin(m, p, a)
     y_ = call(f"sin -m {m} -p {p} -a {a}")
+    assert np.allclose(y, y_)
+
+
+@pytest.mark.parametrize("n", [0, 1, 2])
+def test_train(n, m=9, p=2.3):
+    y = diffsptk.train(m, p, norm=n)
+    y_ = call(f"train -m {m} -p {p} -n {n}")
     assert np.allclose(y, y_)
