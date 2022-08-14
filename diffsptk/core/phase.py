@@ -86,7 +86,7 @@ class Phase(nn.Module):
         if self.unwrap:
             diff = p[..., 1:] - p[..., :-1]
             bias = (-2 * (1 < diff)) + (2 * (diff < -1))
-            s = torch.cumsum(bias, -1)
+            s = torch.cumsum(bias, dim=-1)
             p[..., 1:] = p[..., 1:] + s
 
         return p
