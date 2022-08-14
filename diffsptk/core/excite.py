@@ -49,7 +49,7 @@ class ExcitationGeneration(nn.Module):
         self.linear_intpl = LinearInterpolation(self.frame_period)
 
     def forward(self, p):
-        """Generate an excitation signal.
+        """Generate a simple excitation signal.
 
         Parameters
         ----------
@@ -58,7 +58,7 @@ class ExcitationGeneration(nn.Module):
 
         Returns
         -------
-        e : Tensor [shape=(..., N*P)]
+        e : Tensor [shape=(..., NxP)]
             Excitation signal.
 
         Examples

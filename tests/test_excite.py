@@ -30,16 +30,17 @@ def test_compatibility(device, P=80):
     excite = diffsptk.ExcitationGeneration(P).to(device)
 
     def eq(y_hat, y):
-        return np.allclose(y_hat[..., :P], y[..., :P])
+        return np.allclose(y_hat[0, :P], y[..., :P])
 
     # Note there is no complete compatibility with SPTK4.
     U.check_compatibility(
         device,
         excite,
         [],
-        f"step -v {P//2} -l 2",
+        f"step -v {P//2} -l 4",
         f"excite -p {P} -n",
         [],
+        dx=2,
         eq=eq,
     )
 
