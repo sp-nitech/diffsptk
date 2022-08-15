@@ -72,18 +72,20 @@ class ExcitationGeneration(nn.Module):
         """
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
-        tmp_mask = torch.cat((base_mask[..., :1], base_mask), dim=-1)
-        tmp_mask = torch.eq(tmp_mask[..., 1:] - tmp_mask[..., :-1], -1)
-        p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         signal_shape = list(base_mask.shape)
         signal_shape[-1] *= self.frame_period
 
-        base_mask = torch.eq(base_mask.unsqueeze(-1), 1)
-        tmp_shape = [-1] * base_mask.dim()
-        tmp_shape[-1] = self.frame_period
-        mask = base_mask.expand(tmp_shape)
+        mask = torch.eq(base_mask, 1).unsqueeze(-1)
+        size = [-1] * mask.dim()
+        size[-1] = self.frame_period
+        mask = mask.expand(size)
         mask = mask.reshape(signal_shape)
+
+        # Extend right side for interpolation.
+        tmp_mask = torch.cat((base_mask[..., :1] * 0, base_mask), dim=-1)
+        tmp_mask = torch.eq(tmp_mask[..., 1:] - tmp_mask[..., :-1], -1)
+        p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.
         d = p.dim()
@@ -95,7 +97,8 @@ class ExcitationGeneration(nn.Module):
         p *= mask
 
         # Seek pulse position.
-        s = torch.cumsum(torch.nan_to_num(torch.reciprocal(p), posinf=0), dim=-1)
+        q = torch.nan_to_num(torch.reciprocal(p), posinf=0)
+        s = torch.cumsum(q, dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         s = torch.ceil(s - bias - eps)
         s = torch.cat((s[..., :1] * 0, s), dim=-1)
@@ -105,5 +108,5 @@ class ExcitationGeneration(nn.Module):
         e = torch.zeros(*signal_shape, device=p.device, requires_grad=False)
         e[pulse_pos] = torch.sqrt(p[pulse_pos])
         if self.unvoiced_region == "gauss":
-            e[~mask] = torch.randn(torch.sum(~mask))
+            e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
         return e

@@ -8,3 +8,5 @@ signals
 .. autofunction:: diffsptk.ramp
 
 .. autofunction:: diffsptk.sin
+
+.. autofunction:: diffsptk.train
