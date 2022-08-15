@@ -84,8 +84,7 @@ class ExcitationGeneration(nn.Module):
 
         # Extend right side for interpolation.
         tmp_mask = torch.cat((base_mask[..., :1] * 0, base_mask), dim=-1)
-        tmp_mask = tmp_mask[..., 1:] - tmp_mask[..., :-1]
-        tmp_mask = torch.eq(tmp_mask, -1)
+        tmp_mask = torch.eq(tmp_mask[..., 1:] - tmp_mask[..., :-1], -1)
         p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.
