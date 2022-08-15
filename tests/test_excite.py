@@ -29,21 +29,6 @@ def test_compatibility(device, P=80):
 
     excite = diffsptk.ExcitationGeneration(P).to(device)
 
-    def eq(y_hat, y):
-        return np.allclose(y_hat[0, :P], y[..., :P])
-
-    # Note there is no complete compatibility with SPTK4.
-    U.check_compatibility(
-        device,
-        excite,
-        [],
-        f"step -v {P//2} -l 4",
-        f"excite -p {P} -n",
-        [],
-        dx=2,
-        eq=eq,
-    )
-
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
     cmd += f"pitch -s 16 -p {P} -o 0 -a 1 > excite.tmp1"
     U.call(cmd, get=False)
@@ -59,14 +44,16 @@ def test_compatibility(device, P=80):
 
     cmd = f"mglsadf -m 24 -a 0.42 -P 7 -p {P} excite.tmp2 < excite.tmp3 | "
     cmd += f"pitch -s 16 -p {P} -o 0 -a 1"
-    pitch2 = U.call(cmd)
+    recomputed_pitch = U.call(cmd)
 
+    pitch_error = 0
     vuv_error = 0
-    for p, q in zip(pitch, pitch2):
+    for p, q in zip(pitch, recomputed_pitch):
         if p != 0 and q != 0:
-            assert np.abs(p - q) < 10
+            pitch_error += np.abs(p - q)
         elif not (p == 0 and q == 0):
             vuv_error += 1
-            assert vuv_error < 10
+    assert pitch_error <= 100
+    assert vuv_error <= 10
 
     U.call("rm -f excite.tmp?", get=False)

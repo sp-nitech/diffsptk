@@ -176,7 +176,7 @@ class PitchExtractionByCrepe(nn.Module):
         # torchcrepe.infer
         B, N, L = x.shape
         x = x.reshape(-1, L)
-        y = torchcrepe.infer(x, model=self.model, embed=False)
+        y = torchcrepe.infer(x, model=self.model, embed=embed)
         y = y.reshape(B, N, -1)
         return y
 
