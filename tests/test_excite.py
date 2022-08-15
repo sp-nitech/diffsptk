@@ -39,7 +39,7 @@ def test_compatibility(device, P=80):
     U.call(cmd, get=False)
 
     pitch = U.call("cat excite.tmp1")
-    e = excite(torch.from_numpy(pitch).to(device))
+    e = excite(torch.from_numpy(np.expand_dims(pitch, 0)).to(device))
     e.cpu().numpy().tofile("excite.tmp3")
 
     cmd = f"mglsadf -m 24 -a 0.42 -P 7 -p {P} excite.tmp2 < excite.tmp3 | "
