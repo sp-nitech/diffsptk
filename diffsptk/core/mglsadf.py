@@ -52,9 +52,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
-    inverse : bool [scalar]
-        If True, perform inverse filtering.
-
     """
 
     def __init__(
@@ -67,7 +64,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
         taylor_order=30,
         frame_period=1,
         ignore_gain=False,
-        inverse=False,
     ):
         super(PseudoMGLSADigitalFilter, self).__init__()
 
@@ -75,7 +71,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
         self.taylor_order = taylor_order
         self.frame_period = frame_period
         self.ignore_gain = ignore_gain
-        self.inverse = inverse
 
         assert 0 <= self.taylor_order
 
@@ -131,8 +126,5 @@ class PseudoMGLSADigitalFilter(nn.Module):
             x = self.pad(x)
             x = x.unfold(-1, c.size(-1), 1)
             x = (x * c).sum(-1) / a
-            if self.inverse and a % 2 == 1:
-                y -= x
-            else:
-                y += x
+            y += x
         return y

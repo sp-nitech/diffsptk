@@ -73,7 +73,6 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
             taylor_order=taylor_order,
             frame_period=frame_period,
             ignore_gain=ignore_gain,
-            inverse=True,
         )
 
     def forward(self, y, mc):
@@ -106,5 +105,5 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
         tensor([[ 0.4293,  1.0592,  7.9349, 14.9794]])
 
         """
-        x = self.mglsadf(y, mc)
+        x = self.mglsadf(y, -mc)
         return x
