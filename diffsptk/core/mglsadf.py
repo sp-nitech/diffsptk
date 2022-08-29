@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
@@ -52,6 +53,9 @@ class PseudoMGLSADigitalFilter(nn.Module):
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
+    phase : ['minimum', 'zero']
+        Filter type.
+
     """
 
     def __init__(
@@ -64,6 +68,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         taylor_order=30,
         frame_period=1,
         ignore_gain=False,
+        phase="minimum",
     ):
         super(PseudoMGLSADigitalFilter, self).__init__()
 
@@ -71,10 +76,17 @@ class PseudoMGLSADigitalFilter(nn.Module):
         self.taylor_order = taylor_order
         self.frame_period = frame_period
         self.ignore_gain = ignore_gain
+        self.phase = phase
 
         assert 0 <= self.taylor_order
 
-        self.pad = nn.ConstantPad1d((cep_order, 0), 0)
+        if self.phase == "minimum":
+            self.pad = nn.ConstantPad1d((cep_order, 0), 0)
+        elif self.phase == "zero":
+            self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
+        else:
+            raise ValueError(f"phase {phase} is not supported")
+
         self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
             filter_order,
             cep_order,
@@ -119,7 +131,13 @@ class PseudoMGLSADigitalFilter(nn.Module):
         c = self.mgc2c(mc)
         if self.ignore_gain:
             c[..., 0] = 0
-        c = self.linear_intpl(c.flip(-1))
+
+        if self.phase == "minimum":
+            c = c.flip(-1)
+        elif self.phase == "zero":
+            c1 = 0.5 * c[..., 1:]
+            c = torch.cat((c1.flip(-1), c[..., :1], c1), dim=-1)
+        c = self.linear_intpl(c)
 
         y = x.clone()
         for a in range(1, self.taylor_order + 1):
