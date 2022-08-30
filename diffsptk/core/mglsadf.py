@@ -53,7 +53,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
-    phase : ['minimum', 'zero']
+    phase : ['minimum', 'maximum', 'zero']
         Filter type.
 
     """
@@ -82,6 +82,8 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         if self.phase == "minimum":
             self.pad = nn.ConstantPad1d((cep_order, 0), 0)
+        elif self.phase == "maximum":
+            self.pad = nn.ConstantPad1d((0, cep_order), 0)
         elif self.phase == "zero":
             self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
         else:
@@ -134,6 +136,8 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         if self.phase == "minimum":
             c = c.flip(-1)
+        elif self.phase == "maximum":
+            pass
         elif self.phase == "zero":
             c1 = 0.5 * c[..., 1:]
             c = torch.cat((c1.flip(-1), c[..., :1], c1), dim=-1)
