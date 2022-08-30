@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
 import torch
 import torch.nn as nn
 
@@ -67,10 +65,10 @@ class UniformQuantization(nn.Module):
         assert 1 <= n_bit
 
         if quantizer == 0 or quantizer == "mid-rise":
-            self.level = int(math.pow(2, n_bit))
+            self.level = int(2**n_bit)
             self.quantizer = "mid-rise"
         elif quantizer == 1 or quantizer == "mid-tread":
-            self.level = int(math.pow(2, n_bit)) - 1
+            self.level = int(2**n_bit) - 1
             self.quantizer = "mid-tread"
         else:
             raise ValueError("quantizer {quantizer} is not supported")

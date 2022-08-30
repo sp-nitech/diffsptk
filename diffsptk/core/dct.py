@@ -37,7 +37,7 @@ class DiscreteCosineTransform(nn.Module):
 
     Parameters
     ----------
-    dct_length : int >= 1
+    dct_length : int >= 1 [scalar]
         DCT length, :math:`L`.
 
     """

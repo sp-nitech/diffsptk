@@ -30,6 +30,7 @@ import tests.utils as U
         ("m", 2),
         ("d", 2),
         ("r", 0.1),
+        ("p", 2),
         ("l", 0.1),
         ("u", 1),
         ("ABS", None),

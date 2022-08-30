@@ -16,6 +16,7 @@
 
 PROJECT        := diffsptk
 PYTHON_VERSION := 3.8
+MODULE         :=
 
 init:
 	pip install -e .
@@ -26,7 +27,9 @@ dev:
 	else \
 		test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	fi
-	. venv/bin/activate; pip install pip --upgrade; pip install -e .[dev]
+	. venv/bin/activate; pip install pip --upgrade; \
+	pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
+	pip install -e .[dev]
 
 dist:
 	./venv/bin/python setup.py bdist_wheel
@@ -52,8 +55,17 @@ format:
 	./venv/bin/flake8 $(PROJECT) tests --exclude __init__.py
 
 test:
+	@if [ ! -d tools/SPTK/bin ]; then \
+		echo ""; \
+		echo "Error: please install C++ version of SPTK"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
+	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		pytest -s --cov=./ --cov-report=xml
+		pytest -s --cov=./ --cov-report=xml $$module
 
 tool:
 	cd tools; make

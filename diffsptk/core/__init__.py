@@ -4,6 +4,8 @@ from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
+from .cqt import ConstantQTransform
+from .cqt import ConstantQTransform as CQT
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
@@ -13,6 +15,7 @@ from .dequantize import InverseUniformQuantization
 from .df2 import SecondOrderDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
+from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
 from .frame import Frame
