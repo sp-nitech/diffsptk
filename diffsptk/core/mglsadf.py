@@ -148,14 +148,9 @@ class PseudoMGLSADigitalFilter(nn.Module):
         elif self.phase == "mixed":
             check_size(nc.size(-1), self.filter_order + 1, "dimension of mel-cepstrum")
             check_size(x.size(-1), nc.size(-2) * self.frame_period, "sequence length")
-
             d = self.mgc2c(nc)
-            if self.ignore_gain:
-                d[..., 0] = 0
-
-            c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
-            d0, d1 = torch.split(d, [1, d.size(-1) - 1], dim=-1)
-            c = torch.cat((c1.flip(-1), c0 + d0, d1), dim=-1)
+            _, d1 = torch.split(d, [1, d.size(-1) - 1], dim=-1)
+            c = torch.cat((c.flip(-1), d1), dim=-1)
         else:
             raise NotImplementedError
 
