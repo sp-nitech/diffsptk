@@ -53,7 +53,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
-    phase : ['minimum', 'maximum', 'zero']
+    phase : ['minimum', 'maximum', 'zero', 'mixed']
         Filter type.
 
     """
@@ -84,7 +84,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
             self.pad = nn.ConstantPad1d((cep_order, 0), 0)
         elif self.phase == "maximum":
             self.pad = nn.ConstantPad1d((0, cep_order), 0)
-        elif self.phase == "zero":
+        elif self.phase == "zero" or self.phase == "mixed":
             self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
         else:
             raise ValueError(f"phase {phase} is not supported")
@@ -97,7 +97,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         )
         self.linear_intpl = LinearInterpolation(frame_period)
 
-    def forward(self, x, mc):
+    def forward(self, x, mc, nc=None):
         """Apply an MGLSA digital filter.
 
         Parameters
@@ -107,6 +107,9 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         mc : Tensor [shape=(..., T/P, M+1)]
             Mel-generalized cepstrum, not MLSA digital filter coefficients.
+
+        nc : Tensor [shape=(..., T/P, M+1)]
+            Mxiumum phase part of mel-generalized cepstrum (used only mixed-phase mode).
 
         Returns
         -------
@@ -139,8 +142,23 @@ class PseudoMGLSADigitalFilter(nn.Module):
         elif self.phase == "maximum":
             pass
         elif self.phase == "zero":
-            c1 = 0.5 * c[..., 1:]
-            c = torch.cat((c1.flip(-1), c[..., :1], c1), dim=-1)
+            c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+            c1 = c1 * 0.5
+            c = torch.cat((c1.flip(-1), c0, c1), dim=-1)
+        elif self.phase == "mixed":
+            check_size(nc.size(-1), self.filter_order + 1, "dimension of mel-cepstrum")
+            check_size(x.size(-1), nc.size(-2) * self.frame_period, "sequence length")
+
+            d = self.mgc2c(nc)
+            if self.ignore_gain:
+                d[..., 0] = 0
+
+            c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+            d0, d1 = torch.split(d, [1, d.size(-1) - 1], dim=-1)
+            c = torch.cat((c1.flip(-1), c0 + d0, d1), dim=-1)
+        else:
+            raise NotImplementedError
+
         c = self.linear_intpl(c)
 
         y = x.clone()

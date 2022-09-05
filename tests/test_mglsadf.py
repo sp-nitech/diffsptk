@@ -60,7 +60,10 @@ def test_compatibility(device, ignore_gain, c, alpha=0.42, M=24, P=80):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
+@pytest.mark.parametrize("phase", ["minimum", "maximum", "zero", "mixed"])
 def test_differentiable(device, phase, B=4, T=20, M=4):
     mglsadf = diffsptk.MLSA(M, taylor_order=5, phase=phase)
-    U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
+    if phase == "mixed":
+        U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1), (B, T, M + 1)])
+    else:
+        U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
