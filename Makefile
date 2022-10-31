@@ -27,7 +27,7 @@ dev:
 	else \
 		test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	fi
-	. venv/bin/activate; pip install pip --upgrade; \
+	. ./venv/bin/activate; pip install pip --upgrade; \
 	pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
 	pip install -e .[dev]
 
@@ -42,11 +42,11 @@ dist-clean:
 	rm -rf dist
 
 doc:
-	. venv/bin/activate; cd docs; make html
+	. ./venv/bin/activate; cd docs; make html
 
 doc-clean:
 	@if [ -f ./venv/bin/activate ]; then \
-		. venv/bin/activate; cd docs; make clean; \
+		. ./venv/bin/activate; cd docs; make clean; \
 	fi
 
 format:
@@ -64,7 +64,7 @@ test:
 		exit 1; \
 	fi
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
-	. venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
+	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
 		pytest -s --cov=./ --cov-report=xml $$module
 
 tool:
@@ -74,6 +74,7 @@ tool-clean:
 	cd tools; make clean
 
 update:
+	./venv/bin/python -m pip install --upgrade pip
 	@for package in $$(cat setup.py | grep "           " | sed "s/\s//g" | \
 	sed 's/"//g' | tr ",\n" " "); do \
 		./venv/bin/pip install --upgrade $$package; \
