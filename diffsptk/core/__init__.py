@@ -26,6 +26,8 @@ from .grpdelay import GroupDelay
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
+from .imglsadf import PseudoInverseMGLSADigitalFilter
+from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
@@ -46,6 +48,8 @@ from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .mgcep import MelGeneralizedCepstralAnalysis
 from .mgcep import MelGeneralizedCepstralAnalysis as MelCepstralAnalysis
+from .mglsadf import PseudoMGLSADigitalFilter
+from .mglsadf import PseudoMGLSADigitalFilter as MLSA
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum

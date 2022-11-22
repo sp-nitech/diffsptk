@@ -17,12 +17,13 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import cexp
 from ..misc.utils import check_size
 
 
 class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details. The conversion uses FFT instead of recursive formula.
 
     Parameters
     ----------
@@ -32,21 +33,24 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     impulse_response_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
+    n_fft : int >> :math:`N` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
+
     """
 
-    def __init__(self, cep_order, impulse_response_length):
+    def __init__(self, cep_order, impulse_response_length, n_fft=512):
         super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
 
         self.cep_order = cep_order
         self.impulse_response_length = impulse_response_length
+        self.n_fft = n_fft
 
         assert 0 <= self.cep_order
         assert 1 <= self.impulse_response_length
-
-        self.register_buffer("ramp", torch.arange(1, self.cep_order + 1))
+        assert max(self.cep_order + 1, self.impulse_response_length) < self.n_fft
 
     def forward(self, c):
-        """Convert cepstrum to impulse response.
+        """Convert cepstrum to minimum phase impulse response.
 
         Parameters
         ----------
@@ -56,7 +60,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         Returns
         -------
         h : Tensor [shape=(..., N)]
-            Truncated impulse response.
+            Truncated minimum phase impulse response.
 
         Examples
         --------
@@ -69,16 +73,6 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         """
         check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
 
-        c0 = c[..., 0]
-        c1 = (c[..., 1:] * self.ramp).flip(-1)
-
-        h = torch.empty(
-            (*(c.shape[:-1]), self.impulse_response_length), device=c.device
-        )
-        h[..., 0] = torch.exp(c0)
-        for n in range(1, self.impulse_response_length):
-            s = n - self.cep_order
-            h[..., n] = (h[..., max(0, s) : n].clone() * c1[..., max(0, -s) :]).sum(
-                -1
-            ) / n
+        C = torch.fft.fft(c, n=self.n_fft)
+        h = torch.fft.ifft(cexp(C))[..., : self.impulse_response_length].real
         return h

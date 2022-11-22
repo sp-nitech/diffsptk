@@ -22,14 +22,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=19, N=30, B=2):
-    mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(M, N)
+def test_compatibility(device, M=19, N=30, L=256, B=2):
+    mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(M, N, L)
 
     U.check_compatibility(
         device,
         mpir2c,
         [],
-        f"nrand -l {B*N} | sopr -ABS",
+        f"nrand -l {B*L} | fftcep -l {L} -m {M} | c2mpir -m {M} -l {N}",
         f"mpir2c -M {M} -l {N}",
         [],
         dx=N,

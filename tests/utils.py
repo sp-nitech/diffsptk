@@ -20,6 +20,7 @@ import time
 import warnings
 
 import numpy as np
+import soundfile as sf
 import torch
 
 
@@ -68,6 +69,7 @@ def check_compatibility(
     dy=None,
     eq=None,
     opt={},
+    sr=None,
     verbose=False,
 ):
     if device == "cuda" and not torch.cuda.is_available():
@@ -104,6 +106,10 @@ def check_compatibility(
 
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
     y_hat = module(*x, **opt).cpu().numpy()
+
+    if sr is not None:
+        sf.write("output.wav", y_hat / 32768, sr)
+        sf.write("target.wav", y / 32768, sr)
 
     if verbose:
         print(f"Output: {y_hat}")

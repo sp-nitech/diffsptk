@@ -50,6 +50,9 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
                   'cycle', 'radian', 'degree']
         Output format.
 
+    n_fft : int >> :math:`L` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
+
     """
 
     def __init__(
@@ -61,6 +64,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
         norm=False,
         mul=False,
         out_format="power",
+        n_fft=512,
     ):
         super(MelGeneralizedCepstrumToSpectrum, self).__init__()
 
@@ -94,6 +98,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
             in_gamma=gamma,
             in_norm=norm,
             in_mul=mul,
+            n_fft=n_fft,
         )
 
     def forward(self, mc):

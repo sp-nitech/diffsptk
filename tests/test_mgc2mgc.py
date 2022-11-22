@@ -30,7 +30,7 @@ import tests.utils as U
     "M, A, G", [[4, 0, 0.1], [4, 0, 0.2], [2, 0.1, 0.1], [6, 0.1, 0.2]]
 )
 def test_compatibility(
-    device, in_norm, out_norm, in_mul, out_mul, M, A, G, m=4, a=0, g=0.1, B=2
+    device, in_norm, out_norm, in_mul, out_mul, M, A, G, m=4, a=0, g=0.1, L=256, B=2
 ):
     mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(
         in_order=m,
@@ -43,24 +43,31 @@ def test_compatibility(
         out_norm=out_norm,
         in_mul=in_mul,
         out_mul=out_mul,
+        n_fft=L,
     )
 
-    opt = f"-m {m} -M {M} -a {a} -A {A} -g {g} -G {G} "
+    opt1 = f"-m {m} -M {m} -a 0 -A {a} -g {0} -G {g} "
     if in_norm:
-        opt += "-n "
-    if out_norm:
-        opt += "-N "
+        opt1 += "-N "
     if in_mul:
-        opt += "-u "
+        opt1 += "-U "
+
+    opt2 = f"-m {m} -M {M} -a {a} -A {A} -g {g} -G {G} "
+    if in_norm:
+        opt2 += "-n "
+    if out_norm:
+        opt2 += "-N "
+    if in_mul:
+        opt2 += "-u "
     if out_mul:
-        opt += "-U "
+        opt2 += "-U "
 
     U.check_compatibility(
         device,
         mgc2mgc,
         [],
-        f"nrand -l {B*(m+1)} | sopr -ABS",
-        f"mgc2mgc {opt}",
+        f"nrand -l {B*L} | fftcep -l {L} -m {m} | mgc2mgc {opt1}",
+        f"mgc2mgc {opt2}",
         [],
         dx=m + 1,
         dy=M + 1,

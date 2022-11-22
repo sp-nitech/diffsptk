@@ -40,15 +40,17 @@ class MelCepstrumPostfiltering(nn.Module):
     beta : float [scalar]
         Intensity parameter, :math:`\\beta`.
 
-    impulse_response_length : int >= 1 [scalar]
-        Length of impulse response.
-
     onset : int >= 0 [scalar]
         Onset index.
 
+    impulse_response_length : int >= 1 [scalar]
+        Length of impulse response.
+
     """
 
-    def __init__(self, cep_order, alpha, beta, onset=2, impulse_response_length=1024):
+    def __init__(
+        self, cep_order, alpha=0, beta=0, onset=2, impulse_response_length=1024
+    ):
         super(MelCepstrumPostfiltering, self).__init__()
 
         assert 0 <= onset

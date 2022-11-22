@@ -14,25 +14,19 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import filecmp
+import os
+
 import pytest
 
 import diffsptk
-import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=19, N=30, L=512, B=2):
-    c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(M, N, L)
-
-    U.check_compatibility(
-        device,
-        c2mpir,
-        [],
-        f"nrand -l {B*(M+1)}",
-        f"c2mpir -m {M} -l {N}",
-        [],
-        dx=M + 1,
-        dy=N,
-    )
-
-    U.check_differentiable(device, c2mpir, [B, M + 1])
+@pytest.mark.parametrize("double", [False, True])
+def test_read_and_write(double):
+    in_wav = "assets/data.wav"
+    out_wav = "data.wav"
+    x, sr = diffsptk.read(in_wav, double=double)
+    diffsptk.write(out_wav, x, sr)
+    assert filecmp.cmp(in_wav, out_wav, shallow=False)
+    os.remove(out_wav)

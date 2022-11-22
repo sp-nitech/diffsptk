@@ -17,6 +17,7 @@
 import warnings
 
 import numpy as np
+import soundfile as sf
 import torch
 
 
@@ -75,5 +76,69 @@ def hankel(x):
     return X
 
 
+def cexp(x):
+    return torch.polar(torch.exp(x.real), x.imag)
+
+
+def clog(x):
+    return torch.log(x.abs())
+
+
 def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
+
+
+def read(filename, double=False):
+    """Read waveform from file.
+
+    Parameters
+    ----------
+    filename : str [scalar]
+        Path of wav file.
+
+    double : bool [scalar]
+        If True, return double-type tensor.
+
+    Returns
+    -------
+    x : Tensor
+        Waveform.
+
+    Examples
+    --------
+    >>> x, sr = diffsptk.read("assets/data.wav")
+    >>> x
+    tensor([ 0.0002,  0.0004,  0.0006,  ...,  0.0006, -0.0006, -0.0007])
+    >>> sr
+    16000
+
+    """
+    x, sr = sf.read(filename)
+    if double:
+        x = torch.DoubleTensor(x)
+    else:
+        x = torch.FloatTensor(x)
+    return x, sr
+
+
+def write(filename, x, sr):
+    """Write waveform to file.
+
+    Parameters
+    ----------
+    filename : str [scalar]
+        Path of wav file.
+
+    x : Tensor
+        Waveform.
+
+    sr : int [scalar]
+        Sample rate in Hz.
+
+    Examples
+    --------
+    >>> x, sr = diffsptk.read("assets/data.wav")
+    >>> diffsptk.write("out.wav", x, sr)
+
+    """
+    sf.write(filename, x.cpu().numpy(), sr)

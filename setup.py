@@ -8,14 +8,14 @@ with open("README.md", "r") as f:
 setup(
     name="diffsptk",
     version=__version__,
-    description="Python module for speech signal processing",
+    description="Speech signal processing modules for machine learning",
     author="SPTK Working Group",
     author_email="takenori@sp.nitech.ac.jp",
     url="https://github.com/sp-nitech/diffsptk",
-    packages=find_packages(exclude=("docs", "tests", "tools")),
+    packages=find_packages(exclude=("assets", "docs", "tests", "tools")),
     long_description=long_description,
     long_description_content_type="text/markdown",
-    keywords="dsp speech processing sptk pytorch",
+    keywords="dsp speech signal processing sptk pytorch",
     license="Apache 2.0",
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
@@ -23,6 +23,7 @@ setup(
     ],
     python_requires=">= 3.8",
     install_requires=[
+        "soundfile",
         "torch >= 1.10.0",
         "torchcrepe >= 0.0.16",
         "numpy",

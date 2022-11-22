@@ -14,14 +14,16 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn as nn
 
-from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
+from ..misc.utils import check_size
+from ..misc.utils import clog
 
 
 class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mpir2c.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details. The conversion uses FFT instead of recursive formula.
 
     Parameters
     ----------
@@ -31,27 +33,29 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     impulse_response_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
+    n_fft : int >> :math:`N` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
+
     """
 
-    def __init__(self, cep_order, impulse_response_length):
+    def __init__(self, cep_order, impulse_response_length, n_fft=512):
         super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
-        self.ir2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            impulse_response_length - 1,
-            cep_order,
-            in_gamma=1,
-            out_gamma=0,
-            in_mul=True,
-            out_mul=False,
-        )
+        self.cep_order = cep_order
+        self.impulse_response_length = impulse_response_length
+        self.n_fft = n_fft
+
+        assert 0 <= self.cep_order
+        assert 1 <= self.impulse_response_length
+        assert max(self.cep_order + 1, self.impulse_response_length) < self.n_fft
 
     def forward(self, h):
-        """Convert impulse response to cepstrum.
+        """Convert minimum phase impulse response to cepstrum.
 
         Parameters
         ----------
         h : Tensor [shape=(..., N)]
-            Truncated impulse response.
+            Truncated minimum phase impulse response.
 
         Returns
         -------
@@ -67,5 +71,9 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         tensor([1.3863, 0.7500, 0.2188, 0.0156])
 
         """
-        c = self.ir2c(h)
+        check_size(h.size(-1), self.impulse_response_length, "impulse response length")
+
+        H = torch.fft.fft(h, n=self.n_fft)
+        c = torch.fft.ifft(clog(H))[..., : self.cep_order + 1].real
+        c[..., 1:] *= 2
         return c
