@@ -54,25 +54,13 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     def __init__(
         self,
         filter_order,
-        cep_order=200,
-        alpha=0,
-        gamma=0,
-        c=None,
-        taylor_order=50,
-        frame_period=1,
-        ignore_gain=False,
+        **kwargs,
     ):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
 
         self.mglsadf = PseudoMGLSADigitalFilter(
             filter_order,
-            cep_order=cep_order,
-            alpha=alpha,
-            gamma=gamma,
-            c=c,
-            taylor_order=taylor_order,
-            frame_period=frame_period,
-            ignore_gain=ignore_gain,
+            **kwargs,
         )
 
     def forward(self, y, mc):

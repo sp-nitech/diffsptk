@@ -36,6 +36,7 @@ setup(
             "pydata-sphinx-theme",
             "pytest",
             "pytest-cov",
+            "soundfile",
             "sphinx",
             "twine",
         ],

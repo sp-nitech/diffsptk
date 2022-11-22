@@ -23,7 +23,7 @@ from ..misc.utils import clog
 
 class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mpir2c.html>`_
-    for details.
+    for details. The conversion uses FFT instead of recursive formula.
 
     Parameters
     ----------
@@ -33,21 +33,21 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     impulse_response_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
-    fft_length : int >> :math:`M` [scalar]
-        Number of FFT bins, :math:`L`.
+    n_fft : int >> :math:`N` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
 
     """
 
-    def __init__(self, cep_order, impulse_response_length, fft_length=512):
+    def __init__(self, cep_order, impulse_response_length, n_fft=512):
         super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
         self.cep_order = cep_order
         self.impulse_response_length = impulse_response_length
-        self.fft_length = fft_length
+        self.n_fft = n_fft
 
         assert 0 <= self.cep_order
         assert 1 <= self.impulse_response_length
-        assert self.cep_order + 1 < self.fft_length // 2
+        assert max(self.cep_order + 1, self.impulse_response_length) < self.n_fft
 
     def forward(self, h):
         """Convert minimum phase impulse response to cepstrum.
@@ -73,7 +73,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         """
         check_size(h.size(-1), self.impulse_response_length, "impulse response length")
 
-        H = torch.fft.fft(h, n=self.fft_length)
+        H = torch.fft.fft(h, n=self.n_fft)
         c = torch.fft.ifft(clog(H))[..., : self.cep_order + 1].real
         c[..., 1:] *= 2
         return c

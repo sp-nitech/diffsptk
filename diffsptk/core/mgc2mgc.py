@@ -29,24 +29,24 @@ from .ignorm import (
 
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
-    def __init__(self, in_order, out_order, in_gamma, out_gamma, fft_length):
+    def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft):
         super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
 
         self.in_order = in_order
         self.out_order = out_order
         self.in_gamma = in_gamma
         self.out_gamma = out_gamma
-        self.fft_length = fft_length
+        self.n_fft = n_fft
 
         assert 0 <= self.in_order
         assert 0 <= self.out_order
         assert abs(self.in_gamma) <= 1
         assert abs(self.out_gamma) <= 1
-        assert max(self.in_order, self.out_order) + 1 < fft_length
+        assert max(self.in_order, self.out_order) + 1 < self.n_fft
 
     def forward(self, c1):
         c01 = torch.cat((c1[..., :1] * 0, c1[..., 1:]), dim=-1)
-        C1 = torch.fft.fft(c01, n=self.fft_length)
+        C1 = torch.fft.fft(c01, n=self.n_fft)
 
         if self.in_gamma == 0:
             sC1 = cexp(C1)
@@ -117,7 +117,7 @@ class ZerothGammaMultiplication(nn.Module):
 
 class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgc2mgc.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details. The conversion uses FFT instead of recursive formula.
 
     Parameters
     ----------
@@ -151,8 +151,8 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     out_mul : bool [scalar]
         If True, assume gamma-multiplied output.
 
-    fft_length : int [scalar]
-        Number of FFT bins, :math:`L`.
+    n_fft : int >> :math:`M_1, M_2` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
 
     """
 
@@ -168,7 +168,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         out_norm=False,
         in_mul=False,
         out_mul=False,
-        fft_length=512,
+        n_fft=512,
     ):
         super(MelGeneralizedCepstrumToMelGeneralizedCepstrum, self).__init__()
 
@@ -197,7 +197,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
                 if True:
                     modules.append(
                         GeneralizedCepstrumToGeneralizedCepstrum(
-                            in_order, out_order, in_gamma, out_gamma, fft_length
+                            in_order, out_order, in_gamma, out_gamma, n_fft
                         )
                     )
                 if not out_norm:
@@ -216,7 +216,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
             if in_gamma != out_gamma:
                 modules.append(
                     GeneralizedCepstrumToGeneralizedCepstrum(
-                        out_order, out_order, in_gamma, out_gamma, fft_length
+                        out_order, out_order, in_gamma, out_gamma, n_fft
                     )
                 )
             if not out_norm and in_gamma != out_gamma:

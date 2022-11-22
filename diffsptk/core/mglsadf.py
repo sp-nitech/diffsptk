@@ -25,15 +25,12 @@ from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 class PseudoMGLSADigitalFilter(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mglsadf.html>`_
-    for details. The exponential filter is approximated by the Taylor expansion.
+    for details.
 
     Parameters
     ----------
     filter_order : int >= 0 [scalar]
         Order of filter coefficients, :math:`M`.
-
-    cep_order : int >= filter_order [scalar]
-        Order of linear cepstrum.
 
     alpha : float [-1 < alpha < 1]
         Frequency warping factor, :math:`\\alpha`.
@@ -44,60 +41,73 @@ class PseudoMGLSADigitalFilter(nn.Module):
     c : int >= 1 [scalar]
         Number of stages.
 
-    taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion, :math:`L`.
-
     frame_period : int >= 1 [scalar]
         Frame period, :math:`P`.
 
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
-    phase : ['minimum', 'maximum', 'zero', 'mixed']
+    phase : ['minimum', 'maximum', 'zero']
         Filter type.
+
+    cascade : bool [scalar]
+        If True, use multi-stage FIR filters.
+
+    cep_order : int >= 0 [scalar]
+        Order of linear cepstrum (valid only if cascade is True).
+
+    taylor_order : int >= 0 [scalar]
+        Order of Taylor series expansion (valid only if cascade is True).
+
+    impulse_response_length : int >= filter_order [scalar]
+        Length of impulse response (valid only if cascade is False).
+
+    n_fft : int >= 0 [scalar]
+        Number of FFT bins for conversion (valid only if cascade is False).
 
     """
 
     def __init__(
         self,
         filter_order,
-        cep_order=200,
         alpha=0,
         gamma=0,
         c=None,
-        taylor_order=30,
         frame_period=1,
         ignore_gain=False,
         phase="minimum",
+        cascade=True,
+        **kwargs,
     ):
         super(PseudoMGLSADigitalFilter, self).__init__()
 
         self.filter_order = filter_order
-        self.taylor_order = taylor_order
         self.frame_period = frame_period
-        self.ignore_gain = ignore_gain
-        self.phase = phase
 
-        assert 0 <= self.taylor_order
+        gamma = get_gamma(gamma, c)
 
-        if self.phase == "minimum":
-            self.pad = nn.ConstantPad1d((cep_order, 0), 0)
-        elif self.phase == "maximum":
-            self.pad = nn.ConstantPad1d((0, cep_order), 0)
-        elif self.phase == "zero" or self.phase == "mixed":
-            self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
+        if cascade:
+            self.mglsadf = MultiStageFIRFilter(
+                filter_order,
+                alpha=alpha,
+                gamma=gamma,
+                frame_period=frame_period,
+                ignore_gain=ignore_gain,
+                phase=phase,
+                **kwargs,
+            )
         else:
-            raise ValueError(f"phase {phase} is not supported")
+            self.mglsadf = SingleStageFIRFilter(
+                filter_order,
+                alpha=alpha,
+                gamma=gamma,
+                frame_period=frame_period,
+                ignore_gain=ignore_gain,
+                phase=phase,
+                **kwargs,
+            )
 
-        self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            filter_order,
-            cep_order,
-            in_alpha=alpha,
-            in_gamma=get_gamma(gamma, c),
-        )
-        self.linear_intpl = LinearInterpolation(frame_period)
-
-    def forward(self, x, mc, nc=None):
+    def forward(self, x, mc):
         """Apply an MGLSA digital filter.
 
         Parameters
@@ -107,9 +117,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         mc : Tensor [shape=(..., T/P, M+1)]
             Mel-generalized cepstrum, not MLSA digital filter coefficients.
-
-        nc : Tensor [shape=(..., T/P, M+1)]
-            Mxiumum phase part of mel-generalized cepstrum (used only mixed-phase mode).
 
         Returns
         -------
@@ -133,6 +140,48 @@ class PseudoMGLSADigitalFilter(nn.Module):
         check_size(mc.size(-1), self.filter_order + 1, "dimension of mel-cepstrum")
         check_size(x.size(-1), mc.size(-2) * self.frame_period, "sequence length")
 
+        y = self.mglsadf(x, mc)
+        return y
+
+
+class MultiStageFIRFilter(nn.Module):
+    def __init__(
+        self,
+        filter_order,
+        alpha=0,
+        gamma=0,
+        frame_period=1,
+        ignore_gain=False,
+        phase="minimum",
+        taylor_order=20,
+        cep_order=199,
+    ):
+        super(MultiStageFIRFilter, self).__init__()
+
+        self.taylor_order = taylor_order
+        self.ignore_gain = ignore_gain
+        self.phase = phase
+
+        assert 0 <= self.taylor_order
+
+        if self.phase == "minimum":
+            self.pad = nn.ConstantPad1d((cep_order, 0), 0)
+        elif self.phase == "maximum":
+            self.pad = nn.ConstantPad1d((0, cep_order), 0)
+        elif self.phase == "zero":
+            self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
+        else:
+            raise ValueError(f"phase {phase} is not supported")
+
+        self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+            filter_order,
+            cep_order,
+            in_alpha=alpha,
+            in_gamma=gamma,
+        )
+        self.linear_intpl = LinearInterpolation(frame_period)
+
+    def forward(self, x, mc):
         c = self.mgc2c(mc)
         if self.ignore_gain:
             c[..., 0] = 0
@@ -145,12 +194,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
             c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
             c1 = c1 * 0.5
             c = torch.cat((c1.flip(-1), c0, c1), dim=-1)
-        elif self.phase == "mixed":
-            check_size(nc.size(-1), self.filter_order + 1, "dimension of mel-cepstrum")
-            check_size(x.size(-1), nc.size(-2) * self.frame_period, "sequence length")
-            d = self.mgc2c(nc)
-            _, d1 = torch.split(d, [1, d.size(-1) - 1], dim=-1)
-            c = torch.cat((c.flip(-1), d1), dim=-1)
         else:
             raise NotImplementedError
 
@@ -162,4 +205,55 @@ class PseudoMGLSADigitalFilter(nn.Module):
             x = x.unfold(-1, c.size(-1), 1)
             x = (x * c).sum(-1) / a
             y += x
+        return y
+
+
+class SingleStageFIRFilter(nn.Module):
+    def __init__(
+        self,
+        filter_order,
+        alpha=0,
+        gamma=0,
+        frame_period=1,
+        ignore_gain=False,
+        phase="minimum",
+        impulse_response_length=2000,
+        n_fft=4096,
+    ):
+        super(SingleStageFIRFilter, self).__init__()
+
+        self.ignore_gain = ignore_gain
+        self.phase = phase
+
+        taps = impulse_response_length - 1
+        if self.phase == "minimum":
+            self.pad = nn.ConstantPad1d((taps, 0), 0)
+        elif self.phase == "maximum":
+            self.pad = nn.ConstantPad1d((0, taps), 0)
+        else:
+            raise ValueError(f"phase {phase} is not supported")
+
+        self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+            filter_order,
+            impulse_response_length - 1,
+            in_alpha=alpha,
+            in_gamma=gamma,
+            out_gamma=1,
+            out_mul=True,
+            n_fft=n_fft,
+        )
+        self.linear_intpl = LinearInterpolation(frame_period)
+
+    def forward(self, x, mc):
+        h = self.mgc2ir(mc)
+        if self.phase == "minimum":
+            h = h.flip(-1)
+
+        h = self.linear_intpl(h)
+        if self.ignore_gain:
+            h = h / h[..., -1:]
+
+        x = self.pad(x)
+        x = x.unfold(-1, h.size(-1), 1)
+        y = (x * h).sum(-1)
         return y

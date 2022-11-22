@@ -43,7 +43,7 @@ def test_compatibility(
         out_norm=out_norm,
         in_mul=in_mul,
         out_mul=out_mul,
-        fft_length=L,
+        n_fft=L,
     )
 
     opt1 = f"-m {m} -M {m} -a 0 -A {a} -g {0} -G {g} "

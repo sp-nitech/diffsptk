@@ -23,7 +23,8 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-def test_compatibility(device, ignore_gain, c=0, alpha=0.42, M=24, P=80):
+@pytest.mark.parametrize("cascade", [False, True])
+def test_compatibility(device, ignore_gain, cascade, c=0, alpha=0.42, M=24, P=80):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -44,36 +45,26 @@ def test_compatibility(device, ignore_gain, c=0, alpha=0.42, M=24, P=80):
     mc = torch.from_numpy(U.call(f"cat {tmp2}").reshape(-1, M + 1)).to(device)
     U.call(f"rm {tmp1} {tmp2}", get=False)
 
+    if cascade:
+        params = {"cep_order": 100, "taylor_order": 40}
+    else:
+        params = {"impulse_response_length": 500, "n_fft": 1024}
+
     # Get residual signal.
     imglsadf = diffsptk.IMLSA(
         M,
-        cep_order=100,
-        taylor_order=50,
         frame_period=P,
         alpha=alpha,
         c=c,
         ignore_gain=ignore_gain,
+        cascade=cascade,
+        **params,
     ).to(device)
     x = imglsadf(y, mc)
 
     # Get reconstructed signal.
-    mglsadf = diffsptk.MLSA(
-        M,
-        cep_order=100,
-        taylor_order=30,
-        frame_period=P,
-        alpha=alpha,
-        c=c,
-        ignore_gain=ignore_gain,
-    ).to(device)
-    y_hat = mglsadf(x, mc)
+    y_hat = imglsadf(x, -mc)
 
-    # Compute error between two signals.
-    error = torch.max(torch.abs(y - y_hat))
-    assert torch.lt(error, 1)
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=4, T=20, M=4):
-    imglsadf = diffsptk.IMLSA(M, taylor_order=5)
-    U.check_differentiable(device, imglsadf, [(B, T), (B, T, M + 1)])
+    # Compute correlation between two signals.
+    r = torch.corrcoef(torch.stack([y, y_hat]))[0, 1]
+    assert torch.gt(r, 0.99)

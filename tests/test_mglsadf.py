@@ -25,16 +25,23 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
+@pytest.mark.parametrize("cascade", [False, True])
 @pytest.mark.parametrize("c", [0, 10])
-def test_compatibility(device, ignore_gain, c, alpha=0.42, M=24, P=80):
+def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
+    if cascade:
+        params = {"cep_order": 100, "taylor_order": 20}
+    else:
+        params = {"impulse_response_length": 200, "n_fft": 512}
+
     mglsadf = diffsptk.MLSA(
         M,
-        cep_order=100,
-        taylor_order=20,
         frame_period=P,
         alpha=alpha,
         c=c,
         ignore_gain=ignore_gain,
+        cascade=cascade,
+        phase="minimum",
+        **params,
     )
 
     tmp1 = "mglsadf.tmp1"
@@ -60,10 +67,8 @@ def test_compatibility(device, ignore_gain, c, alpha=0.42, M=24, P=80):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("phase", ["minimum", "maximum", "zero", "mixed"])
-def test_differentiable(device, phase, B=4, T=20, M=4):
-    mglsadf = diffsptk.MLSA(M, taylor_order=5, phase=phase)
-    if phase == "mixed":
-        U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1), (B, T, M + 1)])
-    else:
-        U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
+@pytest.mark.parametrize("phase", ["minimum", "maximum"])
+@pytest.mark.parametrize("cascade", [False, True])
+def test_differentiable(device, cascade, phase, B=4, T=20, M=4):
+    mglsadf = diffsptk.MLSA(M, cascade=cascade, phase=phase)
+    U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
