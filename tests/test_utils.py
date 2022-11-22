@@ -17,8 +17,9 @@
 import filecmp
 import os
 
-import diffsptk
 import pytest
+
+import diffsptk
 
 
 @pytest.mark.parametrize("double", [False, True])

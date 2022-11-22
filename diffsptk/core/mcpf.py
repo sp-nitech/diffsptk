@@ -48,7 +48,9 @@ class MelCepstrumPostfiltering(nn.Module):
 
     """
 
-    def __init__(self, cep_order, alpha=0, beta=0, onset=2, impulse_response_length=1024):
+    def __init__(
+        self, cep_order, alpha=0, beta=0, onset=2, impulse_response_length=1024
+    ):
         super(MelCepstrumPostfiltering, self).__init__()
 
         assert 0 <= onset

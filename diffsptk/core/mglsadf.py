@@ -253,10 +253,17 @@ class SingleStageFIRFilter(nn.Module):
         h = self.mgc2ir(mc)
         if self.phase == "minimum":
             h = h.flip(-1)
+        elif self.phase == "maximum":
+            pass
+        else:
+            raise NotImplementedError
 
         h = self.linear_intpl(h)
         if self.ignore_gain:
-            h = h / h[..., -1:]
+            if self.phase == "minimum":
+                h = h / h[..., -1:]
+            elif self.phase == "maximum":
+                h = h / h[..., :1]
 
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)
