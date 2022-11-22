@@ -89,6 +89,30 @@ def check_size(x, y, cause):
 
 
 def read(filename, double=False):
+    """Read waveform from file.
+
+    Parameters
+    ----------
+    filename : str [scalar]
+        Path of wav file.
+
+    double : bool [scalar]
+        If True, return double-type tensor.
+
+    Returns
+    -------
+    x : Tensor
+        Waveform.
+
+    Examples
+    --------
+    >>> x, sr = diffsptk.read("assets/data.wav")
+    >>> x
+    tensor([ 0.0002,  0.0004,  0.0006,  ...,  0.0006, -0.0006, -0.0007])
+    >>> sr
+    16000
+
+    """
     x, sr = sf.read(filename)
     if double:
         x = torch.DoubleTensor(x)
@@ -98,4 +122,23 @@ def read(filename, double=False):
 
 
 def write(filename, x, sr):
+    """Write waveform to file.
+
+    Parameters
+    ----------
+    filename : str [scalar]
+        Path of wav file.
+
+    x : Tensor
+        Waveform.
+
+    sr : int [scalar]
+        Sample rate in Hz.
+
+    Examples
+    --------
+    >>> x, sr = diffsptk.read("assets/data.wav")
+    >>> diffsptk.write("out.wav", x, sr)
+
+    """
     sf.write(filename, x.cpu().numpy(), sr)
