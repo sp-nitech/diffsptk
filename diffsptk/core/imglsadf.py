@@ -70,7 +70,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     ):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
 
-        self.mglsadf = PseudoMGLSADigitalFilter(filter_order**kwargs)
+        self.mglsadf = PseudoMGLSADigitalFilter(filter_order, **kwargs)
 
     def forward(self, y, mc):
         """Apply an inverse MGLSA digital filter.
