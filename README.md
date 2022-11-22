@@ -41,8 +41,6 @@ Examples
 ### Mel-cepstral analysis and synthesis
 ```python
 import diffsptk
-import soundfile as sf
-import torch
 
 # Set analysis condition.
 fl = 400
@@ -52,10 +50,9 @@ M = 24
 alpha = 0.42
 
 # Read waveform.
-x, sr = sf.read("assets/data.wav")
-x = torch.FloatTensor(x)
+x, sr = diffsptk.read("assets/data.wav")
 
-# Compute STFT of x.
+# Compute STFT amplitude of x.
 stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
@@ -63,22 +60,21 @@ X = stft(x)
 mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
 mc = mcep(X)
 
-# Generate excitation.
-e = torch.randn(x.size(0))
+# Reconstruct x.
+mlsa = diffsptk.MLSA(filter_order=M, alpha=alpha, frame_period=fp, taylor_order=30)
+x_hat = mlsa(mlsa(x, -mc), mc)
 
-# Apply MLSA filter to the excitation.
-mlsa = diffsptk.MLSA(filter_order=M, alpha=alpha, frame_period=fp)
-y = mlsa(e, mc)
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
 
-# Write waveform.
-sf.write("unvoice.wav", y.cpu().numpy(), sr)
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
 ```
 
 ### Mel-spectrogram extraction
 ```python
 import diffsptk
-import soundfile as sf
-import torch
 
 # Set analysis condition.
 fl = 400
@@ -87,10 +83,9 @@ n_fft = 512
 n_channel = 80
 
 # Read waveform.
-x, sr = sf.read("assets/data.wav")
-x = torch.FloatTensor(x)
+x, sr = diffsptk.read("assets/data.wav")
 
-# Compute STFT of x.
+# Compute STFT amplitude of x.
 stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
@@ -106,15 +101,12 @@ Y = fbank(X)
 ### Subband decomposition
 ```python
 import diffsptk
-import soundfile as sf
-import torch
 
 K = 4   # Number of subbands.
 M = 40  # Order of filter.
 
 # Read waveform.
-x, sr = sf.read("assets/data.wav")
-x = torch.FloatTensor(x)
+x, sr = diffsptk.read("assets/data.wav")
 
 # Decompose x.
 pqmf = diffsptk.PQMF(K, M)
@@ -126,11 +118,12 @@ interpolate = diffsptk.Interpolation(K)
 ipqmf = diffsptk.IPQMF(K, M)
 x_hat = ipqmf(interpolate(K * y, dim=-1)).reshape(-1)
 
-# Compute error between two signals.
-error = torch.abs(x_hat - x).sum()
-
 # Write reconstructed waveform.
-sf.write("reconst.wav", x_hat.cpu().numpy(), sr)
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
 ```
 
 

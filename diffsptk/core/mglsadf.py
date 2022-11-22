@@ -51,19 +51,19 @@ class PseudoMGLSADigitalFilter(nn.Module):
         Filter type.
 
     cascade : bool [scalar]
-        If True, use multi-stage FIR filters.
+        If True, use multi-stage FIR filter.
 
     cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (valid only if cascade is True).
+        Order of linear cepstrum (valid only if **cascade** is True).
 
     taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion (valid only if cascade is True).
+        Order of Taylor series expansion (valid only if **cascade** is True).
 
-    impulse_response_length : int >= filter_order [scalar]
-        Length of impulse response (valid only if cascade is False).
+    impulse_response_length : int >= 1 [scalar]
+        Length of impulse response (valid only if **cascade** is False).
 
-    n_fft : int >= 0 [scalar]
-        Number of FFT bins for conversion (valid only if cascade is False).
+    n_fft : int >= 1 [scalar]
+        Number of FFT bins for conversion (valid only if **cascade** is False).
 
     """
 

@@ -21,15 +21,12 @@ from .mglsadf import PseudoMGLSADigitalFilter
 
 class PseudoInverseMGLSADigitalFilter(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/imglsadf.html>`_
-    for details. The exponential filter is approximated by the Taylor expansion.
+    for details.
 
     Parameters
     ----------
     filter_order : int >= 0 [scalar]
         Order of filter coefficients, :math:`M`.
-
-    cep_order : int >= filter_order [scalar]
-        Order of linear cepstrum.
 
     alpha : float [-1 < alpha < 1]
         Frequency warping factor, :math:`\\alpha`.
@@ -40,14 +37,29 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     c : int >= 1 [scalar]
         Number of stages.
 
-    taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion, :math:`L`.
-
     frame_period : int >= 1 [scalar]
         Frame period, :math:`P`.
 
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
+
+    phase : ['minimum', 'maximum', 'zero']
+        Filter type.
+
+    cascade : bool [scalar]
+        If True, use multi-stage FIR filter.
+
+    cep_order : int >= 0 [scalar]
+        Order of linear cepstrum (valid only if **cascade** is True).
+
+    taylor_order : int >= 0 [scalar]
+        Order of Taylor series expansion (valid only if **cascade** is True).
+
+    impulse_response_length : int >= 1 [scalar]
+        Length of impulse response (valid only if **cascade** is False).
+
+    n_fft : int >= 1 [scalar]
+        Number of FFT bins for conversion (valid only if **cascade** is False).
 
     """
 
@@ -58,10 +70,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     ):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
 
-        self.mglsadf = PseudoMGLSADigitalFilter(
-            filter_order,
-            **kwargs,
-        )
+        self.mglsadf = PseudoMGLSADigitalFilter(filter_order**kwargs)
 
     def forward(self, y, mc):
         """Apply an inverse MGLSA digital filter.

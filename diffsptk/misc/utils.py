@@ -17,6 +17,7 @@
 import warnings
 
 import numpy as np
+import soundfile as sf
 import torch
 
 
@@ -85,3 +86,16 @@ def clog(x):
 
 def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
+
+
+def read(filename, double=False):
+    x, sr = sf.read(filename)
+    if double:
+        x = torch.DoubleTensor(x)
+    else:
+        x = torch.FloatTensor(x)
+    return x, sr
+
+
+def write(filename, x, sr):
+    sf.write(filename, x.cpu().numpy(), sr)
