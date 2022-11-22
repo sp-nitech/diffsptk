@@ -98,6 +98,8 @@ class ExcitationGeneration(nn.Module):
 
         # Seek pulse position.
         q = torch.nan_to_num(torch.reciprocal(p), posinf=0)
+        if not self.training:
+            q = q.double()
         s = torch.cumsum(q, dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         s = torch.ceil(s - bias - eps)

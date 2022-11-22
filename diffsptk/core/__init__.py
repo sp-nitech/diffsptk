@@ -15,6 +15,7 @@ from .dequantize import InverseUniformQuantization
 from .df2 import SecondOrderDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
+from .entropy import Entropy
 from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
