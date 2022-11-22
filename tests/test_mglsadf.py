@@ -67,8 +67,10 @@ def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("phase", ["minimum", "maximum"])
+@pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
 @pytest.mark.parametrize("cascade", [False, True])
 def test_differentiable(device, cascade, phase, B=4, T=20, M=4):
+    if not cascade and phase == "zero":
+        return
     mglsadf = diffsptk.MLSA(M, cascade=cascade, phase=phase)
     U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
