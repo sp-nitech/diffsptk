@@ -58,6 +58,7 @@ def test_compatibility(device, ignore_gain, cascade, c=0, alpha=0.42, M=24, P=80
         c=c,
         ignore_gain=ignore_gain,
         cascade=cascade,
+        phase="minimum",
         **params,
     ).to(device)
     x = imglsadf(y, mc)
