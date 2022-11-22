@@ -23,6 +23,7 @@ setup(
     ],
     python_requires=">= 3.8",
     install_requires=[
+        "soundfile",
         "torch >= 1.10.0",
         "torchcrepe >= 0.0.16",
         "numpy",
@@ -36,7 +37,6 @@ setup(
             "pydata-sphinx-theme",
             "pytest",
             "pytest-cov",
-            "soundfile",
             "sphinx",
             "twine",
         ],
