@@ -65,6 +65,11 @@ class PseudoMGLSADigitalFilter(nn.Module):
     n_fft : int >= 1 [scalar]
         Number of FFT bins for conversion (valid only if **cascade** is False).
 
+    References
+    ----------
+    .. [1] T. Yoshimura et al., "Embedding a differentiable mel-cepstral synthesis
+           filter to a neural speech synthesis system," *arXiv:2211.11222*, 2022.
+
     """
 
     def __init__(
