@@ -73,5 +73,5 @@ def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
 def test_differentiable(device, ignore_gain, cascade, phase, B=4, T=20, M=4):
     if not cascade and phase == "zero":
         return
-    mglsadf = diffsptk.MLSA(M, cascade=cascade, phase=phase)
+    mglsadf = diffsptk.MLSA(M, ignore_gain=ignore_gain, cascade=cascade, phase=phase)
     U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
