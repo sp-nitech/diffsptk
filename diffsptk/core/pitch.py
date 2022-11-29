@@ -160,7 +160,6 @@ class PitchExtractionInterface(metaclass=ABCMeta):
             Probability, where C is the number of pitch classes.
 
         """
-        pass
 
     @abstractmethod
     def calc_embed(self, x):
@@ -177,7 +176,6 @@ class PitchExtractionInterface(metaclass=ABCMeta):
             Embedding, where D is the dimension of embedding.
 
         """
-        pass
 
     @abstractmethod
     def calc_pitch(self, x):
@@ -194,7 +192,6 @@ class PitchExtractionInterface(metaclass=ABCMeta):
             F0 sequence.
 
         """
-        pass
 
 
 class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):

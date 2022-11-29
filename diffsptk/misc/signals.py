@@ -222,10 +222,10 @@ def nrand(order, mean=0, stdv=1, var=None, **kwargs):
     mean : float [scalar]
         Mean.
 
-    stdv : float [scalar]
+    stdv : float >= 0 [scalar]
         Standard deviation.
 
-    var : float [scalar]
+    var : float >= 0 [scalar]
         Variance.
 
     Returns
