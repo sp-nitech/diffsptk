@@ -42,7 +42,8 @@ def impulse(order, **kwargs):
     tensor([1., 0., 0., 0., 0.])
 
     """
-    return torch.eye(n=1, m=order + 1, **kwargs).squeeze(0)
+    x = torch.eye(n=1, m=order + 1, **kwargs).squeeze(0)
+    return x
 
 
 def step(order, value=1, **kwargs):
@@ -71,7 +72,8 @@ def step(order, value=1, **kwargs):
     tensor([2., 2., 2., 2., 2.])
 
     """
-    return torch.full((order + 1,), float(value), **kwargs)
+    x = torch.full((order + 1,), float(value), **kwargs)
+    return x
 
 
 def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
@@ -115,7 +117,8 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
         end += eps
     else:
         end -= eps
-    return torch.arange(start, end, step, **kwargs)
+    x = torch.arange(start, end, step, **kwargs)
+    return x
 
 
 def sin(order, period=None, magnitude=1, **kwargs):
@@ -150,8 +153,8 @@ def sin(order, period=None, magnitude=1, **kwargs):
     if period is None:
         period = order + 1
     x = torch.arange(order + 1, **kwargs)
-    x = torch.sin(x * (2 * math.pi / period))
-    return magnitude * x
+    x = torch.sin(x * (2 * math.pi / period)) * magnitude
+    return x
 
 
 def train(order, frame_period, norm="power", **kwargs):
@@ -202,4 +205,45 @@ def train(order, frame_period, norm="power", **kwargs):
 
     x = torch.zeros(order + 1, **kwargs)
     x[index] = pulse
+    return x
+
+
+def nrand(order, mean=0, stdv=1, var=None, **kwargs):
+    """Generate random number sequence.
+
+    See `train <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
+    for details.
+
+    Parameters
+    ----------
+    order : int >= 0 [scalar]
+        Order of sequence, :math:`M`.
+
+    mean : float [scalar]
+        Mean.
+
+    stdv : float [scalar]
+        Standard deviation.
+
+    var : float [scalar]
+        Variance.
+
+    Returns
+    -------
+    x : Tensor [shape=(M+1,)]
+        Random value sequence.
+
+    Examples
+    --------
+    >>> x = diffsptk.nrand(4)
+    >>> x
+    tensor([-0.8603,  0.6743, -0.9178,  1.5382, -0.2574])
+
+    """
+    if var is not None:
+        stdv = var**0.5
+    assert 0 <= stdv
+
+    x = torch.randn(order + 1, **kwargs)
+    x = x * stdv + mean
     return x

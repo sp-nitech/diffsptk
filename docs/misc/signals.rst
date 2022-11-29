@@ -10,3 +10,5 @@ signals
 .. autofunction:: diffsptk.sin
 
 .. autofunction:: diffsptk.train
+
+.. autofunction:: diffsptk.nrand
