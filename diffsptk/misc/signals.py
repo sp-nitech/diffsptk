@@ -211,7 +211,7 @@ def train(order, frame_period, norm="power", **kwargs):
 def nrand(order, mean=0, stdv=1, var=None, **kwargs):
     """Generate random number sequence.
 
-    See `train <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
+    See `nrand <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
     for details.
 
     Parameters

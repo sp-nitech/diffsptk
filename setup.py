@@ -25,7 +25,7 @@ setup(
     install_requires=[
         "soundfile",
         "torch >= 1.10.0",
-        "torchcrepe >= 0.0.16",
+        "torchcrepe == 0.0.17",
         "numpy",
     ],
     extras_require={

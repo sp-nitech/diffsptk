@@ -14,11 +14,18 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from abc import ABCMeta
+from abc import abstractmethod
+
 import torch
 import torch.nn as nn
 import torchcrepe
 
+from ..misc.utils import is_in
 from .frame import Frame
+from .stft import ShortTermFourierTransform
+
+MAGIC_NUMBER_FOR_UNVOICED_FRAME = 0
 
 
 class Pitch(nn.Module):
@@ -32,17 +39,29 @@ class Pitch(nn.Module):
     sample_rate : int >= 1 [scalar]
         Sample rate in Hz.
 
+    algorithm : ['crepe']
+        Algorithm.
+
+    out_format : ['prob', 'embed', 'pitch', 'f0', 'lf0']
+        Output format.
+
     f_min : float >= 0 [scalar]
         Minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2 [scalar]
         Maximum frequency in Hz.
 
-    algorithm : ['crepe']
-        Algorithm.
+    threshold : float [scalar]
+        Voiced/unvoiced threshold.
 
-    option : str -> Any [dict]
-        Algorithm-dependent options.
+    silence_threshold : float [scalar]
+        Silence threshold in dB.
+
+    filter_length : int >= 1 [scalar]
+        Window length of median and moving average filters.
+
+    model : ['tiny', 'full']
+        Model size.
 
     """
 
@@ -50,42 +69,35 @@ class Pitch(nn.Module):
         self,
         frame_period,
         sample_rate,
-        f_min=0,
-        f_max=None,
         algorithm="crepe",
         out_format="f0",
-        **option,
+        **kwargs,
     ):
         super(Pitch, self).__init__()
 
         assert 1 <= frame_period
         assert 1 <= sample_rate
-        assert 0 <= f_min
-        if f_max is not None:
-            assert f_min < f_max
-            assert f_max <= sample_rate / 2
 
         if algorithm == "crepe":
-            self.algorithm = PitchExtractionByCrepe(
-                frame_period,
-                sample_rate,
-                f_min=f_min,
-                f_max=f_max,
-                **option,
-            )
+            self.extractor = PitchExtractionByCrepe(frame_period, sample_rate, **kwargs)
         else:
             raise ValueError(f"algorithm {algorithm} is not supported")
 
         if out_format == 0 or out_format == "pitch":
             self.convert = lambda x: sample_rate / x
+            self.out_format = "pitch"
         elif out_format == 1 or out_format == "f0":
             self.convert = lambda x: x
+            self.out_format = "f0"
         elif out_format == 2 or out_format == "lf0":
             self.convert = lambda x: torch.log(x)
+            self.out_format = "lf0"
+        elif out_format == "prob" or out_format == "embed":
+            self.out_format = out_format
         else:
             raise ValueError(f"out_format {out_format} is not supported")
 
-    def forward(self, x, embed=False):
+    def forward(self, x):
         """Compute pitch representation.
 
         Parameters
@@ -93,82 +105,139 @@ class Pitch(nn.Module):
         x : Tensor [shape=(B, T) or (T,)]
             Waveform.
 
-        embed : bool [scalar]
-            If True, return embedding instead of probability.
-
         Returns
         -------
-        y : Tensor [shape=(B, N, C) or (N, C)]
-            Pitch probability or embedding, where N is the number of frames and
-            C is the number of classes or the dimension of embedding.
+        y : Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
+            Pitch probability, embedding, or pitch, where N is the number of frames
+            and C is the number of pitch classes or the dimension of embedding.
 
         Examples
         --------
         >>> x = diffsptk.sin(100, 10)
-        >>> pitch = diffsptk.pitch(80, 16000)
-        >>> prob = pitch(x)
-        >>> prob.shape
-        torch.Size([2, 360])
+        >>> pitch = diffsptk.Pitch(80, 16000)
+        >>> y = pitch(x)
+        >>> y
+        tensor([1586.6013, 1593.9536])
 
         """
         d = x.dim()
         if d == 1:
             x = x.unsqueeze(0)
         assert x.dim() == 2
-        y = self.algorithm.forward(x, embed=embed)
+
+        if self.out_format == "prob":
+            y = self.extractor.calc_prob(x)
+        elif self.out_format == "embed":
+            y = self.extractor.calc_embed(x)
+        else:
+            with torch.no_grad():
+                y = self.extractor.calc_pitch(x)
+                mask = y != MAGIC_NUMBER_FOR_UNVOICED_FRAME
+                y[mask] = self.convert(y[mask])
+                if self.out_format == "lf0":
+                    y[~mask] = -1e10
+
         if d == 1:
             y = y.squeeze(0)
         return y
 
-    def decode(self, prob):
-        """Get appropriate pitch contour from pitch probabilities.
+
+class PitchExtractionInterface(metaclass=ABCMeta):
+    """Abstract class for pitch extraction."""
+
+    @abstractmethod
+    def calc_prob(self, x):
+        """Calculate pitch probability.
 
         Parameters
         ----------
-        prob : Tensor [shape=(B, N, C) or (N, C)]
-            Pitch probabilitiy.
+        x : Tensor [shape=(B, T)]
+            Waveform.
 
         Returns
         -------
-        pitch : Tensor [shape=(B, N) or (N,)]
-            Pitch in seconds, Hz, or log Hz.
-
-        Examples
-        --------
-        >>> x = diffsptk.sin(100, 10)
-        >>> pitch = diffsptk.pitch(80, 16000)
-        >>> prob = pitch.forward(x)
-        >>> result = pitch.decode(prob)
-        >>> result
-        tensor([1586.6013, 1593.9536])
+        y : Tensor [shape=(B, N, C)]
+            Probability, where C is the number of pitch classes.
 
         """
-        with torch.no_grad():
-            d = prob.dim()
-            if d == 2:
-                prob = prob.unsqueeze(0)
-            assert prob.dim() == 3
-            pitch = self.algorithm.decode(prob)
-            if d == 2:
-                pitch = pitch.squeeze(0)
-            pitch = self.convert(pitch)
-        return pitch
+        pass
+
+    @abstractmethod
+    def calc_embed(self, x):
+        """Calculate embedding.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(B, T)]
+            Waveform.
+
+        Returns
+        -------
+        y : Tensor [shape=(B, N, D)]
+            Embedding, where D is the dimension of embedding.
+
+        """
+        pass
+
+    @abstractmethod
+    def calc_pitch(self, x):
+        """Calculate pitch sequence.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(B, T)]
+            Waveform.
+
+        Returns
+        -------
+        y : Tensor [shape=(B, N)]
+            F0 sequence.
+
+        """
+        pass
 
 
-class PitchExtractionByCrepe(nn.Module):
-    def __init__(self, frame_period, sample_rate, f_min=0, f_max=None, model="full"):
+class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
+    """Pitch extraction by CREPE."""
+
+    def __init__(
+        self,
+        frame_period,
+        sample_rate,
+        f_min=0,
+        f_max=None,
+        threshold=1e-2,
+        silence_threshold=-60,
+        filter_length=3,
+        model="full",
+    ):
         super(PitchExtractionByCrepe, self).__init__()
 
         self.f_min = f_min
         self.f_max = torchcrepe.MAX_FMAX if f_max is None else f_max
+        self.threshold = threshold
+        self.silence_threshold = silence_threshold
+        self.filter_length = filter_length
         self.model = model
+
+        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+        assert is_in(self.model, ["tiny", "full"])
 
         if sample_rate != torchcrepe.SAMPLE_RATE:
             raise NotImplementedError(f"Only {torchcrepe.SAMPLE_RATE} Hz is supported")
 
         self.frame = Frame(torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
+        self.stft = ShortTermFourierTransform(
+            torchcrepe.WINDOW_SIZE,
+            frame_period,
+            torchcrepe.WINDOW_SIZE,
+            norm="none",
+            window="hanning",
+            out_format="db",
+        )
+        self.weights = torchcrepe.loudness.perceptual_weights().squeeze(-1)
 
-    def forward(self, x, embed=False):
+    def forward(self, x, embed=True):
         # torchcrepe.preprocess
         x = self.frame(x)
         x = x / torch.clip(x.std(dim=-1, keepdim=True), min=1e-10)
@@ -180,7 +249,36 @@ class PitchExtractionByCrepe(nn.Module):
         y = y.reshape(B, N, -1)
         return y
 
-    def decode(self, prob):
-        prob = prob.transpose(-1, -2)
-        pitch = torchcrepe.postprocess(prob, fmin=self.f_min, fmax=self.f_max)
+    def calc_prob(self, x):
+        return self.forward(x, embed=False)
+
+    def calc_embed(self, x):
+        return self.forward(x, embed=True)
+
+    def calc_pitch(self, x):
+        # Compute pitch probabilities.
+        prob = self.calc_prob(x).transpose(-1, -2)
+
+        # Decode pitch probabilities.
+        pitch, periodicity = torchcrepe.postprocess(
+            prob,
+            fmin=self.f_min,
+            fmax=self.f_max,
+            decoder=torchcrepe.decode.viterbi,
+            return_harmonicity=False,
+            return_periodicity=True,
+        )
+
+        # Apply filters.
+        periodicity = torchcrepe.filter.median(periodicity, self.filter_length)
+        pitch = torchcrepe.filter.mean(pitch, self.filter_length)
+
+        # Decide voiced/unvoiced.
+        loudness = self.stft(x) + self.weights
+        loudness = torch.clip(loudness, min=torchcrepe.loudness.MIN_DB)
+        loudness = loudness.mean(-1)
+        mask = torch.logical_or(
+            periodicity < self.threshold, loudness < self.silence_threshold
+        )
+        pitch[mask] = MAGIC_NUMBER_FOR_UNVOICED_FRAME
         return pitch
