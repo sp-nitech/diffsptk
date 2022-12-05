@@ -89,7 +89,7 @@ diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
-### Mel-spectrogram extraction
+### Mel-spectrogram and MFCC extraction
 ```python
 import diffsptk
 
@@ -98,6 +98,7 @@ fl = 400
 fp = 80
 n_fft = 512
 n_channel = 80
+M = 12
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -106,13 +107,24 @@ x, sr = diffsptk.read("assets/data.wav")
 stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
-# Apply mel-filter banks to the STFT.
+# Extract mel-spectrogram.
 fbank = diffsptk.MelFilterBankAnalysis(
     n_channel=n_channel,
     fft_length=n_fft,
     sample_rate=sr,
 )
 Y = fbank(X)
+print(Y.shape)
+
+# Extract MFCC.
+mfcc = diffsptk.MFCC(
+    mfcc_order=M,
+    n_channel=n_channel,
+    fft_length=n_fft,
+    sample_rate=sr,
+)
+Y = mfcc(X)
+print(Y.shape)
 ```
 
 ### Subband decomposition
