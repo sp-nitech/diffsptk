@@ -70,7 +70,7 @@ class Pitch(nn.Module):
         frame_period,
         sample_rate,
         algorithm="crepe",
-        out_format="f0",
+        out_format="pitch",
         **kwargs,
     ):
         super(Pitch, self).__init__()
