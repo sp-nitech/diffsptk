@@ -21,6 +21,7 @@ import torch
 import torch.nn as nn
 import torchcrepe
 
+from ..misc.utils import default_dtype
 from ..misc.utils import is_in
 from .frame import Frame
 from .stft import ShortTermFourierTransform
@@ -42,7 +43,7 @@ class Pitch(nn.Module):
     algorithm : ['crepe']
         Algorithm.
 
-    out_format : ['prob', 'embed', 'pitch', 'f0', 'lf0']
+    out_format : ['pitch', 'f0', 'log-f0', 'prob', 'embed']
         Output format.
 
     f_min : float >= 0 [scalar]
@@ -83,17 +84,25 @@ class Pitch(nn.Module):
         else:
             raise ValueError(f"algorithm {algorithm} is not supported")
 
+        def calc_pitch(x, convert, unvoiced_value):
+            with torch.no_grad():
+                y = self.extractor.calc_pitch(x)
+                mask = y != MAGIC_NUMBER_FOR_UNVOICED_FRAME
+                y[mask] = convert(y[mask])
+                if unvoiced_value != MAGIC_NUMBER_FOR_UNVOICED_FRAME:
+                    y[~mask] = unvoiced_value
+            return y
+
         if out_format == 0 or out_format == "pitch":
-            self.convert = lambda x: sample_rate / x
-            self.out_format = "pitch"
+            self.convert = lambda x: calc_pitch(x, lambda y: sample_rate / y, 0)
         elif out_format == 1 or out_format == "f0":
-            self.convert = lambda x: x
-            self.out_format = "f0"
-        elif out_format == 2 or out_format == "lf0":
-            self.convert = lambda x: torch.log(x)
-            self.out_format = "lf0"
-        elif out_format == "prob" or out_format == "embed":
-            self.out_format = out_format
+            self.convert = lambda x: calc_pitch(x, lambda y: y, 0)
+        elif out_format == 2 or out_format == "log-f0":
+            self.convert = lambda x: calc_pitch(x, lambda y: torch.log(y), -1e10)
+        elif out_format == "prob":
+            self.convert = lambda x: self.extractor.calc_prob(x)
+        elif out_format == "embed":
+            self.convert = lambda x: self.extractor.calc_embed(x)
         else:
             raise ValueError(f"out_format {out_format} is not supported")
 
@@ -125,17 +134,7 @@ class Pitch(nn.Module):
             x = x.unsqueeze(0)
         assert x.dim() == 2
 
-        if self.out_format == "prob":
-            y = self.extractor.calc_prob(x)
-        elif self.out_format == "embed":
-            y = self.extractor.calc_embed(x)
-        else:
-            with torch.no_grad():
-                y = self.extractor.calc_pitch(x)
-                mask = y != MAGIC_NUMBER_FOR_UNVOICED_FRAME
-                y[mask] = self.convert(y[mask])
-                if self.out_format == "lf0":
-                    y[~mask] = -1e10
+        y = self.convert(x)
 
         if d == 1:
             y = y.squeeze(0)
@@ -232,7 +231,11 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
             window="hanning",
             out_format="db",
         )
-        self.weights = torchcrepe.loudness.perceptual_weights().squeeze(-1)
+
+        weights = torchcrepe.loudness.perceptual_weights().squeeze(-1)
+        self.register_buffer(
+            "weights", torch.from_numpy(weights.astype(default_dtype()))
+        )
 
     def forward(self, x, embed=True):
         # torchcrepe.preprocess

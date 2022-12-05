@@ -57,7 +57,7 @@ def test_train(n, m=9, p=2.3):
     assert np.allclose(y, y_)
 
 
-def test_nrand(m=1000, u=3, v=4):
+def test_nrand(m=10000, u=3, v=4):
     y = torch.var_mean(diffsptk.nrand(m, mean=u, var=v), unbiased=False)
     y_ = call(f"nrand -m {m} -u {u} -v {v} | vstat")
     assert np.allclose(y[1], y_[0], rtol=0.1)
