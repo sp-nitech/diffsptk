@@ -57,7 +57,7 @@ stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
 # Estimate mel-cepstrum of x.
-mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, n_iter=1)
+mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, n_iter=10)
 mc = mcep(X)
 
 # Reconstruct x.
@@ -70,6 +70,23 @@ diffsptk.write("reconst.wav", x_hat, sr)
 # Compute error.
 error = (x_hat - x).abs().sum()
 print(error)
+
+# Extract pitch of x.
+pitch = diffsptk.Pitch(frame_period=fp, sample_rate=sr, f_min=80, f_max=180)
+p = pitch(x)
+
+# Generate excitation signal.
+excite = diffsptk.ExcitationGeneration(frame_period=fp)
+e = excite(p)
+n = diffsptk.nrand(x.size(0) - 1)
+
+# Synthesize waveform.
+x_voiced = mlsa(e, mc)
+x_unvoiced = mlsa(n, mc)
+
+# Output analysis-synthesis result.
+diffsptk.write("voiced.wav", x_voiced, sr)
+diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
 ### Mel-spectrogram extraction

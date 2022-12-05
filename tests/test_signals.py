@@ -16,6 +16,7 @@
 
 import numpy as np
 import pytest
+import torch
 
 import diffsptk
 from tests.utils import call
@@ -54,3 +55,10 @@ def test_train(n, m=9, p=2.3):
     y = diffsptk.train(m, p, norm=n)
     y_ = call(f"train -m {m} -p {p} -n {n}")
     assert np.allclose(y, y_)
+
+
+def test_nrand(m=1000, u=3, v=4):
+    y = torch.var_mean(diffsptk.nrand(m, mean=u, var=v), unbiased=False)
+    y_ = call(f"nrand -m {m} -u {u} -v {v} | vstat")
+    assert np.allclose(y[1], y_[0], rtol=0.1)
+    assert np.allclose(y[0], y_[1], rtol=0.1)

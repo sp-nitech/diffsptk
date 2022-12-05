@@ -5,3 +5,5 @@ pitch
 
 .. autoclass:: diffsptk.Pitch
    :members:
+
+.. seealso:: :ref:`excite`
