@@ -23,14 +23,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, P=80):
+@pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
+def test_compatibility(device, voiced_region, P=80):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    excite = diffsptk.ExcitationGeneration(P).to(device)
+    torch.manual_seed(123)
+    excite = diffsptk.ExcitationGeneration(P, voiced_region=voiced_region).to(device)
 
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
-    cmd += f"pitch -s 16 -p {P} -o 0 -a 1 > excite.tmp1"
+    cmd += f"pitch -s 16 -p {P} -o 0 -a 2 > excite.tmp1"
     U.call(cmd, get=False)
 
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
@@ -42,8 +44,11 @@ def test_compatibility(device, P=80):
     e = excite(torch.from_numpy(np.expand_dims(pitch, 0)).to(device))
     e.cpu().numpy().tofile("excite.tmp3")
 
-    cmd = f"mglsadf -m 24 -a 0.42 -P 7 -p {P} excite.tmp2 < excite.tmp3 | "
-    cmd += f"pitch -s 16 -p {P} -o 0 -a 1"
+    if voiced_region == "pulse":
+        cmd = "sopr -magic 0 -m 100 -MAGIC 0 excite.tmp3 | "
+    else:
+        cmd = "sopr -magic 0 -m 10 -MAGIC 0 excite.tmp3 | "
+    cmd += f"pitch -s 16 -p {P} -o 0 -a 2"
     recomputed_pitch = U.call(cmd)
 
     pitch_error = 0
@@ -53,7 +58,7 @@ def test_compatibility(device, P=80):
             pitch_error += np.abs(p - q)
         elif not (p == 0 and q == 0):
             vuv_error += 1
-    assert pitch_error <= 100
+    assert pitch_error <= 200
     assert vuv_error <= 10
 
     U.call("rm -f excite.tmp?", get=False)
