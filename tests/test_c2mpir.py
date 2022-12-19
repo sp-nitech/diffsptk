@@ -28,7 +28,7 @@ def test_compatibility(device, M=19, N=30, L=512, B=2):
         device,
         c2mpir,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B*L} | fftcep -l {L} -m {M}",
         f"c2mpir -m {M} -l {N}",
         [],
         dx=M + 1,

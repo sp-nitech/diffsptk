@@ -20,30 +20,33 @@ import torch.nn as nn
 from ..misc.utils import is_in
 from .linear_intpl import LinearInterpolation
 
-eps = 1e-8
-
 
 class ExcitationGeneration(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/excite.html>`_
-    for details. **Note that this module cannot compute gradient**.
+    for details.
 
     Parameters
     ----------
     frame_period : int >= 1 [scalar]
         Frame period in samples, :math:`P`.
 
+    voiced_region : ['pulse', 'sinusoidal']
+        Value on voiced region.
+
     unvoiced_region : ['gauss', 'zeros']
         Value on unvoiced region.
 
     """
 
-    def __init__(self, frame_period, unvoiced_region="gauss"):
+    def __init__(self, frame_period, voiced_region="pulse", unvoiced_region="gauss"):
         super(ExcitationGeneration, self).__init__()
 
         self.frame_period = frame_period
+        self.voiced_region = voiced_region
         self.unvoiced_region = unvoiced_region
 
         assert 1 <= self.frame_period
+        assert is_in(self.voiced_region, ["pulse", "sinusoidal"])
         assert is_in(self.unvoiced_region, ["gauss", "zeros"])
 
         self.linear_intpl = LinearInterpolation(self.frame_period)
@@ -76,7 +79,7 @@ class ExcitationGeneration(nn.Module):
         signal_shape = list(base_mask.shape)
         signal_shape[-1] *= self.frame_period
 
-        mask = torch.eq(base_mask, 1).unsqueeze(-1)
+        mask = torch.ne(base_mask, 0).unsqueeze(-1)
         size = [-1] * mask.dim()
         size[-1] = self.frame_period
         mask = mask.expand(size)
@@ -96,19 +99,28 @@ class ExcitationGeneration(nn.Module):
             p = p.transpose(-1, -2)
         p *= mask
 
-        # Seek pulse position.
+        # Compute phase.
         q = torch.nan_to_num(torch.reciprocal(p), posinf=0)
-        if not self.training:
-            q = q.double()
-        s = torch.cumsum(q, dim=-1)
+        s = torch.cumsum(q.double(), dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
-        s = torch.ceil(s - bias - eps)
-        s = torch.cat((s[..., :1] * 0, s), dim=-1)
-        pulse_pos = torch.ge(s[..., 1:] - s[..., :-1], 1)
+        phase = (s - bias).to(p.dtype)
 
-        # Make excitation signal.
-        e = torch.zeros(*signal_shape, device=p.device, requires_grad=False)
-        e[pulse_pos] = torch.sqrt(p[pulse_pos])
+        if self.voiced_region == "pulse":
+            r = torch.ceil(phase)
+            r = torch.cat((r[..., :1] * 0, r), dim=-1)
+            pulse_pos = torch.ge(r[..., 1:] - r[..., :-1], 1)
+            e = torch.zeros(*signal_shape, device=p.device, requires_grad=False)
+            e[pulse_pos] = torch.sqrt(p[pulse_pos])
+        elif self.voiced_region == "sinusoidal":
+            e = torch.sin((2 * torch.pi) * phase)
+        else:
+            raise NotImplementedError
+
         if self.unvoiced_region == "gauss":
             e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
+        elif self.unvoiced_region == "zeros":
+            pass
+        else:
+            raise NotImplementedError
+
         return e

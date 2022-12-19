@@ -35,10 +35,19 @@ def compose(*fs):
     return functools.reduce(compose2_outer_kwargs, fs)
 
 
+def allclose(a, b, rtol=None, atol=None):
+    is_double = torch.get_default_dtype() == torch.float64
+    if rtol is None:
+        rtol = 1e-5 if is_double else 1e-4
+    if atol is None:
+        atol = 1e-8 if is_double else 1e-6
+    return np.allclose(a, b, rtol=rtol, atol=atol)
+
+
 def call(cmd, get=True):
     if get:
         res = subprocess.run(
-            cmd + " | x2x +da -f %.12f",
+            cmd + " | x2x +da -f %.15f",
             shell=True,
             text=True,
             stdout=subprocess.PIPE,
@@ -116,7 +125,7 @@ def check_compatibility(
         print(f"Target: {y}")
 
     if eq is None:
-        assert np.allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
+        assert allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
     else:
         assert eq(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
 

@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=9, gamma=0.9, B=2):
+def test_compatibility(device, L=32, M=9, gamma=0.9, B=2):
     lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(
         M, gamma=gamma, warn_type="ignore"
     )
@@ -30,7 +30,7 @@ def test_compatibility(device, M=9, gamma=0.9, B=2):
         device,
         lpc2par,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B*L} | lpc -l {L} -m {M}",
         f"lpc2par -m {M} -g {gamma}",
         [],
         dx=M + 1,

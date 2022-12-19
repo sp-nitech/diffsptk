@@ -14,51 +14,50 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-from tests.utils import call
+import tests.utils as U
 
 
 def test_impulse(m=5):
     y = diffsptk.impulse(m)
-    y_ = call(f"impulse -m {m}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"impulse -m {m}")
+    assert U.allclose(y, y_)
 
 
 def test_step(m=5, v=-1):
     y = diffsptk.step(m, v)
-    y_ = call(f"step -m {m} -v {v}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"step -m {m} -v {v}")
+    assert U.allclose(y, y_)
 
 
 def test_ramp(s=5, e=3, t=-1):
     y = diffsptk.ramp(s, e, t)
-    y_ = call(f"ramp -s {s} -e {e} -t {t}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"ramp -s {s} -e {e} -t {t}")
+    assert U.allclose(y, y_)
 
     y = diffsptk.ramp(s)
-    y_ = call(f"ramp -m {s}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"ramp -m {s}")
+    assert U.allclose(y, y_)
 
 
-def test_sin(m=5, p=0.1, a=-1):
+def test_sin(m=5, p=4, a=-1):
     y = diffsptk.sin(m, p, a)
-    y_ = call(f"sin -m {m} -p {p} -a {a}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"sin -m {m} -p {p} -a {a}")
+    assert U.allclose(y, y_)
 
 
 @pytest.mark.parametrize("n", [0, 1, 2])
 def test_train(n, m=9, p=2.3):
     y = diffsptk.train(m, p, norm=n)
-    y_ = call(f"train -m {m} -p {p} -n {n}")
-    assert np.allclose(y, y_)
+    y_ = U.call(f"train -m {m} -p {p} -n {n}")
+    assert U.allclose(y, y_)
 
 
 def test_nrand(m=10000, u=3, v=4):
     y = torch.var_mean(diffsptk.nrand(m, mean=u, var=v), unbiased=False)
-    y_ = call(f"nrand -m {m} -u {u} -v {v} | vstat")
-    assert np.allclose(y[1], y_[0], rtol=0.1)
-    assert np.allclose(y[0], y_[1], rtol=0.1)
+    y_ = U.call(f"nrand -m {m} -u {u} -v {v} | vstat")
+    assert U.allclose(y[1], y_[0], rtol=0.1)
+    assert U.allclose(y[0], y_[1], rtol=0.1)

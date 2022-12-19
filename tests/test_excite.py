@@ -23,37 +23,46 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, P=80):
+@pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
+def test_compatibility(device, voiced_region, P=80):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    excite = diffsptk.ExcitationGeneration(P).to(device)
+    torch.manual_seed(1234)
+    torch.cuda.manual_seed(1234)
+    excite = diffsptk.ExcitationGeneration(P, voiced_region=voiced_region).to(device)
 
+    # Compute pitch and excitation on C++ version.
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
-    cmd += f"pitch -s 16 -p {P} -o 0 -a 1 > excite.tmp1"
+    cmd += f"pitch -s 16 -p {P} -o 0 -a 2 > excite.tmp1"
     U.call(cmd, get=False)
+    U.call(f"excite -p {P} -n excite.tmp1 > excite.tmp2", get=False)
 
-    cmd = "x2x +sd tools/SPTK/asset/data.short | "
-    cmd += f"frame -p {P} -l 400 | window -l 400 -L 512 | "
-    cmd += "mgcep -l 512 -m 24 -a 0.42 > excite.tmp2"
-    U.call(cmd, get=False)
-
+    # Compute excitation on PyTorch version.
     pitch = U.call("cat excite.tmp1")
     e = excite(torch.from_numpy(np.expand_dims(pitch, 0)).to(device))
-    e.cpu().numpy().tofile("excite.tmp3")
+    e.cpu().double().numpy().tofile("excite.tmp3")
 
-    cmd = f"mglsadf -m 24 -a 0.42 -P 7 -p {P} excite.tmp2 < excite.tmp3 | "
-    cmd += f"pitch -s 16 -p {P} -o 0 -a 1"
-    recomputed_pitch = U.call(cmd)
+    def compute_error(infile):
+        cmd = f"sopr -magic 0 -m 10 -MAGIC 0 {infile} | "
+        cmd += f"pitch -s 16 -p {P} -o 0 -a 2"
+        recomputed_pitch = U.call(cmd)
 
-    pitch_error = 0
-    vuv_error = 0
-    for p, q in zip(pitch, recomputed_pitch):
-        if p != 0 and q != 0:
-            pitch_error += np.abs(p - q)
-        elif not (p == 0 and q == 0):
-            vuv_error += 1
-    assert pitch_error <= 100
-    assert vuv_error <= 10
+        pitch_error = 0
+        vuv_error = 0
+        for p, q in zip(pitch, recomputed_pitch):
+            if p != 0 and q != 0:
+                pitch_error += 16000 * np.abs(1 / p - 1 / q)
+            elif not (p == 0 and q == 0):
+                vuv_error += 1
+        return pitch_error, vuv_error
+
+    pitch_error_cc, vuv_error_cc = compute_error("excite.tmp2")
+    pitch_error_py, vuv_error_py = compute_error("excite.tmp3")
+
+    tol = 0
+    assert pitch_error_py <= pitch_error_cc + tol
+    tol = 5
+    assert vuv_error_py <= vuv_error_cc + tol
 
     U.call("rm -f excite.tmp?", get=False)
