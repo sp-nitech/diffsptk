@@ -27,7 +27,9 @@ import tests.utils as U
 def test_compatibility(device, ignore_gain, cascade, c=0, alpha=0.42, M=24, P=80):
     if device == "cuda" and not torch.cuda.is_available():
         return
-    if cascade and torch.get_default_dtype() != torch.float64:
+
+    # FIXME: numerical error problem.
+    if cascade and torch.get_default_dtype() != torch.float64:  # pragma: no cover
         return
 
     # Prepare data for C++.
