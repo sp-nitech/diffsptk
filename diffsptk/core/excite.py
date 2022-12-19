@@ -79,7 +79,7 @@ class ExcitationGeneration(nn.Module):
         signal_shape = list(base_mask.shape)
         signal_shape[-1] *= self.frame_period
 
-        mask = torch.eq(base_mask, 1).unsqueeze(-1)
+        mask = torch.ne(base_mask, 0).unsqueeze(-1)
         size = [-1] * mask.dim()
         size[-1] = self.frame_period
         mask = mask.expand(size)
