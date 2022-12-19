@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=9, margin=0.01, B=2):
+def test_compatibility(device, L=32, M=9, margin=0.01, B=2):
     lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(
         M, margin=margin, warn_type="ignore"
     )
@@ -30,7 +30,7 @@ def test_compatibility(device, M=9, margin=0.01, B=2):
         device,
         lpccheck,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B*L} | lpc -l {L} -m {M}",
         f"lpccheck -m {M} -r {margin} -e 0 -x",
         [],
         dx=M + 1,

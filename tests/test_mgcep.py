@@ -23,7 +23,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("n_iter", [0, 3])
 @pytest.mark.parametrize("gamma", [0, -0.5, -1])
-def test_compatibility(device, n_iter, gamma, M=8, L=16, B=2, alpha=0.1):
+def test_compatibility(device, n_iter, gamma, M=8, L=32, B=2, alpha=0.1):
     spec = diffsptk.Spectrum(L, eps=0)
     mgcep = diffsptk.MelGeneralizedCepstralAnalysis(M, L, alpha, gamma, n_iter=n_iter)
 
@@ -31,7 +31,7 @@ def test_compatibility(device, n_iter, gamma, M=8, L=16, B=2, alpha=0.1):
         device,
         [mgcep, spec],
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B*L} | sopr -SQR",
         f"mgcep -d 0 -i {n_iter} -l {L} -m {M} -a {alpha} -g {gamma}",
         [],
         dx=L,

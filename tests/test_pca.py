@@ -49,9 +49,9 @@ def test_compatibility(device, cov_type, B=10, M=4, N=3):
     v2 = torch.cat([m.unsqueeze(1), v.flip(-1)], dim=1).T.cpu().numpy()
     y2 = torch.matmul(x - m, v.flip(-1)).cpu().numpy()
 
-    assert np.allclose(e1, e2)
-    assert np.allclose(np.abs(v1), np.abs(v2))
-    assert np.allclose(np.abs(y1), np.abs(y2))
+    assert U.allclose(e1, e2)
+    assert U.allclose(np.abs(v1), np.abs(v2))
+    assert U.allclose(np.abs(y1), np.abs(y2))
 
     def extract_eigenvector(x):
         return x[1]
