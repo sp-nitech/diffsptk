@@ -47,7 +47,7 @@ def allclose(a, b, rtol=None, atol=None):
 def call(cmd, get=True):
     if get:
         res = subprocess.run(
-            cmd + " | x2x +da -f %.15f",
+            cmd + " | x2x +da -f %.15g",
             shell=True,
             text=True,
             stdout=subprocess.PIPE,

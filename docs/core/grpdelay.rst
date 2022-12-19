@@ -6,4 +6,4 @@ grpdelay
 .. autoclass:: diffsptk.GroupDelay
    :members:
 
-.. seealso:: :ref:`phase`
+.. seealso:: :ref:`phase`  :ref:`spec`
