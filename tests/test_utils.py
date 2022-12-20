@@ -30,3 +30,9 @@ def test_read_and_write(double):
     diffsptk.write(out_wav, x, sr)
     assert filecmp.cmp(in_wav, out_wav, shallow=False)
     os.remove(out_wav)
+
+
+@pytest.mark.parametrize("mode", ["hts", "auto"])
+def test_get_alpha(mode):
+    alpha = diffsptk.get_alpha(sr=48000, mode=mode)
+    assert alpha == 0.55
