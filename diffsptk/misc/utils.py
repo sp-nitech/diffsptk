@@ -76,6 +76,13 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     alpha : float [0 <= alpha < 1]
         Frequency warping factor, :math:`\\alpha`.
 
+    Examples
+    --------
+    >>> _, sr = diffsptk.read("assets/data.wav")
+    >>> alpha = diffsptk.get_alpha(sr)
+    >>> alpha
+    0.42
+
     """
 
     def get_hts_alpha(sr):
