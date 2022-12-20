@@ -22,6 +22,12 @@ import pytest
 import diffsptk
 
 
+@pytest.mark.parametrize("mode", ["hts", "auto"])
+def test_get_alpha(mode):
+    alpha = diffsptk.get_alpha(sr=48000, mode=mode)
+    assert alpha == 0.55
+
+
 @pytest.mark.parametrize("double", [False, True])
 def test_read_and_write(double):
     in_wav = "assets/data.wav"

@@ -47,7 +47,6 @@ fl = 400
 fp = 80
 n_fft = 512
 M = 24
-alpha = 0.42
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -57,6 +56,7 @@ stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
 # Estimate mel-cepstrum of x.
+alpha = diffsptk.get_alpha(sr)
 mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, n_iter=10)
 mc = mcep(X)
 

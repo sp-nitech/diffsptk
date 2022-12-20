@@ -53,6 +53,81 @@ def default_complex_dtype():
         raise RuntimeError("Unknown default dtype: {t}")
 
 
+def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
+    """Compute frequency warping factor under given sample rate.
+
+    Parameters
+    ----------
+    sr : int >= 1 [scalar]
+        Sample rate in Hz.
+
+    mode : ['hts', 'auto']
+        'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
+        alpha in L2 sense.
+
+    n_freq : int >= 2 [scalar]
+        Number of sample points in the frequency domain.
+
+    n_alpha : int >= 1 [scalar]
+        Number of sample points to search alpha.
+
+    Returns
+    -------
+    alpha : float [0 <= alpha < 1]
+        Frequency warping factor, :math:`\\alpha`.
+
+    """
+
+    def get_hts_alpha(sr):
+        sr_to_alpha = {
+            "8000": 0.31,
+            "10000": 0.35,
+            "12000": 0.37,
+            "16000": 0.42,
+            "22050": 0.45,
+            "32000": 0.50,
+            "44100": 0.53,
+            "48000": 0.55,
+        }
+        key = str(int(sr))
+        if key not in sr_to_alpha:
+            raise NotImplementedError
+        selected_alpha = sr_to_alpha[key]
+        return selected_alpha
+
+    def get_auto_alpha(sr, n_freq, n_alpha):
+        # Compute target mel-frequencies.
+        freq = np.arange(n_freq) * (0.5 * sr / (n_freq - 1))
+        mel_freq = np.log(1 + freq / 1000)
+        mel_freq = mel_freq * (np.pi / mel_freq[-1])
+        mel_freq = np.expand_dims(mel_freq, 0)
+
+        # Compute phase characteristic of the 1st order all-pass filter.
+        alpha = np.linspace(0, 1, n_alpha, endpoint=False)
+        alpha = np.expand_dims(alpha, 1)
+        alpha2 = alpha * alpha
+        omega = np.arange(n_freq) * (np.pi / (n_freq - 1))
+        omega = np.expand_dims(omega, 0)
+        numer = (1 - alpha2) * np.sin(omega)
+        denom = (1 + alpha2) * np.cos(omega) - 2 * alpha
+        warped_omega = np.arctan(numer / denom)
+        warped_omega[warped_omega < 0] += np.pi
+
+        # Select an appropriate alpha in terms of L2 distance.
+        distance = np.square(mel_freq - warped_omega).sum(axis=1)
+        selected_alpha = np.squeeze(alpha[np.argmin(distance)])
+        return selected_alpha
+
+    if mode == "hts":
+        alpha = get_hts_alpha(sr)
+    elif mode == "auto":
+        alpha = get_auto_alpha(sr, n_freq, n_alpha)
+    else:
+        raise NotImplementedError
+
+    return alpha
+
+
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
