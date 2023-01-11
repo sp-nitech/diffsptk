@@ -75,15 +75,8 @@ class ExcitationGeneration(nn.Module):
         """
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
-
-        signal_shape = list(base_mask.shape)
-        signal_shape[-1] *= self.frame_period
-
-        mask = torch.ne(base_mask, 0).unsqueeze(-1)
-        size = [-1] * mask.dim()
-        size[-1] = self.frame_period
-        mask = mask.expand(size)
-        mask = mask.reshape(signal_shape)
+        mask = torch.ne(base_mask, 0)
+        mask = torch.repeat_interleave(mask, self.frame_period, dim=-1)
 
         # Extend right side for interpolation.
         tmp_mask = torch.cat((base_mask[..., :1] * 0, base_mask), dim=-1)
@@ -109,7 +102,7 @@ class ExcitationGeneration(nn.Module):
             r = torch.ceil(phase)
             r = torch.cat((r[..., :1] * 0, r), dim=-1)
             pulse_pos = torch.ge(r[..., 1:] - r[..., :-1], 1)
-            e = torch.zeros(*signal_shape, device=p.device, requires_grad=False)
+            e = torch.zeros_like(p)
             e[pulse_pos] = torch.sqrt(p[pulse_pos])
         elif self.voiced_region == "sinusoidal":
             e = torch.sin((2 * torch.pi) * phase)
