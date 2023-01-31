@@ -31,8 +31,8 @@ jobs:
           pip3 install torch==${{ matrix.pytorch-version }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
       - name: install diffsptk
         run: make dev tool
-      - name: make format
-        run: make format
+      - name: make check
+        run: make check
       - name: make test
         run: make test
       - name: coverage

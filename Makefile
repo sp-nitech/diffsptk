@@ -49,10 +49,15 @@ doc-clean:
 		. ./venv/bin/activate; cd docs; make clean; \
 	fi
 
+check:
+	./venv/bin/black --check $(PROJECT) tests
+	./venv/bin/isort --check $(PROJECT) tests --project $(PROJECT)
+	./venv/bin/flake8 $(PROJECT) tests
+
 format:
 	./venv/bin/black $(PROJECT) tests
 	./venv/bin/isort $(PROJECT) tests --project $(PROJECT)
-	./venv/bin/flake8 $(PROJECT) tests --exclude __init__.py
+	./venv/bin/flake8 $(PROJECT) tests
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
@@ -84,4 +89,4 @@ clean: dist-clean doc-clean tool-clean
 	rm -rf *.egg-info venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev dist dist-clean doc doc-clean format test tool tool-clean update clean
+.PHONY: init dev dist dist-clean doc doc-clean check format test tool tool-clean update clean
