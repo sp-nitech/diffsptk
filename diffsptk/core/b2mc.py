@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
@@ -42,10 +42,10 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         assert abs(alpha) < 1
 
         # Make transform matrix.
-        A = np.eye(cep_order + 1, dtype=default_dtype())
+        A = np.eye(cep_order + 1)
         np.fill_diagonal(A[:, 1:], alpha)
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, b):
         """Convert MLSA filter coefficients to mel-cepstrum.

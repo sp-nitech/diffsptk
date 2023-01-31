@@ -53,6 +53,13 @@ def default_complex_dtype():
         raise RuntimeError("Unknown default dtype: {t}")
 
 
+def numpy_to_torch(x):
+    if np.iscomplexobj(x):
+        return torch.from_numpy(x.astype(default_complex_dtype()))
+    else:
+        return torch.from_numpy(x.astype(default_dtype()))
+
+
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     """Compute frequency warping factor under given sample rate.
 
@@ -155,6 +162,16 @@ def hankel(x):
     d = x.size(-1)
     assert d % 2 == 1
     X = x.unfold(-1, (d + 1) // 2, 1)
+    return X
+
+
+def vander(x, N):
+    target_shape = list(x.shape)
+    target_shape.append(N - 1)
+    x = x.repeat_interleave(N - 1, dim=-1)
+    X = x.view(*target_shape)
+    X = torch.cat((X[..., 0:1] * 0 + 1, X), dim=-1)
+    X = X.cumprod(dim=-1).flip(-1)
     return X
 
 

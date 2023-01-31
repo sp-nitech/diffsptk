@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 def hz_to_mel(x):
@@ -109,7 +109,7 @@ class MelFilterBankAnalysis(nn.Module):
         lower_channel_map = [np.argmax((freq >= m) > 0) for m in mel]
 
         diff = freq - np.insert(freq[:-1], 0, mel_min)
-        weights = np.zeros((fft_length // 2 + 1, n_channel), dtype=default_dtype())
+        weights = np.zeros((fft_length // 2 + 1, n_channel))
         for i, k in enumerate(seed):
             m = lower_channel_map[i]
             w = (freq[max(0, m)] - mel[i]) / diff[max(0, m)]
@@ -118,7 +118,7 @@ class MelFilterBankAnalysis(nn.Module):
             if m < n_channel:
                 weights[k, m] += 1 - w
 
-        self.register_buffer("H", torch.from_numpy(weights))
+        self.register_buffer("H", numpy_to_torch(weights))
 
     def forward(self, x):
         """Apply mel-filter banks to STFT.

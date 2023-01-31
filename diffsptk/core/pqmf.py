@@ -15,12 +15,11 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import default_dtype
 from ..misc.utils import next_power_of_two
+from ..misc.utils import numpy_to_torch
 
 
 def make_filter_banks(
@@ -87,7 +86,7 @@ def make_filter_banks(
         c = 2 * prototype_filter
         filters.append(c * np.cos(a + b))
 
-    return np.asarray(filters, dtype=default_dtype())
+    return np.asarray(filters)
 
 
 class PseudoQuadratureMirrorFilterBanks(nn.Module):
@@ -118,7 +117,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
         filters = make_filter_banks(n_band, filter_order, "analysis", alpha=alpha)
         filters = np.expand_dims(filters, 1)
         filters = np.flip(filters, 2).copy()
-        self.register_buffer("filters", torch.from_numpy(filters))
+        self.register_buffer("filters", numpy_to_torch(filters))
 
         # Make padding module.
         if filter_order % 2 == 0:

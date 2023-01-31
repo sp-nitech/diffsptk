@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class Window(nn.Module):
@@ -76,7 +75,7 @@ class Window(nn.Module):
             w /= np.sum(w)
         else:
             raise ValueError(f"norm {norm} is not supported")
-        self.register_buffer("window", torch.from_numpy(w.astype(default_dtype())))
+        self.register_buffer("window", numpy_to_torch(w))
 
         # Make padding module.
         if out_length is None or in_length == out_length:

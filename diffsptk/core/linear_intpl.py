@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class LinearInterpolation(nn.Module):
@@ -41,12 +40,12 @@ class LinearInterpolation(nn.Module):
         assert 1 <= upsampling_factor
 
         # Make upsampling filter.
-        w = np.linspace(1, 0, upsampling_factor + 1, dtype=default_dtype())[:-1]
+        w = np.linspace(1, 0, upsampling_factor + 1)[:-1]
         upsampling_filter = np.stack((w, 1 - w), axis=1)
         upsampling_filter = np.expand_dims(
             upsampling_filter, (1, 3)
         )  # (Out, In, Height, Width)
-        self.register_buffer("upsampling_filter", torch.from_numpy(upsampling_filter))
+        self.register_buffer("upsampling_filter", numpy_to_torch(upsampling_filter))
 
         # Make padding module.
         self.pad = nn.ReplicationPad2d((0, 0, 0, 1))

@@ -21,8 +21,8 @@ import torch
 import torch.nn as nn
 import torchcrepe
 
-from ..misc.utils import default_dtype
 from ..misc.utils import is_in
+from ..misc.utils import numpy_to_torch
 from .frame import Frame
 from .stft import ShortTermFourierTransform
 
@@ -233,9 +233,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         )
 
         weights = torchcrepe.loudness.perceptual_weights().squeeze(-1)
-        self.register_buffer(
-            "weights", torch.from_numpy(weights.astype(default_dtype()))
-        )
+        self.register_buffer("weights", numpy_to_torch(weights))
 
     def forward(self, x, embed=True):
         # torchcrepe.preprocess
@@ -257,7 +255,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
 
     def calc_pitch(self, x):
         # Compute pitch probabilities.
-        prob = self.calc_prob(x).transpose(-1, -2)
+        prob = self.calc_prob(x).transpose(-2, -1)
 
         # Decode pitch probabilities.
         pitch, periodicity = torchcrepe.postprocess(

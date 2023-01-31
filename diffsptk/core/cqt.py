@@ -20,8 +20,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_complex_dtype
 from ..misc.utils import next_power_of_two
+from ..misc.utils import numpy_to_torch
 from .frame import Frame
 
 
@@ -83,8 +83,7 @@ class ConstantQTransform(nn.Module):
 
         spectral_kernels = np.fft.fft(temporal_kernels, axis=-1) / fft_length
         assert np.all(spectral_kernels.imag == 0)
-        spectral_kernels = spectral_kernels.astype(default_complex_dtype())
-        self.register_buffer("kernel", torch.from_numpy(spectral_kernels).t())
+        self.register_buffer("kernel", numpy_to_torch(spectral_kernels.T))
 
         self.frame = Frame(fft_length, frame_period)
 
