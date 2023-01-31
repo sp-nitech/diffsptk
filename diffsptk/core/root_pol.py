@@ -69,12 +69,12 @@ class DurandKernerMethod(nn.Module):
         self.register_buffer("eye", torch.eye(order).bool())
 
     def forward(self, a):
-        """Find roots of polynomial equations.
+        """Find roots of equations.
 
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            Coefficients
+            Polynomial coefficients.
 
         Returns
         -------
