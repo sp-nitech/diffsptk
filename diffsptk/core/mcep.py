@@ -19,9 +19,9 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import default_dtype
 from ..misc.utils import hankel
 from ..misc.utils import is_power_of_two
+from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
 from .freqt import FrequencyTransform
 
@@ -34,7 +34,7 @@ class CoefficientsFrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1), dtype=default_dtype())
+        A = np.zeros((L2, L1))
         A[:, 0] = (-alpha) ** np.arange(L2)
         for i in range(1, L2):
             i1 = i - 1
@@ -42,7 +42,7 @@ class CoefficientsFrequencyTransform(nn.Module):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, x):
         y = torch.matmul(x, self.A)
@@ -88,8 +88,8 @@ class MelCepstralAnalysis(nn.Module):
             self.fft_length // 2, 2 * self.cep_order, alpha
         )
 
-        alpha_vector = (-alpha) ** np.arange(self.cep_order + 1, dtype=default_dtype())
-        self.register_buffer("alpha_vector", torch.from_numpy(alpha_vector))
+        alpha_vector = (-alpha) ** np.arange(self.cep_order + 1)
+        self.register_buffer("alpha_vector", numpy_to_torch(alpha_vector))
 
     def forward(self, x):
         """Estimate mel-cepstrum from spectrum.

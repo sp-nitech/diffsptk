@@ -36,7 +36,7 @@ def test_compatibility(device, voiced_region, P=80):
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
     cmd += f"pitch -s 16 -p {P} -o 0 -a 2 > excite.tmp1"
     U.call(cmd, get=False)
-    U.call(f"excite -p {P} -n excite.tmp1 > excite.tmp2", get=False)
+    U.call(f"excite -p {P} -n 1 excite.tmp1 > excite.tmp2", get=False)
 
     # Compute excitation on PyTorch version.
     pitch = U.call("cat excite.tmp1")

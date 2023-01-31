@@ -19,9 +19,9 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import default_dtype
 from ..misc.utils import hankel
 from ..misc.utils import is_power_of_two
+from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
 
 
@@ -75,7 +75,7 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         A = A[:M1]
         A[1:, 0] /= 2
         A[0, 1:] *= 2
-        self.register_buffer("A", torch.from_numpy(A.astype(default_dtype())))
+        self.register_buffer("A", numpy_to_torch(A))
 
     def forward(self, c1):
         c2 = torch.matmul(c1, self.A)
@@ -108,7 +108,7 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
         A = A[:M2, in_order:]
         A[0, 1:] /= 2
         A[1:, 0] *= 2
-        self.register_buffer("A", torch.from_numpy(A.astype(default_dtype())).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, c2):
         c1 = torch.matmul(c2, self.A)
@@ -140,7 +140,7 @@ class CoefficientsFrequencyTransform(nn.Module):
         if 2 <= M1:
             A[1:M1] += np.flip(A[-(M1 - 1) :], axis=0)
         A = A[:M1]
-        self.register_buffer("A", torch.from_numpy(A.astype(default_dtype())))
+        self.register_buffer("A", numpy_to_torch(A))
 
     def forward(self, c1):
         c2 = torch.matmul(c1, self.A)
@@ -210,14 +210,14 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
             theta,
         )
 
-        seed = np.ones(1, dtype=default_dtype())
+        seed = np.ones(1)
         alpha_vector = CoefficientsFrequencyTransform(
             0,
             self.cep_order,
             self.fft_length * accuracy_factor,
             alpha,
             theta,
-        )(torch.tensor(seed))
+        )(numpy_to_torch(seed))
         self.register_buffer("alpha_vector", alpha_vector)
 
     def forward(self, x):

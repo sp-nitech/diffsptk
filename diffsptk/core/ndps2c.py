@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
@@ -45,11 +45,11 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
         assert 2 <= fft_length
         assert self.cep_order <= half_fft_length
 
-        ramp = np.arange(self.cep_order + 1, dtype=default_dtype()) * half_fft_length
+        ramp = np.arange(self.cep_order + 1, dtype=np.float64) * half_fft_length
         if self.cep_order == half_fft_length:
             ramp[-1] *= 2
-        ramp[1:] = np.reciprocal(ramp[1:])
-        self.register_buffer("ramp", torch.from_numpy(ramp))
+        ramp[1:] = 1 / ramp[1:]
+        self.register_buffer("ramp", numpy_to_torch(ramp))
 
     def forward(self, n):
         """Convert NPDS to cepstrum.

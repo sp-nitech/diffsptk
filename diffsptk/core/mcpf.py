@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
@@ -62,9 +62,9 @@ class MelCepstrumPostfiltering(nn.Module):
         self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha)
         self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha)
 
-        weight = np.full(cep_order + 1, 1 + beta, dtype=default_dtype())
+        weight = np.full(cep_order + 1, 1 + beta)
         weight[:onset] = 1
-        self.register_buffer("weight", torch.from_numpy(weight))
+        self.register_buffer("weight", numpy_to_torch(weight))
 
     def forward(self, mc1):
         """Perform mel-cesptrum postfiltering.

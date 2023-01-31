@@ -67,6 +67,6 @@ class MuLawCompression(nn.Module):
         tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
 
         """
-        x2 = torch.abs(x) / self.abs_max
+        x2 = x.abs() / self.abs_max
         y = self.const * torch.sign(x) * torch.log1p(self.mu * x2)
         return y

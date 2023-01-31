@@ -18,11 +18,11 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 def make_dct_matrix(L):
-    W = np.empty((L, L), dtype=default_dtype())
+    W = np.empty((L, L))
     n = (np.arange(L) + 0.5) * (np.pi / L)
     c = np.sqrt(2 / L)
     for k in range(L):
@@ -48,7 +48,7 @@ class DiscreteCosineTransform(nn.Module):
         assert 1 <= dct_length
 
         W = make_dct_matrix(dct_length)
-        self.register_buffer("W", torch.from_numpy(W))
+        self.register_buffer("W", numpy_to_torch(W))
 
     def forward(self, x):
         """Apply DCT to input.

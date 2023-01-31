@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
 
@@ -72,8 +72,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
         self.mfcc_order = mfcc_order
 
-        assert 1 <= self.mfcc_order
-        assert self.mfcc_order < n_channel
+        assert 1 <= self.mfcc_order < n_channel
 
         if out_format == 0 or out_format == "y":
             self.format_func = lambda y, c, E: y
@@ -91,9 +90,11 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         )
         self.dct = DiscreteCosineTransform(n_channel)
 
-        m = np.arange(1, self.mfcc_order + 1, dtype=default_dtype())
+        m = np.arange(1, self.mfcc_order + 1)
         liftering_vector = 1 + (lifter / 2) * np.sin((np.pi / lifter) * m)
-        self.register_buffer("liftering_vector", torch.from_numpy(liftering_vector))
+        self.register_buffer("liftering_vector", numpy_to_torch(liftering_vector))
+
+        self.const = np.sqrt(2)
 
     def forward(self, x):
         """Compute MFCC.
@@ -127,6 +128,6 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         """
         y, E = self.fbank(x)
         y = self.dct(y)
-        c = y[..., :1] * np.sqrt(2)
+        c = y[..., :1] * self.const
         y = y[..., 1 : self.mfcc_order + 1] * self.liftering_vector
         return self.format_func(y, c, E)

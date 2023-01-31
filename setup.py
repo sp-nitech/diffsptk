@@ -37,7 +37,7 @@ setup(
             "pydata-sphinx-theme",
             "pytest",
             "pytest-cov",
-            "sphinx",
+            "sphinx < 6",
             "twine",
         ],
     },

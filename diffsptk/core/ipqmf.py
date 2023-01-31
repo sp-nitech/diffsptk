@@ -15,10 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..misc.utils import numpy_to_torch
 from .pqmf import make_filter_banks
 
 
@@ -50,7 +50,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         filters = make_filter_banks(n_band, filter_order, "synthesis", alpha=alpha)
         filters = np.expand_dims(filters, 0)
         filters = np.flip(filters, 2).copy()
-        self.register_buffer("filters", torch.from_numpy(filters))
+        self.register_buffer("filters", numpy_to_torch(filters))
 
         # Make padding module.
         if filter_order % 2 == 0:
@@ -64,7 +64,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
             nn.ConstantPad1d((delay_left, 0), 0), nn.ReplicationPad1d((0, delay_right))
         )
 
-    def forward(self, y, keep_dims=True):
+    def forward(self, y, keepdim=True):
         """Reconstruct waveform from subband waveforms.
 
         Parameters
@@ -72,7 +72,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         y : Tensor [shape=(B, K, T) or (K, T)]
             Subband waveforms.
 
-        keep_dims : bool [scalar]
+        keepdim : bool [scalar]
             If True, the output shape is (B, 1, T) instead (B, T).
 
         Returns
@@ -87,7 +87,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         tensor([0.0000, 0.2500, 0.5000, 0.7500, 1.0000])
         >>> pqmf = diffsptk.PQMF(2, 10)
         >>> ipqmf = diffsptk.IPQMF(2, 10)
-        >>> x2 = ipqmf(pmqf(x), keep_dims=False)
+        >>> x2 = ipqmf(pmqf(x), keepdim=False)
         >>> x2
         tensor([[[8.1887e-04, 2.4754e-01, 5.0066e-01, 7.4732e-01, 9.9419e-01]]])
 
@@ -97,6 +97,6 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         assert y.dim() == 3, "Input must be 3D tensor"
 
         x = F.conv1d(self.pad(y), self.filters)
-        if not keep_dims:
+        if not keepdim:
             x = x.squeeze(1)
         return x
