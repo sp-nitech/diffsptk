@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class GroupDelay(nn.Module):
@@ -50,8 +50,8 @@ class GroupDelay(nn.Module):
         assert 0 < self.alpha
         assert 0 < self.gamma
 
-        ramp = np.arange(self.fft_length, dtype=default_dtype())
-        self.register_buffer("ramp", torch.from_numpy(ramp))
+        ramp = np.arange(self.fft_length)
+        self.register_buffer("ramp", numpy_to_torch(ramp))
 
     def forward(self, b, a=None):
         """Compute group delay.

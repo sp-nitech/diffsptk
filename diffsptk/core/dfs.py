@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class InfiniteImpulseResponseDigitalFilter(nn.Module):
@@ -48,7 +47,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         assert 1 <= impulse_response_length
 
         d = np.zeros(max(len(b), len(a)))
-        h = np.empty(impulse_response_length, dtype=default_dtype())
+        h = np.empty(impulse_response_length)
 
         a0 = a[0]
         a1 = np.asarray(a[1:])
@@ -66,7 +65,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
             h[t] = y
 
         h = h.reshape(1, 1, -1)
-        self.register_buffer("h", torch.from_numpy(h).flip(-1))
+        self.register_buffer("h", numpy_to_torch(h).flip(-1))
 
         self.pad = nn.ConstantPad1d((impulse_response_length - 1, 0), 0)
 

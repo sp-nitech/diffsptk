@@ -20,7 +20,7 @@ import torch.nn as nn
 
 from ..misc.utils import cexp
 from ..misc.utils import clog
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
 from .ignorm import (
@@ -72,9 +72,9 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 class GammaDivision(nn.Module):
     def __init__(self, cep_order, gamma):
         super(GammaDivision, self).__init__()
-        g = np.full(cep_order + 1, 1 / gamma, dtype=default_dtype())
+        g = np.full(cep_order + 1, 1 / gamma)
         g[0] = 1
-        self.register_buffer("g", torch.from_numpy(g))
+        self.register_buffer("g", numpy_to_torch(g))
 
     def forward(self, c):
         return c * self.g
@@ -83,9 +83,9 @@ class GammaDivision(nn.Module):
 class GammaMultiplication(nn.Module):
     def __init__(self, cep_order, gamma):
         super(GammaMultiplication, self).__init__()
-        g = np.full(cep_order + 1, gamma, dtype=default_dtype())
+        g = np.full(cep_order + 1, gamma)
         g[0] = 1
-        self.register_buffer("g", torch.from_numpy(g))
+        self.register_buffer("g", numpy_to_torch(g))
 
     def forward(self, c):
         return c * self.g

@@ -18,6 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from ..misc.utils import numpy_to_torch
 from .delta import make_window
 
 
@@ -53,7 +54,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         H, L = window.shape
         N = (L - 1) // 2
         T = size
-        W = np.zeros((T * H, T), dtype=window.dtype)
+        W = np.zeros((T * H, T))
 
         # Make window matrix
         for t in range(T):
@@ -72,7 +73,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         WSW = np.matmul(WS, W)
         WSW = np.linalg.inv(WSW)
         M = np.matmul(WSW, WS)  # (T, TxH)
-        self.register_buffer("M", torch.from_numpy(M))
+        self.register_buffer("M", numpy_to_torch(M))
 
         # Save number of windows.
         self.H = H

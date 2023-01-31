@@ -84,12 +84,11 @@ class ExcitationGeneration(nn.Module):
         p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.
-        d = p.dim()
-        if d == 2 or d == 3:
-            p = p.transpose(-1, -2)
+        if p.dim() != 1:
+            p = p.transpose(-2, -1)
         p = self.linear_intpl(p)
-        if d == 2 or d == 3:
-            p = p.transpose(-1, -2)
+        if p.dim() != 1:
+            p = p.transpose(-2, -1)
         p *= mask
 
         # Compute phase.

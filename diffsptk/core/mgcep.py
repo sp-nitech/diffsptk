@@ -19,9 +19,9 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import default_dtype
 from ..misc.utils import hankel
 from ..misc.utils import is_power_of_two
+from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
@@ -40,7 +40,7 @@ class CoefficientsFrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1), dtype=default_dtype())
+        A = np.zeros((L2, L1))
         A[0, 0] = 1
         if 1 < L2 and 1 < L1:
             A[1, 1:] = alpha ** np.arange(L1 - 1) * beta
@@ -50,7 +50,7 @@ class CoefficientsFrequencyTransform(nn.Module):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, x):
         y = torch.matmul(x, self.A)
@@ -62,14 +62,14 @@ class PTransform(nn.Module):
         super(PTransform, self).__init__()
 
         # Make transform matrix.
-        A = np.eye(order + 1, dtype=default_dtype())
+        A = np.eye(order + 1)
         np.fill_diagonal(A[:, 1:], alpha)
 
         A[0, 0] -= alpha * alpha
         A[0, 1] += alpha
         A[-1, -1] += alpha
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, p):
         p = torch.matmul(p, self.A)
@@ -81,13 +81,13 @@ class QTransform(nn.Module):
         super(QTransform, self).__init__()
 
         # Make transform matrix.
-        A = np.eye(order + 1, dtype=default_dtype())
+        A = np.eye(order + 1)
         np.fill_diagonal(A[1:], alpha)
 
         A[1, 0] = 0
         A[1, 1] += alpha
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, q):
         q = torch.matmul(q, self.A)

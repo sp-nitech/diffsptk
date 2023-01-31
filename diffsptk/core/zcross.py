@@ -67,7 +67,7 @@ class ZeroCrossingAnalysis(nn.Module):
         x = torch.sign(x)
         x = torch.cat((x[..., :1], x), dim=-1)
         x = x.unfold(-1, self.frame_length + 1, self.frame_length)
-        z = 0.5 * torch.abs(x[..., 1:] - x[..., :-1]).sum(-1)
+        z = 0.5 * (x[..., 1:] - x[..., :-1]).abs().sum(-1)
         if self.norm:
             z = z / self.frame_length
         return z

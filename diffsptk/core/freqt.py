@@ -18,7 +18,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 class FrequencyTransform(nn.Module):
@@ -50,7 +50,7 @@ class FrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1), dtype=default_dtype())
+        A = np.zeros((L2, L1))
         A[0, :] = alpha ** np.arange(L1)
         if 1 < L2 and 1 < L1:
             A[1, 1:] = alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta
@@ -60,7 +60,7 @@ class FrequencyTransform(nn.Module):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", torch.from_numpy(A).t())
+        self.register_buffer("A", numpy_to_torch(A.T))
 
     def forward(self, c1):
         """Perform frequency transform.

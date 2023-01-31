@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import numpy_to_torch
 from .dct import make_dct_matrix
 
 
@@ -36,8 +37,8 @@ class InverseDiscreteCosineTransform(nn.Module):
 
         assert 1 <= dct_length
 
-        W = make_dct_matrix(dct_length).T
-        self.register_buffer("W", torch.from_numpy(W))
+        W = make_dct_matrix(dct_length)
+        self.register_buffer("W", numpy_to_torch(W.T))
 
     def forward(self, y):
         """Apply inverse DCT to input.

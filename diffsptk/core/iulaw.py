@@ -66,6 +66,6 @@ class MuLawExpansion(nn.Module):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        y2 = torch.abs(y) / self.abs_max
+        y2 = y.abs() / self.abs_max
         x = self.const * torch.sign(y) * (torch.pow(1 + self.mu, y2) - 1)
         return x

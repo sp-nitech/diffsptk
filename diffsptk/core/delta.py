@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import default_dtype
+from ..misc.utils import numpy_to_torch
 
 
 def make_window(seed, static_out=True):
@@ -78,7 +77,7 @@ def make_window(seed, static_out=True):
         if 3 <= len(seed):
             raise NotImplementedError
 
-    window = np.asarray(window, dtype=default_dtype())
+    window = np.asarray(window)
     return window
 
 
@@ -103,7 +102,7 @@ class Delta(nn.Module):
         window = make_window(seed, static_out=static_out)
         width = window.shape[-1]
         window = np.reshape(window, (-1, 1, width, 1))
-        self.register_buffer("window", torch.from_numpy(window))
+        self.register_buffer("window", numpy_to_torch(window))
 
         # Make padding module to be compatible with SPTK.
         self.pad = nn.ReplicationPad2d((0, 0, (width - 1) // 2, (width - 1) // 2))

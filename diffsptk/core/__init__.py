@@ -66,6 +66,7 @@ from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
 from .rmse import RootMeanSquaredError
 from .rmse import RootMeanSquaredError as RMSE
+from .root_pol import DurandKernerMethod
 from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
