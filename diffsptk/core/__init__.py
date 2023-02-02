@@ -75,6 +75,7 @@ from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
 from .ulaw import MuLawCompression
+from .vq import VectorQuantization
 from .window import Window
 from .zcross import ZeroCrossingAnalysis
 from .zerodf import AllZeroDigitalFilter
