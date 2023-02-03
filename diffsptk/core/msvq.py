@@ -19,10 +19,10 @@ import warnings
 import torch.nn as nn
 
 warnings.simplefilter("ignore", UserWarning)
-from vector_quantize_pytorch import VectorQuantize  # noqa: E402
+from vector_quantize_pytorch import ResidualVQ  # noqa: E402
 
 
-class VectorQuantization(nn.Module):
+class MultiStageVectorQuantization(nn.Module):
     """See `this page <https://github.com/lucidrains/vector-quantize-pytorch>`_
     for details.
 
@@ -34,35 +34,39 @@ class VectorQuantization(nn.Module):
     codebook_size : int >= 1 [scalar]
         Codebook size, :math:`K`.
 
+    n_stage : int >= 1 [scalar]
+        Number of stages (quantizers), :math:`Q`.
+
     **kwargs : additional keyword arguments
         See vector-quantize-pytorch repository for details.
 
     """
 
-    def __init__(self, order, codebook_size, **kwargs):
-        super(VectorQuantization, self).__init__()
+    def __init__(self, order, codebook_size, n_stage, **kwargs):
+        super(MultiStageVectorQuantization, self).__init__()
 
         assert 0 <= order
         assert 1 <= codebook_size
+        assert 1 <= n_stage
 
-        self.vq = VectorQuantize(
-            dim=order + 1, codebook_size=codebook_size, **kwargs
+        self.vq = ResidualVQ(
+            dim=order + 1, codebook_size=codebook_size, num_quantizers=n_stage, **kwargs
         ).float()
 
     @property
-    def codebook(self):
-        return self.vq.codebook
+    def codebooks(self):
+        return self.vq.codebooks
 
-    def forward(self, x, codebook=None, **kwargs):
-        """Perform vector quantization.
+    def forward(self, x, codebooks=None, **kwargs):
+        """Perform residual vector quantization.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
             Input vectors.
 
-        codebook : Tensor [shape=(K, M+1)]
-            External codebook. If None, use internal codebook.
+        codebooks : Tensor [shape=(Q, K, M+1)]
+            External codebooks. If None, use internal codebooks.
 
         **kwargs : additional keyword arguments
             See vector-quantize-pytorch repository for details.
@@ -72,35 +76,39 @@ class VectorQuantization(nn.Module):
         xq : Tensor [shape=(..., M+1)]
             Quantized vectors.
 
-        indices : Tensor [shape=(...,)]
+        indices : Tensor [shape=(..., Q)]
             Codebook indices.
 
-        loss : Tensor [scalar]
-            Commitment loss.
+        losses : Tensor [shape=(Q,)]
+            Commitment losses.
 
         Examples
         --------
         >>> x = diffsptk.nrand(4)
         >>> x
-        tensor([ 0.7947,  0.1007,  1.2290, -0.5019,  1.5552])
-        >>> vq = diffsptk.VectorQuantization(4, 2).eval()
-        >>> xq, _, _ = vq(x)
+        tensor([-0.5206,  1.0048, -0.3370,  1.3364, -0.2933])
+        >>> msvq = diffsptk.MultiStageVectorQuantization(4, 3, 2).eval()
+        >>> xq, indices, _ = msvq(x)
         >>> xq
-        tensor([0.3620, 0.2736, 0.7098, 0.7106, 0.6494]
+        tensor([-0.4561,  0.9835, -0.3787, -0.1488, -0.8025])
+        >>> indices
+        tensor([0, 2])
 
         """
-        if codebook is not None:
-            self.codebook[:] = codebook.view_as(self.vq.codebook)
+        if codebooks is not None:
+            cb = self.codebooks
+            for i, layer in enumerate(self.vq.layers):
+                layer._codebook.embed[:] = codebooks.view_as(cb)[i]
 
         d = x.dim()
         if d == 1:
             x = x.unsqueeze(0)
 
-        xq, indices, loss = self.vq(x)
+        xq, indices, losses = self.vq(x, **kwargs)
 
         if d == 1:
             xq = xq.squeeze(0)
             indices = indices.squeeze(0)
-        loss = loss.squeeze()
+        losses = losses.squeeze()
 
-        return xq, indices, loss
+        return xq, indices, losses

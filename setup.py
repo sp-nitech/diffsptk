@@ -27,7 +27,7 @@ setup(
         "torch >= 1.10.0",
         "torchcrepe >= 0.0.16",
         "numpy",
-        "vector-quantize-pytorch >= 0.7.0",
+        "vector-quantize-pytorch >= 0.8.0",
     ],
     extras_require={
         "dev": [
