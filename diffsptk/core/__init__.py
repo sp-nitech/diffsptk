@@ -32,6 +32,7 @@ from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
+from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
@@ -75,6 +76,7 @@ from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
 from .ulaw import MuLawCompression
+from .vq import VectorQuantization
 from .window import Window
 from .zcross import ZeroCrossingAnalysis
 from .zerodf import AllZeroDigitalFilter

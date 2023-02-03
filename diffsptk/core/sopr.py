@@ -33,7 +33,7 @@ class ScalarOperation(nn.Module):
                  'Exponential10', 'Exponential', 'Sine', 'Coine', 'Tangent']
         Operation.
 
-    option : float [scalar]
+    opt : float [scalar]
         Optional argument.
 
     """
