@@ -34,6 +34,9 @@ class VectorQuantization(nn.Module):
     codebook_size : int >= 1 [scalar]
         Codebook size, :math:`K`.
 
+    **kwargs : additional keyword arguments
+        See vector-quantize-pytorch repository for details.
+
     """
 
     def __init__(self, order, codebook_size, **kwargs):
@@ -57,11 +60,11 @@ class VectorQuantization(nn.Module):
             Input vectors.
 
         codebook : Tensor [shape=(K, M+1)]
-            External codebook.
+            External codebook. If None, use internal codebook.
 
         Returns
         -------
-        z : Tensor [shape=(..., M+1)]
+        xq : Tensor [shape=(..., M+1)]
             Quantized vectors.
 
         indices : Tensor [shape=(...,)]
@@ -76,8 +79,8 @@ class VectorQuantization(nn.Module):
         >>> x
         tensor([ 0.7947,  0.1007,  1.2290, -0.5019,  1.5552])
         >>> vq = diffsptk.VectorQuantization(4, 2).eval()
-        >>> z, _, _ = vq(x)
-        >>> z
+        >>> xq, _, _ = vq(x)
+        >>> xq
         tensor([0.3620, 0.2736, 0.7098, 0.7106, 0.6494]
 
         """
@@ -88,10 +91,11 @@ class VectorQuantization(nn.Module):
         if d == 1:
             x = x.unsqueeze(0)
 
-        z, indices, loss = self.vq(x)
+        xq, indices, loss = self.vq(x)
 
         if d == 1:
-            z = z.squeeze(0)
+            xq = xq.squeeze(0)
             indices = indices.squeeze(0)
+        loss = loss.squeeze()
 
-        return z, indices, loss
+        return xq, indices, loss

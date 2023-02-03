@@ -22,18 +22,17 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, m=9, K=4, B=8):
-    vq = diffsptk.VectorQuantization(m, K)
+    ivq = diffsptk.InverseVectorQuantization()
 
-    tmp1 = "vq.tmp1"
-    tmp2 = "vq.tmp2"
+    tmp1 = "ivq.tmp1"
+    tmp2 = "ivq.tmp2"
     U.check_compatibility(
         device,
-        [lambda x: x[1], vq],
-        [f"nrand -s 123 -l {B*(m+1)} > {tmp1}", f"nrand -s 234 -l {K*(m+1)} > {tmp2}"],
+        ivq,
+        [f"ramp -l {K} > {tmp1}", f"nrand -s 234 -l {K*(m+1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"msvq -m {m} -s {tmp2} < {tmp1} | x2x +id",
+        f"x2x +di {tmp1} | imsvq -m {m} -s {tmp2}",
         [f"rm {tmp1} {tmp2}"],
-        dx=[m + 1, m + 1],
+        dx=[None, m + 1],
+        dy=m + 1,
     )
-
-    U.check_differentiable(device, [lambda x: x[2], vq], [m + 1])

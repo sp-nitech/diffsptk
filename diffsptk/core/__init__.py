@@ -32,6 +32,7 @@ from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .iulaw import MuLawExpansion
+from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
