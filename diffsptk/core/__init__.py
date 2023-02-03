@@ -28,6 +28,7 @@ from .idct import InverseDiscreteCosineTransform as IDCT
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .imglsadf import PseudoInverseMGLSADigitalFilter
 from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
+from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
@@ -54,6 +55,7 @@ from .mglsadf import PseudoMGLSADigitalFilter as MLSA
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
+from .msvq import MultiStageVectorQuantization
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lar import ParcorCoefficientsToLogAreaRatio

@@ -21,18 +21,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, m=9, K=4):
-    ivq = diffsptk.InverseVectorQuantization()
+def test_compatibility(device, m=9, K=4, Q=2):
+    imsvq = diffsptk.InverseMultiStageVectorQuantization()
 
-    tmp1 = "ivq.tmp1"
-    tmp2 = "ivq.tmp2"
+    tmp1 = "imsvq.tmp1"
+    tmp2 = "imsvq.tmp2"
+    tmp3 = "imsvq.tmp3"
     U.check_compatibility(
         device,
-        ivq,
-        [f"echo 0 3 1 2 | x2x +ad > {tmp1}", f"nrand -s 234 -l {K*(m+1)} > {tmp2}"],
-        [f"cat {tmp1}", f"cat {tmp2}"],
-        f"x2x +di {tmp1} | imsvq -m {m} -s {tmp2}",
-        [f"rm {tmp1} {tmp2}"],
-        dx=[None, m + 1],
+        imsvq,
+        [
+            f"echo 0 3 1 2 3 2 1 0 | x2x +ad > {tmp1}",
+            f"nrand -s 234 -l {K*(m+1)} > {tmp2}",
+            f"nrand -s 345 -l {K*(m+1)} > {tmp3}",
+        ],
+        [f"cat {tmp1}", f"cat {tmp2} {tmp3}"],
+        f"x2x +di {tmp1} | imsvq -m {m} -s {tmp2} -s {tmp3}",
+        [f"rm {tmp1} {tmp2} {tmp3}"],
+        dx=[Q, (K, m + 1)],
         dy=m + 1,
     )

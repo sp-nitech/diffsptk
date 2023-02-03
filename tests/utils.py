@@ -97,9 +97,15 @@ def check_compatibility(
         x.append(torch.from_numpy(call(cmd)).to(device))
         if is_array(dx):
             if dx[i] is not None:
-                x[-1] = x[-1].reshape(-1, dx[i])
+                if is_array(dx[i]):
+                    x[-1] = x[-1].reshape(-1, *dx[i])
+                else:
+                    x[-1] = x[-1].reshape(-1, dx[i])
         elif dx is not None:
-            x[-1] = x[-1].reshape(-1, dx)
+            if is_array(dx):
+                x[-1] = x[-1].reshape(-1, *dx)
+            else:
+                x[-1] = x[-1].reshape(-1, dx)
         else:
             pass
 
