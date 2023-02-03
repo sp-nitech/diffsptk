@@ -42,4 +42,4 @@ def test_compatibility(device, m=9, K=4, Q=2, B=8):
         dy=Q,
     )
 
-    # U.check_differentiable(device, [lambda x: x[2], vq], [m + 1])
+    U.check_differentiable(device, [lambda x: x[2].sum(), msvq], [m + 1])
