@@ -49,7 +49,7 @@ class DurandKernerMethod(nn.Module):
         self.eps = eps
 
         assert 1 <= self.order
-        assert 0 <= self.n_iter
+        assert 1 <= self.n_iter
         assert 0 <= self.eps
 
         if out_format == 0 or out_format == "rectangular":
