@@ -31,10 +31,9 @@ The latest stable release can be installed through PyPI by running
 ```sh
 pip install diffsptk
 ```
-Alternatively,
+The development release can be installed from the master branch:
 ```sh
-git clone https://github.com/sp-nitech/diffsptk.git
-pip install -e diffsptk
+pip install git+https://github.com/sp-nitech/diffsptk.git@master
 ```
 
 

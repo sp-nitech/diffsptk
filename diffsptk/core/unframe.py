@@ -14,12 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
-class Frame(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/frame.html>`_
-    for details.
+class Unframe(nn.Module):
+    """This is the opposite module to Frame.
 
     Parameters
     ----------
@@ -33,43 +34,37 @@ class Frame(nn.Module):
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
-    zmean : bool [scalar]
-        If True, perform mean subtraction on each frame.
-
     """
 
-    def __init__(self, frame_length, frame_period, center=True, zmean=False):
-        super(Frame, self).__init__()
+    def __init__(self, frame_length, frame_period, center=True):
+        super(Unframe, self).__init__()
 
         self.frame_length = frame_length
         self.frame_period = frame_period
-        self.zmean = zmean
 
         assert 1 <= self.frame_length
         assert 1 <= self.frame_period
 
-        # Make padding module.
         if center:
-            left_pad_width = self.frame_length // 2
-            right_pad_width = (self.frame_length - 1) // 2
+            self.left_pad_width = self.frame_length // 2
         else:
-            left_pad_width = 0
-            right_pad_width = self.frame_length - 1
+            self.left_pad_width = 0
 
-        self.pad = nn.ConstantPad1d((left_pad_width, right_pad_width), 0)
-
-    def forward(self, x):
-        """Apply framing to given waveform.
+    def forward(self, y, out_length=None):
+        """Revert framed waveform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., T)]
-            Waveform.
+        y : Tensor [shape=(..., T/P, L)]
+            Framed waveform.
+
+        out_length : int [scalar]
+            Length of original signal, `T`.
 
         Returns
         -------
-        y : Tensor [shape=(..., T/P, L)]
-            Framed waveform.
+        x : Tensor [shape=(..., T)]
+            Waveform.
 
         Examples
         --------
@@ -82,10 +77,38 @@ class Frame(nn.Module):
                 [3., 4., 5., 6., 7.],
                 [5., 6., 7., 8., 9.],
                 [7., 8., 9., 0., 0.]])
+        >>> unframe = diffsptk.Unframe(5, 2)
+        >>> z = unframe(y, out_length=x.size(0))
+        >>> z
+        tensor([1., 2., 3., 4., 5., 6., 7., 8., 9.])
 
         """
-        y = self.pad(x)
-        y = y.unfold(-1, self.frame_length, self.frame_period)
-        if self.zmean:
-            y = y - y.mean(-1, keepdim=True)
-        return y
+        d = y.dim()
+        assert 2 <= d <= 4
+
+        N = y.size(-2)
+
+        def fold(x):
+            x = F.fold(
+                x,
+                (1, (N - 1) * self.frame_period + self.frame_length),
+                (1, self.frame_length),
+                stride=(1, self.frame_period),
+            )
+            s = self.left_pad_width
+            e = None if out_length is None else s + out_length
+            x = x[..., 0, 0, s:e]
+            return x
+
+        x = y.transpose(-2, -1)
+        if d == 2:
+            x = x.unsqueeze(0)
+
+        n = fold(torch.ones_like(x))
+        x = fold(x)
+        x = x / n
+
+        if d == 2:
+            x = x.squeeze(0)
+
+        return x
