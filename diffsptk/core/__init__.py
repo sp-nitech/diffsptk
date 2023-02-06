@@ -78,6 +78,7 @@ from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
 from .ulaw import MuLawCompression
+from .unframe import Unframe
 from .vq import VectorQuantization
 from .window import Window
 from .zcross import ZeroCrossingAnalysis

@@ -91,7 +91,7 @@ class ShortTermFourierTransform(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., N, L/2+1)]
+        y : Tensor [shape=(..., T/P, L/2+1)]
             Spectrum.
 
         Examples

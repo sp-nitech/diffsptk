@@ -6,4 +6,4 @@ frame
 .. autoclass:: diffsptk.Frame
    :members:
 
-.. seealso:: :ref:`window`
+.. seealso:: :ref:`unframe`  :ref:`window`
