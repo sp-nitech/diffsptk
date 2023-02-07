@@ -21,6 +21,16 @@ import soundfile as sf
 import torch
 
 
+class Lambda(torch.nn.Module):
+    def __init__(self, func, **opt):
+        super(Lambda, self).__init__()
+        self.func = func
+        self.opt = opt
+
+    def forward(self, x):
+        return self.func(x, **self.opt)
+
+
 def is_power_of_two(n):
     return (n != 0) and (n & (n - 1) == 0)
 

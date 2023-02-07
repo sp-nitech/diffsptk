@@ -32,6 +32,8 @@ from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
+from .istft import InverseShortTermFourierTransform
+from .istft import InverseShortTermFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
 from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
