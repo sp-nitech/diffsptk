@@ -30,6 +30,8 @@ def test_compatibility(device):
         "frame_length": 400,
         "frame_period": 80,
         "fft_length": 512,
+        "norm": "power",
+        "window": "hamming",
     }
     stft = diffsptk.STFT(**stft_params, out_format="complex").to(device)
     istft = diffsptk.ISTFT(**stft_params).to(device)

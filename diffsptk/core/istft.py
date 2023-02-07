@@ -32,8 +32,11 @@ class InverseShortTermFourierTransform(nn.Module):
     frame_peirod : int >= 1 [scalar]
         Frame period, :math:`P`.
 
-    fft_length : int >= L1 [scalar]
+    fft_length : int >= L [scalar]
         Number of FFT bins, :math:`N`.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular']
@@ -46,6 +49,7 @@ class InverseShortTermFourierTransform(nn.Module):
         frame_length,
         frame_period,
         fft_length,
+        norm="power",
         window="blackman",
     ):
         super(InverseShortTermFourierTransform, self).__init__()
@@ -53,7 +57,7 @@ class InverseShortTermFourierTransform(nn.Module):
         self.ifft = Lambda(
             lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
         )
-        self.unframe = Unframe(frame_length, frame_period, window=window)
+        self.unframe = Unframe(frame_length, frame_period, norm=norm, window=window)
 
     def forward(self, y, out_length=None):
         """Compute inverse short-term Fourier transform.

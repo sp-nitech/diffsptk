@@ -35,13 +35,23 @@ class Unframe(nn.Module):
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular']
         Window type.
 
     """
 
-    def __init__(self, frame_length, frame_period, center=True, window="rectangular"):
+    def __init__(
+        self,
+        frame_length,
+        frame_period,
+        center=True,
+        norm="none",
+        window="rectangular",
+    ):
         super(Unframe, self).__init__()
 
         self.frame_length = frame_length
@@ -56,7 +66,8 @@ class Unframe(nn.Module):
             self.left_pad_width = 0
 
         self.register_buffer(
-            "window", Window(frame_length, window=window).window.view(1, -1, 1)
+            "window",
+            Window(frame_length, window=window, norm=norm).window.view(1, -1, 1),
         )
 
     def forward(self, y, out_length=None):

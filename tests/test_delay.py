@@ -22,11 +22,11 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("S", [-2, 0, 2])
-@pytest.mark.parametrize("keep_len", [False, True])
-def test_compatibility(device, S, keep_len, T=20, B=2):
-    delay = diffsptk.Delay(S, keep_len)
+@pytest.mark.parametrize("keeplen", [False, True])
+def test_compatibility(device, S, keeplen, T=20, B=2):
+    delay = diffsptk.Delay(S, keeplen=keeplen)
 
-    opt = "-k" if keep_len else ""
+    opt = "-k" if keeplen else ""
     U.check_compatibility(
         device,
         delay,
