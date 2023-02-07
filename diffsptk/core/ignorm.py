@@ -31,7 +31,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         Order of cepstrum, :math:`M`.
 
     gamma : float [-1 <= gamma <= 1]
-        Gamma.
+        Gamma, :math:`\\gamma`.
 
     c : int >= 1 [scalar]
         Number of stages.

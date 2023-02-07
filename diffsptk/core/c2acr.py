@@ -57,7 +57,7 @@ class CepstrumToAutocorrelation(nn.Module):
 
         Examples
         --------
-        >>> c = torch.randn(5)
+        >>> c = diffsptk.nrand(4)
         >>> c
         tensor([-0.1751,  0.1950, -0.3211,  0.3523, -0.5453])
         >>> c2acr = diffsptk.CepstrumToAutocorrelation(4, 16)

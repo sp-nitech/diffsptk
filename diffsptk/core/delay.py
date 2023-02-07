@@ -27,16 +27,16 @@ class Delay(nn.Module):
     start : int [scalar]
         Start point, :math:`S`. If negative, advance signal.
 
-    keep_len : bool [scalar]
+    keeplen : bool [scalar]
         If True, output has the same length of input.
 
     """
 
-    def __init__(self, start, keep_len=False):
+    def __init__(self, start, keeplen=False):
         super(Delay, self).__init__()
 
         self.start = start
-        self.keep_len = keep_len
+        self.keeplen = keeplen
 
     def forward(self, x, dim=-1):
         """Delay signal.
@@ -61,29 +61,29 @@ class Delay(nn.Module):
         >>> y = delay(x)
         >>> y
         tensor([0., 0., 1., 2., 3.])
-        >>> delay = diffsptk.Delay(2, keep_len=True)
+        >>> delay = diffsptk.Delay(2, keeplen=True)
         >>> y = delay(x)
         >>> y
         tensor([0., 0., 1.])
 
         """
         # Generate zeros if needed.
-        if self.start > 0 or self.keep_len:
+        if self.start > 0 or self.keeplen:
             shape = list(x.shape)
             shape[dim] = abs(self.start)
             zeros = torch.zeros(*shape, dtype=x.dtype, device=x.device)
 
-        # Delay.
+        # Delay signal.
         if 0 < self.start:
             y = torch.cat((zeros, x), dim=dim)
-            if self.keep_len:
+            if self.keeplen:
                 y, _ = torch.split(y, [y.size(dim) - self.start, self.start], dim=dim)
             return y
 
-        # Advance
+        # Advance signal.
         if self.start < 0:
             _, y = torch.split(x, [-self.start, x.size(dim) + self.start], dim=dim)
-            if self.keep_len:
+            if self.keeplen:
                 y = torch.cat((y, zeros), dim=dim)
             return y
 

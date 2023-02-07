@@ -24,6 +24,7 @@ class PseudoLevinsonDurbinRecursion(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
     for details. Note that the current implementation does not use the Durbin's
     algorithm though the class name includes it.
+
     """
 
     def __init__(self):
