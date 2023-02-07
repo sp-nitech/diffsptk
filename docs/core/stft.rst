@@ -8,4 +8,4 @@ stft
 .. autoclass:: diffsptk.ShortTermFourierTransform
    :members:
 
-.. seealso:: :ref:`frame`  :ref:`window`  :ref:`spec`
+.. seealso:: :ref:`frame`  :ref:`window`  :ref:`spec`  :ref:`istft`

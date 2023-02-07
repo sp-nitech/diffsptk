@@ -15,26 +15,27 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("S", [-2, 0, 2])
-@pytest.mark.parametrize("keeplen", [False, True])
-def test_compatibility(device, S, keeplen, T=20, B=2):
-    delay = diffsptk.Delay(S, keeplen=keeplen)
+def test_compatibility(device):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    opt = "-k" if keeplen else ""
-    U.check_compatibility(
-        device,
-        delay,
-        [],
-        f"ramp -l {T}",
-        f"delay -s {S} {opt}",
-        [],
-        opt={"dim": 0},
-    )
+    stft_params = {
+        "frame_length": 400,
+        "frame_period": 80,
+        "fft_length": 512,
+        "norm": "power",
+        "window": "hamming",
+    }
+    stft = diffsptk.STFT(**stft_params, out_format="complex").to(device)
+    istft = diffsptk.ISTFT(**stft_params).to(device)
 
-    U.check_differentiable(device, delay, [B, T])
+    x = torch.from_numpy(U.call("x2x +sd tools/SPTK/asset/data.short"))
+    y = istft(stft(x), out_length=x.size(0))
+    assert torch.allclose(x, y)

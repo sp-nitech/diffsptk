@@ -18,13 +18,11 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import Lambda
-from .frame import Frame
-from .spec import Spectrum
-from .window import Window
+from .unframe import Unframe
 
 
-class ShortTermFourierTransform(nn.Module):
-    """This module is a simple cascade of framing, windowing, and spectrum calculation.
+class InverseShortTermFourierTransform(nn.Module):
+    """This is the opposite module to ShortTermFourierTransform.
 
     Parameters
     ----------
@@ -37,24 +35,12 @@ class ShortTermFourierTransform(nn.Module):
     fft_length : int >= L [scalar]
         Number of FFT bins, :math:`N`.
 
-    zmean : bool [scalar]
-        If True, perform mean subtraction on each frame.
-
     norm : ['none', 'power', 'magnitude']
         Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular']
         Window type.
-
-    out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
-        Output format.
-
-    eps : float >= 0 [scalar]
-        A small value added to power spectrum.
-
-    relative_floor : float < 0 [scalar]
-        Relative floor in decibels.
 
     """
 
@@ -63,53 +49,42 @@ class ShortTermFourierTransform(nn.Module):
         frame_length,
         frame_period,
         fft_length,
-        zmean=False,
         norm="power",
         window="blackman",
-        out_format="power",
-        eps=1e-9,
-        relative_floor=None,
     ):
-        super(ShortTermFourierTransform, self).__init__()
+        super(InverseShortTermFourierTransform, self).__init__()
 
-        self.stft = nn.Sequential(
-            Frame(frame_length, frame_period, zmean=zmean),
-            Window(frame_length, fft_length, norm=norm, window=window),
-            Lambda(torch.fft.rfft)
-            if out_format == "complex"
-            else Spectrum(
-                fft_length,
-                out_format=out_format,
-                eps=eps,
-                relative_floor=relative_floor,
-            ),
+        self.ifft = Lambda(
+            lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
         )
+        self.unframe = Unframe(frame_length, frame_period, norm=norm, window=window)
 
-    def forward(self, x):
-        """Compute short-term Fourier transform.
+    def forward(self, y, out_length=None):
+        """Compute inverse short-term Fourier transform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., T)]
-            Waveform.
+        y : Tensor [shape=(..., T/P, N/2+1)]
+            Complex spectrum.
 
         Returns
         -------
-        y : Tensor [shape=(..., T/P, N/2+1)]
-            Spectrum.
+        x : Tensor [shape=(..., T)]
+            Waveform.
 
         Examples
         --------
         >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
-        >>> stft = diffsptk.STFT(frame_length=3, frame_period=1, fft_length=8)
-        >>> y = stft(x)
+        >>> stft_params = {"frame_length": 3, "frame_period": 1, "fft_length": 8}
+        >>> stft = diffsptk.STFT(**stft_params, out_format="complex")
+        >>> istft = diffsptk.ISTFT(**stft_params)
+        >>> y = istft(stft(x), out_length=3)
         >>> y
-        tensor([[1.0000, 1.0000, 1.0000, 1.0000, 1.0000],
-                [4.0000, 4.0000, 4.0000, 4.0000, 4.0000],
-                [9.0000, 9.0000, 9.0000, 9.0000, 9.0000]])
+        tensor([1., 2., 3.])
 
         """
-        y = self.stft(x)
-        return y
+        x = self.ifft(y)
+        x = self.unframe(x, out_length=out_length)
+        return x

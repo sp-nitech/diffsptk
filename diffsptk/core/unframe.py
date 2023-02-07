@@ -14,9 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from .window import Window
 
 
 class Unframe(nn.Module):
@@ -34,9 +35,23 @@ class Unframe(nn.Module):
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+              'rectangular']
+        Window type.
+
     """
 
-    def __init__(self, frame_length, frame_period, center=True):
+    def __init__(
+        self,
+        frame_length,
+        frame_period,
+        center=True,
+        norm="none",
+        window="rectangular",
+    ):
         super(Unframe, self).__init__()
 
         self.frame_length = frame_length
@@ -49,6 +64,11 @@ class Unframe(nn.Module):
             self.left_pad_width = self.frame_length // 2
         else:
             self.left_pad_width = 0
+
+        self.register_buffer(
+            "window",
+            Window(frame_length, window=window, norm=norm).window.view(1, -1, 1),
+        )
 
     def forward(self, y, out_length=None):
         """Revert framed waveform.
@@ -84,9 +104,8 @@ class Unframe(nn.Module):
 
         """
         d = y.dim()
-        assert 2 <= d <= 4
-
         N = y.size(-2)
+        assert 2 <= d <= 4, "Input must be 2D, 3D, or 4D tensor"
 
         def fold(x):
             x = F.fold(
@@ -100,13 +119,15 @@ class Unframe(nn.Module):
             x = x[..., 0, 0, s:e]
             return x
 
+        w = self.window.repeat(1, 1, N)
         x = y.transpose(-2, -1)
+
         if d == 2:
             x = x.unsqueeze(0)
 
-        n = fold(torch.ones_like(x))
+        w = fold(w)
         x = fold(x)
-        x = x / n
+        x = x / w
 
         if d == 2:
             x = x.squeeze(0)
