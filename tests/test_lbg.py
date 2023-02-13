@@ -23,10 +23,9 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
-    lbg = diffsptk.LindeBuzoGrayAlgorithm(M, K, n_iter=n_iter)
-
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
+    lbg = diffsptk.LindeBuzoGrayAlgorithm(M, K, n_iter=n_iter)
 
     tmp1 = "lbg.tmp1"
     tmp2 = "lbg.tmp2"
@@ -52,3 +51,12 @@ def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
         dx=M + 1,
         rtol=0.1,
     )
+
+
+def test_min_data_per_cluster(M=1, K=4, B=10):
+    torch.manual_seed(1234)
+    x = torch.randn(B, M + 1)
+    lbg = diffsptk.LindeBuzoGrayAlgorithm(
+        M, K, n_iter=10, min_data_per_cluster=int(B * 0.9)
+    )
+    _, _ = lbg(x)

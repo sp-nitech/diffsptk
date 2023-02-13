@@ -148,9 +148,8 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     self.logger.info(f"K={curr_codebook_size} {n:5d}: {distance:g}")
 
                 # Check convergence.
-                if distance == 0:
-                    break
-                if 0 < n and (prev_distance - distance).abs() / distance < self.eps:
+                diff = (prev_distance - distance).abs()
+                if n and diff / (distance + 1e-16) < self.eps:
                     break
                 prev_distance = distance
 
