@@ -6,4 +6,4 @@ ivq
 .. autoclass:: diffsptk.InverseVectorQuantization
    :members:
 
-.. seealso:: :ref:`vq`
+.. seealso:: :ref:`vq`  :ref:`lbg`

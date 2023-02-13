@@ -80,6 +80,7 @@ def check_compatibility(
     opt={},
     sr=None,
     verbose=False,
+    **kwargs,
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
@@ -131,9 +132,9 @@ def check_compatibility(
         print(f"Target: {y}")
 
     if eq is None:
-        assert allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
+        assert allclose(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
     else:
-        assert eq(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
+        assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
 def check_differentiable(device, modules, shapes, opt={}, load=1):
