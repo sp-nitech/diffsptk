@@ -81,7 +81,7 @@ class MelCepstrumPostfiltering(nn.Module):
 
         Examples
         --------
-        >>> X = torch.square(torch.randn(5))
+        >>> X = diffsptk.nrand(4).square()
         >>> X
         tensor([0.2725, 2.5650, 0.3552, 0.3757, 0.1904])
         >>> mcep = diffsptk.MelCepstralAnalysis(3, 8, 0.1)

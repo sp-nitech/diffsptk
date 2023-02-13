@@ -65,35 +65,35 @@ class CepstralDistance(nn.Module):
 
         Returns
         -------
-        dist : Tensor [shape=(...,) or scalar]
+        distance : Tensor [shape=(...,) or scalar]
             Cepstral distance.
 
         Examples
         --------
-        >>> c1 = torch.randn(2, 3)
+        >>> c1 = diffsptk.nrand(2, 2)
         tensor([[ 0.4296,  1.6517, -0.6022],
                 [-1.0464, -0.6088, -0.9274]])
-        >>> c2 = torch.randn(2, 3)
+        >>> c2 = diffsptk.nrand(2, 2)
         tensor([[ 1.6441, -0.6962, -0.2524],
                 [ 0.9344,  0.3965,  1.1494]])
         >>> cdist = diffsptk.CepstralDistance()
-        >>> dist = cdist(c1,c2)
-        >>> dist
+        >>> distance = cdist(c1, c2)
+        >>> distance
         tensor(1.6551)
 
         """
-        dist = torch.sqrt(torch.square(c1[..., 1:] - c2[..., 1:]).sum(-1) + self.eps)
+        distance = torch.sqrt((c1[..., 1:] - c2[..., 1:]).square().sum(-1) + self.eps)
         if self.reduction == "none":
-            dist = dist + 0
+            distance = distance + 0
         elif self.reduction == "sum":
-            dist = dist.sum()
+            distance = distance.sum()
         elif self.reduction == "mean":
-            dist = dist.mean() / math.sqrt(c1.shape[-1] - 1)
+            distance = distance.mean() / math.sqrt(c1.shape[-1] - 1)
         elif self.reduction == "batchmean":
-            dist = dist.mean()
+            distance = distance.mean()
         else:
             raise RuntimeError
 
         if self.full:
-            dist *= self.const
-        return dist
+            distance *= self.const
+        return distance

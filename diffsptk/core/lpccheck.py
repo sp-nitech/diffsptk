@@ -65,7 +65,7 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(5)
+        >>> x = diffsptk.nrand(4)
         tensor([-0.9966, -0.2970, -0.2173,  0.0594,  0.5831])
         >>> lpc = diffsptk.LPC(3, 5)
         >>> a = lpc(x)

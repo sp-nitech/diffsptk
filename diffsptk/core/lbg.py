@@ -109,7 +109,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(10, 1)
+        >>> x = diffsptk.nrand(10, 0)
         >>> lbg = diffsptk.KMeans(0, 2)
         >>> codebook, distance = lbg(x)
         >>> codebook
