@@ -77,7 +77,6 @@ from .root_pol import DurandKernerMethod
 from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
-from .sopr import ScalarOperation
 from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
