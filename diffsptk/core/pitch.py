@@ -16,10 +16,10 @@
 
 from abc import ABCMeta
 from abc import abstractmethod
+import importlib
 
 import torch
 import torch.nn as nn
-import torchcrepe
 
 from ..misc.utils import is_in
 from ..misc.utils import numpy_to_torch
@@ -209,8 +209,10 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
     ):
         super(PitchExtractionByCrepe, self).__init__()
 
+        self.torchcrepe = importlib.import_module("torchcrepe")
+
         self.f_min = f_min
-        self.f_max = torchcrepe.MAX_FMAX if f_max is None else f_max
+        self.f_max = self.torchcrepe.MAX_FMAX if f_max is None else f_max
         self.threshold = threshold
         self.silence_threshold = silence_threshold
         self.filter_length = filter_length
@@ -219,20 +221,22 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         assert 0 <= self.f_min < self.f_max <= sample_rate / 2
         assert is_in(self.model, ["tiny", "full"])
 
-        if sample_rate != torchcrepe.SAMPLE_RATE:
-            raise NotImplementedError(f"Only {torchcrepe.SAMPLE_RATE} Hz is supported")
+        if sample_rate != self.torchcrepe.SAMPLE_RATE:
+            raise NotImplementedError(
+                f"Only {self.torchcrepe.SAMPLE_RATE} Hz is supported"
+            )
 
-        self.frame = Frame(torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
+        self.frame = Frame(self.torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
         self.stft = ShortTermFourierTransform(
-            torchcrepe.WINDOW_SIZE,
+            self.torchcrepe.WINDOW_SIZE,
             frame_period,
-            torchcrepe.WINDOW_SIZE,
+            self.torchcrepe.WINDOW_SIZE,
             norm="none",
             window="hanning",
             out_format="db",
         )
 
-        weights = torchcrepe.loudness.perceptual_weights().squeeze(-1)
+        weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
         self.register_buffer("weights", numpy_to_torch(weights))
 
     def forward(self, x, embed=True):
@@ -243,7 +247,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         # torchcrepe.infer
         B, N, L = x.shape
         x = x.reshape(-1, L)
-        y = torchcrepe.infer(x, model=self.model, embed=embed)
+        y = self.torchcrepe.infer(x, model=self.model, embed=embed)
         y = y.reshape(B, N, -1)
         return y
 
@@ -258,22 +262,22 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         prob = self.calc_prob(x).transpose(-2, -1)
 
         # Decode pitch probabilities.
-        pitch, periodicity = torchcrepe.postprocess(
+        pitch, periodicity = self.torchcrepe.postprocess(
             prob,
             fmin=self.f_min,
             fmax=self.f_max,
-            decoder=torchcrepe.decode.viterbi,
+            decoder=self.torchcrepe.decode.viterbi,
             return_harmonicity=False,
             return_periodicity=True,
         )
 
         # Apply filters.
-        periodicity = torchcrepe.filter.median(periodicity, self.filter_length)
-        pitch = torchcrepe.filter.mean(pitch, self.filter_length)
+        periodicity = self.torchcrepe.filter.median(periodicity, self.filter_length)
+        pitch = self.torchcrepe.filter.mean(pitch, self.filter_length)
 
         # Decide voiced/unvoiced.
         loudness = self.stft(x) + self.weights
-        loudness = torch.clip(loudness, min=torchcrepe.loudness.MIN_DB)
+        loudness = torch.clip(loudness, min=self.torchcrepe.loudness.MIN_DB)
         loudness = loudness.mean(-1)
         mask = torch.logical_or(
             periodicity < self.threshold, loudness < self.silence_threshold
