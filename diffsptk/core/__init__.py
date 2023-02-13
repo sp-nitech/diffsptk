@@ -37,6 +37,8 @@ from .istft import InverseShortTermFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
 from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
+from .lbg import LindeBuzoGrayAlgorithm
+from .lbg import LindeBuzoGrayAlgorithm as KMeans
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
 from .linear_intpl import LinearInterpolation
