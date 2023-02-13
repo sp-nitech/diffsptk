@@ -156,6 +156,25 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
+### Vector quantization
+```python
+import diffsptk
+
+K = 2  # Codebook size.
+M = 4  # Order of vector.
+
+# Prepare input.
+x = diffsptk.nrand(M)
+
+# Quantize x.
+vq = diffsptk.VectorQuantization(M, K)
+x_hat, indices, commitment_loss = vq(x)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
 
 License
 -------
