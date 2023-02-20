@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import is_in
 from .linear_intpl import LinearInterpolation
 
@@ -75,7 +76,7 @@ class ExcitationGeneration(nn.Module):
         """
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
-        mask = torch.ne(base_mask, 0)
+        mask = torch.ne(base_mask, UNVOICED_SYMBOL)
         mask = torch.repeat_interleave(mask, self.frame_period, dim=-1)
 
         # Extend right side for interpolation.

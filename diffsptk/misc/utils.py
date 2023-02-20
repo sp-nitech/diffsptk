@@ -20,6 +20,8 @@ import numpy as np
 import soundfile as sf
 import torch
 
+UNVOICED_SYMBOL = 0
+
 
 class Lambda(torch.nn.Module):
     def __init__(self, func, **opt):

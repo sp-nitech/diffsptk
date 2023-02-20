@@ -21,12 +21,11 @@ import importlib
 import torch
 import torch.nn as nn
 
+from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import is_in
 from ..misc.utils import numpy_to_torch
 from .frame import Frame
 from .stft import ShortTermFourierTransform
-
-MAGIC_NUMBER_FOR_UNVOICED_FRAME = 0
 
 
 class Pitch(nn.Module):
@@ -84,19 +83,19 @@ class Pitch(nn.Module):
         else:
             raise ValueError(f"algorithm {algorithm} is not supported")
 
-        def calc_pitch(x, convert, unvoiced_value):
+        def calc_pitch(x, convert, unvoiced_symbol=UNVOICED_SYMBOL):
             with torch.no_grad():
                 y = self.extractor.calc_pitch(x)
-                mask = y != MAGIC_NUMBER_FOR_UNVOICED_FRAME
+                mask = y != UNVOICED_SYMBOL
                 y[mask] = convert(y[mask])
-                if unvoiced_value != MAGIC_NUMBER_FOR_UNVOICED_FRAME:
-                    y[~mask] = unvoiced_value
+                if unvoiced_symbol != UNVOICED_SYMBOL:
+                    y[~mask] = unvoiced_symbol
             return y
 
         if out_format == 0 or out_format == "pitch":
-            self.convert = lambda x: calc_pitch(x, lambda y: sample_rate / y, 0)
+            self.convert = lambda x: calc_pitch(x, lambda y: sample_rate / y)
         elif out_format == 1 or out_format == "f0":
-            self.convert = lambda x: calc_pitch(x, lambda y: y, 0)
+            self.convert = lambda x: calc_pitch(x, lambda y: y)
         elif out_format == 2 or out_format == "log-f0":
             self.convert = lambda x: calc_pitch(x, lambda y: torch.log(y), -1e10)
         elif out_format == "prob":
@@ -126,7 +125,7 @@ class Pitch(nn.Module):
         >>> pitch = diffsptk.Pitch(80, 16000)
         >>> y = pitch(x)
         >>> y
-        tensor([1586.6013, 1593.9536])
+        tensor([10.0860, 10.0860])
 
         """
         d = x.dim()
@@ -282,5 +281,5 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         mask = torch.logical_or(
             periodicity < self.threshold, loudness < self.silence_threshold
         )
-        pitch[mask] = MAGIC_NUMBER_FOR_UNVOICED_FRAME
+        pitch[mask] = UNVOICED_SYMBOL
         return pitch
