@@ -17,8 +17,6 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import is_in
-
 
 class SignalToNoiseRatio(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/snr.html>`_
@@ -50,7 +48,7 @@ class SignalToNoiseRatio(nn.Module):
 
         if self.frame_length is not None:
             assert 1 <= self.frame_length
-        assert is_in(self.reduction, ["none", "mean", "sum"])
+        assert self.reduction in ("none", "mean", "sum")
         assert 0 <= self.eps
 
     def forward(self, s, sn):

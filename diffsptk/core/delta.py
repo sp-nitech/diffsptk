@@ -75,7 +75,7 @@ def make_window(seed, static_out=True):
             window.append(np.pad((a0 * j * j - a1) * z, pad_width))
 
         if 3 <= len(seed):
-            raise NotImplementedError
+            raise ValueError("3rd order regression is not supported")
 
     window = np.asarray(window)
     return window

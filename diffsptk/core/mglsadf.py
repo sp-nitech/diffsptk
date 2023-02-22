@@ -200,7 +200,7 @@ class MultiStageFIRFilter(nn.Module):
             c1 = c1 * 0.5
             c = torch.cat((c1.flip(-1), c0, c1), dim=-1)
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         c = self.linear_intpl(c)
 
@@ -256,7 +256,7 @@ class SingleStageFIRFilter(nn.Module):
         elif self.phase == "maximum":
             pass
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         h = self.linear_intpl(h)
         if self.ignore_gain:
@@ -264,6 +264,8 @@ class SingleStageFIRFilter(nn.Module):
                 h = h / h[..., -1:]
             elif self.phase == "maximum":
                 h = h / h[..., :1]
+            else:
+                raise RuntimeError
 
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)

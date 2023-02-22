@@ -19,8 +19,6 @@ import math
 import torch
 import torch.nn as nn
 
-from ..misc.utils import is_in
-
 
 class CepstralDistance(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
@@ -46,7 +44,7 @@ class CepstralDistance(nn.Module):
         self.reduction = reduction
         self.eps = eps
 
-        assert is_in(self.reduction, ["none", "mean", "batchmean", "sum"])
+        assert self.reduction in ("none", "mean", "batchmean", "sum")
         assert 0 <= self.eps
 
         if self.full:

@@ -18,7 +18,6 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import UNVOICED_SYMBOL
-from ..misc.utils import is_in
 from .linear_intpl import LinearInterpolation
 
 
@@ -47,8 +46,8 @@ class ExcitationGeneration(nn.Module):
         self.unvoiced_region = unvoiced_region
 
         assert 1 <= self.frame_period
-        assert is_in(self.voiced_region, ["pulse", "sinusoidal"])
-        assert is_in(self.unvoiced_region, ["gauss", "zeros"])
+        assert self.voiced_region in ("pulse", "sinusoidal")
+        assert self.unvoiced_region in ("gauss", "zeros")
 
         self.linear_intpl = LinearInterpolation(self.frame_period)
 
@@ -107,13 +106,13 @@ class ExcitationGeneration(nn.Module):
         elif self.voiced_region == "sinusoidal":
             e = torch.sin((2 * torch.pi) * phase)
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         if self.unvoiced_region == "gauss":
             e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
         elif self.unvoiced_region == "zeros":
             pass
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         return e

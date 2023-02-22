@@ -41,10 +41,6 @@ def next_power_of_two(n):
     return 1 << (n - 1).bit_length()
 
 
-def is_in(x, ary):
-    return any([x == a for a in ary])
-
-
 def default_dtype():
     t = torch.get_default_dtype()
     if t == torch.float32:  # pragma: no cover
