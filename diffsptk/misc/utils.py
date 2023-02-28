@@ -20,6 +20,8 @@ import numpy as np
 import soundfile as sf
 import torch
 
+UNVOICED_SYMBOL = 0
+
 
 class Lambda(torch.nn.Module):
     def __init__(self, func, **opt):
@@ -37,10 +39,6 @@ def is_power_of_two(n):
 
 def next_power_of_two(n):
     return 1 << (n - 1).bit_length()
-
-
-def is_in(x, ary):
-    return any([x == a for a in ary])
 
 
 def default_dtype():

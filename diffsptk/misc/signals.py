@@ -208,7 +208,7 @@ def train(order, frame_period, norm="power", **kwargs):
     return x
 
 
-def nrand(order, mean=0, stdv=1, var=None, **kwargs):
+def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
     """Generate random number sequence.
 
     See `nrand <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
@@ -238,12 +238,18 @@ def nrand(order, mean=0, stdv=1, var=None, **kwargs):
     >>> x = diffsptk.nrand(4)
     >>> x
     tensor([-0.8603,  0.6743, -0.9178,  1.5382, -0.2574])
+    >>> x = diffsptk.nrand(2, 4)
+    >>> x
+    tensor([[-0.2385, -0.0778, -0.0418, -1.6217,  0.1560],
+            [ 1.6646,  0.8429,  0.9357, -0.5123,  0.9571]])
 
     """
     if var is not None:
         stdv = var**0.5
     assert 0 <= stdv
 
-    x = torch.randn(order + 1, **kwargs)
+    order = list(order)
+    order[-1] += 1
+    x = torch.randn(*order, **kwargs)
     x = x * stdv + mean
     return x

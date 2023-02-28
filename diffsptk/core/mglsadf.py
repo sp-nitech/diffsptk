@@ -132,7 +132,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         --------
         >>> M = 4
         >>> x = diffsptk.step(3)
-        >>> mc = torch.randn(2, M + 1)
+        >>> mc = diffsptk.nrand(2, M)
         >>> mc
         tensor([[-0.9134, -0.5774, -0.4567,  0.7423, -0.5782],
                 [ 0.6904,  0.5175,  0.8765,  0.1677,  2.4624]])
@@ -200,7 +200,7 @@ class MultiStageFIRFilter(nn.Module):
             c1 = c1 * 0.5
             c = torch.cat((c1.flip(-1), c0, c1), dim=-1)
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         c = self.linear_intpl(c)
 
@@ -256,7 +256,7 @@ class SingleStageFIRFilter(nn.Module):
         elif self.phase == "maximum":
             pass
         else:
-            raise NotImplementedError
+            raise RuntimeError
 
         h = self.linear_intpl(h)
         if self.ignore_gain:
@@ -264,6 +264,8 @@ class SingleStageFIRFilter(nn.Module):
                 h = h / h[..., -1:]
             elif self.phase == "maximum":
                 h = h / h[..., :1]
+            else:
+                raise RuntimeError
 
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)

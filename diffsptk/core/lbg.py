@@ -109,7 +109,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(10, 1)
+        >>> x = diffsptk.nrand(10, 0)
         >>> lbg = diffsptk.KMeans(0, 2)
         >>> codebook, distance = lbg(x)
         >>> codebook
@@ -166,16 +166,14 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 centroids = torch.zeros(
                     (curr_codebook_size, self.order + 1), dtype=x.dtype, device=x.device
                 )
-                idx = indices.unsqueeze(1).repeat_interleave(self.order + 1, dim=1)
+                idx = indices.unsqueeze(1).expand(-1, self.order + 1)
                 centroids.scatter_add_(0, idx, x)
                 centroids[mask] /= n_data[mask].unsqueeze(1)
 
                 if torch.any(~mask):
                     # Get index of largest cluster.
                     _, m = n_data.max(0)
-                    copied_centroids = centroids[m : m + 1].repeat_interleave(
-                        (~mask).sum(), dim=0
-                    )
+                    copied_centroids = centroids[m : m + 1].expand((~mask).sum(), -1)
                     r = torch.randn_like(copied_centroids) * self.perturb_factor
                     centroids[~mask] = copied_centroids - r
                     centroids[m] += r.mean(0)

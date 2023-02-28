@@ -70,7 +70,7 @@ class PrincipalComponentAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(10, 4)
+        >>> x = diffsptk.nrand(10, 3)
         >>> pca = diffsptk.PCA(3)
         >>> e, _, _ = pca(x)
         >>> e

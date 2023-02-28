@@ -92,7 +92,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
         --------
         >>> M = 4
         >>> y = diffsptk.step(3)
-        >>> mc = torch.randn(2, M + 1)
+        >>> mc = diffsptk.nrand(2, M)
         >>> mc
         tensor([[ 0.8457,  1.5812,  0.1379,  1.6558,  1.4591],
                 [-1.3714, -0.9669, -1.2025, -1.3683, -0.2352]])

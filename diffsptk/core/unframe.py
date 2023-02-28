@@ -131,5 +131,4 @@ class Unframe(nn.Module):
 
         if d == 2:
             x = x.squeeze(0)
-
         return x

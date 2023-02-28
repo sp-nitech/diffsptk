@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import is_in
 
 
 class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
@@ -49,7 +48,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
 
         assert 0 <= self.lpc_order
         assert abs(self.gamma) <= 1
-        assert is_in(self.warn_type, ["ignore", "warn", "exit"])
+        assert self.warn_type in ("ignore", "warn", "exit")
 
     def forward(self, a):
         """Convert LPC to PARCOR.
@@ -66,7 +65,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(5)
+        >>> x = diffsptk.nrand(4)
         tensor([ 0.7829, -0.2028,  1.6912,  0.1454,  0.4861])
         >>> lpc = diffsptk.LPC(3, 5)
         >>> a = lpc(x)

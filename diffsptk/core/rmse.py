@@ -17,8 +17,6 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import is_in
-
 
 class RootMeanSquaredError(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
@@ -40,7 +38,7 @@ class RootMeanSquaredError(nn.Module):
         self.reduction = reduction
         self.eps = eps
 
-        assert is_in(self.reduction, ["none", "mean", "sum"])
+        assert self.reduction in ("none", "mean", "sum")
         assert 0 <= self.eps
 
     def forward(self, x, y):
@@ -61,10 +59,10 @@ class RootMeanSquaredError(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(5)
+        >>> x = diffsptk.nrand(4)
         >>> x
         tensor([-0.5945, -0.2401,  0.8633, -0.6464,  0.4515])
-        >>> y = torch.randn(5)
+        >>> y = diffsptk.nrand(4)
         >>> y
         tensor([-0.4025,  0.9367,  1.1299,  3.1986, -0.2832])
         >>> rmse = diffsptk.RootMeanSquaredError()

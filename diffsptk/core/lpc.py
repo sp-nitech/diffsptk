@@ -57,7 +57,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = torch.randn(5)
+        >>> x = diffsptk.nrand(4)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> lpc = diffsptk.LPC(2, 5)
         >>> a = lpc(x)

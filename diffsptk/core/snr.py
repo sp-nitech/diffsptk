@@ -17,8 +17,6 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import is_in
-
 
 class SignalToNoiseRatio(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/snr.html>`_
@@ -50,7 +48,7 @@ class SignalToNoiseRatio(nn.Module):
 
         if self.frame_length is not None:
             assert 1 <= self.frame_length
-        assert is_in(self.reduction, ["none", "mean", "sum"])
+        assert self.reduction in ("none", "mean", "sum")
         assert 0 <= self.eps
 
     def forward(self, s, sn):
@@ -71,10 +69,10 @@ class SignalToNoiseRatio(nn.Module):
 
         Examples
         --------
-        >>> s = torch.randn(5)
+        >>> s = diffsptk.nrand(4)
         >>> s
         tensor([-0.5804, -0.8002, -0.0645,  0.6101,  0.4396])
-        >>> n = torch.randn(5) * 0.1
+        >>> n = diffsptk.nrand(4) * 0.1
         >>> n
         tensor([ 0.0854,  0.0485, -0.0826,  0.1455,  0.0257])
         >>> snr = diffsptk.SignalToNoiseRatio(full=True)
