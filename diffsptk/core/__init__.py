@@ -21,10 +21,12 @@ from .fbank import MelFilterBankAnalysis
 from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
+from .freqt2 import SecondOrderAllPassFrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
+from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .imglsadf import PseudoInverseMGLSADigitalFilter
 from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA

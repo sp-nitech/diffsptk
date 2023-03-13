@@ -23,111 +23,24 @@ from ..misc.utils import hankel
 from ..misc.utils import is_power_of_two
 from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
-
-
-def warp(omega, alpha, theta):
-    x = omega - theta
-    y = omega + theta
-    return (
-        omega
-        + np.arctan2(alpha * np.sin(x), 1 - alpha * np.cos(x))
-        + np.arctan2(alpha * np.sin(y), 1 - alpha * np.cos(y))
-    )
-
-
-class SecondOrderAllPassFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, fft_length, alpha, theta):
-        super(SecondOrderAllPassFrequencyTransform, self).__init__()
-
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert in_order < fft_length
-        assert abs(alpha) < 1
-        assert 0 <= theta <= 1
-
-        def diff_warp(omega, alpha, theta):
-            x = omega - theta
-            y = omega + theta
-            a1 = alpha
-            a2 = alpha + alpha
-            aa = alpha * alpha
-            return (
-                1
-                + (a1 * np.cos(x) - aa) / (1 - a2 * np.cos(x) + aa)
-                + (a1 * np.cos(y) - aa) / (1 - a2 * np.cos(y) + aa)
-            )
-
-        theta *= np.pi
-        delta = 2 * np.pi / fft_length
-        omega = np.arange(fft_length) * delta
-        ww = warp(omega, alpha, theta)
-        dw = diff_warp(omega, alpha, theta)
-
-        m2 = np.arange(out_order + 1)
-        wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
-        real = np.cos(wwm2) * dw.reshape(-1, 1)
-        imag = -np.sin(wwm2) * dw.reshape(-1, 1)
-
-        M1 = in_order + 1
-        A = np.fft.ifft(real + 1j * imag, axis=0).real
-        if 2 <= M1:
-            A[1:M1] += np.flip(A[-(M1 - 1) :], axis=0)
-        A = A[:M1]
-        A[1:, 0] /= 2
-        A[0, 1:] *= 2
-        self.register_buffer("A", numpy_to_torch(A))
-
-    def forward(self, c1):
-        c2 = torch.matmul(c1, self.A)
-        return c2
-
-
-class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, fft_length, alpha, theta):
-        super(SecondOrderAllPassInverseFrequencyTransform, self).__init__()
-
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert out_order < fft_length
-        assert abs(alpha) < 1
-        assert 0 <= theta <= 1
-
-        theta *= np.pi
-        delta = 2 * np.pi / fft_length
-        omega = np.arange(fft_length) * delta
-        ww = warp(omega, alpha, theta)
-
-        m1 = np.arange(-in_order, in_order + 1)
-        wwm1 = ww.reshape(-1, 1) * m1.reshape(1, -1)
-        real = np.cos(wwm1)
-        imag = -np.sin(wwm1)
-
-        M2 = out_order + 1
-        A = np.fft.ifft(real + 1j * imag, axis=0).real
-        A[:M2, in_order + 1 :] += np.flip(A[:M2, :in_order], axis=1)
-        A = A[:M2, in_order:]
-        A[0, 1:] /= 2
-        A[1:, 0] *= 2
-        self.register_buffer("A", numpy_to_torch(A.T))
-
-    def forward(self, c2):
-        c1 = torch.matmul(c2, self.A)
-        return c1
+from .freqt2 import SecondOrderAllPassFrequencyTransform
+from .freqt2 import warp
+from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 
 
 class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, fft_length, alpha, theta):
+    def __init__(self, in_order, out_order, alpha, theta, n_fft=512):
         super(CoefficientsFrequencyTransform, self).__init__()
 
         assert 0 <= in_order
         assert 0 <= out_order
-        assert out_order < fft_length
+        assert out_order < n_fft
         assert abs(alpha) < 1
         assert 0 <= theta <= 1
 
         theta *= np.pi
-        delta = 2 * np.pi / fft_length
-        omega = np.arange(fft_length) * delta
+        delta = 2 * np.pi / n_fft
+        omega = np.arange(n_fft) * delta
         ww = warp(omega, alpha, theta)
 
         m2 = np.arange(out_order + 1)
@@ -191,23 +104,23 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
         self.freqt = SecondOrderAllPassFrequencyTransform(
             self.fft_length // 2,
             self.cep_order,
-            self.fft_length * accuracy_factor,
             alpha,
             theta,
+            self.fft_length * accuracy_factor,
         )
         self.ifreqt = SecondOrderAllPassInverseFrequencyTransform(
             self.cep_order,
             self.fft_length // 2,
-            self.fft_length * accuracy_factor,
             alpha,
             theta,
+            self.fft_length * accuracy_factor,
         )
         self.rfreqt = CoefficientsFrequencyTransform(
             self.fft_length // 2,
             2 * self.cep_order,
-            self.fft_length * accuracy_factor,
             alpha,
             theta,
+            self.fft_length * accuracy_factor,
         )
 
         seed = np.ones(1)
