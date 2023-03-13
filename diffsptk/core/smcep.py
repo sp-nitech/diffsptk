@@ -127,9 +127,9 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
         alpha_vector = CoefficientsFrequencyTransform(
             0,
             self.cep_order,
-            self.fft_length * accuracy_factor,
             alpha,
             theta,
+            self.fft_length * accuracy_factor,
         )(numpy_to_torch(seed))
         self.register_buffer("alpha_vector", alpha_vector)
 

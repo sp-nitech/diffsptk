@@ -49,7 +49,7 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
 
         assert 0 <= in_order
         assert 0 <= out_order
-        assert out_order < n_fft
+        assert in_order < n_fft
         assert abs(alpha) < 1
         assert 0 <= theta <= 1
 
