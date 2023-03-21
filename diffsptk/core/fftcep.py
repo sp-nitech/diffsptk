@@ -101,8 +101,7 @@ class CepstralAnalysis(nn.Module):
             e = e - F.pad(t, (0, H - M))
 
         indices = [0, M] if H == M else [0]
-        for m in indices:
-            v[..., m] *= 0.5
+        v[..., indices] *= 0.5
 
         # Revert shape.
         for _ in range(3 - d):
