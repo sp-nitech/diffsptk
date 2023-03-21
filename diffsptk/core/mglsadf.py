@@ -17,10 +17,19 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import Lambda
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
 from .linear_intpl import LinearInterpolation
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
+
+
+def mirror(x, half=False):
+    x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
+    if half:
+        x1 = x1 * 0.5
+    x = torch.cat((x1.flip(-1), x0, x1), dim=-1)
+    return x
 
 
 class PseudoMGLSADigitalFilter(nn.Module):
@@ -53,17 +62,17 @@ class PseudoMGLSADigitalFilter(nn.Module):
     cascade : bool [scalar]
         If True, use multi-stage FIR filter.
 
-    cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (valid only if **cascade** is True).
-
     taylor_order : int >= 0 [scalar]
         Order of Taylor series expansion (valid only if **cascade** is True).
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response (valid only if **cascade** is False).
 
     n_fft : int >= 1 [scalar]
         Number of FFT bins for conversion (valid only if **cascade** is False).
+
+    cep_order : int >= 0 [scalar]
+        Order of linear cepstrum (used to convert input to cepstrum).
 
     References
     ----------
@@ -136,7 +145,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         >>> mc
         tensor([[-0.9134, -0.5774, -0.4567,  0.7423, -0.5782],
                 [ 0.6904,  0.5175,  0.8765,  0.1677,  2.4624]])
-        >>> mglsadf = diffsptk.PseudoMGLSADigitalFilter(M, frame_period=2)
+        >>> mglsadf = diffsptk.MLSA(M, frame_period=2)
         >>> y = mglsadf(x.view(1, -1), mc.view(1, 2, M + 1))
         >>> y
         tensor([[0.4011, 0.8760, 3.5677, 4.8725]])
@@ -163,9 +172,9 @@ class MultiStageFIRFilter(nn.Module):
     ):
         super(MultiStageFIRFilter, self).__init__()
 
-        self.taylor_order = taylor_order
         self.ignore_gain = ignore_gain
         self.phase = phase
+        self.taylor_order = taylor_order
 
         assert 0 <= self.taylor_order
 
@@ -196,9 +205,7 @@ class MultiStageFIRFilter(nn.Module):
         elif self.phase == "maximum":
             pass
         elif self.phase == "zero":
-            c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
-            c1 = c1 * 0.5
-            c = torch.cat((c1.flip(-1), c0, c1), dim=-1)
+            c = mirror(c, half=True)
         else:
             raise RuntimeError
 
@@ -222,50 +229,74 @@ class SingleStageFIRFilter(nn.Module):
         frame_period=1,
         ignore_gain=False,
         phase="minimum",
-        impulse_response_length=2000,
+        ir_length=2000,
         n_fft=4096,
+        cep_order=199,
     ):
         super(SingleStageFIRFilter, self).__init__()
 
         self.ignore_gain = ignore_gain
         self.phase = phase
 
-        taps = impulse_response_length - 1
+        taps = ir_length - 1
         if self.phase == "minimum":
             self.pad = nn.ConstantPad1d((taps, 0), 0)
         elif self.phase == "maximum":
             self.pad = nn.ConstantPad1d((0, taps), 0)
+        elif self.phase == "zero":
+            self.pad = nn.ConstantPad1d((taps, taps), 0)
         else:
             raise ValueError(f"phase {phase} is not supported")
 
-        self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            filter_order,
-            impulse_response_length - 1,
-            in_alpha=alpha,
-            in_gamma=gamma,
-            out_gamma=1,
-            out_mul=True,
-            n_fft=n_fft,
-        )
+        if self.phase in ["minimum", "maximum"]:
+            self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+                filter_order,
+                ir_length - 1,
+                in_alpha=alpha,
+                in_gamma=gamma,
+                out_gamma=1,
+                out_mul=True,
+                n_fft=n_fft,
+            )
+        else:
+            self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+                filter_order,
+                cep_order,
+                in_alpha=alpha,
+                in_gamma=gamma,
+            )
+            self.c2ir = nn.Sequential(
+                Lambda(lambda x: torch.fft.hfft(x, n=n_fft)),
+                Lambda(lambda x: torch.fft.ifft(torch.exp(x)).real[..., :ir_length]),
+            )
         self.linear_intpl = LinearInterpolation(frame_period)
 
     def forward(self, x, mc):
-        h = self.mgc2ir(mc)
+        if self.phase == "zero":
+            c = self.mgc2c(mc)
+            c[..., 1:] *= 0.5
+            if self.ignore_gain:
+                c[..., 0] = 0
+            h = self.c2ir(c)
+        else:
+            h = self.mgc2ir(mc)
+
         if self.phase == "minimum":
             h = h.flip(-1)
         elif self.phase == "maximum":
             pass
+        elif self.phase == "zero":
+            h = mirror(h)
         else:
             raise RuntimeError
 
         h = self.linear_intpl(h)
+
         if self.ignore_gain:
             if self.phase == "minimum":
                 h = h / h[..., -1:]
             elif self.phase == "maximum":
                 h = h / h[..., :1]
-            else:
-                raise RuntimeError
 
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)
