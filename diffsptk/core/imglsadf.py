@@ -52,7 +52,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     taylor_order : int >= 0 [scalar]
         Order of Taylor series expansion (valid only if **cascade** is True).
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response (valid only if **cascade** is False).
 
     n_fft : int >= 1 [scalar]
