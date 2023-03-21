@@ -28,7 +28,7 @@ def test_compatibility(device, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
         pole_bandwidth=pb,
         zero_frequency=zf,
         zero_bandwidth=zb,
-        impulse_response_length=T,
+        ir_length=T,
     )
 
     U.check_compatibility(

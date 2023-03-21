@@ -31,7 +31,7 @@ def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
     if cascade:
         params = {"cep_order": 100, "taylor_order": 20}
     else:
-        params = {"impulse_response_length": 200, "n_fft": 512}
+        params = {"ir_length": 200, "n_fft": 512}
 
     mglsadf = diffsptk.MLSA(
         M,
@@ -71,7 +71,5 @@ def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
 @pytest.mark.parametrize("cascade", [False, True])
 @pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
 def test_differentiable(device, ignore_gain, cascade, phase, B=4, T=20, M=4):
-    if not cascade and phase == "zero":
-        return
     mglsadf = diffsptk.MLSA(M, ignore_gain=ignore_gain, cascade=cascade, phase=phase)
     U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])

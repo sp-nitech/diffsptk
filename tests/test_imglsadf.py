@@ -52,7 +52,7 @@ def test_compatibility(device, ignore_gain, cascade, c=0, alpha=0.42, M=24, P=80
     if cascade:
         params = {"cep_order": 100, "taylor_order": 40}
     else:
-        params = {"impulse_response_length": 500, "n_fft": 1024}
+        params = {"ir_length": 500, "n_fft": 1024}
 
     # Get residual signal.
     imglsadf = diffsptk.IMLSA(

@@ -49,9 +49,6 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     cascade : bool [scalar]
         If True, use multi-stage FIR filter.
 
-    cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (valid only if **cascade** is True).
-
     taylor_order : int >= 0 [scalar]
         Order of Taylor series expansion (valid only if **cascade** is True).
 
@@ -61,13 +58,12 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     n_fft : int >= 1 [scalar]
         Number of FFT bins for conversion (valid only if **cascade** is False).
 
+    cep_order : int >= 0 [scalar]
+        Order of linear cepstrum (used to convert input to cepstrum).
+
     """
 
-    def __init__(
-        self,
-        filter_order,
-        **kwargs,
-    ):
+    def __init__(self, filter_order, **kwargs):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
 
         self.mglsadf = PseudoMGLSADigitalFilter(filter_order, **kwargs)
@@ -96,7 +92,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
         >>> mc
         tensor([[ 0.8457,  1.5812,  0.1379,  1.6558,  1.4591],
                 [-1.3714, -0.9669, -1.2025, -1.3683, -0.2352]])
-        >>> imglsadf = diffsptk.PseudoInverseMGLSADigitalFilter(M, frame_period=2)
+        >>> imglsadf = diffsptk.IMLSA(M, frame_period=2)
         >>> x = imglsadf(y.view(1, -1), mc.view(1, 2, M + 1))
         >>> x
         tensor([[ 0.4293,  1.0592,  7.9349, 14.9794]])
