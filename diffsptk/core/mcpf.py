@@ -43,21 +43,19 @@ class MelCepstrumPostfiltering(nn.Module):
     onset : int >= 0 [scalar]
         Onset index.
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response.
 
     """
 
-    def __init__(
-        self, cep_order, alpha=0, beta=0, onset=2, impulse_response_length=1024
-    ):
+    def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=1024):
         super(MelCepstrumPostfiltering, self).__init__()
 
         assert 0 <= onset
 
         self.mc2en = nn.Sequential(
-            FrequencyTransform(cep_order, impulse_response_length - 1, -alpha),
-            CepstrumToAutocorrelation(0, impulse_response_length),
+            FrequencyTransform(cep_order, ir_length - 1, -alpha),
+            CepstrumToAutocorrelation(0, ir_length),
         )
         self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha)
         self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha)

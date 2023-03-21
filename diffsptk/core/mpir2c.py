@@ -30,7 +30,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     cep_order : int >= 0 [scalar]
         Order of cepstrum, :math:`M`.
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response, :math:`N`.
 
     n_fft : int >> :math:`N` [scalar]
@@ -38,16 +38,16 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, impulse_response_length, n_fft=512):
+    def __init__(self, cep_order, ir_length, n_fft=512):
         super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
         self.cep_order = cep_order
-        self.impulse_response_length = impulse_response_length
+        self.ir_length = ir_length
         self.n_fft = n_fft
 
         assert 0 <= self.cep_order
-        assert 1 <= self.impulse_response_length
-        assert max(self.cep_order + 1, self.impulse_response_length) < self.n_fft
+        assert 1 <= self.ir_length
+        assert max(self.cep_order + 1, self.ir_length) < self.n_fft
 
     def forward(self, h):
         """Convert minimum phase impulse response to cepstrum.
@@ -71,7 +71,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         tensor([1.3863, 0.7500, 0.2188, 0.0156])
 
         """
-        check_size(h.size(-1), self.impulse_response_length, "impulse response length")
+        check_size(h.size(-1), self.ir_length, "impulse response length")
 
         H = torch.fft.fft(h, n=self.n_fft)
         c = torch.fft.ifft(clog(H))[..., : self.cep_order + 1].real

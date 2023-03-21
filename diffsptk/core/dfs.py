@@ -34,27 +34,27 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
     a : List [shape=(N+1,)]
         Denominator coefficients.
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response.
 
     """
 
-    def __init__(self, b=[1], a=[1], impulse_response_length=None):
+    def __init__(self, b=[1], a=[1], ir_length=None):
         super(InfiniteImpulseResponseDigitalFilter, self).__init__()
 
-        if impulse_response_length is None:
-            impulse_response_length = len(b)
-        assert 1 <= impulse_response_length
+        if ir_length is None:
+            ir_length = len(b)
+        assert 1 <= ir_length
 
         d = np.zeros(max(len(b), len(a)))
-        h = np.empty(impulse_response_length)
+        h = np.empty(ir_length)
 
         a0 = a[0]
         a1 = np.asarray(a[1:])
         b = np.asarray(b)
 
         # Pre-compute impulse response.
-        for t in range(impulse_response_length):
+        for t in range(ir_length):
             x = a0 if t == 0 else 0
             y = x - np.sum(d[: len(a1)] * a1)
 
@@ -67,7 +67,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         h = h.reshape(1, 1, -1)
         self.register_buffer("h", numpy_to_torch(h).flip(-1))
 
-        self.pad = nn.ConstantPad1d((impulse_response_length - 1, 0), 0)
+        self.pad = nn.ConstantPad1d((ir_length - 1, 0), 0)
 
     def forward(self, x):
         """Apply an approximated IIR digital filter.

@@ -42,7 +42,7 @@ class SecondOrderDigitalFilter(nn.Module):
     zero_bandwidth : float > 0 [scalar]
         Zero bandwidth in Hz.
 
-    impulse_response_length : int >= 1 [scalar]
+    ir_length : int >= 1 [scalar]
         Length of impulse response.
 
     """
@@ -54,7 +54,7 @@ class SecondOrderDigitalFilter(nn.Module):
         pole_bandwidth=None,
         zero_frequency=None,
         zero_bandwidth=None,
-        impulse_response_length=None,
+        ir_length=None,
     ):
         super(SecondOrderDigitalFilter, self).__init__()
 
@@ -76,8 +76,8 @@ class SecondOrderDigitalFilter(nn.Module):
             param["b"] = get_filter_coefficients(
                 zero_frequency, zero_bandwidth, sample_rate
             )
-        if impulse_response_length is not None:
-            param["impulse_response_length"] = impulse_response_length
+        if ir_length is not None:
+            param["ir_length"] = ir_length
 
         self.dfs = InfiniteImpulseResponseDigitalFilter(**param)
 
