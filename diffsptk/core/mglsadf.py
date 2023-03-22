@@ -290,6 +290,7 @@ class SingleStageFIRFilter(nn.Module):
         else:
             raise RuntimeError
 
+        # FIXME: linear interpolation of impulse response seems inappropriate.
         h = self.linear_intpl(h)
 
         if self.ignore_gain:
