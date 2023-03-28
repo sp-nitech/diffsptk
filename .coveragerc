@@ -1,8 +1,0 @@
-[report]
-exclude_lines =
-    pragma: no cover
-    if self.verbose:
-    raise NotImplementedError
-    raise RuntimeError
-    raise ValueError
-    warnings
