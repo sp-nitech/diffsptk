@@ -82,6 +82,7 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
         assert 0 <= self.cep_order
         assert self.mod_type in ("clip", "scale")
         assert self.warn_type in ("ignore", "warn", "exit")
+        assert not (self.fast and self.mod_type == "clip")
 
         if threshold is None:
             if pade_order == 4:
