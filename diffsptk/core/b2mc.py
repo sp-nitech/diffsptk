@@ -35,7 +35,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, alpha):
+    def __init__(self, cep_order, alpha=0):
         super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
 
         assert 0 <= cep_order
