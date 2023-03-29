@@ -48,7 +48,7 @@ class Yingram(nn.Module):
         Maximum lag in points.
 
     n_bin : int >= 1 [scalar]
-        Number of bins of Yingram.
+        Number of bins of Yingram to represent a semitone range.
 
     References
     ----------
