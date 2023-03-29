@@ -70,7 +70,7 @@ test:
 	fi
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		pytest -s --cov=./ --cov-report=xml $$module
+		python -m pytest -s --cov=./ --cov-report=xml $$module
 
 tool:
 	cd tools; make
