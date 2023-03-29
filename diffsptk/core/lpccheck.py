@@ -61,7 +61,7 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
         Returns
         -------
         a2 : Tensor [shape=(..., M+1)]
-            Stabilized LPC coefficients.
+            Modified LPC coefficients.
 
         Examples
         --------

@@ -8,4 +8,4 @@ mglsadf
 .. autoclass:: diffsptk.PseudoMGLSADigitalFilter
    :members:
 
-.. seealso:: :ref:`mgcep`  :ref:`imglsadf`
+.. seealso:: :ref:`mgcep`  :ref:`imglsadf`  :ref:`mlsacheck`
