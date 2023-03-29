@@ -38,7 +38,7 @@ class FrequencyTransform(nn.Module):
 
     """
 
-    def __init__(self, in_order, out_order, alpha):
+    def __init__(self, in_order, out_order, alpha=0):
         super(FrequencyTransform, self).__init__()
 
         assert 0 <= in_order

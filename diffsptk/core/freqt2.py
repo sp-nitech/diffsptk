@@ -53,7 +53,7 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
 
     """
 
-    def __init__(self, in_order, out_order, alpha, theta, n_fft=512):
+    def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):
         super(SecondOrderAllPassFrequencyTransform, self).__init__()
 
         assert 0 <= in_order
