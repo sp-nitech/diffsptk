@@ -22,20 +22,25 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device):
+def test_compatibility(
+    device, fl=2048, fp=80, sr=22050, lag_min=22, lag_max=2047, n_bin=20, B=2
+):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    stft_params = {
-        "frame_length": 400,
-        "frame_period": 80,
-        "fft_length": 512,
-        "norm": "power",
-        "window": "hamming",
-    }
-    stft = diffsptk.STFT(**stft_params, out_format="complex").to(device)
-    istft = diffsptk.ISTFT(**stft_params).to(device)
+    frame = diffsptk.Frame(fl, fp, center=False).to(device)
+    yingram = diffsptk.Yingram(fl, sr, lag_min, lag_max, n_bin).to(device)
 
-    x = torch.from_numpy(U.call("x2x +sd tools/SPTK/asset/data.short")).to(device)
-    y = istft(stft(x), out_length=x.size(0))
-    assert torch.allclose(x, y)
+    url = "https://raw.githubusercontent.com/revsic/torch-nansy/main/nansy/yingram.py"
+    U.call(f"curl -s {url} > tmp.py", get=False)
+    from tmp import Yingram as Target
+
+    target = Target(fp, fl, lag_min, lag_max, n_bin, sr).to(device)
+    U.call("rm -f tmp.py", get=False)
+
+    x = diffsptk.nrand(B, sr).to(device)
+    y = target(x)
+    y_hat = yingram(frame(x))
+    assert torch.allclose(y, y_hat)
+
+    U.check_differentiable(device, yingram, [B, fl])

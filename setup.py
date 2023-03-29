@@ -32,10 +32,10 @@ setup(
     extras_require={
         "dev": [
             "black",
-            "flake8",
             "isort",
             "numpydoc",
             "pydata-sphinx-theme",
+            "pyproject-flake8",
             "pytest",
             "pytest-cov",
             "sphinx",

@@ -52,12 +52,12 @@ doc-clean:
 check:
 	./venv/bin/black --check $(PROJECT) tests
 	./venv/bin/isort --check $(PROJECT) tests --project $(PROJECT)
-	./venv/bin/flake8 $(PROJECT) tests
+	./venv/bin/pflake8 $(PROJECT) tests
 
 format:
 	./venv/bin/black $(PROJECT) tests
 	./venv/bin/isort $(PROJECT) tests --project $(PROJECT)
-	./venv/bin/flake8 $(PROJECT) tests
+	./venv/bin/pflake8 $(PROJECT) tests
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
@@ -70,7 +70,7 @@ test:
 	fi
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		pytest -s --cov=./ --cov-report=xml $$module
+		python -m pytest -s --cov=./ --cov-report=xml $$module
 
 tool:
 	cd tools; make

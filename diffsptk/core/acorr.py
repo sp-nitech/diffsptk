@@ -73,7 +73,7 @@ class AutocorrelationAnalysis(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Framed waveform
+            Framed waveform.
 
         Returns
         -------
