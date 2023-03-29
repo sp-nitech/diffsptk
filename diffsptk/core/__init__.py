@@ -86,5 +86,6 @@ from .ulaw import MuLawCompression
 from .unframe import Unframe
 from .vq import VectorQuantization
 from .window import Window
+from .yingram import Yingram
 from .zcross import ZeroCrossingAnalysis
 from .zerodf import AllZeroDigitalFilter
