@@ -41,5 +41,6 @@ def test_compatibility(
     x = diffsptk.nrand(B, sr).to(device)
     y = target(x)
     y_hat = yingram(frame(x))
-
     assert torch.allclose(y, y_hat)
+
+    U.check_differentiable(device, yingram, [B, fl])
