@@ -60,6 +60,7 @@ from .mglsadf import PseudoMGLSADigitalFilter
 from .mglsadf import PseudoMGLSADigitalFilter as MLSA
 from .mlpg import MaximumLikelihoodParameterGeneration
 from .mlpg import MaximumLikelihoodParameterGeneration as MLPG
+from .mlsacheck import MLSADigitalFilterStabilityCheck
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .msvq import MultiStageVectorQuantization
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
