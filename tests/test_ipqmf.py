@@ -36,4 +36,4 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         dx=T,
     )
 
-    U.check_differentiable(device, ipqmf, [K, T], opt={"keepdim": True})
+    U.check_differentiable(device, ipqmf, [K, T], opt={"keepdim": False})
