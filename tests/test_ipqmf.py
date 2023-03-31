@@ -22,15 +22,16 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("M", [10, 11])
-def test_compatibility(device, M, K=4, T=20):
-    ipqmf = diffsptk.IPQMF(K, M)
+@pytest.mark.parametrize("a", [10, 50, 100])
+def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
+    ipqmf = diffsptk.IPQMF(K, M, alpha=a, step_size=tau, eps=eps)
 
     U.check_compatibility(
         device,
         ipqmf,
         [],
         f"nrand -l {K*T}",
-        f"transpose -r {K} -c {T} | ipqmf -k {K} -m {M}",
+        f"transpose -r {K} -c {T} | ipqmf -k {K} -m {M} -a {a} -s {tau} -d {eps}",
         [],
         dx=T,
     )

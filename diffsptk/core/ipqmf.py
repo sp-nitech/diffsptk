@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import warnings
+
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
@@ -37,9 +39,12 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
     alpha : float > 0 [scalar]
         Stopband attenuation in dB.
 
+    **kwargs : additional keyword arguments
+        Parameters to find optimal filter-bank coefficients.
+
     """
 
-    def __init__(self, n_band, filter_order, alpha=100):
+    def __init__(self, n_band, filter_order, alpha=100, **kwargs):
         super(InversePseudoQuadratureMirrorFilterBanks, self).__init__()
 
         assert 1 <= n_band
@@ -47,7 +52,11 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         assert 0 < alpha
 
         # Make filterbanks.
-        filters = make_filter_banks(n_band, filter_order, "synthesis", alpha=alpha)
+        filters, is_converged = make_filter_banks(
+            n_band, filter_order, mode="synthesis", alpha=alpha, **kwargs
+        )
+        if not is_converged:
+            warnings.warn("Failed to find PQMF coefficients")
         filters = np.expand_dims(filters, 0)
         filters = np.flip(filters, 2).copy()
         self.register_buffer("filters", numpy_to_torch(filters))
