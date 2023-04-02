@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import warnings
+
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
@@ -32,6 +34,14 @@ def make_filter_banks(
     decay=0.5,
     eps=1e-6,
 ):
+    assert 1 <= n_band
+    assert 1 <= filter_order
+    assert 1 <= n_iter
+    assert 0 < alpha
+    assert 0 < step_size
+    assert 0 < decay
+    assert 0 <= eps
+
     def alpha_to_beta(alpha):
         if alpha <= 21:
             return 0
@@ -51,6 +61,7 @@ def make_filter_banks(
     omega = np.pi / (2 * n_band)
     best_abs_error = np.inf
 
+    is_converged = False
     for _ in range(n_iter):
         with np.errstate(invalid="ignore"):
             h = np.sin(omega * x) / (np.pi * x)
@@ -63,6 +74,7 @@ def make_filter_banks(
         error = np.square(np.abs(H[index])) - 0.5
         abs_error = np.abs(error)
         if abs_error < eps:
+            is_converged = True
             break
 
         if abs_error < best_abs_error:
@@ -86,7 +98,7 @@ def make_filter_banks(
         c = 2 * prototype_filter
         filters.append(c * np.cos(a + b))
 
-    return np.asarray(filters)
+    return np.asarray(filters), is_converged
 
 
 class PseudoQuadratureMirrorFilterBanks(nn.Module):
@@ -104,9 +116,12 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
     alpha : float > 0 [scalar]
         Stopband attenuation in dB.
 
+    **kwargs : additional keyword arguments
+        Parameters to find optimal filter bank coefficients.
+
     """
 
-    def __init__(self, n_band, filter_order, alpha=100):
+    def __init__(self, n_band, filter_order, alpha=100, **kwargs):
         super(PseudoQuadratureMirrorFilterBanks, self).__init__()
 
         assert 1 <= n_band
@@ -114,7 +129,11 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
         assert 0 < alpha
 
         # Make filterbanks.
-        filters = make_filter_banks(n_band, filter_order, "analysis", alpha=alpha)
+        filters, is_converged = make_filter_banks(
+            n_band, filter_order, mode="analysis", alpha=alpha, **kwargs
+        )
+        if not is_converged:
+            warnings.warn("Failed to find PQMF coefficients")
         filters = np.expand_dims(filters, 1)
         filters = np.flip(filters, 2).copy()
         self.register_buffer("filters", numpy_to_torch(filters))
