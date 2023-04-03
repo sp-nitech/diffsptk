@@ -117,7 +117,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
         Stopband attenuation in dB.
 
     **kwargs : additional keyword arguments
-        Parameters to find optimal filter bank coefficients.
+        Parameters to find optimal filter-bank coefficients.
 
     """
 
