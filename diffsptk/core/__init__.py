@@ -83,6 +83,7 @@ from .snr import SignalToNoiseRatio as SNR
 from .spec import Spectrum
 from .stft import ShortTermFourierTransform
 from .stft import ShortTermFourierTransform as STFT
+from .symmetrize import Symmetrization
 from .ulaw import MuLawCompression
 from .unframe import Unframe
 from .vq import VectorQuantization
