@@ -92,7 +92,9 @@ class ExcitationGeneration(nn.Module):
         p *= mask
 
         # Compute phase.
-        q = torch.nan_to_num(torch.reciprocal(p), posinf=0)
+        voiced_pos = torch.gt(p, 0)
+        q = torch.zeros_like(p)
+        q[voiced_pos] = torch.reciprocal(p[voiced_pos])
         s = torch.cumsum(q.double(), dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
