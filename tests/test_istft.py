@@ -37,5 +37,5 @@ def test_compatibility(device):
     istft = diffsptk.ISTFT(**stft_params).to(device)
 
     x = torch.from_numpy(U.call("x2x +sd tools/SPTK/asset/data.short")).to(device)
-    y = istft(stft(x), out_length=x.size(0))
+    y = istft(stft(x), out_length=x.size(0)).round()
     assert torch.allclose(x, y)

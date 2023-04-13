@@ -28,6 +28,9 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     filter_order : int >= 0 [scalar]
         Order of filter coefficients, :math:`M`.
 
+    frame_period : int >= 1 [scalar]
+        Frame period, :math:`P`.
+
     alpha : float [-1 < alpha < 1]
         Frequency warping factor, :math:`\\alpha`.
 
@@ -37,36 +40,47 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     c : int >= 1 [scalar]
         Number of stages.
 
-    frame_period : int >= 1 [scalar]
-        Frame period, :math:`P`.
-
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
     phase : ['minimum', 'maximum', 'zero']
         Filter type.
 
-    cascade : bool [scalar]
-        If True, use multi-stage FIR filter.
+    mode : ['multi-stage', 'single-stage', 'freq-domain']
+        'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
+        Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
+        the impulse response converted from mel-cepstral coefficients. 'freq-domain'
+        performs filtering in the frequency domain rather than time one.
 
     taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion (valid only if **cascade** is True).
-
-    ir_length : int >= 1 [scalar]
-        Length of impulse response (valid only if **cascade** is False).
-
-    n_fft : int >= 1 [scalar]
-        Number of FFT bins for conversion (valid only if **cascade** is False).
+        Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
 
     cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (used to convert input to cepstrum).
+        Order of linear cepstrum (valid only if **mode** is 'multi-stage').
+
+    ir_length : int >= 1 [scalar]
+        Length of impulse response (valid only if **mode** is 'single-stage').
+
+    n_fft : int >= 1 [scalar]
+        Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
+
+    **stft_kwargs : additional keyword arguments
+        See ShortTermFourierTransform (valid only if **mode** is 'freq-domain').
 
     """
 
-    def __init__(self, filter_order, **kwargs):
+    def __init__(self, filter_order, frame_period, **kwargs):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
 
-        self.mglsadf = PseudoMGLSADigitalFilter(filter_order, **kwargs)
+        # Change the default value of the order of Taylor series.
+        # This is because inverse filtering requires the large value.
+        if (
+            kwargs.get("mode", "multi-stage") == "multi-stage"
+            and "taylor_order" not in kwargs
+        ):
+            kwargs["taylor_order"] = 40
+
+        self.mglsadf = PseudoMGLSADigitalFilter(filter_order, frame_period, **kwargs)
 
     def forward(self, y, mc):
         """Apply an inverse MGLSA digital filter.

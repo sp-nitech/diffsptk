@@ -20,8 +20,14 @@ import torch.nn as nn
 from ..misc.utils import Lambda
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
+from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
+from .gnorm import GeneralizedCepstrumGainNormalization
+from .istft import InverseShortTermFourierTransform
 from .linear_intpl import LinearInterpolation
+from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
+from .mgc2sp import MelGeneralizedCepstrumToSpectrum
+from .stft import ShortTermFourierTransform
 
 
 def mirror(x, half=False):
@@ -41,6 +47,9 @@ class PseudoMGLSADigitalFilter(nn.Module):
     filter_order : int >= 0 [scalar]
         Order of filter coefficients, :math:`M`.
 
+    frame_period : int >= 1 [scalar]
+        Frame period, :math:`P`.
+
     alpha : float [-1 < alpha < 1]
         Frequency warping factor, :math:`\\alpha`.
 
@@ -50,29 +59,32 @@ class PseudoMGLSADigitalFilter(nn.Module):
     c : int >= 1 [scalar]
         Number of stages.
 
-    frame_period : int >= 1 [scalar]
-        Frame period, :math:`P`.
-
     ignore_gain : bool [scalar]
         If True, perform filtering without gain.
 
     phase : ['minimum', 'maximum', 'zero']
         Filter type.
 
-    cascade : bool [scalar]
-        If True, use multi-stage FIR filter.
+    mode : ['multi-stage', 'single-stage', 'freq-domain']
+        'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
+        Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
+        the impulse response converted from mel-cepstral coefficients. 'freq-domain'
+        performs filtering in the frequency domain rather than the time one.
 
     taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion (valid only if **cascade** is True).
-
-    ir_length : int >= 1 [scalar]
-        Length of impulse response (valid only if **cascade** is False).
-
-    n_fft : int >= 1 [scalar]
-        Number of FFT bins for conversion (valid only if **cascade** is False).
+        Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
 
     cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (used to convert input to cepstrum).
+        Order of linear cepstrum (valid only if **mode** is 'multi-stage').
+
+    ir_length : int >= 1 [scalar]
+        Length of impulse response (valid only if **mode** is 'single-stage').
+
+    n_fft : int >= 1 [scalar]
+        Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
+
+    **stft_kwargs : additional keyword arguments
+        See ShortTermFourierTransform (valid only if **mode** is 'freq-domain').
 
     References
     ----------
@@ -84,13 +96,14 @@ class PseudoMGLSADigitalFilter(nn.Module):
     def __init__(
         self,
         filter_order,
+        frame_period,
+        *,
         alpha=0,
         gamma=0,
         c=None,
-        frame_period=1,
         ignore_gain=False,
         phase="minimum",
-        cascade=True,
+        mode="multi-stage",
         **kwargs,
     ):
         super(PseudoMGLSADigitalFilter, self).__init__()
@@ -100,26 +113,38 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         gamma = get_gamma(gamma, c)
 
-        if cascade:
+        if mode == "multi-stage":
             self.mglsadf = MultiStageFIRFilter(
                 filter_order,
+                frame_period,
                 alpha=alpha,
                 gamma=gamma,
-                frame_period=frame_period,
+                ignore_gain=ignore_gain,
+                phase=phase,
+                **kwargs,
+            )
+        elif mode == "single-stage":
+            self.mglsadf = SingleStageFIRFilter(
+                filter_order,
+                frame_period,
+                alpha=alpha,
+                gamma=gamma,
+                ignore_gain=ignore_gain,
+                phase=phase,
+                **kwargs,
+            )
+        elif mode == "freq-domain":
+            self.mglsadf = FrequencyDomainFIRFilter(
+                filter_order,
+                frame_period,
+                alpha=alpha,
+                gamma=gamma,
                 ignore_gain=ignore_gain,
                 phase=phase,
                 **kwargs,
             )
         else:
-            self.mglsadf = SingleStageFIRFilter(
-                filter_order,
-                alpha=alpha,
-                gamma=gamma,
-                frame_period=frame_period,
-                ignore_gain=ignore_gain,
-                phase=phase,
-                **kwargs,
-            )
+            raise ValueError(f"mode {mode} is not supported")
 
     def forward(self, x, mc):
         """Apply an MGLSA digital filter.
@@ -162,9 +187,10 @@ class MultiStageFIRFilter(nn.Module):
     def __init__(
         self,
         filter_order,
+        frame_period,
+        *,
         alpha=0,
         gamma=0,
-        frame_period=1,
         ignore_gain=False,
         phase="minimum",
         taylor_order=20,
@@ -224,14 +250,14 @@ class SingleStageFIRFilter(nn.Module):
     def __init__(
         self,
         filter_order,
+        frame_period,
+        *,
         alpha=0,
         gamma=0,
-        frame_period=1,
         ignore_gain=False,
         phase="minimum",
         ir_length=2000,
         n_fft=4096,
-        cep_order=199,
     ):
         super(SingleStageFIRFilter, self).__init__()
 
@@ -261,9 +287,10 @@ class SingleStageFIRFilter(nn.Module):
         else:
             self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
                 filter_order,
-                cep_order,
+                ir_length - 1,
                 in_alpha=alpha,
                 in_gamma=gamma,
+                n_fft=n_fft,
             )
             self.c2ir = nn.Sequential(
                 Lambda(lambda x: torch.fft.hfft(x, n=n_fft)),
@@ -297,8 +324,67 @@ class SingleStageFIRFilter(nn.Module):
                 h = h / h[..., -1:]
             elif self.phase == "maximum":
                 h = h / h[..., :1]
+            elif self.phase == "zero":
+                pass
+            else:
+                raise RuntimeError
 
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)
         y = (x * h).sum(-1)
+        return y
+
+
+class FrequencyDomainFIRFilter(nn.Module):
+    def __init__(
+        self,
+        filter_order,
+        frame_period,
+        *,
+        alpha=0,
+        gamma=0,
+        ignore_gain=False,
+        phase="minimum",
+        frame_length=400,
+        fft_length=512,
+        **kwargs,
+    ):
+        super(FrequencyDomainFIRFilter, self).__init__()
+
+        self.ignore_gain = ignore_gain
+
+        if self.ignore_gain:
+            self.gnorm = GeneralizedCepstrumGainNormalization(filter_order, gamma=gamma)
+            self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(
+                filter_order, alpha=alpha
+            )
+            self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(
+                filter_order, alpha=alpha
+            )
+
+        self.stft = ShortTermFourierTransform(
+            frame_length, frame_period, fft_length, out_format="complex", **kwargs
+        )
+        self.istft = InverseShortTermFourierTransform(
+            frame_length, frame_period, fft_length, **kwargs
+        )
+        self.mgc2sp = MelGeneralizedCepstrumToSpectrum(
+            filter_order,
+            fft_length,
+            alpha=alpha,
+            gamma=gamma,
+            out_format="magnitude" if phase == "zero" else "complex",
+        )
+
+    def forward(self, x, mc):
+        if self.ignore_gain:
+            b = self.mc2b(mc)
+            b = self.gnorm(b)
+            b[..., 0] = 0
+            mc = self.b2mc(b)
+
+        H = self.mgc2sp(mc)
+        X = self.stft(x)
+        Y = H * X
+        y = self.istft(Y, out_length=x.size(-1))
         return y

@@ -25,51 +25,66 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("cascade", [False, True])
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 @pytest.mark.parametrize("c", [0, 10])
-def test_compatibility(device, ignore_gain, cascade, c, alpha=0.42, M=24, P=80):
-    if cascade:
-        params = {"cep_order": 100, "taylor_order": 20}
-    else:
+def test_compatibility(
+    device, ignore_gain, mode, c, alpha=0.42, M=24, P=80, L=400, fft_length=512
+):
+    if mode == "multi-stage":
+        params = {"cep_order": 100}
+    elif mode == "single-stage":
         params = {"ir_length": 200, "n_fft": 512}
+    elif mode == "freq-domain":
+        params = {"frame_length": L, "fft_length": fft_length}
 
     mglsadf = diffsptk.MLSA(
         M,
-        frame_period=P,
+        P,
         alpha=alpha,
         c=c,
         ignore_gain=ignore_gain,
-        cascade=cascade,
         phase="minimum",
+        mode=mode,
         **params,
     )
 
     tmp1 = "mglsadf.tmp1"
     tmp2 = "mglsadf.tmp2"
-    opt = "-k" if ignore_gain else ""
-    cmd = (
-        f"x2x +sd tools/SPTK/asset/data.short | "
-        f"frame -p {P} -l 400 | "
-        f"window -w 1 -n 1 -l 400 -L 512 | "
-        f"mgcep -c {c} -a {alpha} -m {M} -l 512 -E -60 > {tmp2}"
-    )
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
+    cmd1 = f"nrand -l {T} > {tmp1}"
+    cmd2 = (
+        f"x2x +sd tools/SPTK/asset/data.short | "
+        f"frame -p {P} -l {L} | "
+        f"window -w 1 -n 1 -l {L} -L {fft_length} | "
+        f"mgcep -c {c} -a {alpha} -m {M} -l {fft_length} -E -60 > {tmp2}"
+    )
+    opt = "-k" if ignore_gain else ""
+    threshold = 0.98 if mode == "freq-domain" and ignore_gain else 0.99
     U.check_compatibility(
         device,
         mglsadf,
-        [f"nrand -l {T} > {tmp1}", cmd],
+        [cmd1, cmd2],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"mglsadf {tmp2} < {tmp1} -i 1 -m {M} -p {P} -c {c} -a {alpha} {opt}",
+        f"mglsadf {tmp2} < {tmp1} -m {M} -p {P} -c {c} -a {alpha} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
-        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > threshold,
     )
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("cascade", [False, True])
 @pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
-def test_differentiable(device, ignore_gain, cascade, phase, B=4, T=20, M=4):
-    mglsadf = diffsptk.MLSA(M, ignore_gain=ignore_gain, cascade=cascade, phase=phase)
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
+def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, M=4):
+    if mode == "multi-stage":
+        params = {"cep_order": 100}
+    elif mode == "single-stage":
+        params = {"ir_length": 200, "n_fft": 512}
+    elif mode == "freq-domain":
+        params = {"frame_length": 4, "fft_length": 16}
+
+    mglsadf = diffsptk.MLSA(
+        M, 1, ignore_gain=ignore_gain, phase=phase, mode=mode, **params
+    )
     U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])

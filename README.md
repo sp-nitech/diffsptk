@@ -62,7 +62,7 @@ mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, 
 mc = mcep(X)
 
 # Reconstruct x.
-mlsa = diffsptk.MLSA(filter_order=M, alpha=alpha, frame_period=fp, taylor_order=30)
+mlsa = diffsptk.MLSA(filter_order=M, frame_period=fp, alpha=alpha, taylor_order=30)
 x_hat = mlsa(mlsa(x, -mc), mc)
 
 # Write reconstructed waveform.
