@@ -68,8 +68,8 @@ class PseudoMGLSADigitalFilter(nn.Module):
     mode : ['multi-stage', 'single-stage', 'freq-domain']
         'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
         Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
-        the impulse response converted from mel-cepstral coefficients. 'freq-domain'
-        performs filtering in the frequency domain rather than the time one.
+        the impulse response converted from input mel-cepstral coefficients using FFT.
+        'freq-domain' performs filtering in the frequency domain rather than time one.
 
     taylor_order : int >= 0 [scalar]
         Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
@@ -84,7 +84,8 @@ class PseudoMGLSADigitalFilter(nn.Module):
         Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
 
     **stft_kwargs : additional keyword arguments
-        See ShortTermFourierTransform (valid only if **mode** is 'freq-domain').
+        See :func:`~diffsptk.ShortTermFourierTransform` (valid only if **mode** is
+        'freq-domain').
 
     References
     ----------

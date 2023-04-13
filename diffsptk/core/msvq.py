@@ -38,7 +38,7 @@ class MultiStageVectorQuantization(nn.Module):
         Number of stages (quantizers), :math:`Q`.
 
     **kwargs : additional keyword arguments
-        See vector-quantize-pytorch repository for details.
+        See `this page`_ for details.
 
     """
 
@@ -69,7 +69,7 @@ class MultiStageVectorQuantization(nn.Module):
             External codebooks. If None, use internal codebooks.
 
         **kwargs : additional keyword arguments
-            See vector-quantize-pytorch repository for details.
+            See `this page`_ for details.
 
         Returns
         -------

@@ -20,54 +20,7 @@ from .mglsadf import PseudoMGLSADigitalFilter
 
 
 class PseudoInverseMGLSADigitalFilter(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/imglsadf.html>`_
-    for details.
-
-    Parameters
-    ----------
-    filter_order : int >= 0 [scalar]
-        Order of filter coefficients, :math:`M`.
-
-    frame_period : int >= 1 [scalar]
-        Frame period, :math:`P`.
-
-    alpha : float [-1 < alpha < 1]
-        Frequency warping factor, :math:`\\alpha`.
-
-    gamma : float [-1 <= gamma <= 1]
-        Gamma, :math:`\\gamma`.
-
-    c : int >= 1 [scalar]
-        Number of stages.
-
-    ignore_gain : bool [scalar]
-        If True, perform filtering without gain.
-
-    phase : ['minimum', 'maximum', 'zero']
-        Filter type.
-
-    mode : ['multi-stage', 'single-stage', 'freq-domain']
-        'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
-        Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
-        the impulse response converted from mel-cepstral coefficients. 'freq-domain'
-        performs filtering in the frequency domain rather than time one.
-
-    taylor_order : int >= 0 [scalar]
-        Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
-
-    cep_order : int >= 0 [scalar]
-        Order of linear cepstrum (valid only if **mode** is 'multi-stage').
-
-    ir_length : int >= 1 [scalar]
-        Length of impulse response (valid only if **mode** is 'single-stage').
-
-    n_fft : int >= 1 [scalar]
-        Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
-
-    **stft_kwargs : additional keyword arguments
-        See ShortTermFourierTransform (valid only if **mode** is 'freq-domain').
-
-    """
+    """See :func:`~diffsptk.PseudoMGLSADigitalFilter` for details."""
 
     def __init__(self, filter_order, frame_period, **kwargs):
         super(PseudoInverseMGLSADigitalFilter, self).__init__()
