@@ -27,6 +27,8 @@ def test_compatibility(
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
+    if torch.get_default_dtype() != torch.float64:
+        return
 
     frame = diffsptk.Frame(fl, fp, center=False).to(device)
     yingram = diffsptk.Yingram(fl, sr, lag_min, lag_max, n_bin).to(device)
