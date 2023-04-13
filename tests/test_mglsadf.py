@@ -78,9 +78,9 @@ def test_compatibility(
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, M=4):
     if mode == "multi-stage":
-        params = {"cep_order": 100}
+        params = {"cep_order": 10}
     elif mode == "single-stage":
-        params = {"ir_length": 200, "n_fft": 512}
+        params = {"ir_length": 20, "n_fft": 32}
     elif mode == "freq-domain":
         params = {"frame_length": 4, "fft_length": 16}
 
