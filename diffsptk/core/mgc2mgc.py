@@ -49,6 +49,7 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
+
     def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
         super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
 
