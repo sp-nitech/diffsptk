@@ -29,7 +29,27 @@ from .ignorm import (
 
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
-    def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft):
+    """Generalized cepstral transformation module.
+
+    Parameters
+    ----------
+    in_order : int >= 0 [scalar]
+        Order of input cepstrum, :math:`M_1`.
+
+    out_order : int >= 0 [scalar]
+        Order of output cepstrum, :math:`M_2`.
+
+    in_gamma : float [-1 <= in_gamma <= 1]
+        Input gamma, :math:`\\gamma_1`.
+
+    out_gamma : float [-1 <= out_gamma <= 1]
+        Output gamma, :math:`\\gamma_2`.
+
+    n_fft : int >> :math:`M_1, M_2` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    """
+    def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
         super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
 
         self.in_order = in_order
@@ -45,6 +65,19 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
         assert max(self.in_order, self.out_order) + 1 < self.n_fft
 
     def forward(self, c1):
+        """Perform generalized cepstral transformation.
+
+        Parameters
+        ----------
+        c1 : Tensor [shape=(..., M_1+1)]
+            Input cepstrum.
+
+        Returns
+        -------
+        c2 : Tensor [shape=(..., M_2+1)]
+            Output cepstrum.
+
+        """
         c01 = torch.cat((c1[..., :1] * 0, c1[..., 1:]), dim=-1)
         C1 = torch.fft.fft(c01, n=self.n_fft)
 

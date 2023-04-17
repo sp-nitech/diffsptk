@@ -31,11 +31,27 @@ from .stft import ShortTermFourierTransform
 
 
 def mirror(x, half=False):
+    """Mirror the input tensor.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Input tensor.
+
+    half : bool [scalar]
+        If True, multiply all elements except the first one by 0.5.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., 2L-1)]
+        Output tensor.
+
+    """
     x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
     if half:
         x1 = x1 * 0.5
-    x = torch.cat((x1.flip(-1), x0, x1), dim=-1)
-    return x
+    y = torch.cat((x1.flip(-1), x0, x1), dim=-1)
+    return y
 
 
 class PseudoMGLSADigitalFilter(nn.Module):
