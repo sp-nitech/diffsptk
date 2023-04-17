@@ -70,12 +70,12 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M_1+1)]
+        c1 : Tensor [shape=(..., M1+1)]
             Input cepstrum.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M_2+1)]
+        c2 : Tensor [shape=(..., M2+1)]
             Output cepstrum.
 
         """
