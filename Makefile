@@ -91,7 +91,7 @@ update:
 	done
 
 clean: dist-clean doc-clean test-clean tool-clean
-	rm -rf *.egg-info venv
+	rm -rf venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
 .PHONY: init dev dist dist-clean doc doc-clean check format test test-clean tool tool-clean update clean
