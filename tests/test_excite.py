@@ -52,6 +52,7 @@ def test_compatibility(device, voiced_region, unvoiced_region, P=80):
     def compute_error(infile):
         cmd = f"sopr -magic 0 -m 10 -MAGIC 0 {infile} | "
         cmd += f"pitch -s 16 -p {P} -o 0 -a 2"
+        pitch = U.call("cat excite.tmp1")
         recomputed_pitch = U.call(cmd)
 
         pitch_error = 0
