@@ -30,7 +30,7 @@ class ExcitationGeneration(nn.Module):
     frame_period : int >= 1 [scalar]
         Frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth']
         Value on voiced region.
 
     unvoiced_region : ['gauss', 'zeros']
@@ -46,7 +46,7 @@ class ExcitationGeneration(nn.Module):
         self.unvoiced_region = unvoiced_region
 
         assert 1 <= self.frame_period
-        assert self.voiced_region in ("pulse", "sinusoidal")
+        assert self.voiced_region in ("pulse", "sinusoidal", "sawtooth")
         assert self.unvoiced_region in ("gauss", "zeros")
 
         self.linear_intpl = LinearInterpolation(self.frame_period)
@@ -107,6 +107,8 @@ class ExcitationGeneration(nn.Module):
             e[pulse_pos] = torch.sqrt(p[pulse_pos])
         elif self.voiced_region == "sinusoidal":
             e = torch.sin((2 * torch.pi) * phase)
+        elif self.voiced_region == "sawtooth":
+            e = torch.fmod(phase, 2) - 1
         else:
             raise RuntimeError
 
