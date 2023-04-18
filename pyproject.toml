@@ -17,7 +17,7 @@
     "raise NotImplementedError",
     "raise RuntimeError",
     "raise ValueError",
-    "self.verbose",
+    "verbose",
     "warn_type",
     "warnings",
   ]

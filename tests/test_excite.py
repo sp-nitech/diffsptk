@@ -16,6 +16,7 @@
 
 import numpy as np
 import pytest
+import soundfile as sf
 import torch
 
 import diffsptk
@@ -44,12 +45,14 @@ def test_compatibility(device, voiced_region, unvoiced_region, P=80):
 
     # Compute excitation on PyTorch version.
     pitch = U.call("cat excite.tmp1")
-    e = excite(torch.from_numpy(np.expand_dims(pitch, 0)).to(device))
+    pitch = np.expand_dims(pitch, 0)  # This is to cover a case.
+    e = excite(torch.from_numpy(pitch).to(device))
     e.cpu().double().numpy().tofile("excite.tmp3")
 
     def compute_error(infile):
         cmd = f"sopr -magic 0 -m 10 -MAGIC 0 {infile} | "
         cmd += f"pitch -s 16 -p {P} -o 0 -a 2"
+        pitch = U.call("cat excite.tmp1")
         recomputed_pitch = U.call(cmd)
 
         pitch_error = 0
@@ -70,3 +73,16 @@ def test_compatibility(device, voiced_region, unvoiced_region, P=80):
     assert vuv_error_py <= vuv_error_cc + tol
 
     U.call("rm -f excite.tmp?", get=False)
+
+
+@pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal", "sawtooth"])
+def test_waveform(voiced_region, P=80, verbose=False):
+    excite = diffsptk.ExcitationGeneration(
+        P, voiced_region=voiced_region, unvoiced_region="zeros"
+    )
+    pitch = torch.from_numpy(
+        U.call("x2x +sd tools/SPTK/asset/data.short | " f"pitch -s 16 -p {P} -o 0 -a 2")
+    )
+    e = excite(pitch)
+    if verbose:
+        sf.write(f"excite_{voiced_region}.wav", e, 16000)
