@@ -45,6 +45,7 @@ def test_compatibility(device, voiced_region, unvoiced_region, P=80):
 
     # Compute excitation on PyTorch version.
     pitch = U.call("cat excite.tmp1")
+    pitch = np.expand_dims(pitch, 0)  # This is to cover a case.
     e = excite(torch.from_numpy(pitch).to(device))
     e.cpu().double().numpy().tofile("excite.tmp3")
 
