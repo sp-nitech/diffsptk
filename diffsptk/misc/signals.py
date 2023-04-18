@@ -30,6 +30,9 @@ def impulse(order, **kwargs):
     order : int >= 0 [scalar]
         Order of sequence, :math:`M`.
 
+    kwargs : additional keyword arguments
+        See `torch.eye <https://pytorch.org/docs/stable/generated/torch.eye.html>`_.
+
     Returns
     -------
     x : Tensor [shape=(M+1,)]
@@ -59,6 +62,9 @@ def step(order, value=1, **kwargs):
 
     value : float [scalar]
         Step value.
+
+    kwargs : additional keyword arguments
+        See `torch.full <https://pytorch.org/docs/stable/generated/torch.full.html>`_.
 
     Returns
     -------
@@ -95,6 +101,9 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
 
     eps : float [scalar]
         A correction value.
+
+    kwargs : additional keyword arguments
+        See `torch.arange <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
 
     Returns
     -------
@@ -138,6 +147,9 @@ def sin(order, period=None, magnitude=1, **kwargs):
     magnitude : float [scalar]
         Magnitude.
 
+    kwargs : additional keyword arguments
+        See `torch.arange <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
+
     Returns
     -------
     x : Tensor [shape=(M+1,)]
@@ -173,6 +185,9 @@ def train(order, frame_period, norm="power", **kwargs):
 
     norm : ['none', 'power', 'magnitude']
         Normalization type.
+
+    **kwargs : additional keyword arguments
+        See `torch.zeros <https://pytorch.org/docs/stable/generated/torch.zeros.html>`_.
 
     Returns
     -------
@@ -227,6 +242,9 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
 
     var : float >= 0 [scalar]
         Variance.
+
+    **kwargs : additional keyword arguments
+        See `torch.randn <https://pytorch.org/docs/stable/generated/torch.randn.html>`_.
 
     Returns
     -------
