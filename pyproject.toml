@@ -76,7 +76,6 @@
 [tool.coverage.report]
   exclude_lines = [
     "pragma: no cover",
-    "raise NotImplementedError",
     "raise RuntimeError",
     "raise ValueError",
     "self.verbose",
