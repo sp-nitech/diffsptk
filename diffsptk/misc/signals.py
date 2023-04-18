@@ -103,7 +103,8 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
         A correction value.
 
     kwargs : additional keyword arguments
-        See `torch.arange <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
+        See `torch.arange
+        <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
 
     Returns
     -------
@@ -148,7 +149,8 @@ def sin(order, period=None, magnitude=1, **kwargs):
         Magnitude.
 
     kwargs : additional keyword arguments
-        See `torch.arange <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
+        See `torch.arange
+        <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
 
     Returns
     -------
