@@ -14,8 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,53 +23,47 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("cascade", [False, True])
-def test_compatibility(device, ignore_gain, cascade, c=0, alpha=0.42, M=24, P=80):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
+def test_compatibility(
+    device, ignore_gain, mode, c=0, alpha=0.42, M=24, P=80, L=400, fft_length=512
+):
+    if mode == "multi-stage":
+        params = {"cep_order": 100}
+    elif mode == "single-stage":
+        params = {"ir_length": 400, "n_fft": 1024}
+    elif mode == "freq-domain":
+        params = {"frame_length": L, "fft_length": fft_length}
 
-    # FIXME: numerical error problem.
-    if cascade and torch.get_default_dtype() != torch.float64:  # pragma: no cover
-        return
-
-    # Prepare data for C++.
-    tmp1 = "mglsadf.tmp1"
-    tmp2 = "mglsadf.tmp2"
-    U.call(f"x2x +sd tools/SPTK/asset/data.short > {tmp1}", get=False)
-    cmd = (
-        f"x2x +sd tools/SPTK/asset/data.short | "
-        f"frame -p {P} -l 400 | "
-        f"window -w 1 -n 1 -l 400 -L 512 | "
-        f"mgcep -c {c} -a {alpha} -m {M} -l 512 > {tmp2}"
-    )
-    U.call(f"{cmd}", get=False)
-
-    # Prepare data for Python.
-    y = torch.from_numpy(U.call(f"cat {tmp1}")).to(device)
-    mc = torch.from_numpy(U.call(f"cat {tmp2}").reshape(-1, M + 1)).to(device)
-    U.call(f"rm {tmp1} {tmp2}", get=False)
-
-    if cascade:
-        params = {"cep_order": 100, "taylor_order": 40}
-    else:
-        params = {"ir_length": 500, "n_fft": 1024}
-
-    # Get residual signal.
     imglsadf = diffsptk.IMLSA(
         M,
-        frame_period=P,
+        P,
         alpha=alpha,
         c=c,
         ignore_gain=ignore_gain,
-        cascade=cascade,
         phase="minimum",
+        mode=mode,
         **params,
-    ).to(device)
-    x = imglsadf(y, mc)
+    )
 
-    # Get reconstructed signal.
-    y_hat = imglsadf(x, -mc)
-
-    # Compute correlation between two signals.
-    r = torch.corrcoef(torch.stack([y, y_hat]))[0, 1]
-    assert torch.gt(r, 0.99)
+    tmp1 = "mglsadf.tmp1"
+    tmp2 = "mglsadf.tmp2"
+    # Note that using waveform [-1, 1] is numerically stable.
+    cmd1 = f"x2x +sd tools/SPTK/asset/data.short | sopr -d 32768 > {tmp1}"
+    cmd2 = (
+        f"x2x +sd tools/SPTK/asset/data.short | "
+        "sopr -d 32768 | "
+        f"frame -p {P} -l {L} | "
+        f"window -w 1 -n 1 -l {L} -L {fft_length} | "
+        f"mgcep -c {c} -a {alpha} -m {M} -l {fft_length} > {tmp2}"
+    )
+    opt = "-k" if ignore_gain else ""
+    U.check_compatibility(
+        device,
+        imglsadf,
+        [cmd1, cmd2],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"imglsadf {tmp2} < {tmp1} -c {c} -a {alpha} -m {M} -p {P} {opt}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=[None, M + 1],
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
+    )

@@ -113,7 +113,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
         }
         key = str(int(sr))
         if key not in sr_to_alpha:
-            raise NotImplementedError
+            raise ValueError("unsupported sample rate: {sr}")
         selected_alpha = sr_to_alpha[key]
         return selected_alpha
 
@@ -145,7 +145,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     elif mode == "auto":
         alpha = get_auto_alpha(sr, n_freq, n_alpha)
     else:
-        raise NotImplementedError
+        raise ValueError("only hts and auto are supported")
 
     return alpha
 

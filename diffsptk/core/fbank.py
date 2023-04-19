@@ -26,8 +26,7 @@ def hz_to_mel(x):
 
 
 def sample_mel(n, fft_length, sample_rate):
-    hz = sample_rate * n / fft_length
-    return hz_to_mel(hz)
+    return hz_to_mel(sample_rate * n / fft_length)
 
 
 class MelFilterBankAnalysis(nn.Module):

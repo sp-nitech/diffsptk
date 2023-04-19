@@ -22,23 +22,16 @@ init:
 	pip install -e .
 
 dev:
-	@if type virtualenv > /dev/null 2>&1; then \
-		test -d venv || virtualenv -p python$(PYTHON_VERSION) venv; \
-	else \
-		test -d venv || python$(PYTHON_VERSION) -m venv venv; \
-	fi
+	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	. ./venv/bin/activate; pip install pip --upgrade; \
 	pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
 	pip install -e .[dev]
 
 dist:
-	./venv/bin/python setup.py bdist_wheel
-	./venv/bin/twine check dist/*
+	. ./venv/bin/activate; python -m build --wheel; \
+	twine check dist/*
 
 dist-clean:
-	@if [ -f ./venv/bin/python ]; then \
-		./venv/bin/python setup.py clean --all; \
-	fi
 	rm -rf dist
 
 doc:
@@ -72,6 +65,10 @@ test:
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
 		python -m pytest -s --cov=./ --cov-report=xml $$module
 
+test-clean:
+	rm -rf tests/__pycache__
+	rm -rf *.wav
+
 tool:
 	cd tools; make
 
@@ -79,14 +76,22 @@ tool-clean:
 	cd tools; make clean
 
 update:
+	@if [ ! -x tools/toml/toml ]; then \
+		echo ""; \
+		echo "Error: please install toml-cli"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
 	./venv/bin/python -m pip install --upgrade pip
-	@for package in $$(cat setup.py | grep "           " | sed "s/\s//g" | \
-	sed 's/"//g' | tr ",\n" " "); do \
+	@for package in $$(./tools/toml/toml get pyproject.toml project.optional-dependencies.dev | \
+		sed 's/"//g' | tr -d '[]' | tr , ' '); do \
 		./venv/bin/pip install --upgrade $$package; \
 	done
 
-clean: dist-clean doc-clean tool-clean
-	rm -rf *.egg-info venv
+clean: dist-clean doc-clean test-clean tool-clean
+	rm -rf venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev dist dist-clean doc doc-clean check format test tool tool-clean update clean
+.PHONY: init dev dist dist-clean doc doc-clean check format test test-clean tool tool-clean update clean

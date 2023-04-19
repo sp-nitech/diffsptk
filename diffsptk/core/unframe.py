@@ -21,7 +21,7 @@ from .window import Window
 
 
 class Unframe(nn.Module):
-    """This is the opposite module to Frame.
+    """This is the opposite module to :func:`~diffsptk.Frame`.
 
     Parameters
     ----------

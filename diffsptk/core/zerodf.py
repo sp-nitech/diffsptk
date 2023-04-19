@@ -37,7 +37,7 @@ class AllZeroDigitalFilter(nn.Module):
 
     """
 
-    def __init__(self, filter_order, frame_period=1, ignore_gain=False):
+    def __init__(self, filter_order, frame_period, ignore_gain=False):
         super(AllZeroDigitalFilter, self).__init__()
 
         self.filter_order = filter_order
