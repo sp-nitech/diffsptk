@@ -22,6 +22,19 @@ from ..misc.utils import numpy_to_torch
 
 
 def make_dct_matrix(L):
+    """Make DCT matrix.
+
+    Parameters
+    ----------
+    L : int >= 1 [scalar]
+        DCT length, :math:`L`.
+
+    Returns
+    -------
+    W : ndarray [shape=(L, L)]
+        DCT matrix.
+
+    """
     W = np.empty((L, L))
     n = (np.arange(L) + 0.5) * (np.pi / L)
     c = np.sqrt(2 / L)

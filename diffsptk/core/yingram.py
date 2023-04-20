@@ -52,8 +52,12 @@ class Yingram(nn.Module):
 
     References
     ----------
-    .. [1] H. Choi et al., "Neural analysis and synthesis: Reconstructing speech from
-           self-supervised representations,", *arXiv:2110.14513*, 2021.
+    .. [1] A. Cheveigne and H. Kawahara, "YIN, a fundamental frequency estimator for
+           speech and music," *The Journal of the Acoustical Society of America*,
+           vol. 111, 2002.
+
+    .. [2] H. Choi et al., "Neural analysis and synthesis: Reconstructing speech from
+           self-supervised representations," *arXiv:2110.14513*, 2021.
 
     """
 

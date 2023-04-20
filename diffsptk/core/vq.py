@@ -35,7 +35,7 @@ class VectorQuantization(nn.Module):
         Codebook size, :math:`K`.
 
     **kwargs : additional keyword arguments
-        See vector-quantize-pytorch repository for details.
+        See `this page`_ for details.
 
     """
 
@@ -65,7 +65,7 @@ class VectorQuantization(nn.Module):
             External codebook. If None, use internal codebook.
 
         **kwargs : additional keyword arguments
-            See vector-quantize-pytorch repository for details.
+            See `this page`_ for details.
 
         Returns
         -------

@@ -22,13 +22,33 @@ from ..misc.utils import numpy_to_torch
 
 
 def warp(omega, alpha, theta):
+    """Warp frequency.
+
+    Parameters
+    ----------
+    omega : float [0 <= omega <= 2pi]
+        Frequency.
+
+    alpha : float [-1 < alpha < 1]
+        Frequency warping factor, :math:`\\alpha`.
+
+    theta : float [0 <= theta <= 1]
+        Emphasis frequency, :math:`\\theta`.
+
+    Returns
+    -------
+    w : float
+        Warped frequency.
+
+    """
     x = omega - theta
     y = omega + theta
-    return (
+    w = (
         omega
         + np.arctan2(alpha * np.sin(x), 1 - alpha * np.cos(x))
         + np.arctan2(alpha * np.sin(y), 1 - alpha * np.cos(y))
     )
+    return w
 
 
 class SecondOrderAllPassFrequencyTransform(nn.Module):

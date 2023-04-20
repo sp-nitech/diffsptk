@@ -33,7 +33,7 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
         zerodf,
         [f"nrand -l {T} > {tmp1}", f"nrand -l {T//P*(M+1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"zerodf {tmp2} < {tmp1} -i 1 -m {M} -p {P} {opt}",
+        f"zerodf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
     )

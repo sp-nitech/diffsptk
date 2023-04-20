@@ -47,7 +47,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
         If True, assume gamma-multiplied cepstrum.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
-                  'cycle', 'radian', 'degree']
+                  'cycle', 'radian', 'degree', 'complex']
         Output format.
 
     n_fft : int >> :math:`L` [scalar]
@@ -88,6 +88,8 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
         elif out_format == 6 or out_format == "degree":
             c = 180 / math.pi
             self.convert = lambda x: x.imag * c
+        elif out_format == "complex":
+            self.convert = lambda x: torch.polar(torch.exp(x.real), x.imag)
         else:
             raise ValueError(f"out_format {out_format} is not supported")
 

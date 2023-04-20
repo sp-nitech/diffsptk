@@ -22,6 +22,23 @@ from ..misc.utils import numpy_to_torch
 
 
 def make_window(seed, static_out=True):
+    """Make window for delta computation.
+
+    Parameters
+    ----------
+    seed : list[list[float]] or list[int]
+        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+
+    static_out : bool [scalar]
+        If True, make window for static component.
+
+    Returns
+    -------
+    window : ndarray [shape=(D+1, W)]
+        Window for delta computation, where D is the number of dynamic components and
+        W is the width of window.
+
+    """
     if not isinstance(seed, (tuple, list)):
         raise ValueError("seed must be tuple or list")
 

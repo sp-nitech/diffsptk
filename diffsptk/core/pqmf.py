@@ -34,6 +34,43 @@ def make_filter_banks(
     decay=0.5,
     eps=1e-6,
 ):
+    """Make filter-bank coefficients.
+
+    Parameters
+    ----------
+    n_band : int >= 1 [scalar]
+        Number of subbands, :math:`K`.
+
+    filter_order : int >= 1 [scalar]
+        Order of filter, :math:`M`.
+
+    mode : ['analysis' or 'synthesis']
+        Analysis or synthesis.
+
+    alpha : float > 0 [scalar]
+        Stopband attenuation in dB.
+
+    n_iter : int >= 1 [scalar]
+        Number of iterations.
+
+    step_size : float > 0 [scalar]
+        Step size.
+
+    decay : float > 0 [scalar]
+        Decay factor of step size.
+
+    eps : float >= 0 [scalar]
+        Tolerance.
+
+    Returns
+    -------
+    filters : ndarray [shape=(K, M + 1)]
+        Filter-bank coefficients.
+
+    is_converged : bool
+        Whether the algorithm converged.
+
+    """
     assert 1 <= n_band
     assert 1 <= filter_order
     assert 1 <= n_iter
@@ -97,8 +134,9 @@ def make_filter_banks(
         b = (-1) ** k * (np.pi / 4) * sign
         c = 2 * prototype_filter
         filters.append(c * np.cos(a + b))
+    filters = np.asarray(filters)
 
-    return np.asarray(filters), is_converged
+    return filters, is_converged
 
 
 class PseudoQuadratureMirrorFilterBanks(nn.Module):
