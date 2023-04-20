@@ -1,6 +1,4 @@
 # project
-*.egg-info/
-build/
 dist/
 venv/
 
@@ -13,6 +11,7 @@ _build/
 
 # tools
 tools/SPTK/
+tools/toml/
 
 # misc
 __pycache__/
