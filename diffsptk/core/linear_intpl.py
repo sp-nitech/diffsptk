@@ -18,8 +18,6 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import numpy_to_torch
-
 
 class LinearInterpolation(nn.Module):
     """Perform linear interpolation.
