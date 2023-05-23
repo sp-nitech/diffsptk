@@ -85,7 +85,9 @@ class LinearInterpolation(nn.Module):
             (x.size(-1) - 1) * self.scale_factor + 1,
             mode="linear",
             align_corners=True,
-        )[..., :-1]
+        )[
+            ..., :-1
+        ]  # remove the padded value
         y = x.transpose(1, 2).reshape(B, -1, D)
 
         if d == 1:
