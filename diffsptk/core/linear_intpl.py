@@ -81,7 +81,7 @@ class LinearInterpolation(nn.Module):
         x = self.pad(x)
         x = F.interpolate(
             x,
-            (x.size(-1) - 1) * self.scale_factor + 1,
+            size=T * self.upsampling_factor + 1,
             mode="linear",
             align_corners=True,
         )[
