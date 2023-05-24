@@ -66,7 +66,7 @@ class LinearInterpolation(nn.Module):
 
         """
         # Return copy if upsampling factor is one.
-        if self.scale_factor == 1:
+        if self.upsampling_factor == 1:
             return x
 
         d = x.dim()
