@@ -35,7 +35,9 @@ class LinearInterpolation(nn.Module):
     def __init__(self, upsampling_factor):
         super(LinearInterpolation, self).__init__()
 
-        assert 1 <= upsampling_factor
+        self.upsampling_factor = upsampling_factor
+
+        assert 1 <= self.upsampling_factor
 
         self.pad = nn.ReplicationPad1d((0, 1))
         self.scale_factor = upsampling_factor
