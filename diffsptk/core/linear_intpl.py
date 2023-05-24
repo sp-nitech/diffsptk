@@ -40,7 +40,6 @@ class LinearInterpolation(nn.Module):
         assert 1 <= self.upsampling_factor
 
         self.pad = nn.ReplicationPad1d((0, 1))
-        self.scale_factor = upsampling_factor
 
     def forward(self, x):
         """Interpolate filter coefficients.
