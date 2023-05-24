@@ -75,7 +75,7 @@ class LinearInterpolation(nn.Module):
         elif d == 2:
             x = x.unsqueeze(0)
         assert x.dim() == 3, "Input must be 3D tensor"
-        B, _, D = x.shape
+        B, T, D = x.shape
 
         x = x.transpose(1, 2)
         x = self.pad(x)
