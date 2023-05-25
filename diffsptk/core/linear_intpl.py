@@ -64,7 +64,7 @@ class LinearInterpolation(nn.Module):
         tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
 
         """
-        # Return copy if upsampling factor is one.
+        # Pass through if upsampling factor is one.
         if self.upsampling_factor == 1:
             return x
 
@@ -85,7 +85,7 @@ class LinearInterpolation(nn.Module):
             align_corners=True,
         )[
             ..., :-1
-        ]  # remove the padded value
+        ]  # Remove the padded value.
         y = x.transpose(1, 2).reshape(B, -1, D)
 
         if d == 1:
