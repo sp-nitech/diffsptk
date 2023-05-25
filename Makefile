@@ -23,9 +23,9 @@ init:
 
 dev:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
-	. ./venv/bin/activate; pip install pip --upgrade; \
-	pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
-	pip install -e .[dev]
+	. ./venv/bin/activate; python -m pip install pip --upgrade; \
+	python -m pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
+	python -m pip install -e .[dev]
 
 dist:
 	. ./venv/bin/activate; python -m build --wheel; \
@@ -43,14 +43,16 @@ doc-clean:
 	fi
 
 check:
-	./venv/bin/black --check $(PROJECT) tests
-	./venv/bin/isort --check $(PROJECT) tests --project $(PROJECT)
-	./venv/bin/pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; \
+	python -m black --check $(PROJECT) tests; \
+	python -m isort --check $(PROJECT) tests --project $(PROJECT); \
+	python -m pflake8 $(PROJECT) tests
 
 format:
-	./venv/bin/black $(PROJECT) tests
-	./venv/bin/isort $(PROJECT) tests --project $(PROJECT)
-	./venv/bin/pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; \
+	python -m black $(PROJECT) tests; \
+	python -m isort $(PROJECT) tests --project $(PROJECT); \
+	python -m pflake8 $(PROJECT) tests
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
@@ -84,10 +86,10 @@ update:
 		echo ""; \
 		exit 1; \
 	fi
-	./venv/bin/python -m pip install --upgrade pip
+	. ./venv/bin/activate; python -m pip install --upgrade pip
 	@for package in $$(./tools/toml/toml get pyproject.toml project.optional-dependencies.dev | \
 		sed 's/"//g' | tr -d '[]' | tr , ' '); do \
-		./venv/bin/pip install --upgrade $$package; \
+		. ./venv/bin/activate; python -m pip install --upgrade $$package; \
 	done
 
 clean: dist-clean doc-clean test-clean tool-clean
