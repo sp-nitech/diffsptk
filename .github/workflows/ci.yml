@@ -19,23 +19,31 @@ jobs:
         pytorch-version: [1.10.0, 2.0.1]
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - name: Clone
+        uses: actions/checkout@v3
+
+      - name: Python
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
-      - name: install packages
+
+      - name: Dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qq -y libsndfile1
           pip3 install torch==${{ matrix.pytorch-version }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
-      - name: install diffsptk
+
+      - name: Install
         run: make dev tool
-      - name: make check
+
+      - name: Check
         run: make check
-      - name: make test
+
+      - name: Test
         run: make test
-      - name: coverage
+
+      - name: Coverage
         uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: true

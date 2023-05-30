@@ -87,6 +87,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             formatter = logging.Formatter(
                 "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
             )
+            self.logger.handlers.clear()
             handler = logging.StreamHandler()
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
@@ -104,19 +105,24 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         codebook : Tensor [shape=(K, M+1)]
             Codebook.
 
+        indices : Tensor [shape=(...,)]
+            Codebook indices.
+
         distance : Tensor [scalar]
             Distance.
 
         Examples
         --------
         >>> x = diffsptk.nrand(10, 0)
-        >>> lbg = diffsptk.KMeans(0, 2)
-        >>> codebook, distance = lbg(x)
+        >>> lbg = diffsptk.LBG(0, 2)
+        >>> codebook, indices, distance = lbg(x)
         >>> codebook
-        tensor([[-1.3889],
-                [ 0.6275]])
+        tensor([[-0.5277],
+                [ 0.6747]])
+        >>> indices
+        tensor([0, 0, 0, 1, 0, 1, 1, 1, 1, 0])
         >>> distance
-        tensor(0.2489)
+        tensor(0.2331)
 
         """
         check_size(x.size(-1), self.order + 1, "dimension of input")
@@ -137,6 +143,8 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             self.vq.codebook[:curr_codebook_size] += r
             curr_codebook_size = next_codebook_size
             next_codebook_size *= 2
+            if self.verbose:
+                self.logger.info(f"K = {curr_codebook_size}")
 
             prev_distance = distance  # Suppress flake8 warnings.
             for n in range(self.n_iter):
@@ -145,11 +153,11 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 distance = (x - xq).square().sum()
                 distance /= x.size(0)
                 if self.verbose:
-                    self.logger.info(f"K={curr_codebook_size} {n:5d}: {distance:g}")
+                    self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
 
                 # Check convergence.
-                diff = (prev_distance - distance).abs()
-                if n and diff / (distance + 1e-16) < self.eps:
+                change = (prev_distance - distance).abs()
+                if n and change / (distance + 1e-16) < self.eps:
                     break
                 prev_distance = distance
 
@@ -180,4 +188,6 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
                 self.vq.codebook[:curr_codebook_size] = centroids
 
-        return self.vq.codebook, distance
+        _, indices, _ = self.vq(x)
+
+        return self.vq.codebook, indices, distance
