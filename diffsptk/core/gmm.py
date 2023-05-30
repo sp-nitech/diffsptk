@@ -179,11 +179,11 @@ class GaussianMixtureModeling(nn.Module):
 
         Returns
         -------
-        params : Tensors [shape=(K,), (K, M+1), (K, M+1, M+1)]
+        params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
             GMM parameters.
 
         log_likelihood : Tensor [scalar]
-            Average log likelihood.
+            Total log-likelihood.
 
         Examples
         --------

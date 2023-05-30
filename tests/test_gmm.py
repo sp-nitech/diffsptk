@@ -24,6 +24,9 @@ import tests.utils as U
 @pytest.mark.parametrize("var_type", ["diag", "full"])
 @pytest.mark.parametrize("block_size", [None, (2, 2), (3, 1)])
 def test_compatibility(device, var_type, block_size, M=3, K=4, B=32, n_iter=50):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
     gmm = diffsptk.GMM(
         M, K, n_iter=n_iter, var_type=var_type, block_size=block_size
     ).to(device)
