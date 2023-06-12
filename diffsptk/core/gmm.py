@@ -46,6 +46,18 @@ class GaussianMixtureModeling(nn.Module):
     var_floor : float >= 0 [scalar]
         Floor value for variance.
 
+    var_type : ['diag', 'full']
+        Type of covariance.
+
+    block_size : list[int]
+        Block size of covariance matrix.
+
+    ubm : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
+        Parameters of universal background model.
+
+    alpha : float [ 0 <= alpha <= 1 ]
+        Smoothing parameter.
+
     verbose : bool [scalar]
         If True, print progress.
 
@@ -59,8 +71,10 @@ class GaussianMixtureModeling(nn.Module):
         eps=1e-5,
         weight_floor=1e-5,
         var_floor=1e-6,
-        block_size=None,
         var_type="diag",
+        block_size=None,
+        ubm=None,
+        alpha=0,
         verbose=False,
     ):
         super(GaussianMixtureModeling, self).__init__()
@@ -71,6 +85,7 @@ class GaussianMixtureModeling(nn.Module):
         self.eps = eps
         self.weight_floor = weight_floor
         self.var_floor = var_floor
+        self.alpha = alpha
         self.verbose = verbose
 
         assert 0 <= self.order
@@ -79,6 +94,10 @@ class GaussianMixtureModeling(nn.Module):
         assert 0 <= self.eps
         assert 0 <= self.weight_floor <= 1 / self.n_mixture
         assert 0 <= self.var_floor
+        assert 0 <= self.alpha <= 1
+
+        if self.alpha != 0:
+            assert ubm is not None
 
         # Check block size.
         L = self.order + 1
@@ -109,6 +128,14 @@ class GaussianMixtureModeling(nn.Module):
         self.register_buffer("mu", torch.randn(K, L))
         self.register_buffer("sigma", torch.eye(L).repeat(K, 1, 1))
 
+        # Save UBM parameters.
+        if ubm is not None:
+            self.set_params(ubm)
+            ubm_w, ubm_mu, ubm_sigma = ubm
+            self.register_buffer("ubm_w", ubm_w)
+            self.register_buffer("ubm_mu", ubm_mu)
+            self.register_buffer("ubm_sigma", ubm_sigma)
+
         if self.verbose:
             self.logger = logging.getLogger("gmm")
             self.logger.setLevel(logging.INFO)
@@ -125,7 +152,7 @@ class GaussianMixtureModeling(nn.Module):
 
         Parameters
         ----------
-        params : tuple of Tensors
+        params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
             Parameters of Gaussian mixture model.
 
         """
@@ -190,15 +217,15 @@ class GaussianMixtureModeling(nn.Module):
         >>> x = diffsptk.nrand(10, 1)
         >>> gmm = diffsptk.GMM(1, 2)
         >>> params, log_likelihood = gmm(x)
-        >>> params[0]
+        >>> w, mu, sigma = params
+        >>> w
         tensor([0.1917, 0.8083])
-        >>> params[1]
+        >>> mu
         tensor([[ 1.2321,  0.2058],
                 [-0.1326, -0.7006]])
-        >>> params[2]
+        >>> sigma
         tensor([[[3.4010e-01, 0.0000e+00],
                  [0.0000e+00, 6.2351e-04]],
-
                 [[3.0944e-01, 0.0000e+00],
                  [0.0000e+00, 8.6096e-01]]])
         >>> log_likelihood
@@ -212,7 +239,7 @@ class GaussianMixtureModeling(nn.Module):
 
         prev_log_likelihood = -torch.inf
         for n in range(self.n_iter):
-            # Compute log probailities.
+            # Compute log probabilities.
             log_pi = (self.order + 1) * np.log(2 * np.pi)
             if self.is_diag:
                 log_det = torch.log(torch.diagonal(self.sigma, dim1=-2, dim2=-1)).sum(
@@ -240,7 +267,14 @@ class GaussianMixtureModeling(nn.Module):
             log_likelihood = torch.sum(denom)
 
             # Update mixture weights.
-            self.w = posterior.mean(dim=0)
+            if self.alpha == 0:
+                z = posterior.sum(dim=0)
+                self.w = z / B
+            else:
+                xi = self.ubm_w * self.alpha
+                z = posterior.sum(dim=0) + xi
+                self.w = z / (B + self.alpha)
+            z = 1 / z
             self.w = torch.clamp(self.w, min=self.weight_floor)
             sum_floor = self.weight_floor * self.n_mixture
             a = (1 - sum_floor) / (self.w.sum() - sum_floor)
@@ -248,21 +282,47 @@ class GaussianMixtureModeling(nn.Module):
             self.w = a * self.w + b
 
             # Update mean vectors.
-            z = 1 / posterior.sum(dim=0)
-            self.mu = torch.matmul(posterior.t(), x) * z.view(-1, 1)
+            px = torch.matmul(posterior.t(), x)
+            if self.alpha == 0:
+                self.mu = px * z.view(-1, 1)
+            else:
+                self.mu = (px + xi.view(-1, 1) * self.ubm_mu) * z.view(-1, 1)
 
             # Update covariance matrices.
             if self.is_diag:
                 xx = x**2
                 mm = self.mu**2
-                sigma = torch.matmul(posterior.t(), xx) * z.view(-1, 1) - mm
+                pxx = torch.matmul(posterior.t(), xx)
+                if self.alpha == 0:
+                    sigma = pxx * z.view(-1, 1) - mm
+                else:
+                    y = posterior.sum(dim=0)
+                    nu = px / y.view(-1, 1)
+                    nn = nu**2
+                    a = pxx - y.view(-1, 1) * (2 * nn - mm)
+                    b = xi.view(-1, 1) * self.ubm_sigma.diagonal(dim1=-2, dim2=-1)
+                    diff = self.ubm_mu - self.mu
+                    dd = diff**2
+                    c = xi.view(-1, 1) * dd
+                    sigma = (a + b + c) * z.view(-1, 1)
                 self.sigma.diagonal(dim1=-2, dim2=-1).copy_(sigma)
             else:
                 xx = torch.matmul(x.unsqueeze(-1), x.unsqueeze(-2))
                 mm = torch.matmul(self.mu.unsqueeze(-1), self.mu.unsqueeze(-2))
-                sigma = (
-                    torch.einsum("bk,blm->klm", posterior, xx) * z.view(-1, 1, 1) - mm
-                )
+                pxx = torch.einsum("bk,blm->klm", posterior, xx)
+                if self.alpha == 0:
+                    sigma = pxx * z.view(-1, 1, 1) - mm
+                else:
+                    y = posterior.sum(dim=0)
+                    nu = px / y.view(-1, 1)
+                    nm = torch.matmul(nu.unsqueeze(-1), self.mu.unsqueeze(-2))
+                    mn = nm.transpose(1, 2)
+                    a = pxx - y.view(-1, 1, 1) * (nm + mn - mm)
+                    b = xi.view(-1, 1, 1) * self.ubm_sigma
+                    diff = self.ubm_mu - self.mu
+                    dd = torch.matmul(diff.unsqueeze(-1), diff.unsqueeze(-2))
+                    c = xi.view(-1, 1, 1) * dd
+                    sigma = (a + b + c) * z.view(-1, 1, 1)
                 self.sigma = sigma * self.mask
             self.sigma.diagonal(dim1=-2, dim2=-1).clamp_(min=self.var_floor)
 
