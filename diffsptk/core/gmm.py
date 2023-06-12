@@ -52,7 +52,7 @@ class GaussianMixtureModeling(nn.Module):
     block_size : list[int]
         Block size of covariance matrix.
 
-    ubm : tuple of Tensors
+    ubm : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
         Parameters of universal background model.
 
     alpha : float [ 0 <= alpha <= 1 ]
@@ -152,7 +152,7 @@ class GaussianMixtureModeling(nn.Module):
 
         Parameters
         ----------
-        params : tuple of Tensors
+        params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
             Parameters of Gaussian mixture model.
 
         """
@@ -226,7 +226,6 @@ class GaussianMixtureModeling(nn.Module):
         >>> sigma
         tensor([[[3.4010e-01, 0.0000e+00],
                  [0.0000e+00, 6.2351e-04]],
-
                 [[3.0944e-01, 0.0000e+00],
                  [0.0000e+00, 8.6096e-01]]])
         >>> log_likelihood
