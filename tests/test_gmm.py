@@ -89,7 +89,7 @@ def test_compatibility(
         block_size=block_size,
         alpha=alpha,
         ubm=ubm,
-    )
+    ).to(device)
 
     def _gmm(x):
         return gmm(x)[-1]
