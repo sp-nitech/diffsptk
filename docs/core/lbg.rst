@@ -3,7 +3,7 @@
 lbg
 ---
 
-.. autoclass:: diffsptk.KMeans
+.. autoclass:: diffsptk.LBG
 
 .. autoclass:: diffsptk.LindeBuzoGrayAlgorithm
    :members:

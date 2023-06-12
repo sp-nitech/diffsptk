@@ -48,6 +48,7 @@
     "pytest",
     "pytest-cov",
     "sphinx",
+    "urllib3 < 2.0",
     "twine",
   ]
 
