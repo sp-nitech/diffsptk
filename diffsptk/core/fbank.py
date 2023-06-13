@@ -21,14 +21,6 @@ import torch.nn as nn
 from ..misc.utils import numpy_to_torch
 
 
-def hz_to_mel(x):
-    return 1127 * np.log(x / 700 + 1)
-
-
-def sample_mel(n, fft_length, sample_rate):
-    return hz_to_mel(sample_rate * n / fft_length)
-
-
 class MelFilterBankAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/fbank.html>`_
     for details.
@@ -92,6 +84,9 @@ class MelFilterBankAnalysis(nn.Module):
         else:
             raise ValueError(f"out_format {out_format} is not supported")
 
+        def hz_to_mel(x):
+            return 1127 * np.log(x / 700 + 1)
+
         lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
         upper_bin_index = min(
             fft_length // 2, int(f_max / sample_rate * fft_length + 0.5)
@@ -104,7 +99,7 @@ class MelFilterBankAnalysis(nn.Module):
         freq = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
 
         seed = np.arange(lower_bin_index, upper_bin_index)
-        mel = sample_mel(seed, fft_length, sample_rate)
+        mel = hz_to_mel(sample_rate * seed / fft_length)
         lower_channel_map = [np.argmax((freq >= m) > 0) for m in mel]
 
         diff = freq - np.insert(freq[:-1], 0, mel_min)
