@@ -43,3 +43,8 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
 def test_various_shape(K=4, M=10, T=20):
     pqmf = diffsptk.PQMF(K, M)
     U.check_various_shape(pqmf, [(T,), (1, T), (1, 1, T)])
+
+
+def test_learnable(K=4, M=10, T=20):
+    pqmf = diffsptk.PQMF(K, M, learnable=True)
+    U.check_learnable(pqmf, (T,))

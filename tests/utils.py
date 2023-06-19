@@ -184,3 +184,24 @@ def check_various_shape(module, shapes):
             target = y
         else:
             assert torch.allclose(y, target)
+
+
+def check_learnable(module, shape):
+    params_before = []
+    for p in module.parameters():
+        params_before.append(p.clone())
+
+    optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
+    x = torch.randn(*shape)
+    y = module(x)
+    optimizer.zero_grad()
+    loss = y.mean()
+    loss.backward()
+    optimizer.step()
+
+    params_after = []
+    for p in module.parameters():
+        params_after.append(p.clone())
+
+    for pb, pa in zip(params_before, params_after):
+        assert not torch.allclose(pb, pa)
