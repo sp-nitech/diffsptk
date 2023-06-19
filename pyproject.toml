@@ -33,7 +33,7 @@
     "torch >= 1.10.0",
     "torchcrepe >= 0.0.16, <= 0.0.18",
     "numpy",
-    "vector-quantize-pytorch >= 0.8.0",
+    "vector-quantize-pytorch >= 0.8.0, <= 1.6.12",
   ]
   dynamic = ["version"]
 
