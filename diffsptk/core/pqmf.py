@@ -154,12 +154,15 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
     alpha : float > 0 [scalar]
         Stopband attenuation in dB.
 
+    learnable : bool [scalar]
+        Whether to make filter-bank coefficients learnable.
+
     **kwargs : additional keyword arguments
         Parameters to find optimal filter-bank coefficients.
 
     """
 
-    def __init__(self, n_band, filter_order, alpha=100, **kwargs):
+    def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
         super(PseudoQuadratureMirrorFilterBanks, self).__init__()
 
         assert 1 <= n_band
@@ -174,7 +177,11 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
             warnings.warn("Failed to find PQMF coefficients")
         filters = np.expand_dims(filters, 1)
         filters = np.flip(filters, 2).copy()
-        self.register_buffer("filters", numpy_to_torch(filters))
+        filters = numpy_to_torch(filters)
+        if learnable:
+            self.filters = nn.Parameter(filters)
+        else:
+            self.register_buffer("filters", filters)
 
         # Make padding module.
         if filter_order % 2 == 0:
