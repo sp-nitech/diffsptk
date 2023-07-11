@@ -37,7 +37,7 @@ class Aperiodicity(nn.Module):
     sample_rate : int >= 1 [scalar]
         Sample rate in Hz.
 
-    fft_size : int [scalar]
+    fft_length : int [scalar]
         Size of double-sided aperiodicity, :math:`L`.
 
     algorithm : ['tandem']
@@ -64,7 +64,7 @@ class Aperiodicity(nn.Module):
         self,
         frame_period,
         sample_rate,
-        fft_size,
+        fft_length,
         algorithm="tandem",
         out_format="a",
         **kwargs,
@@ -76,7 +76,7 @@ class Aperiodicity(nn.Module):
 
         if algorithm == "tandem":
             self.extractor = AperiodicityExtractionByTandem(
-                frame_period, sample_rate, fft_size, **kwargs
+                frame_period, sample_rate, fft_length, **kwargs
             )
         else:
             raise ValueError(f"algorithm {algorithm} is not supported")
@@ -145,7 +145,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         self,
         frame_period,
         sample_rate,
-        fft_size,
+        fft_length,
         lower_bound=0.001,
         upper_bound=0.999,
         window_length_ms=30,
@@ -162,8 +162,8 @@ class AperiodicityExtractionByTandem(nn.Module):
         self.default_f0 = 150
         self.n_trial = 10
 
-        assert fft_size % 2 == 0
-        assert self.n_band <= fft_size // 2
+        assert fft_length % 2 == 0
+        assert self.n_band <= fft_length // 2
         assert 0 <= lower_bound < upper_bound <= 1
         assert 1 <= window_length_ms
         assert 0 < eps
@@ -174,7 +174,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         coarse_axis = [sample_rate / 2**i for i in range(self.n_band, 0, -1)]
         coarse_axis.insert(0, 0)
         coarse_axis = np.asarray(coarse_axis)
-        freq_axis = np.arange(fft_size // 2 + 1) * (sample_rate / fft_size)
+        freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
 
         idx = np.searchsorted(coarse_axis, freq_axis) - 1
         idx = np.clip(idx, 0, len(coarse_axis) - 2)
