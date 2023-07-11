@@ -31,7 +31,7 @@
   dependencies = [
     "soundfile",
     "torch >= 1.10.0",
-    "torchcrepe >= 0.0.16, <= 0.0.18",
+    "torchcrepe @ git+https://github.com/takenori-y/torchcrepe.git",
     "numpy",
     "vector-quantize-pytorch >= 0.8.0",
   ]
@@ -59,6 +59,9 @@
 
 [tool.hatch.build]
   exclude = ["assets", "docs", "tests", "tools"]
+
+[tool.hatch.metadata]
+  allow-direct-references = true
 
 [tool.hatch.version]
   path = "diffsptk/version.py"

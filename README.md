@@ -179,3 +179,15 @@ print(error)
 License
 -------
 This software is released under the Apache License 2.0.
+
+
+Reference
+---------
+```
+@InProceedings{sp-nitech2023sptk,
+  author = {Takenori Yoshimura and Takato Fujimoto and Keiichiro Oura and Keiichi Tokuda},
+  title = {{SPTK4}: An open-source software toolkit for speech signal processing},
+  booktitle = {12th ISCA Workshop on Speech Synthesis (SSW 12)},
+  year = {2023},
+}
+```

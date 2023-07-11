@@ -50,7 +50,7 @@ class Pitch(nn.Module):
     f_max : float <= sample_rate // 2 [scalar]
         Maximum frequency in Hz.
 
-    threshold : float [scalar]
+    voicing_threshold : float [scalar]
         Voiced/unvoiced threshold.
 
     silence_threshold : float [scalar]
@@ -200,7 +200,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         sample_rate,
         f_min=0,
         f_max=None,
-        threshold=1e-2,
+        voicing_threshold=1e-2,
         silence_threshold=-60,
         filter_length=3,
         model="full",
@@ -211,7 +211,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
 
         self.f_min = f_min
         self.f_max = self.torchcrepe.MAX_FMAX if f_max is None else f_max
-        self.threshold = threshold
+        self.voicing_threshold = voicing_threshold
         self.silence_threshold = silence_threshold
         self.filter_length = filter_length
         self.model = model
@@ -276,7 +276,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         loudness = torch.clip(loudness, min=self.torchcrepe.loudness.MIN_DB)
         loudness = loudness.mean(-1)
         mask = torch.logical_or(
-            periodicity < self.threshold, loudness < self.silence_threshold
+            periodicity < self.voicing_threshold, loudness < self.silence_threshold
         )
         pitch[mask] = UNVOICED_SYMBOL
         return pitch
