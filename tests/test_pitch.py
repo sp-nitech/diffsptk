@@ -26,19 +26,27 @@ import tests.utils as U
 def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
     pitch = diffsptk.Pitch(P, sr, f_min=L, f_max=H, out_format=out_format, model="tiny")
 
-    def eq(o):
-        if o == 0 or o == 1:
-            unvoiced_symbol = 0
-            target_f0_error = 2
-            target_uv_error = 30
-        elif o == 2:
-            unvoiced_symbol = -1e10
-            target_f0_error = 0.02
-            target_uv_error = 30
-        else:
-            raise NotImplementedError
+    def eq(o, sr):
+        def convert(x, o):
+            if o == 0:
+                x[x != 0] = sr / x[x != 0]
+            elif o == 1:
+                pass
+            elif o == 2:
+                x[x != -1e10] = np.exp(x[x != -1e10])
+                x[x == -1e10] = 0
+            else:
+                raise ValueError
+            return x
+
+        unvoiced_symbol = 0
+        target_f0_error = 2
+        target_uv_error = 30
 
         def inner_eq(y_hat, y):
+            y_hat = convert(y_hat, o)
+            y = convert(y, o)
+
             idx = np.where(
                 np.logical_and(y_hat != unvoiced_symbol, y != unvoiced_symbol)
             )[0]
@@ -59,7 +67,7 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
         "x2x +sd tools/SPTK/asset/data.short",
         f"pitch -s {sr//1000} -p {P} -L {L} -H {H} -o {out_format}",
         [],
-        eq=eq(out_format),
+        eq=eq(out_format, sr),
     )
 
 

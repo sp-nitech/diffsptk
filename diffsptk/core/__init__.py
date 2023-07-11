@@ -1,4 +1,5 @@
 from .acorr import AutocorrelationAnalysis
+from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
