@@ -137,7 +137,7 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
-def check_differentiable(device, modules, shapes, checks=None, opt={}, load=1):
+def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -146,7 +146,7 @@ def check_differentiable(device, modules, shapes, checks=None, opt={}, load=1):
     if not is_array(shapes[0]):
         shapes = [shapes]
     if checks is None:
-        checks = [True] * len(modules)
+        checks = [True] * len(shapes)
 
     x = []
     for shape in shapes:
