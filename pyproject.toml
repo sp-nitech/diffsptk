@@ -15,10 +15,9 @@
   requires-python = ">=3.8"
   keywords = [
     "dsp",
-    "ddsp",
-    "sptk",
     "pytorch",
     "signal processing",
+    "sptk",
   ]
   license = {text = "Apache 2.0"}
   classifiers = [
@@ -28,14 +27,15 @@
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
   ]
-  dynamic = ["version"]
   dependencies = [
     "soundfile",
     "torch >= 1.10.0",
-    "torchcrepe >= 0.0.16",
+    "torchcrepe @ git+https://github.com/takenori-y/torchcrepe.git@v0.0.20a",
+    "torchlpc >= 0.2.0",
     "numpy",
     "vector-quantize-pytorch >= 0.8.0",
   ]
+  dynamic = ["version"]
 
 [project.optional-dependencies]
   dev = [
@@ -52,10 +52,15 @@
   ]
 
 [project.urls]
+  Homepage = "https://sp-tk.sourceforge.net/"
   Documentation = "https://sp-nitech.github.io/diffsptk/latest/"
+  Source = "https://github.com/sp-nitech/diffsptk"
 
 [tool.hatch.build]
   exclude = ["assets", "docs", "tests", "tools"]
+
+[tool.hatch.metadata]
+  allow-direct-references = true
 
 [tool.hatch.version]
   path = "diffsptk/version.py"

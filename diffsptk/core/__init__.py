@@ -1,4 +1,5 @@
 from .acorr import AutocorrelationAnalysis
+from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
@@ -22,6 +23,8 @@ from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .freqt2 import SecondOrderAllPassFrequencyTransform
+from .gmm import GaussianMixtureModeling
+from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
 from .idct import InverseDiscreteCosineTransform
@@ -40,7 +43,7 @@ from .iulaw import MuLawExpansion
 from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
 from .lbg import LindeBuzoGrayAlgorithm
-from .lbg import LindeBuzoGrayAlgorithm as KMeans
+from .lbg import LindeBuzoGrayAlgorithm as LBG
 from .levdur import PseudoLevinsonDurbinRecursion
 from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
 from .linear_intpl import LinearInterpolation
@@ -71,6 +74,7 @@ from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
+from .poledf import AllPoleDigitalFilter
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization

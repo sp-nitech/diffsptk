@@ -137,7 +137,7 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
-def check_differentiable(device, modules, shapes, opt={}, load=1):
+def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -145,6 +145,8 @@ def check_differentiable(device, modules, shapes, opt={}, load=1):
         modules = [modules]
     if not is_array(shapes[0]):
         shapes = [shapes]
+    if checks is None:
+        checks = [True] * len(shapes)
 
     x = []
     for shape in shapes:
@@ -166,6 +168,8 @@ def check_differentiable(device, modules, shapes, opt={}, load=1):
         print(f"time: {e - s}")
 
     for i in range(len(x)):
+        if not checks[i]:
+            continue
         g = x[i].grad.cpu().numpy()
         if not np.any(g):
             warnings.warn(f"detect zero gradient at {i}-th input")
@@ -184,3 +188,24 @@ def check_various_shape(module, shapes):
             target = y
         else:
             assert torch.allclose(y, target)
+
+
+def check_learnable(module, shape):
+    params_before = []
+    for p in module.parameters():
+        params_before.append(p.clone())
+
+    optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
+    x = torch.randn(*shape)
+    y = module(x)
+    optimizer.zero_grad()
+    loss = y.mean()
+    loss.backward()
+    optimizer.step()
+
+    params_after = []
+    for p in module.parameters():
+        params_after.append(p.clone())
+
+    for pb, pa in zip(params_before, params_after):
+        assert not torch.allclose(pb, pa)

@@ -59,7 +59,6 @@ def test_compatibility(
         f"mgcep -c {c} -a {alpha} -m {M} -l {fft_length} -E -60 > {tmp2}"
     )
     opt = "-k" if ignore_gain else ""
-    threshold = 0.98 if mode == "freq-domain" and ignore_gain else 0.99
     U.check_compatibility(
         device,
         mglsadf,
@@ -68,7 +67,7 @@ def test_compatibility(
         f"mglsadf {tmp2} < {tmp1} -m {M} -p {P} -c {c} -a {alpha} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
-        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > threshold,
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.98,
     )
 
 

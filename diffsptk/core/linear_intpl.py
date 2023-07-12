@@ -14,11 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-
-from ..misc.utils import numpy_to_torch
 
 
 class LinearInterpolation(nn.Module):
@@ -37,18 +34,11 @@ class LinearInterpolation(nn.Module):
     def __init__(self, upsampling_factor):
         super(LinearInterpolation, self).__init__()
 
-        assert 1 <= upsampling_factor
+        self.upsampling_factor = upsampling_factor
 
-        # Make upsampling filter.
-        w = np.linspace(1, 0, upsampling_factor + 1)[:-1]
-        upsampling_filter = np.stack((w, 1 - w), axis=1)
-        upsampling_filter = np.expand_dims(
-            upsampling_filter, (1, 3)
-        )  # (Out, In, Height, Width)
-        self.register_buffer("upsampling_filter", numpy_to_torch(upsampling_filter))
+        assert 1 <= self.upsampling_factor
 
-        # Make padding module.
-        self.pad = nn.ReplicationPad2d((0, 0, 0, 1))
+        self.pad = nn.ReplicationPad1d((0, 1))
 
     def forward(self, x):
         """Interpolate filter coefficients.
@@ -74,8 +64,8 @@ class LinearInterpolation(nn.Module):
         tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
 
         """
-        # Return copy if upsampling factor is one.
-        if self.upsampling_filter.size(0) == 1:
+        # Pass through if upsampling factor is one.
+        if self.upsampling_factor == 1:
             return x
 
         d = x.dim()
@@ -84,13 +74,19 @@ class LinearInterpolation(nn.Module):
         elif d == 2:
             x = x.unsqueeze(0)
         assert x.dim() == 3, "Input must be 3D tensor"
-        B, _, D = x.shape
+        B, T, D = x.shape
 
-        x = x.unsqueeze(1)  # (B, 1, N, D)
+        x = x.transpose(1, 2)
         x = self.pad(x)
-
-        y = F.conv2d(x, self.upsampling_filter)  # (B, P, N, D)
-        y = y.permute(0, 2, 1, 3).reshape(B, -1, D)
+        x = F.interpolate(
+            x,
+            size=T * self.upsampling_factor + 1,
+            mode="linear",
+            align_corners=True,
+        )[
+            ..., :-1
+        ]  # Remove the padded value.
+        y = x.transpose(1, 2).reshape(B, -1, D)
 
         if d == 1:
             y = y.view(-1)

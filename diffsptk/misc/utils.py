@@ -195,7 +195,7 @@ def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
 
 
-def read(filename, double=False):
+def read(filename, double=False, **kwargs):
     """Read waveform from file.
 
     Parameters
@@ -205,6 +205,9 @@ def read(filename, double=False):
 
     double : bool [scalar]
         If True, return double-type tensor.
+
+    kwargs : additional keyword arguments
+        Additional arguments passed to `soundfile.read`.
 
     Returns
     -------
@@ -220,7 +223,7 @@ def read(filename, double=False):
     16000
 
     """
-    x, sr = sf.read(filename)
+    x, sr = sf.read(filename, **kwargs)
     if double:
         x = torch.DoubleTensor(x)
     else:
@@ -228,7 +231,7 @@ def read(filename, double=False):
     return x, sr
 
 
-def write(filename, x, sr):
+def write(filename, x, sr, **kwargs):
     """Write waveform to file.
 
     Parameters
@@ -242,10 +245,13 @@ def write(filename, x, sr):
     sr : int [scalar]
         Sample rate in Hz.
 
+    kwargs : additional keyword arguments
+        Additional arguments passed to `soundfile.write`.
+
     Examples
     --------
     >>> x, sr = diffsptk.read("assets/data.wav")
     >>> diffsptk.write("out.wav", x, sr)
 
     """
-    sf.write(filename, x.cpu().numpy(), sr)
+    sf.write(filename, x.cpu().numpy(), sr, **kwargs)

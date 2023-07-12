@@ -21,24 +21,21 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("M", [10, 11])
-@pytest.mark.parametrize("a", [10, 50, 100])
-def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
-    ipqmf = diffsptk.IPQMF(K, M, alpha=a, step_size=tau, eps=eps)
+@pytest.mark.parametrize("ignore_gain", [False, True])
+def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
+    poledf = diffsptk.AllPoleDigitalFilter(M, P, ignore_gain=ignore_gain)
 
+    tmp1 = "poledf.tmp1"
+    tmp2 = "poledf.tmp2"
+    opt = "-k" if ignore_gain else ""
     U.check_compatibility(
         device,
-        ipqmf,
-        [],
-        f"nrand -l {K*T}",
-        f"transpose -r {K} -c {T} | ipqmf -k {K} -m {M} -a {a} -s {tau} -d {eps}",
-        [],
-        dx=T,
+        poledf,
+        [f"nrand -l {T} > {tmp1}", f"nrand -l {T//P*(M+1)} > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"poledf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=[None, M + 1],
     )
 
-    U.check_differentiable(device, ipqmf, [K, T], opt={"keepdim": False})
-
-
-def test_learnable(K=4, M=10, T=20):
-    ipqmf = diffsptk.IPQMF(K, M, learnable=True)
-    U.check_learnable(ipqmf, (K, T))
+    U.check_differentiable(device, poledf, [(T,), (T // P, M + 1)])

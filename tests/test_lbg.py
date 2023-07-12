@@ -34,7 +34,7 @@ def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
     tmp5 = "lbg.tmp5"
     U.check_compatibility(
         device,
-        [lambda x: x[1], lbg],
+        [lambda x: x[-1], lbg],
         [
             f"nrand -u +2 -l {B*(M+1)} -s 1 > {tmp1}",
             f"nrand -u -2 -l {B*(M+1)} -s 2 > {tmp2}",
@@ -59,4 +59,4 @@ def test_min_data_per_cluster(M=1, K=4, B=10):
     lbg = diffsptk.LindeBuzoGrayAlgorithm(
         M, K, n_iter=10, min_data_per_cluster=int(B * 0.9)
     )
-    _, _ = lbg(x)
+    lbg(x)

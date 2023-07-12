@@ -3,9 +3,9 @@
 lbg
 ---
 
-.. autoclass:: diffsptk.KMeans
+.. autoclass:: diffsptk.LBG
 
 .. autoclass:: diffsptk.LindeBuzoGrayAlgorithm
    :members:
 
-.. seealso:: :ref:`vq`  :ref:`ivq`
+.. seealso:: :ref:`vq`  :ref:`ivq`  :ref:`gmm`

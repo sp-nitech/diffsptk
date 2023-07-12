@@ -104,7 +104,7 @@ class MultiStageVectorQuantization(nn.Module):
         if d == 1:
             x = x.unsqueeze(0)
 
-        xq, indices, losses = self.vq(x, **kwargs)
+        xq, indices, losses = self.vq(x.float(), **kwargs)
 
         if d == 1:
             xq = xq.squeeze(0)
