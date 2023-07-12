@@ -6,4 +6,4 @@ linear_intpl
 .. autoclass:: diffsptk.LinearInterpolation
    :members:
 
-.. seealso:: :ref:`zerodf`
+.. seealso:: :ref:`poledf`  :ref:`zerodf`

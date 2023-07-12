@@ -14,14 +14,16 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn as nn
+from torchlpc import sample_wise_lpc
 
 from ..misc.utils import check_size
 from .linear_intpl import LinearInterpolation
 
 
-class AllZeroDigitalFilter(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/zerodf.html>`_
+class AllPoleDigitalFilter(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/poledf.html>`_
     for details.
 
     Parameters
@@ -38,7 +40,7 @@ class AllZeroDigitalFilter(nn.Module):
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):
-        super(AllZeroDigitalFilter, self).__init__()
+        super(AllPoleDigitalFilter, self).__init__()
 
         self.filter_order = filter_order
         self.frame_period = frame_period
@@ -46,18 +48,17 @@ class AllZeroDigitalFilter(nn.Module):
 
         assert 0 <= self.filter_order
 
-        self.pad = nn.ConstantPad1d((self.filter_order, 0), 0)
         self.linear_intpl = LinearInterpolation(self.frame_period)
 
-    def forward(self, x, h):
-        """Apply an all-zero digital filter.
+    def forward(self, x, a):
+        """Apply an all-pole digital filter.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
             Excitation signal.
 
-        h : Tensor [shape=(..., T/P, M+1)]
+        a : Tensor [shape=(..., T/P, M+1)]
             Filter coefficients.
 
         Returns
@@ -68,20 +69,28 @@ class AllZeroDigitalFilter(nn.Module):
         Examples
         --------
         >>> x = diffsptk.step(4)
-        >>> h = diffsptk.ramp(4)
-        >>> zerodf = diffsptk.AllZeroDigitalFilter(0, 1)
-        >>> y = zerodf(x, h.view(-1, 1))
+        >>> a = diffsptk.ramp(4)
+        >>> poledf = diffsptk.AllPoleDigitalFilter(0, 1)
+        >>> y = poledf(x, a.view(-1, 1))
         >>> y
         tensor([[0., 1., 2., 3., 4.]])
 
         """
-        check_size(h.size(-1), self.filter_order + 1, "dimension of impulse response")
-        check_size(x.size(-1), h.size(-2) * self.frame_period, "sequence length")
+        check_size(a.size(-1), self.filter_order + 1, "dimension of LPC coefficients")
+        check_size(x.size(-1), a.size(-2) * self.frame_period, "sequence length")
 
-        x = self.pad(x)
-        x = x.unfold(-1, self.filter_order + 1, 1)
-        h = self.linear_intpl(h.flip(-1))
-        if self.ignore_gain:
-            h = h / h[..., -1:]
-        y = (x * h).sum(-1)
+        d = x.dim()
+        if d == 1:
+            a = a.unsqueeze(0)
+            x = x.unsqueeze(0)
+
+        a = self.linear_intpl(a)
+        K, a = torch.split(a, [1, self.filter_order], dim=-1)
+        if not self.ignore_gain:
+            x = K[..., 0] * x
+
+        y = sample_wise_lpc(x, a)
+
+        if d == 1:
+            y = y.squeeze(0)
         return y
