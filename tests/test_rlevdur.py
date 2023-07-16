@@ -35,6 +35,5 @@ def test_compatibility(device, M=30, L=52, B=2):
         dy=M + 1,
     )
 
-    acorr = diffsptk.AutocorrelationAnalysis(M, L)
-    levdur = diffsptk.LevinsonDurbin(M)
-    U.check_differentiable(device, [rlevdur, levdur, acorr], [B, L])
+    lpc = diffsptk.LPC(M, L)
+    U.check_differentiable(device, [rlevdur, lpc], [B, L])
