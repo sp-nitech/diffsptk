@@ -79,11 +79,6 @@ class CepstralAnalysis(nn.Module):
                 [-0.8539,  4.6173, -0.5496, -0.3207]])
 
         """
-        # Torch's pad only supports 3D, 4D, 5D padding with non-constant padding.
-        d = x.dim()
-        for _ in range(3 - d):
-            x = x.unsqueeze(0)
-
         M = self.cep_order
         H = self.fft_length // 2
 
@@ -102,8 +97,4 @@ class CepstralAnalysis(nn.Module):
 
         indices = [0, M] if H == M else [0]
         v[..., indices] *= 0.5
-
-        # Revert shape.
-        for _ in range(3 - d):
-            v = v.squeeze(0)
         return v

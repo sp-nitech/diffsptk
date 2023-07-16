@@ -24,7 +24,7 @@ init:
 dev:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	. ./venv/bin/activate; python -m pip install pip --upgrade; \
-	python -m pip install torch==1.10.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
+	python -m pip install torch==1.11.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
 	python -m pip install -e .[dev]
 
 dist:

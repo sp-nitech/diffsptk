@@ -86,8 +86,7 @@ class GroupDelay(nn.Module):
 
             # Remove gain.
             K, a1 = torch.split(a, [1, order], dim=-1)
-            K = K * 0 + 1
-            a2 = torch.cat((K, a1), dim=-1).unsqueeze(-1)
+            a2 = F.pad(a1, (1, 0), value=1).unsqueeze(-1)
 
             # Perform full convolution.
             b1 = F.pad(b, (order, order))

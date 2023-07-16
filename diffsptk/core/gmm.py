@@ -316,7 +316,7 @@ class GaussianMixtureModeling(nn.Module):
                     y = posterior.sum(dim=0)
                     nu = px / y.view(-1, 1)
                     nm = torch.matmul(nu.unsqueeze(-1), self.mu.unsqueeze(-2))
-                    mn = nm.transpose(1, 2)
+                    mn = nm.mT
                     a = pxx - y.view(-1, 1, 1) * (nm + mn - mm)
                     b = xi.view(-1, 1, 1) * self.ubm_sigma
                     diff = self.ubm_mu - self.mu

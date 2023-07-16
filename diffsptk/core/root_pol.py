@@ -17,6 +17,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import check_size
 from ..misc.utils import numpy_to_torch
@@ -108,7 +109,7 @@ class DurandKernerMethod(nn.Module):
             center + radius * self.cos,
             center + radius * self.sin,
         )
-        a = torch.cat((a[..., :1] * 0 + 1, a), dim=-1)
+        a = F.pad(a, (1, 0), value=1)
         a = a.unsqueeze(-1).to(x.dtype)
 
         for _ in range(self.n_iter):

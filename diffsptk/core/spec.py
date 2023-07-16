@@ -16,6 +16,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Spectrum(nn.Module):
@@ -95,7 +96,7 @@ class Spectrum(nn.Module):
 
         if a is not None:
             K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
-            a = torch.cat((K * 0 + 1, a1), dim=-1)
+            a = F.pad(a1, (1, 0), value=1)
             X /= torch.fft.rfft(a, n=self.fft_length).abs()
             X *= K
 
