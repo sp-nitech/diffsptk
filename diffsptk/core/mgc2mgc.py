@@ -17,6 +17,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import cexp
 from ..misc.utils import clog
@@ -79,7 +80,7 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
             Output cepstrum.
 
         """
-        c01 = torch.cat((c1[..., :1] * 0, c1[..., 1:]), dim=-1)
+        c01 = F.pad(c1[..., 1:], (1, 0))
         C1 = torch.fft.fft(c01, n=self.n_fft)
 
         if self.in_gamma == 0:

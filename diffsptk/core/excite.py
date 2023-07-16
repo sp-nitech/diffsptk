@@ -16,6 +16,7 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import UNVOICED_SYMBOL
 from .linear_intpl import LinearInterpolation
@@ -79,16 +80,16 @@ class ExcitationGeneration(nn.Module):
         mask = torch.repeat_interleave(mask, self.frame_period, dim=-1)
 
         # Extend right side for interpolation.
-        tmp_mask = torch.cat((base_mask[..., :1] * 0, base_mask), dim=-1)
+        tmp_mask = F.pad(base_mask, (1, 0))
         tmp_mask = torch.eq(tmp_mask[..., 1:] - tmp_mask[..., :-1], -1)
         p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.
         if p.dim() != 1:
-            p = p.transpose(-2, -1)
+            p = p.mT
         p = self.linear_intpl(p)
         if p.dim() != 1:
-            p = p.transpose(-2, -1)
+            p = p.mT
         p *= mask
 
         # Compute phase.
@@ -101,7 +102,7 @@ class ExcitationGeneration(nn.Module):
 
         if self.voiced_region == "pulse":
             r = torch.ceil(phase)
-            r = torch.cat((r[..., :1] * 0, r), dim=-1)
+            r = F.pad(r, (1, 0))
             pulse_pos = torch.ge(r[..., 1:] - r[..., :-1], 1)
             e = torch.zeros_like(p)
             e[pulse_pos] = torch.sqrt(p[pulse_pos])

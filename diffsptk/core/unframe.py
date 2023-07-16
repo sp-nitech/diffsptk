@@ -120,7 +120,7 @@ class Unframe(nn.Module):
             return x
 
         w = self.window.repeat(1, 1, N)
-        x = y.transpose(-2, -1)
+        x = y.mT
 
         if d == 2:
             x = x.unsqueeze(0)
