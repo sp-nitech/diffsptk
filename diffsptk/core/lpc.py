@@ -17,7 +17,7 @@
 import torch.nn as nn
 
 from .acorr import AutocorrelationAnalysis
-from .levdur import PseudoLevinsonDurbinRecursion
+from .levdur import LevinsonDurbin
 
 
 class LinearPredictiveCodingAnalysis(nn.Module):
@@ -39,7 +39,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
         self.lpc = nn.Sequential(
             AutocorrelationAnalysis(lpc_order, frame_length),
-            PseudoLevinsonDurbinRecursion(),
+            LevinsonDurbin(lpc_order),
         )
 
     def forward(self, x):

@@ -3,9 +3,7 @@
 levdur
 ------
 
-.. autoclass:: diffsptk.LevinsonDurbinRecursion
-
-.. autoclass:: diffsptk.PseudoLevinsonDurbinRecursion
+.. autoclass:: diffsptk.LevinsonDurbin
    :members:
 
-.. seealso:: :ref:`acorr`  :ref:`lpc`
+.. seealso:: :ref:`acorr`  :ref:`lpc`  :ref:`rlevdur`
