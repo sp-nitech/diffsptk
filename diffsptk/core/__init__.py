@@ -50,6 +50,7 @@ from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
+from .magic_intpl import MagicNumberInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mcpf import MelCepstrumPostfiltering
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
