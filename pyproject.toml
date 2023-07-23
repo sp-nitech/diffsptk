@@ -30,7 +30,7 @@
   dependencies = [
     "soundfile",
     "torch >= 1.11.0",
-    "torchcrepe @ git+https://github.com/takenori-y/torchcrepe.git@v0.0.20a",
+    "torchcrepe >= 0.0.16, <= 0.0.18",
     "torchlpc >= 0.2.0",
     "numpy",
     "vector-quantize-pytorch >= 0.8.0",
