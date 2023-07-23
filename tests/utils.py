@@ -179,8 +179,10 @@ def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1
             warnings.warn(f"detect Inf-gradient at {i}-th input")
 
 
-def check_various_shape(module, shapes):
+def check_various_shape(module, shapes, *, preprocess=None):
     x = torch.randn(*shapes[0])
+    if preprocess is not None:
+        x = preprocess(x)
     for i, shape in enumerate(shapes):
         x = x.view(shape)
         y = module(x).view(-1)

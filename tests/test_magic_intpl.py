@@ -15,25 +15,31 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch.nn.functional as F
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=30, L=52, B=2):
-    levdur = diffsptk.LevinsonDurbin(M)
+def test_compatibility(device, N=10, L=2, magic_number=0):
+    magic_intpl = diffsptk.MagicNumberInterpolation(magic_number)
 
     U.check_compatibility(
         device,
-        levdur,
+        magic_intpl,
         [],
-        f"nrand -l {B*L} | acorr -m {M} -l {L}",
-        f"levdur -m {M}",
+        "echo 0 9 0 0 0 0 2 1 0 0 4 5 0 0 | x2x +ad",
+        f"magic_intpl -l {L} -magic {magic_number}",
         [],
-        dx=M + 1,
-        dy=M + 1,
+        dx=L,
+        dy=L,
     )
 
-    acorr = diffsptk.AutocorrelationAnalysis(M, L)
-    U.check_differentiable(device, [levdur, acorr], [B, L])
+    U.check_differentiable(device, magic_intpl, [N, L])
+    U.check_differentiable(device, [magic_intpl, F.dropout], [N, L])
+
+
+def test_various_shape(N=10):
+    magic_intpl = diffsptk.MagicNumberInterpolation()
+    U.check_various_shape(magic_intpl, [(N,), (N, 1), (1, N, 1)], preprocess=F.dropout)

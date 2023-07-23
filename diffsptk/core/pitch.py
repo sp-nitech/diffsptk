@@ -255,7 +255,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
 
     def calc_pitch(self, x):
         # Compute pitch probabilities.
-        prob = self.calc_prob(x).transpose(-2, -1)
+        prob = self.calc_prob(x).mT
 
         # Decode pitch probabilities.
         pitch, periodicity = self.torchcrepe.postprocess(

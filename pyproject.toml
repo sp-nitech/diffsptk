@@ -14,7 +14,6 @@
   readme = "README.md"
   requires-python = ">=3.8"
   keywords = [
-    "ddsp",
     "dsp",
     "pytorch",
     "signal processing",
@@ -30,7 +29,7 @@
   ]
   dependencies = [
     "soundfile",
-    "torch >= 1.10.0",
+    "torch >= 1.11.0",
     "torchcrepe @ git+https://github.com/takenori-y/torchcrepe.git@v0.0.20a",
     "torchlpc >= 0.2.0",
     "numpy",
@@ -49,7 +48,6 @@
     "pytest",
     "pytest-cov",
     "sphinx",
-    "urllib3 < 2.0",
     "twine",
   ]
 

@@ -44,13 +44,13 @@ from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
 from .lbg import LindeBuzoGrayAlgorithm
 from .lbg import LindeBuzoGrayAlgorithm as LBG
-from .levdur import PseudoLevinsonDurbinRecursion
-from .levdur import PseudoLevinsonDurbinRecursion as LevinsonDurbinRecursion
+from .levdur import LevinsonDurbin
 from .linear_intpl import LinearInterpolation
 from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
+from .magic_intpl import MagicNumberInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mcpf import MelCepstrumPostfiltering
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
@@ -78,6 +78,7 @@ from .poledf import AllPoleDigitalFilter
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
 from .quantize import UniformQuantization
+from .rlevdur import ReverseLevinsonDurbin
 from .rmse import RootMeanSquaredError
 from .rmse import RootMeanSquaredError as RMSE
 from .root_pol import DurandKernerMethod

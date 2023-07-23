@@ -23,7 +23,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("mode", ["multi-stage", "single-stage"])
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 def test_compatibility(
     device, ignore_gain, mode, c=0, alpha=0.42, M=24, P=80, L=400, fft_length=512
 ):
@@ -31,6 +31,8 @@ def test_compatibility(
         params = {"cep_order": 100}
     elif mode == "single-stage":
         params = {"ir_length": 400, "n_fft": 1024}
+    elif mode == "freq-domain":
+        params = {"frame_length": L, "fft_length": fft_length}
 
     imglsadf = diffsptk.IMLSA(
         M,

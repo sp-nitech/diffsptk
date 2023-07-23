@@ -16,13 +16,13 @@
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import check_size
-from ..misc.utils import symmetric_toeplitz
 
 
-class LevinsonDurbin(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
+class ReverseLevinsonDurbin(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/rlevdur.html>`_
     for details.
 
     Parameters
@@ -33,49 +33,62 @@ class LevinsonDurbin(nn.Module):
     """
 
     def __init__(self, lpc_order):
-        super(LevinsonDurbin, self).__init__()
+        super(ReverseLevinsonDurbin, self).__init__()
 
         self.lpc_order = lpc_order
 
         assert 0 <= self.lpc_order
 
-    def forward(self, r):
-        """Solve a Yule-Walker linear system.
+        self.register_buffer("eye", torch.eye(self.lpc_order + 1))
+
+    def forward(self, a):
+        """Solve a Yule-Walker linear system given LPC coefficients.
 
         Parameters
         ----------
-        r : Tensor [shape=(..., M+1)]
-            Autocorrelation.
+        a : Tensor [shape=(..., M+1)]
+            Gain and LPC coefficients.
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
-            Gain and LPC coefficients.
+        r : Tensor [shape=(..., M+1)]
+            Autocorrelation.
 
         Examples
         --------
         >>> x = diffsptk.nrand(4)
-        tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> acorr = diffsptk.AutocorrelationAnalysis(2, 5)
         >>> levdur = diffsptk.LevinsonDurbin(2)
-        >>> a = levdur(acorr(x))
-        >>> a
-        tensor([0.8726, 0.1475, 0.5270])
+        >>> rlevdur = diffsptk.ReverseLevinsonDurbin(2)
+        >>> r = acorr(x)
+        >>> r
+        tensor([ 5.8784,  0.8978, -2.0951])
+        >>> r2 = rlevdur(levdur(r))
+        >>> r2
+        tensor([ 5.8784,  0.8978, -2.0951])
 
         """
-        check_size(r.size(-1), self.lpc_order + 1, "dimension of autocorrelation")
+        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC coefficients")
 
-        # Make Toeplitz matrix.
-        R = symmetric_toeplitz(r[..., :-1])
+        K, a1 = torch.split(a, [1, self.lpc_order], dim=-1)
+        u = F.pad(a1.flip(-1), (0, 1), value=1)
+        e = K**2
 
-        # Solve system.
-        r1 = r[..., 1:]
-        a = torch.einsum("...mn,...m->...n", R.inverse(), -r1)
+        U = [u]
+        E = [e]
+        for m in range(self.lpc_order):
+            u0 = U[-1][..., :1]
+            u1 = U[-1][..., 1 : self.lpc_order - m]
+            t = 1 / (1 - u0**2)
+            u = (u1 - u0 * u1.flip(-1)) * t
+            u = F.pad(u, (0, m + 2))
+            e = E[-1] * t
+            U.append(u)
+            E.append(e)
+        U = torch.stack(U[::-1], dim=-1)
+        E = torch.stack(E[::-1], dim=-1)
 
-        # Compute gain.
-        r0 = r[..., 0]
-        K = torch.sqrt(torch.einsum("...m,...m->...", r1, a) + r0)
-        K = K.unsqueeze(-1)
-
-        a = torch.cat((K, a), dim=-1)
-        return a
+        V = torch.linalg.solve_triangular(U, self.eye, upper=True, unitriangular=True)
+        r = torch.matmul(V[..., :1].mT * E, V).squeeze(-2)
+        assert a.shape == r.shape
+        return r

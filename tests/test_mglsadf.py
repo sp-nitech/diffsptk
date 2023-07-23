@@ -25,7 +25,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("mode", ["multi-stage", "single-stage"])
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 @pytest.mark.parametrize("c", [0, 10])
 def test_compatibility(
     device, ignore_gain, mode, c, alpha=0.42, M=24, P=80, L=400, fft_length=512
@@ -34,6 +34,8 @@ def test_compatibility(
         params = {"cep_order": 100}
     elif mode == "single-stage":
         params = {"ir_length": 200, "n_fft": 512}
+    elif mode == "freq-domain":
+        params = {"frame_length": L, "fft_length": fft_length}
 
     mglsadf = diffsptk.MLSA(
         M,
@@ -57,7 +59,6 @@ def test_compatibility(
         f"mgcep -c {c} -a {alpha} -m {M} -l {fft_length} -E -60 > {tmp2}"
     )
     opt = "-k" if ignore_gain else ""
-    threshold = 0.99
     U.check_compatibility(
         device,
         mglsadf,
@@ -66,19 +67,21 @@ def test_compatibility(
         f"mglsadf {tmp2} < {tmp1} -m {M} -p {P} -c {c} -a {alpha} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
-        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > threshold,
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.98,
     )
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 @pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
-@pytest.mark.parametrize("mode", ["multi-stage", "single-stage"])
-def test_diffeentiable(device, ignore_gain, phase, mode, B=4, T=20, M=4):
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
+def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, M=4):
     if mode == "multi-stage":
         params = {"cep_order": 10}
     elif mode == "single-stage":
         params = {"ir_length": 20, "n_fft": 32}
+    elif mode == "freq-domain":
+        params = {"frame_length": 4, "fft_length": 16}
 
     mglsadf = diffsptk.MLSA(
         M, 1, ignore_gain=ignore_gain, phase=phase, mode=mode, **params

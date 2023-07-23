@@ -20,8 +20,14 @@ import torch.nn as nn
 from ..misc.utils import Lambda
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
+from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
+from .gnorm import GeneralizedCepstrumGainNormalization
+from .istft import InverseShortTermFourierTransform
 from .linear_intpl import LinearInterpolation
+from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
+from .mgc2sp import MelGeneralizedCepstrumToSpectrum
+from .stft import ShortTermFourierTransform
 
 
 def mirror(x, half=False):
@@ -75,10 +81,11 @@ class PseudoMGLSADigitalFilter(nn.Module):
     phase : ['minimum', 'maximum', 'zero']
         Filter type.
 
-    mode : ['multi-stage', 'single-stage']
+    mode : ['multi-stage', 'single-stage', 'freq-domain']
         'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
         Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
         the impulse response converted from input mel-cepstral coefficients using FFT.
+        'freq-domain' performs filtering in the frequency domain rather than time one.
 
     taylor_order : int >= 0 [scalar]
         Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
@@ -91,6 +98,10 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
     n_fft : int >= 1 [scalar]
         Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
+
+    **stft_kwargs : additional keyword arguments
+        See :func:`~diffsptk.ShortTermFourierTransform` (valid only if **mode** is
+        'freq-domain').
 
     References
     ----------
@@ -131,6 +142,16 @@ class PseudoMGLSADigitalFilter(nn.Module):
             )
         elif mode == "single-stage":
             self.mglsadf = SingleStageFIRFilter(
+                filter_order,
+                frame_period,
+                alpha=alpha,
+                gamma=gamma,
+                ignore_gain=ignore_gain,
+                phase=phase,
+                **kwargs,
+            )
+        elif mode == "freq-domain":
+            self.mglsadf = FrequencyDomainFIRFilter(
                 filter_order,
                 frame_period,
                 alpha=alpha,
@@ -328,4 +349,59 @@ class SingleStageFIRFilter(nn.Module):
         x = self.pad(x)
         x = x.unfold(-1, h.size(-1), 1)
         y = (x * h).sum(-1)
+        return y
+
+
+class FrequencyDomainFIRFilter(nn.Module):
+    def __init__(
+        self,
+        filter_order,
+        frame_period,
+        *,
+        alpha=0,
+        gamma=0,
+        ignore_gain=False,
+        phase="minimum",
+        frame_length=400,
+        fft_length=512,
+        **kwargs,
+    ):
+        super(FrequencyDomainFIRFilter, self).__init__()
+
+        self.ignore_gain = ignore_gain
+
+        if self.ignore_gain:
+            self.gnorm = GeneralizedCepstrumGainNormalization(filter_order, gamma=gamma)
+            self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(
+                filter_order, alpha=alpha
+            )
+            self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(
+                filter_order, alpha=alpha
+            )
+
+        self.stft = ShortTermFourierTransform(
+            frame_length, frame_period, fft_length, out_format="complex", **kwargs
+        )
+        self.istft = InverseShortTermFourierTransform(
+            frame_length, frame_period, fft_length, **kwargs
+        )
+        self.mgc2sp = MelGeneralizedCepstrumToSpectrum(
+            filter_order,
+            fft_length,
+            alpha=alpha,
+            gamma=gamma,
+            out_format="magnitude" if phase == "zero" else "complex",
+        )
+
+    def forward(self, x, mc):
+        if self.ignore_gain:
+            b = self.mc2b(mc)
+            b = self.gnorm(b)
+            b[..., 0] = 0
+            mc = self.b2mc(b)
+
+        H = self.mgc2sp(mc)
+        X = self.stft(x)
+        Y = H * X
+        y = self.istft(Y, out_length=x.size(-1))
         return y

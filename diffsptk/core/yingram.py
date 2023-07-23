@@ -17,6 +17,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import check_size
 from .acorr import AutocorrelationAnalysis
@@ -121,7 +122,7 @@ class Yingram(nn.Module):
         W = self.frame_length
         check_size(x.size(-1), W, "frame length")
 
-        x0 = torch.cat((x[..., :1] * 0, x), dim=-1)
+        x0 = F.pad(x, (1, 0))
         s = torch.cumsum(x0 * x0, dim=-1)
         term1 = (s[..., W - self.tau_max + 1 :]).flip(-1)
         term2 = s[..., W:] - s[..., : self.tau_max]
@@ -136,7 +137,7 @@ class Yingram(nn.Module):
         d = self.ramp * d / (torch.cumsum(d, dim=-1) + 1e-7)
 
         # Compute Yingram.
-        d0 = torch.cat((d[..., :1] * 0 + 1, d), dim=-1)
+        d0 = F.pad(d, (1, 0), value=1)
         numer = (self.lags - self.lags_floor) * (
             d0[..., self.lags_ceil] - d0[..., self.lags_floor]
         )

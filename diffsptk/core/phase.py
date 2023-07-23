@@ -18,6 +18,7 @@ import math
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Phase(nn.Module):
@@ -73,8 +74,7 @@ class Phase(nn.Module):
             p = torch.atan2(B.imag, B.real)
         else:
             K, a = torch.split(a, [1, a.size(-1) - 1], dim=-1)
-            K = K * 0 + 1
-            a = torch.cat((K, a), dim=-1)
+            a = F.pad(a, (1, 0), value=1)
             A = torch.fft.rfft(a, n=self.fft_length)
             p = torch.atan2(
                 B.imag * A.real - B.real * A.imag, B.real * A.real + B.imag * A.imag

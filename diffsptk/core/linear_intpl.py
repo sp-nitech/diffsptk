@@ -76,7 +76,7 @@ class LinearInterpolation(nn.Module):
         assert x.dim() == 3, "Input must be 3D tensor"
         B, T, D = x.shape
 
-        x = x.transpose(1, 2)
+        x = x.mT
         x = self.pad(x)
         x = F.interpolate(
             x,
@@ -86,7 +86,7 @@ class LinearInterpolation(nn.Module):
         )[
             ..., :-1
         ]  # Remove the padded value.
-        y = x.transpose(1, 2).reshape(B, -1, D)
+        y = x.mT.reshape(B, -1, D)
 
         if d == 1:
             y = y.view(-1)
