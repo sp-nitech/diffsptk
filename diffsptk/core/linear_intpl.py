@@ -21,7 +21,7 @@ import torch.nn.functional as F
 class LinearInterpolation(nn.Module):
     """Perform linear interpolation.
 
-    Note that this is not for lienar_intpl in C the version of SPTK, but for
+    Note that this is not for linear_intpl in C/C++ version of SPTK, but for
     filter coefficients interpolation in digital filtering.
 
     Parameters
