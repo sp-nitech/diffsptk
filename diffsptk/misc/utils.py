@@ -113,7 +113,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
         }
         key = str(int(sr))
         if key not in sr_to_alpha:
-            raise ValueError("unsupported sample rate: {sr}")
+            raise ValueError(f"unsupported sample rate: {sr}")
         selected_alpha = sr_to_alpha[key]
         return selected_alpha
 
