@@ -37,6 +37,10 @@ class ShortTermFourierTransform(nn.Module):
     fft_length : int >= L [scalar]
         Number of FFT bins, :math:`N`.
 
+    center : bool [scalar]
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
     zmean : bool [scalar]
         If True, perform mean subtraction on each frame.
 
@@ -63,6 +67,8 @@ class ShortTermFourierTransform(nn.Module):
         frame_length,
         frame_period,
         fft_length,
+        *,
+        center=True,
         zmean=False,
         norm="power",
         window="blackman",
@@ -73,7 +79,7 @@ class ShortTermFourierTransform(nn.Module):
         super(ShortTermFourierTransform, self).__init__()
 
         self.stft = nn.Sequential(
-            Frame(frame_length, frame_period, zmean=zmean),
+            Frame(frame_length, frame_period, center=center, zmean=zmean),
             Window(frame_length, fft_length, norm=norm, window=window),
             Lambda(torch.fft.rfft)
             if out_format == "complex"

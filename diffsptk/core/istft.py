@@ -35,6 +35,10 @@ class InverseShortTermFourierTransform(nn.Module):
     fft_length : int >= L [scalar]
         Number of FFT bins, :math:`N`.
 
+    center : bool [scalar]
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
     norm : ['none', 'power', 'magnitude']
         Normalization type of window.
 
@@ -49,6 +53,8 @@ class InverseShortTermFourierTransform(nn.Module):
         frame_length,
         frame_period,
         fft_length,
+        *,
+        center=True,
         norm="power",
         window="blackman",
     ):
@@ -57,7 +63,9 @@ class InverseShortTermFourierTransform(nn.Module):
         self.ifft = Lambda(
             lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
         )
-        self.unframe = Unframe(frame_length, frame_period, norm=norm, window=window)
+        self.unframe = Unframe(
+            frame_length, frame_period, center=center, norm=norm, window=window
+        )
 
     def forward(self, y, out_length=None):
         """Compute inverse short-term Fourier transform.
