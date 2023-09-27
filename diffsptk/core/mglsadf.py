@@ -364,9 +364,12 @@ class FrequencyDomainFIRFilter(nn.Module):
         phase="minimum",
         frame_length=400,
         fft_length=512,
-        **kwargs,
+        n_fft=512,
+        **stft_kwargs,
     ):
         super(FrequencyDomainFIRFilter, self).__init__()
+
+        assert 2 * frame_period < frame_length
 
         self.ignore_gain = ignore_gain
 
@@ -380,10 +383,10 @@ class FrequencyDomainFIRFilter(nn.Module):
             )
 
         self.stft = ShortTermFourierTransform(
-            frame_length, frame_period, fft_length, out_format="complex", **kwargs
+            frame_length, frame_period, fft_length, out_format="complex", **stft_kwargs
         )
         self.istft = InverseShortTermFourierTransform(
-            frame_length, frame_period, fft_length, **kwargs
+            frame_length, frame_period, fft_length, **stft_kwargs
         )
         self.mgc2sp = MelGeneralizedCepstrumToSpectrum(
             filter_order,
@@ -391,6 +394,7 @@ class FrequencyDomainFIRFilter(nn.Module):
             alpha=alpha,
             gamma=gamma,
             out_format="magnitude" if phase == "zero" else "complex",
+            n_fft=n_fft,
         )
 
     def forward(self, x, mc):
