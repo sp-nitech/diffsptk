@@ -22,7 +22,8 @@ Requirements
 
 Documentation
 -------------
-See [this page](https://sp-nitech.github.io/diffsptk/latest/) for a reference manual.
+- See [this page](https://sp-nitech.github.io/diffsptk/latest/) for a reference manual.
+- Our [paper](https://www.isca-speech.org/archive/ssw_2023/yoshimura23_ssw.html) is available on the ISCA Archive.
 
 
 Installation
