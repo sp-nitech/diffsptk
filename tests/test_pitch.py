@@ -23,7 +23,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2])
-def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
+def test_compatibility(float_test, device, out_format, P=80, sr=16000, L=80, H=180):
     pitch = diffsptk.Pitch(P, sr, f_min=L, f_max=H, out_format=out_format, model="tiny")
 
     def eq(o, sr):
@@ -73,6 +73,6 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", ["prob", "embed"])
-def test_differentiable(device, out_format, P=80, sr=16000, B=2, T=1000):
+def test_differentiable(float_test, device, out_format, P=80, sr=16000, B=2, T=1000):
     pitch = diffsptk.Pitch(P, sr, out_format=out_format, model="tiny")
     U.check_differentiable(device, pitch, [B, T])

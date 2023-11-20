@@ -30,7 +30,7 @@
   dependencies = [
     "soundfile",
     "torch >= 1.11.0",
-    "torchcrepe >= 0.0.16, <= 0.0.18",
+    "torchcrepe >= 0.0.16",
     "torchlpc >= 0.2.0",
     "numpy",
     "vector-quantize-pytorch >= 0.8.0",
@@ -96,4 +96,5 @@
 [tool.pytest.ini_options]
   filterwarnings = [
     "ignore:Casting complex values to real discards the imaginary part",
+    "ignore:__floordiv__ is deprecated",
   ]
