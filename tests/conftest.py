@@ -21,3 +21,11 @@ import torch
 @pytest.fixture(scope="session", autouse=True)
 def scope_session():
     torch.set_default_dtype(torch.double)
+
+
+@pytest.fixture
+def float_test():
+    dtype = torch.get_default_dtype()
+    torch.set_default_dtype(torch.float)
+    yield
+    torch.set_default_dtype(dtype)
