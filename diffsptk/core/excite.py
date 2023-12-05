@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..misc.utils import TWO_PI
 from ..misc.utils import UNVOICED_SYMBOL
 from .linear_intpl import LinearInterpolation
 
@@ -107,7 +108,7 @@ class ExcitationGeneration(nn.Module):
             e = torch.zeros_like(p)
             e[pulse_pos] = torch.sqrt(p[pulse_pos])
         elif self.voiced_region == "sinusoidal":
-            e = torch.sin((2 * torch.pi) * phase)
+            e = torch.sin(TWO_PI * phase)
         elif self.voiced_region == "sawtooth":
             e = torch.fmod(phase, 2) - 1
         else:

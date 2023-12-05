@@ -21,6 +21,7 @@ import soundfile as sf
 import torch
 
 UNVOICED_SYMBOL = 0
+TWO_PI = 2 * torch.pi
 
 
 class Lambda(torch.nn.Module):
