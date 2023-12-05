@@ -48,6 +48,7 @@ from .levdur import LevinsonDurbin
 from .linear_intpl import LinearInterpolation
 from .lpc import LinearPredictiveCodingAnalysis
 from .lpc import LinearPredictiveCodingAnalysis as LPC
+from .lpc2lsp import LinearPredictiveCoefficientsToLineSpectralPairs
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
 from .magic_intpl import MagicNumberInterpolation

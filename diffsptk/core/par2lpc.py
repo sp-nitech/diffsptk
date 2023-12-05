@@ -52,6 +52,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
         Examples
         --------
         >>> x = diffsptk.nrand(4)
+        >>> x
         tensor([ 0.7829, -0.2028,  1.6912,  0.1454,  0.4861])
         >>> lpc = diffsptk.LPC(3, 5)
         >>> a = lpc(x)

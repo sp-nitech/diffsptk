@@ -28,12 +28,12 @@
     "Programming Language :: Python :: 3.11",
   ]
   dependencies = [
-    "soundfile",
+    "soundfile >= 0.10.2",
     "torch >= 1.11.0",
     "torchcrepe >= 0.0.16",
     "torchlpc >= 0.2.0",
-    "numpy",
     "vector-quantize-pytorch >= 0.8.0",
+    "numpy",
   ]
   dynamic = ["version"]
 
