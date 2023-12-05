@@ -6,4 +6,4 @@ lpc2lsp
 .. autoclass:: diffsptk.LinearPredictiveCoefficientsToLineSpectralPairs
    :members:
 
-.. seealso:: :ref:`lpc`
+.. seealso:: :ref:`lpc`  :ref:`lsp2sp`
