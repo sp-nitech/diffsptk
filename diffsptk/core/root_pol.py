@@ -71,7 +71,7 @@ class PolynomialToRoots(nn.Module):
 
         """
         check_size(a.size(-1), self.order + 1, "dimension of coefficients")
-        if not torch.any(a[..., 0] == 0):
+        if torch.any(a[..., 0] == 0):
             raise RuntimeError("leading coefficient must be non-zero")
 
         # Make companion matrix.
