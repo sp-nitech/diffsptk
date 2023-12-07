@@ -83,7 +83,7 @@ from .quantize import UniformQuantization
 from .rlevdur import ReverseLevinsonDurbin
 from .rmse import RootMeanSquaredError
 from .rmse import RootMeanSquaredError as RMSE
-from .root_pol import DurandKernerMethod
+from .root_pol import PolynomialToRoots
 from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR

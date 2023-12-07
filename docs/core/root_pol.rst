@@ -3,5 +3,5 @@
 root_pol
 --------
 
-.. autoclass:: diffsptk.DurandKernerMethod
+.. autoclass:: diffsptk.PolynomialToRoots
    :members:
