@@ -15,9 +15,25 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
+
+import diffsptk
+import tests.utils as U
 
 
-@pytest.fixture(scope="session", autouse=True)
-def scope_session():
-    torch.set_default_dtype(torch.double)
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+def test_compatibility(device, M=12, L=32, B=2):
+    root_pol = diffsptk.PolynomialToRoots(M)
+    pol_root = diffsptk.RootsToPolynomial(M)
+
+    U.check_compatibility(
+        device,
+        [pol_root, root_pol],
+        [],
+        f"nrand -l {B*L} | acorr -l {L} -m {M} -o 1",
+        "cat",
+        [],
+        dx=M + 1,
+        dy=M + 1,
+    )
+
+    U.check_differentiable(device, pol_root, [B, M])

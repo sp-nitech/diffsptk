@@ -243,7 +243,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         # torchcrepe.infer
         B, N, L = x.shape
         x = x.reshape(-1, L)
-        y = self.torchcrepe.infer(x, model=self.model, embed=embed)
+        y = self.torchcrepe.infer(x, model=self.model, embed=embed, device=x.device)
         y = y.reshape(B, N, -1)
         return y
 
@@ -269,7 +269,10 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
 
         # Apply filters.
         periodicity = self.torchcrepe.filter.median(periodicity, self.filter_length)
-        pitch = self.torchcrepe.filter.mean(pitch, self.filter_length)
+        org_dtype = torch.get_default_dtype()
+        torch.set_default_dtype(torch.float)
+        pitch = self.torchcrepe.filter.mean(pitch.float(), self.filter_length)
+        torch.set_default_dtype(org_dtype)
 
         # Decide voiced/unvoiced.
         loudness = self.stft(x) + self.weights

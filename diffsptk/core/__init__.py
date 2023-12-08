@@ -76,6 +76,7 @@ from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
+from .pol_root import RootsToPolynomial
 from .poledf import AllPoleDigitalFilter
 from .pqmf import PseudoQuadratureMirrorFilterBanks
 from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
