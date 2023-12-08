@@ -30,7 +30,7 @@ def test_compatibility(device, M=12, L=32, B=2):
         [pol_root, root_pol],
         [],
         f"nrand -l {B*L} | acorr -l {L} -m {M} -o 1",
-        "x2x +dd",
+        "cat",
         [],
         dx=M + 1,
         dy=M + 1,
