@@ -51,6 +51,7 @@ from .lpc import LinearPredictiveCodingAnalysis as LPC
 from .lpc2lsp import LinearPredictiveCoefficientsToLineSpectralPairs
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
+from .lsp2lpc import LineSpectralPairsToLinearPredictiveCoefficients
 from .lsp2sp import LineSpectralPairsToSpectrum
 from .magic_intpl import MagicNumberInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
