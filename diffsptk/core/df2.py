@@ -42,8 +42,8 @@ class SecondOrderDigitalFilter(nn.Module):
     zero_bandwidth : float > 0 [scalar]
         Zero bandwidth in Hz.
 
-    ir_length : int >= 1 [scalar]
-        Length of impulse response.
+    **kwargs : additional keyword arguments
+        See :func:`~diffsptk.InfiniteImpulseResponseDigitalFilter`.
 
     """
 
@@ -54,7 +54,7 @@ class SecondOrderDigitalFilter(nn.Module):
         pole_bandwidth=None,
         zero_frequency=None,
         zero_bandwidth=None,
-        ir_length=None,
+        **kwargs,
     ):
         super(SecondOrderDigitalFilter, self).__init__()
 
@@ -67,32 +67,29 @@ class SecondOrderDigitalFilter(nn.Module):
             theta = 2 * math.pi * frequency / sample_rate
             return [1, -2 * r * math.cos(theta), r * r]
 
-        param = {}
         if pole_frequency is not None:
-            param["a"] = get_filter_coefficients(
+            kwargs["a"] = get_filter_coefficients(
                 pole_frequency, pole_bandwidth, sample_rate
             )
         if zero_frequency is not None:
-            param["b"] = get_filter_coefficients(
+            kwargs["b"] = get_filter_coefficients(
                 zero_frequency, zero_bandwidth, sample_rate
             )
-        if ir_length is not None:
-            param["ir_length"] = ir_length
 
-        self.dfs = InfiniteImpulseResponseDigitalFilter(**param)
+        self.dfs = InfiniteImpulseResponseDigitalFilter(**kwargs)
 
     def forward(self, x):
         """Apply a second order digital filter.
 
         Parameters
         ----------
-        x : Tensor [shape=(B, 1, T) or (B, T) or (T,)]
+        x : Tensor [shape=(..., T)]
             Input waveform.
 
         Returns
         -------
-        y : Tensor [shape=(B, 1, T) or (B, T) or (T,)]
-            Filterd waveform.
+        y : Tensor [shape=(..., T)]
+            Filtered waveform.
 
         Examples
         --------

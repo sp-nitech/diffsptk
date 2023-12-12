@@ -30,7 +30,7 @@ def impulse(order, **kwargs):
     order : int >= 0 [scalar]
         Order of sequence, :math:`M`.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         See `torch.eye <https://pytorch.org/docs/stable/generated/torch.eye.html>`_.
 
     Returns
@@ -63,7 +63,7 @@ def step(order, value=1, **kwargs):
     value : float [scalar]
         Step value.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         See `torch.full <https://pytorch.org/docs/stable/generated/torch.full.html>`_.
 
     Returns
@@ -102,7 +102,7 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
     eps : float [scalar]
         A correction value.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         See `torch.arange
         <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
 
@@ -148,7 +148,7 @@ def sin(order, period=None, magnitude=1, **kwargs):
     magnitude : float [scalar]
         Magnitude.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         See `torch.arange
         <https://pytorch.org/docs/stable/generated/torch.arange.html>`_.
 

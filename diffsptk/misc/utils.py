@@ -19,6 +19,8 @@ import warnings
 import numpy as np
 import soundfile as sf
 import torch
+import torch.nn.functional as F
+import torchaudio
 
 UNVOICED_SYMBOL = 0
 TWO_PI = 2 * torch.pi
@@ -67,6 +69,17 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
     else:
         return torch.from_numpy(x.astype(default_dtype()))
+
+
+def to_3d(x):
+    d = x.dim()
+    if d == 1:
+        y = x.view(1, 1, -1)
+    elif d == 2:
+        y = x.unsqueeze(1)
+    else:
+        y = x.view(-1, 1, x.size(-1))
+    return y
 
 
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
@@ -174,22 +187,22 @@ def hankel(x):
     return X
 
 
-def vander(x, N):
-    target_shape = list(x.shape)
-    target_shape.append(N - 1)
-    x = x.repeat_interleave(N - 1, dim=-1)
-    X = x.view(*target_shape)
-    X = torch.cat((X[..., 0:1] * 0 + 1, X), dim=-1)
-    X = X.cumprod(dim=-1).flip(-1)
-    return X
-
-
 def cexp(x):
     return torch.polar(torch.exp(x.real), x.imag)
 
 
 def clog(x):
     return torch.log(x.abs())
+
+
+def iir(x, b, a):
+    diff = b.size(-1) - a.size(-1)
+    if 0 < diff:
+        a = F.pad(a, (0, diff))
+    elif diff < 0:
+        b = F.pad(b, (0, -diff))
+    y = torchaudio.functional.lfilter(x, a, b, clamp=False, batching=True)
+    return y
 
 
 def check_size(x, y, cause):
@@ -207,7 +220,7 @@ def read(filename, double=False, **kwargs):
     double : bool [scalar]
         If True, return double-type tensor.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read`.
 
     Returns
@@ -246,7 +259,7 @@ def write(filename, x, sr, **kwargs):
     sr : int [scalar]
         Sample rate in Hz.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.write`.
 
     Examples

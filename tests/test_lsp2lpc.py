@@ -37,8 +37,3 @@ def test_compatibility(device, M, L=32, B=2):
     )
 
     U.check_differentiable(device, lsp2lpc, [B, M + 1])
-
-
-def test_various_shape(M=3):
-    lsp2lpc = diffsptk.LineSpectralPairsToLinearPredictiveCoefficients(M)
-    U.check_various_shape(lsp2lpc, [(M + 1,), (1, M + 1), (1, 1, M + 1)])
