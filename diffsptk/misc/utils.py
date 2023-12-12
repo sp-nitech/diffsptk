@@ -218,7 +218,7 @@ def read(filename, double=False, **kwargs):
     double : bool [scalar]
         If True, return double-type tensor.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read`.
 
     Returns
@@ -257,7 +257,7 @@ def write(filename, x, sr, **kwargs):
     sr : int [scalar]
         Sample rate in Hz.
 
-    kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.write`.
 
     Examples
