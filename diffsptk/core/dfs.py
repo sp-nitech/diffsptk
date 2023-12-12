@@ -138,5 +138,5 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         if a is None:
             a = self.a
 
-        y = iir(x, a, b)
+        y = iir(x, b, a)
         return y
