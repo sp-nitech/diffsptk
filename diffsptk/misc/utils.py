@@ -197,7 +197,7 @@ def clog(x):
 
 def iir(x, b, a):
     diff = b.size(-1) - a.size(-1)
-    if diff > 0:
+    if 0 < diff:
         a = F.pad(a, (0, diff))
     elif diff < 0:
         b = F.pad(b, (0, -diff))

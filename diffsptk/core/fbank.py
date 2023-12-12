@@ -100,7 +100,7 @@ class MelFilterBankAnalysis(nn.Module):
 
         seed = np.arange(lower_bin_index, upper_bin_index)
         mel = hz_to_mel(sample_rate * seed / fft_length)
-        lower_channel_map = [np.argmax((freq >= m) > 0) for m in mel]
+        lower_channel_map = [np.argmax(0 < (m <= freq)) for m in mel]
 
         diff = freq - np.insert(freq[:-1], 0, mel_min)
         weights = np.zeros((fft_length // 2 + 1, n_channel))

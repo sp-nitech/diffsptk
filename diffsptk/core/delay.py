@@ -68,7 +68,7 @@ class Delay(nn.Module):
 
         """
         # Generate zeros if needed.
-        if self.start > 0 or self.keeplen:
+        if 0 < self.start or self.keeplen:
             shape = list(x.shape)
             shape[dim] = abs(self.start)
             zeros = torch.zeros(*shape, dtype=x.dtype, device=x.device)
