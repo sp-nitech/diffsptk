@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
+from ..misc.utils import to_3d
 from .pol_root import RootsToPolynomial
 
 
@@ -90,15 +91,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
         if self.lpc_order == 0:
             return K
 
-        d = w.dim()
-        if d == 1:
-            x = w.view(1, 1, -1)
-        elif d == 2:
-            x = w.unsqueeze(1)
-        else:
-            x = w.view(-1, 1, w.size(-1))
-
-        z = torch.exp(1j * x)
+        z = torch.exp(1j * to_3d(w))
         p = z[..., 1::2]
         q = z[..., 0::2]
         if self.lpc_order == 1:

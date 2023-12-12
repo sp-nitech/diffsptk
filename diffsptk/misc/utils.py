@@ -69,6 +69,17 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
+def to_3d(x):
+    d = x.dim()
+    if d == 1:
+        y = x.view(1, 1, -1)
+    elif d == 2:
+        y = x.unsqueeze(1)
+    else:
+        y = x.view(-1, 1, x.size(-1))
+    return y
+
+
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     """Compute frequency warping factor under given sample rate.
 

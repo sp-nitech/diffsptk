@@ -21,8 +21,9 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, b=[-0.42, 1], a=[1, -0.42], T=100):
-    dfs = diffsptk.IIR(b, a, 30)
+@pytest.mark.parametrize("mode", ["fir", "iir"])
+def test_compatibility(device, mode, b=[-0.42, 1], a=[1, -0.42], T=100):
+    dfs = diffsptk.IIR(b, a, ir_length=30, mode=mode)
 
     bb = " ".join([str(x) for x in b])
     aa = " ".join([str(x) for x in a])
@@ -37,6 +38,54 @@ def test_compatibility(device, b=[-0.42, 1], a=[1, -0.42], T=100):
     )
 
     U.check_differentiable(device, dfs, [T])
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("mode", ["fir", "iir"])
+def test_compatibility_b(device, mode, b=[-0.42, 1], T=100):
+    dfs = diffsptk.IIR(b, None, mode=mode)
+
+    bb = " ".join([str(x) for x in b])
+
+    tmp1 = "dfs.tmp1"
+    tmp2 = "dfs.tmp2"
+    U.check_compatibility(
+        device,
+        dfs,
+        [f"nrand -l {T} > {tmp1}", f"echo {bb} | x2x +ad > {tmp2}"],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"dfs -z {tmp2} < {tmp1}",
+        [f"rm {tmp1} {tmp2}"],
+    )
+
+    U.check_differentiable(device, dfs, [(T,), (len(b),)])
+
+
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("mode", ["iir"])
+def test_compatibility_b_a(device, mode, b=[-0.42, 1], a=[1, -0.42, 0], T=100):
+    dfs = diffsptk.IIR(None, None, mode=mode)
+
+    bb = " ".join([str(x) for x in b])
+    aa = " ".join([str(x) for x in a])
+
+    tmp1 = "dfs.tmp1"
+    tmp2 = "dfs.tmp2"
+    tmp3 = "dfs.tmp3"
+    U.check_compatibility(
+        device,
+        dfs,
+        [
+            f"nrand -l {T} > {tmp1}",
+            f"echo {bb} | x2x +ad > {tmp2}",
+            f"echo {aa} | x2x +ad > {tmp3}",
+        ],
+        [f"cat {tmp1}", f"cat {tmp2}", f"cat {tmp3}"],
+        f"dfs -z {tmp2} -p {tmp3} < {tmp1}",
+        [f"rm {tmp1} {tmp2} {tmp3}"],
+    )
+
+    U.check_differentiable(device, dfs, [(T,), (len(b),), (len(a),)])
 
 
 def test_various_shape(T=10):
