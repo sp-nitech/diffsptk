@@ -17,8 +17,8 @@
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
-import torchaudio.functional as G
 
+from ..misc.utils import iir
 from ..misc.utils import numpy_to_torch
 from ..misc.utils import to_3d
 
@@ -138,11 +138,5 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         if a is None:
             a = self.a
 
-        diff = b.size(-1) - a.size(-1)
-        if diff > 0:
-            a = F.pad(a, (0, diff))
-        elif diff < 0:
-            b = F.pad(b, (0, -diff))
-
-        y = G.lfilter(x, a, b, clamp=False)
+        y = iir(x, a, b)
         return y
