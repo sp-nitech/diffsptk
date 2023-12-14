@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
+from ..misc.utils import numpy_to_torch
 from ..misc.utils import to_3d
 from .pol_root import RootsToPolynomial
 
@@ -52,13 +53,13 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
         elif self.lpc_order % 2 == 0:
             self.pol_p = RootsToPolynomial(lpc_order)
             self.pol_q = RootsToPolynomial(lpc_order)
-            self.register_buffer("kernel_p", torch.tensor([[[-1.0, 1.0]]]))
-            self.register_buffer("kernel_q", torch.tensor([[[1.0, 1.0]]]))
+            self.register_buffer("kernel_p", numpy_to_torch([[[-1, 1]]]))
+            self.register_buffer("kernel_q", numpy_to_torch([[[1, 1]]]))
         else:
             self.pol_p = RootsToPolynomial(lpc_order - 1)
             self.pol_q = RootsToPolynomial(lpc_order + 1)
-            self.register_buffer("kernel_p", torch.tensor([[[-1.0, 0.0, 1.0]]]))
-            self.register_buffer("kernel_q", torch.tensor([[[0.0, 1.0, 0.0]]]))
+            self.register_buffer("kernel_p", numpy_to_torch([[[-1, 0, 1]]]))
+            self.register_buffer("kernel_q", numpy_to_torch([[[0, 1, 0]]]))
 
     def forward(self, w):
         """Convert LSP to LPC.
