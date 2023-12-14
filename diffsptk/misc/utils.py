@@ -65,6 +65,8 @@ def default_complex_dtype():
 
 
 def numpy_to_torch(x):
+    if not isinstance(x, str):
+        x = np.array(x)
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
     else:
@@ -196,12 +198,57 @@ def clog(x):
 
 
 def iir(x, b, a):
+    """Apply IIR filter.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., B, T) or (..., T)]
+        Input signal.
+
+    b : Tensor [shape=(B, M+1) or (M+1,)]
+        Numerator coefficients.
+
+    a : Tensor [shape=(B, N+1) or (N+1,)]
+        Denominator coefficients.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., B, T) or (..., T)]
+        Output signal.
+
+    """
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
     elif diff < 0:
         b = F.pad(b, (0, -diff))
     y = torchaudio.functional.lfilter(x, a, b, clamp=False, batching=True)
+    return y
+
+
+def deconv1d(x, weight):
+    """Deconvolve input. This is not transposed convolution.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Input signal.
+
+    weight : Tensor [shape=(M+1,)]
+        Filter coefficients.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., T-M)]
+        Output signal.
+
+    """
+    assert weight.dim() == 1
+    b = x.view(-1, x.size(-1))
+    a = weight.view(1, -1).expand(b.size(0), -1)
+    impulse = F.pad(torch.ones_like(b[..., :1]), (0, b.size(-1) - a.size(-1)))
+    y = iir(impulse, b, a)
+    y = y.view(x.size()[:-1] + y.size()[-1:])
     return y
 
 

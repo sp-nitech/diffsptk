@@ -14,30 +14,25 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import TWO_PI
 from ..misc.utils import check_size
+from ..misc.utils import deconv1d
 from ..misc.utils import numpy_to_torch
+from .root_pol import PolynomialToRoots
 
 
 class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc2lsp.html>`_
-    for details. **Note that this module cannot compute gradient**.
+    for details.
 
     Parameters
     ----------
     lpc_order : int >= 0 [scalar]
         Order of LPC, :math:`M`.
-
-    n_split : int >= 1 [scalar]
-        Number of splits of unit semicircle.
-
-    n_iter : int >= 0 [scalar]
-        Number of pseudo iterations.
 
     log_gain : bool [scalar]
         If True, output gain in log scale.
@@ -51,41 +46,14 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     """
 
     def __init__(
-        self,
-        lpc_order,
-        n_split=512,
-        n_iter=0,
-        log_gain=False,
-        sample_rate=None,
-        out_format="radian",
+        self, lpc_order, log_gain=False, sample_rate=None, out_format="radian"
     ):
         super(LinearPredictiveCoefficientsToLineSpectralPairs, self).__init__()
 
         self.lpc_order = lpc_order
         self.log_gain = log_gain
 
-        assert 0 <= self.lpc_order < n_split
-        assert 0 <= n_iter
-
-        if self.lpc_order % 2 == 0:
-            sign = np.ones(self.lpc_order // 2 + 2)
-            sign[::2] = -1
-            self.register_buffer("sign", numpy_to_torch(sign))
-            mask = np.ones(self.lpc_order // 2 + 2)
-            mask[::2] = 0
-            self.register_buffer("mask", numpy_to_torch(mask))
-
-        x = np.linspace(1, -1, n_split * (n_iter + 1) + 1)
-        self.register_buffer("x", numpy_to_torch(x))
-
-        # Avoid the use of Chebyshev polynomials.
-        omega = np.arccos(x)
-        k = np.arange(self.lpc_order // 2 + 2)
-        Tx = np.cos(k.reshape(-1, 1) * omega.reshape(1, -1))
-        scale = np.ones(self.lpc_order // 2 + 2)
-        scale[0] = 0.5
-        Tx = scale.reshape(-1, 1) * Tx
-        self.register_buffer("Tx", numpy_to_torch(Tx))
+        assert 0 <= self.lpc_order
 
         if out_format == 0 or out_format == "radian":
             self.convert = lambda x: x
@@ -99,6 +67,21 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
             self.convert = lambda x: x * (sample_rate / TWO_PI)
         else:
             raise ValueError(f"out_format {out_format} is not supported")
+
+        if self.lpc_order == 0:
+            pass
+        elif self.lpc_order == 1:
+            self.root_q = PolynomialToRoots(lpc_order + 1)
+        elif self.lpc_order % 2 == 0:
+            self.root_p = PolynomialToRoots(lpc_order)
+            self.root_q = PolynomialToRoots(lpc_order)
+            self.register_buffer("kernel_p", numpy_to_torch([1, -1]))
+            self.register_buffer("kernel_q", numpy_to_torch([1, 1]))
+        else:
+            self.root_p = PolynomialToRoots(lpc_order - 1)
+            self.root_q = PolynomialToRoots(lpc_order + 1)
+            self.register_buffer("kernel_p", numpy_to_torch([1, 0, -1]))
+            self.register_buffer("kernel_q", numpy_to_torch([1]))
 
     def forward(self, a):
         """Convert LPC to LSP.
@@ -132,54 +115,28 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
 
         K, a = torch.split(a, [1, self.lpc_order], dim=-1)
 
-        p1 = a[..., : (self.lpc_order + 1) // 2]
-        p2 = a.flip(-1)[..., : (self.lpc_order + 1) // 2]
-        q1 = p1 + p2
-        q2 = p1 - p2
-        if self.lpc_order % 2 == 0:
-            d1 = F.pad(q1, (1, 0), value=1)
-            d2 = F.pad(q2, (1, 0), value=1)
-            c1_odd = torch.cumsum(d1 * self.sign[:-1], dim=-1)
-            c1_even = torch.cumsum(d1 * self.sign[1:], dim=-1)
-            c1 = c1_odd * self.mask[:-1] + c1_even * self.mask[1:]
-            c2 = torch.cumsum(d2, dim=-1)
-        elif self.lpc_order == 1:
-            c1 = F.pad(q1, (1, 0), value=1)
-            c2 = c1
-        else:
-            d1 = F.pad(q1, (1, 0), value=1)
-            d2_odd = F.pad(q2[..., 0::2], (1, 0), value=0)
-            d2_even = F.pad(q2[..., 1::2], (1, 0), value=1)
-            c1 = d1
-            c2_odd = torch.cumsum(d2_odd, dim=-1)
-            c2_even = torch.cumsum(d2_even, dim=-1)
-            c2 = torch.flatten(torch.stack([c2_odd, c2_even], dim=-1), start_dim=-2)
-            c2 = c2[..., 1:-1]
-        c1 = c1.flip(-1)
-        c2 = c2.flip(-1)
-
-        y1 = torch.matmul(c1, self.Tx[: c1.size(-1)])
-        y2 = torch.matmul(c2, self.Tx[: c2.size(-1)])
-
-        index1 = y1[..., :-1] * y1[..., 1:] <= 0
-        index2 = y2[..., :-1] * y2[..., 1:] <= 0
-        index = torch.logical_or(index1, index2)
-
-        i1 = F.pad(index1, (0, 1), value=False)
-        i2 = F.pad(index2, (0, 1), value=False)
-        i1 = torch.logical_or(i1, torch.roll(i1, 1, dims=-1))
-        i2 = torch.logical_or(i2, torch.roll(i2, 1, dims=-1))
-        y = y1 * i1 + y2 * i2
-
-        x_upper = torch.masked_select(self.x[:-1], index)
-        x_lower = torch.masked_select(self.x[1:], index)
-        y_upper = torch.masked_select(y[..., :-1], index)
-        y_lower = torch.masked_select(y[..., 1:], index)
-        x = (y_lower * x_upper - y_upper * x_lower) / (y_lower - y_upper)
-        w = torch.acos(x).view_as(a)
-
-        w = self.convert(w)
         if self.log_gain:
             K = torch.log(K)
-        w = torch.cat([K, w], dim=-1)
+        if self.lpc_order == 0:
+            return K
+
+        a0 = F.pad(a, (1, 0), value=1)
+        a1 = F.pad(a0, (0, 1), value=0)
+        a2 = a1.flip(-1)
+        p = a1 - a2
+        q = a1 + a2
+        if self.lpc_order == 1:
+            q = self.root_q(q)
+            w = torch.angle(q[..., 0])
+        else:
+            p = deconv1d(p, self.kernel_p)
+            q = deconv1d(q, self.kernel_q)
+            p = self.root_p(p)
+            q = self.root_q(q)
+            p = torch.angle(p[..., 0::2])
+            q = torch.angle(q[..., 0::2])
+            w, _ = torch.sort(torch.cat([p, q], dim=-1))
+
+        w = w.view_as(a)
+        w = torch.cat([K, self.convert(w)], dim=-1)
         return w
