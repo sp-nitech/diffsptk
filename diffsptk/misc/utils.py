@@ -65,7 +65,7 @@ def default_complex_dtype():
 
 
 def numpy_to_torch(x):
-    if not isinstance(x, str):
+    if isinstance(x, (list, tuple)):
         x = np.array(x)
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
