@@ -135,8 +135,9 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
             q = self.root_q(q)
             p = torch.angle(p[..., 0::2])
             q = torch.angle(q[..., 0::2])
-            w, _ = torch.sort(torch.cat([p, q], dim=-1))
+            w, _ = torch.sort(torch.cat((p, q), dim=-1))
 
         w = w.view_as(a)
-        w = torch.cat([K, self.convert(w)], dim=-1)
+        w = self.convert(w)
+        w = torch.cat((K, w), dim=-1)
         return w

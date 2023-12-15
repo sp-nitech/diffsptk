@@ -77,7 +77,7 @@ class PolynomialToRoots(nn.Module):
         # Make companion matrix.
         a = -a[..., 1:] / a[..., :1]  # (..., M)
         E = self.eye.expand(a.size()[:-1] + self.eye.size())
-        A = torch.cat([a.unsqueeze(-2), E], dim=-2)  # (..., M, M)
+        A = torch.cat((a.unsqueeze(-2), E), dim=-2)  # (..., M, M)
 
         # Find roots as eigenvalues.
         x, _ = torch.linalg.eig(A)

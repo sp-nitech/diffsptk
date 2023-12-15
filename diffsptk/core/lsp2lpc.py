@@ -106,5 +106,5 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
             a = 0.5 * (p + q)
 
         a = a.view_as(w)
-        a = torch.cat([K, a], dim=-1)
+        a = torch.cat((K, a), dim=-1)
         return a
