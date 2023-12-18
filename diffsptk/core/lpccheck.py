@@ -43,7 +43,7 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
 
         self.bound = 1 - margin
 
-        assert 0 < margin and margin < 1
+        assert 0 < margin < 1
 
         self.lpc2par = LinearPredictiveCoefficientsToParcorCoefficients(
             lpc_order, warn_type=warn_type

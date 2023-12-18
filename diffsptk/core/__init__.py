@@ -53,6 +53,7 @@ from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .lpccheck import LinearPredictiveCoefficientsStabilityCheck
 from .lsp2lpc import LineSpectralPairsToLinearPredictiveCoefficients
 from .lsp2sp import LineSpectralPairsToSpectrum
+from .lspcheck import LineSpectralPairsStabilityCheck
 from .magic_intpl import MagicNumberInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mcpf import MelCepstrumPostfiltering
