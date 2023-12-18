@@ -24,7 +24,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, L=32, M=9, rate=0.8, B=2):
     lspcheck = diffsptk.LineSpectralPairsStabilityCheck(
-        M, rate=rate, warn_type="ignore"
+        M, rate=rate, n_iter=1, warn_type="ignore"
     )
 
     U.check_compatibility(

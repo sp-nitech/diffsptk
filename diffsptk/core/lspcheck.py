@@ -101,7 +101,7 @@ class LineSpectralPairsStabilityCheck(nn.Module):
                 w[..., n] += step_size
             w = torch.clip(w, self.min_distance, torch.pi - self.min_distance)
             distance = w[..., 1:] - w[..., :-1]
-            if torch.all(self.min_distance <= distance):
+            if torch.all(self.min_distance - 1e-16 <= distance):
                 break
 
         w2 = torch.cat((K, w), dim=-1)
