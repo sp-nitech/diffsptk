@@ -15,19 +15,19 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python: [3.8]
-        include:
-          - torch: 1.11.0
-            torchaudio: 0.11.0
-          - torch: 2.1.2
-            torchaudio: 2.1.2
+        - python: 3.8
+          torch: 1.11.0
+          torchaudio: 0.11.0
+        - python: 3.11
+          torch: 2.1.2
+          torchaudio: 2.1.2
 
     steps:
       - name: Clone
         uses: actions/checkout@v4
 
       - name: Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
           architecture: x64
