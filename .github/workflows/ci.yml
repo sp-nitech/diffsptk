@@ -40,7 +40,7 @@ jobs:
           pip3 install torch==${{ matrix.torch }}+cpu torchaudio==${{ matrix.torchaudio }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install
-        run: make dev tool
+        run: make PYTHON_VERSION=${{ matrix.python }} dev tool
 
       - name: Check
         run: make check
