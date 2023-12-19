@@ -42,4 +42,4 @@ def test_compatibility(device, out_format, M=12, B=2):
         eq=eq,
     )
 
-    U.check_differentiable(device, [root_pol, torch.abs], [B, M + 1])
+    U.check_differentiable(device, [torch.abs, root_pol], [B, M + 1])
