@@ -16,7 +16,7 @@ jobs:
       max-parallel: 4
       matrix:
         python-version: [3.8]
-        pytorch-version: [1.11.0, 2.1.1]
+        pytorch-version: [1.11.0, 2.1.2]
 
     steps:
       - name: Clone
