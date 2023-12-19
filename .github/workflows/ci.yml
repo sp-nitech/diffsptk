@@ -15,27 +15,32 @@ jobs:
     strategy:
       max-parallel: 4
       matrix:
-        python-version: [3.8]
-        pytorch-version: [1.11.0, 2.1.1]
+        include:
+          - python: 3.8
+            torch: 1.11.0
+            torchaudio: 0.11.0
+          - python: 3.11
+            torch: 2.1.2
+            torchaudio: 2.1.2
 
     steps:
       - name: Clone
         uses: actions/checkout@v4
 
       - name: Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ matrix.python }}
           architecture: x64
 
       - name: Dependencies
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qq -y libsndfile1
-          pip3 install torch==${{ matrix.pytorch-version }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
+          pip3 install torch==${{ matrix.torch }}+cpu torchaudio==${{ matrix.torchaudio }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install
-        run: make dev tool
+        run: make PYTHON_VERSION=${{ matrix.python }} dev tool
 
       - name: Check
         run: make check

@@ -1,4 +1,4 @@
-.. _lspccheck:
+.. _lspcheck:
 
 lspcheck
 --------

@@ -61,7 +61,7 @@ class LineSpectralPairsStabilityCheck(nn.Module):
         Parameters
         ----------
         w1 : Tensor [shape=(..., M+1)]
-            LSP coefficients.
+            LSP coefficients in radians.
 
         Returns
         -------
