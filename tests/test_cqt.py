@@ -31,4 +31,4 @@ def test_compatibility(device, f_min=100, sr=16000, T=1000):
     X = cqt(x)
     assert torch.argmax(X.abs()) == 0
 
-    U.check_differentiable(device, cqt, [T])
+    U.check_differentiable(device, [cqt, torch.abs], [T])
