@@ -91,7 +91,7 @@ diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
-### Mel-spectrogram and MFCC extraction
+### Mel-spectrogram, MFCC, and PLP extraction
 ```python
 import diffsptk
 
@@ -126,6 +126,16 @@ mfcc = diffsptk.MFCC(
     sample_rate=sr,
 )
 Y = mfcc(X)
+print(Y.shape)
+
+# Extract PLP.
+mfcc = diffsptk.PLP(
+    plp_order=M,
+    n_channel=n_channel,
+    fft_length=n_fft,
+    sample_rate=sr,
+)
+Y = plp(X)
 print(Y.shape)
 ```
 

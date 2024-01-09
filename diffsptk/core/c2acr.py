@@ -68,6 +68,5 @@ class CepstrumToAutocorrelation(nn.Module):
         """
         x = torch.fft.rfft(c, n=self.fft_length).real
         x = torch.exp(2 * x)
-        r = torch.fft.hfft(x)[..., : self.acr_order + 1]
-        r = r / self.fft_length
+        r = torch.fft.hfft(x, norm="forward")[..., : self.acr_order + 1]
         return r

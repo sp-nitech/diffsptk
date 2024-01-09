@@ -23,7 +23,7 @@ from ..misc.utils import symmetric_toeplitz
 
 class LevinsonDurbin(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
-    for details.
+    for details. The implementation is based on a simple matrix inversion.
 
     Parameters
     ----------

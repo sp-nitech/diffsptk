@@ -78,6 +78,8 @@ from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
+from .plp import PerceptualLinearPredictiveCoefficientsAnalysis
+from .plp import PerceptualLinearPredictiveCoefficientsAnalysis as PLP
 from .pol_root import RootsToPolynomial
 from .poledf import AllPoleDigitalFilter
 from .pqmf import PseudoQuadratureMirrorFilterBanks

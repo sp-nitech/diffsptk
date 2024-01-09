@@ -19,12 +19,13 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import numpy_to_torch
-from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
+from .levdur import LevinsonDurbin
+from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
-class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/mfcc.html>`_
+class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/plp.html>`_
     for details.
 
     Parameters
@@ -44,6 +45,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
     lifter : int >= 1 [scalar]
         Liftering coefficient.
 
+    compression_factor : float > 0 [scalar]
+        Amplitude compression factor.
+
     f_min : float >= 0 [scalar]
         Minimum frequency in Hz.
 
@@ -56,24 +60,31 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
+    n_fft : int >> :math:`M` [scalar]
+        Number of FFT bins. Accurate conversion requires the large value.
+
     """
 
     def __init__(
         self,
-        mfcc_order,
+        plp_order,
         n_channel,
         fft_length,
         sample_rate,
         lifter=1,
+        compression_factor=0.33,
         out_format="y",
+        n_fft=512,
         **fbank_kwargs,
     ):
-        super(MelFrequencyCepstralCoefficientsAnalysis, self).__init__()
+        super(PerceptualLinearPredictiveCoefficientsAnalysis, self).__init__()
 
-        self.mfcc_order = mfcc_order
+        self.plp_order = plp_order
+        self.compression_factor = compression_factor
 
-        assert 1 <= self.mfcc_order < n_channel
+        assert 1 <= self.plp_order < n_channel
         assert 1 <= lifter
+        assert 0 < self.compression_factor
 
         if out_format == 0 or out_format == "y":
             self.format_func = lambda y, c, E: y
@@ -87,17 +98,34 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
             raise ValueError(f"out_format {out_format} is not supported")
 
         self.fbank = MelFilterBankAnalysis(
-            n_channel, fft_length, sample_rate, out_format="y,E", **fbank_kwargs
+            n_channel,
+            fft_length,
+            sample_rate,
+            use_power=True,
+            out_format="y,E",
+            **fbank_kwargs,
         )
-        self.dct = DiscreteCosineTransform(n_channel)
+        self.levdur = LevinsonDurbin(self.plp_order)
+        self.lpc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+            self.plp_order,
+            self.plp_order,
+            in_gamma=-1,
+            in_norm=True,
+            in_mul=True,
+            n_fft=n_fft,
+        )
 
-        m = np.arange(self.mfcc_order + 1)
+        f = self.fbank.center_frequencies[:-1] ** 2
+        e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
+        self.register_buffer("equal_loudness_curve", numpy_to_torch(e))
+
+        m = np.arange(self.plp_order + 1)
         v = 1 + (lifter / 2) * np.sin((np.pi / lifter) * m)
-        v[0] = np.sqrt(2)
+        v[0] = 2
         self.register_buffer("liftering_vector", numpy_to_torch(v))
 
     def forward(self, x):
-        """Compute MFCC.
+        """Compute PLP.
 
         Parameters
         ----------
@@ -107,7 +135,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         Returns
         -------
         y : Tensor [shape=(..., M)]
-            MFCC without C0.
+            PLP without C0.
 
         E : Tensor [shape=(..., 1)]
             Energy.
@@ -119,15 +147,19 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
-        >>> mfcc = diffsptk.MFCC(4, 8, 32, 8000)
-        >>> y = mfcc(stft(x))
+        >>> plp = diffsptk.PLP(4, 8, 32, 8000)
+        >>> y = plp(stft(x))
         >>> y
-        tensor([[-7.7745e-03, -1.4447e-02,  1.6157e-02,  1.1069e-03],
-                [ 2.8049e+00, -1.6257e+00, -2.3566e-02,  1.2804e-01]])
+        tensor([[-0.2896, -0.2356, -0.0586, -0.0387],
+                [ 0.4468, -0.5820,  0.0104, -0.0505]])
 
         """
         y, E = self.fbank(x)
-        y = self.dct(y)
-        y = y[..., : self.mfcc_order + 1] * self.liftering_vector
-        c, y = torch.split(y, [1, self.mfcc_order], dim=-1)
+        y = (torch.exp(y) * self.equal_loudness_curve) ** self.compression_factor
+        y = torch.cat((y[..., :1], y, y[..., -1:]), dim=-1)
+        y = torch.fft.hfft(y, norm="forward")[..., : self.plp_order + 1].real
+        y = self.levdur(y)
+        y = self.lpc2c(y)
+        y *= self.liftering_vector
+        c, y = torch.split(y, [1, self.plp_order], dim=-1)
         return self.format_func(y, c, E)
