@@ -8,4 +8,4 @@ mfcc
 .. autoclass:: diffsptk.MelFrequencyCepstralCoefficientsAnalysis
    :members:
 
-.. seealso:: :ref:`stft`  :ref:`fbank`
+.. seealso:: :ref:`stft`  :ref:`fbank`  :ref:`plp`

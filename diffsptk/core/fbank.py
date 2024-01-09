@@ -59,11 +59,13 @@ class MelFilterBankAnalysis(nn.Module):
         f_min=0,
         f_max=None,
         floor=1e-5,
+        use_power=False,
         out_format="y",
     ):
         super(MelFilterBankAnalysis, self).__init__()
 
         self.floor = floor
+        self.use_power = use_power
         self.out_format = out_format
 
         if f_max is None:
@@ -87,6 +89,9 @@ class MelFilterBankAnalysis(nn.Module):
         def hz_to_mel(x):
             return 1127 * np.log(x / 700 + 1)
 
+        def mel_to_hz(x):
+            return 700 * (np.exp(x / 1127) - 1)
+
         lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
         upper_bin_index = min(
             fft_length // 2, int(f_max / sample_rate * fft_length + 0.5)
@@ -96,17 +101,18 @@ class MelFilterBankAnalysis(nn.Module):
         mel_max = hz_to_mel(f_max)
 
         seed = np.arange(1, n_channel + 2)
-        freq = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
+        center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
+        self.center_frequencies = mel_to_hz(center_frequencies)
 
         seed = np.arange(lower_bin_index, upper_bin_index)
         mel = hz_to_mel(sample_rate * seed / fft_length)
-        lower_channel_map = [np.argmax(0 < (m <= freq)) for m in mel]
+        lower_channel_map = [np.argmax(0 < (m <= center_frequencies)) for m in mel]
 
-        diff = freq - np.insert(freq[:-1], 0, mel_min)
+        diff = center_frequencies - np.insert(center_frequencies[:-1], 0, mel_min)
         weights = np.zeros((fft_length // 2 + 1, n_channel))
         for i, k in enumerate(seed):
             m = lower_channel_map[i]
-            w = (freq[max(0, m)] - mel[i]) / diff[max(0, m)]
+            w = (center_frequencies[max(0, m)] - mel[i]) / diff[max(0, m)]
             if 0 < m:
                 weights[k, m - 1] += w
             if m < n_channel:
@@ -141,7 +147,8 @@ class MelFilterBankAnalysis(nn.Module):
                 [3.3640, 3.4518, 2.7717, 0.5088]])
 
         """
-        y = torch.matmul(torch.sqrt(x), self.H)
+        y = x if self.use_power else torch.sqrt(x)
+        y = torch.matmul(y, self.H)
         y = torch.log(torch.clip(y, min=self.floor))
         E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
         E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
