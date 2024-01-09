@@ -129,7 +129,7 @@ Y = mfcc(X)
 print(Y.shape)
 
 # Extract PLP.
-mfcc = diffsptk.PLP(
+plp = diffsptk.PLP(
     plp_order=M,
     n_channel=n_channel,
     fft_length=n_fft,
