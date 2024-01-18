@@ -1,4 +1,5 @@
 from .acorr import AutocorrelationAnalysis
+from .alaw import ALawCompression
 from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
@@ -27,6 +28,7 @@ from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
+from .ialaw import ALawExpansion
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform

@@ -20,8 +20,8 @@ import torch
 import torch.nn as nn
 
 
-class MuLawCompression(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/ulaw.html>`_
+class ALawExpansion(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/ialaw.html>`_
     for details.
 
     Parameters
@@ -29,44 +29,49 @@ class MuLawCompression(nn.Module):
     abs_max : float > 0 [scalar]
         Absolute maximum value of input.
 
-    mu : int >= 1 [scalar]
-        Compression factor, :math:`\\mu`.
+    a : float >= 1 [scalar]
+        Compression factor, :math:`A`.
 
     """
 
-    def __init__(self, abs_max=1, mu=255):
-        super(MuLawCompression, self).__init__()
+    def __init__(self, abs_max=1, a=87.6):
+        super(ALawExpansion, self).__init__()
 
         self.abs_max = abs_max
-        self.mu = mu
+        self.a = a
 
         assert 0 < self.abs_max
-        assert 1 <= self.mu
+        assert 1 <= self.a
 
-        self.const = self.abs_max / math.log1p(self.mu)
+        self.const = self.abs_max / self.a
+        self.z = 1 + math.log(self.a)
 
-    def forward(self, x):
-        """Compress waveform by :math:`\\mu`-law algorithm.
+    def forward(self, y):
+        """Expand waveform by A-law algorithm.
 
         Parameters
         ----------
-        x : Tensor [shape=(...,)]
-            Waveform.
+        y : Tensor [shape=(...,)]
+            Compressed waveform.
 
         Returns
         -------
-        y : Tensor [shape=(...,)]
-            Compressed waveform.
+        x : Tensor [shape=(...,)]
+            Waveform.
 
         Examples
         --------
         >>> x = diffsptk.ramp(4)
-        >>> ulaw = diffsptk.MuLawCompression(4)
-        >>> y = ulaw(x)
-        >>> y
-        tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
+        >>> alaw = diffsptk.ALawCompression(4)
+        >>> ialaw = diffsptk.ALawExpansion(4)
+        >>> x2 = ialaw(alaw(x))
+        >>> x2
+        tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        x_abs = x.abs() / self.abs_max
-        y = self.const * torch.sign(x) * torch.log1p(self.mu * x_abs)
-        return y
+        y_abs = y.abs() / self.abs_max
+        y1 = self.z * y_abs
+        y2 = torch.exp(y1 - 1)
+        condition = y_abs < (1 / self.z)
+        x = self.const * torch.sign(y) * torch.where(condition, y1, y2)
+        return x

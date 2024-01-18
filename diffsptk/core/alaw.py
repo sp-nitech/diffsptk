@@ -20,8 +20,8 @@ import torch
 import torch.nn as nn
 
 
-class MuLawCompression(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/ulaw.html>`_
+class ALawCompression(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/alaw.html>`_
     for details.
 
     Parameters
@@ -29,24 +29,24 @@ class MuLawCompression(nn.Module):
     abs_max : float > 0 [scalar]
         Absolute maximum value of input.
 
-    mu : int >= 1 [scalar]
-        Compression factor, :math:`\\mu`.
+    a : float >= 1 [scalar]
+        Compression factor, :math:`A`.
 
     """
 
-    def __init__(self, abs_max=1, mu=255):
-        super(MuLawCompression, self).__init__()
+    def __init__(self, abs_max=1, a=87.6):
+        super(ALawCompression, self).__init__()
 
         self.abs_max = abs_max
-        self.mu = mu
+        self.a = a
 
         assert 0 < self.abs_max
-        assert 1 <= self.mu
+        assert 1 <= self.a
 
-        self.const = self.abs_max / math.log1p(self.mu)
+        self.const = self.abs_max / (1 + math.log(self.a))
 
     def forward(self, x):
-        """Compress waveform by :math:`\\mu`-law algorithm.
+        """Compress waveform by A-law algorithm.
 
         Parameters
         ----------
@@ -61,12 +61,15 @@ class MuLawCompression(nn.Module):
         Examples
         --------
         >>> x = diffsptk.ramp(4)
-        >>> ulaw = diffsptk.MuLawCompression(4)
-        >>> y = ulaw(x)
+        >>> alaw = diffsptk.ALawCompression(4)
+        >>> y = alaw(x)
         >>> y
-        tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
+        tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
 
         """
         x_abs = x.abs() / self.abs_max
-        y = self.const * torch.sign(x) * torch.log1p(self.mu * x_abs)
+        x1 = self.a * x_abs
+        x2 = 1 + torch.log(x1)
+        condition = x_abs < (1 / self.a)
+        y = self.const * torch.sign(x) * torch.where(condition, x1, x2)
         return y
