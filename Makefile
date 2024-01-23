@@ -33,8 +33,9 @@ dev:
 	python -m pip install -e .[dev]
 
 dist:
-	. ./venv/bin/activate; python -m build --wheel; \
-	twine check dist/*
+	. ./venv/bin/activate; \
+	python -m build --wheel; \
+	python -m twine check dist/*.whl
 
 dist-clean:
 	rm -rf dist
@@ -70,7 +71,7 @@ test:
 	fi
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		python -m pytest -s --cov=./ --cov-report=xml $$module
+	python -m pytest -s --cov=./ --cov-report=xml $$module
 
 test-clean:
 	rm -rf tests/__pycache__
