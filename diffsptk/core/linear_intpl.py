@@ -17,6 +17,8 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+from ..misc.utils import replicate1
+
 
 class LinearInterpolation(nn.Module):
     """Perform linear interpolation.
@@ -37,8 +39,6 @@ class LinearInterpolation(nn.Module):
         self.upsampling_factor = upsampling_factor
 
         assert 1 <= self.upsampling_factor
-
-        self.pad = nn.ReplicationPad1d((0, 1))
 
     def forward(self, x):
         """Interpolate filter coefficients.
@@ -76,8 +76,8 @@ class LinearInterpolation(nn.Module):
         assert x.dim() == 3, "Input must be 3D tensor"
         B, T, D = x.shape
 
-        x = x.mT
-        x = self.pad(x)
+        x = x.mT  # (B, D, T)
+        x = replicate1(x, left=False)
         x = F.interpolate(
             x,
             size=T * self.upsampling_factor + 1,
