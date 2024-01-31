@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
+from ..misc.utils import remove_gain
 
 
 class Phase(nn.Module):
@@ -27,10 +26,10 @@ class Phase(nn.Module):
 
     Parameters
     ----------
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
-    unwrap : bool [scalar]
+    unwrap : bool
         If True, perform phase unwrapping.
 
     """
@@ -41,9 +40,9 @@ class Phase(nn.Module):
         self.fft_length = fft_length
         self.unwrap = unwrap
 
-        assert 2 <= self.fft_length
+        assert 2 <= fft_length
 
-    def forward(self, b, a=None):
+    def forward(self, b=None, a=None):
         """Compute phase spectrum.
 
         Parameters
@@ -56,7 +55,7 @@ class Phase(nn.Module):
 
         Returns
         -------
-        p : Tensor [shape=(..., L/2+1)]
+        Tensor [shape=(..., L/2+1)]
             Phase spectrum [:math:`\\pi` rad].
 
         Examples
@@ -68,25 +67,35 @@ class Phase(nn.Module):
         tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])
 
         """
-        B = torch.fft.rfft(b, n=self.fft_length)
+        return self._forward(b, a, fft_length=self.fft_length, unwrap=self.unwrap)
 
-        if a is None:
-            p = torch.atan2(B.imag, B.real)
+    @staticmethod
+    def _forward(b, a, fft_length, unwrap):
+        if b is None and a is None:
+            raise ValueError("Either b or a must be specified.")
+
+        if b is not None:
+            B = torch.fft.rfft(b, n=fft_length)
+        if a is not None:
+            A = torch.fft.rfft(remove_gain(a), n=fft_length)
+
+        if b is None:
+            numer = -A.imag
+            denom = A.real
+        elif a is None:
+            numer = B.imag
+            denom = B.real
         else:
-            K, a = torch.split(a, [1, a.size(-1) - 1], dim=-1)
-            a = F.pad(a, (1, 0), value=1)
-            A = torch.fft.rfft(a, n=self.fft_length)
-            p = torch.atan2(
-                B.imag * A.real - B.real * A.imag, B.real * A.real + B.imag * A.imag
-            )
+            numer = B.imag * A.real - B.real * A.imag
+            denom = B.real * A.real + B.imag * A.imag
+        p = torch.atan2(numer, denom)
 
         # Convert to cycle [-1, 1].
-        p /= math.pi
+        p /= torch.pi
 
-        if self.unwrap:
+        if unwrap:
             diff = p[..., 1:] - p[..., :-1]
             bias = (-2 * (1 < diff)) + (2 * (diff < -1))
             s = torch.cumsum(bias, dim=-1)
-            p[..., 1:] = p[..., 1:] + s
-
+            p[..., 1:] += s
         return p

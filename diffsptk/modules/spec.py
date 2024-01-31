@@ -16,7 +16,15 @@
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
+
+from ..misc.utils import remove_gain
+
+_spec2spec = {
+    "db": lambda x: 10 * torch.log10(x),
+    "log-magnitude": lambda x: 0.5 * torch.log(x),
+    "magnitude": lambda x: torch.sqrt(x),
+    "power": lambda x: x,
+}
 
 
 class Spectrum(nn.Module):
@@ -25,21 +33,21 @@ class Spectrum(nn.Module):
 
     Parameters
     ----------
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
+
+    eps : float >= 0
+        A small value added to power spectrum.
+
+    relative_floor : float < 0 or None
+        Relative floor in decibels.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
 
-    eps : float >= 0 [scalar]
-        A small value added to power spectrum.
-
-    relative_floor : float < 0 [scalar]
-        Relative floor in decibels.
-
     """
 
-    def __init__(self, fft_length, out_format="power", eps=0, relative_floor=None):
+    def __init__(self, fft_length, eps=0, relative_floor=None, out_format="power"):
         super(Spectrum, self).__init__()
 
         self.fft_length = fft_length
@@ -54,19 +62,13 @@ class Spectrum(nn.Module):
             assert relative_floor < 0
             self.relative_floor = 10 ** (relative_floor / 10)
 
-        if out_format == 0 or out_format == "db":
-            self.convert = lambda x: 10 * torch.log10(x)
-        elif out_format == 1 or out_format == "log-magnitude":
-            self.convert = lambda x: 0.5 * torch.log(x)
-        elif out_format == 2 or out_format == "magnitude":
-            self.convert = lambda x: torch.sqrt(x)
-        elif out_format == 3 or out_format == "power":
-            self.convert = lambda x: x
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
+        if type(out_format) is int and 0 <= out_format <= len(_spec2spec.keys()):
+            out_format = list(_spec2spec.keys())[out_format]
+        assert out_format in _spec2spec.keys()
+        self.out_format = out_format
 
-    def forward(self, b, a=None):
-        """Convert waveform to spectrum.
+    def forward(self, b=None, a=None):
+        """Compute spectrum.
 
         Parameters
         ----------
@@ -78,7 +80,7 @@ class Spectrum(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., L/2+1)]
+        Tensor [shape=(..., L/2+1)]
             Spectrum.
 
         Examples
@@ -86,23 +88,42 @@ class Spectrum(nn.Module):
         >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
-        >>> spec = diffsptk.Spectrum(fft_length=8)
+        >>> spec = diffsptk.Spectrum(8)
         >>> y = spec(x)
         >>> y
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        X = torch.fft.rfft(b, n=self.fft_length).abs()
+        return self._forward(
+            b,
+            a,
+            fft_length=self.fft_length,
+            eps=self.eps,
+            relative_floor=self.relative_floor,
+            out_format=self.out_format,
+        )
 
+    @staticmethod
+    def _forward(b, a, fft_length, eps, relative_floor, out_format):
+        if b is None and a is None:
+            raise ValueError("Either b or a must be specified.")
+
+        if b is not None:
+            B = torch.fft.rfft(b, n=fft_length).abs()
         if a is not None:
-            K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
-            a = F.pad(a1, (1, 0), value=1)
-            X /= torch.fft.rfft(a, n=self.fft_length).abs()
-            X *= K
+            K, a = remove_gain(a, return_gain=True)
+            A = torch.fft.rfft(a, n=fft_length).abs()
 
-        y = torch.square(X) + self.eps
-        if self.relative_floor is not None:
-            m, _ = torch.max(y, dim=-1, keepdim=True)
-            y = torch.maximum(y, m * self.relative_floor)
-        y = self.convert(y)
-        return y
+        if b is None:
+            X = K / A
+        elif a is None:
+            X = B
+        else:
+            X = K * (B / A)
+
+        s = torch.square(X) + eps
+        if relative_floor is not None:
+            m, _ = torch.max(s, dim=-1, keepdim=True)
+            s = torch.maximum(s, m * relative_floor)
+        s = _spec2spec[out_format](s)
+        return s

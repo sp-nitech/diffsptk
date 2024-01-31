@@ -18,31 +18,35 @@ import torch
 import torch.nn as nn
 
 
-class Interpolation(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/interpolate.html>`_
+class Decimation(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/decimate.html>`_
     for details.
 
     Parameters
     ----------
-    period : int >= 1 [scalar]
-        Interpolation period, :math:`P`.
+    period : int >= 1
+        Decimation period, :math:`P`.
 
-    start : int >= 0 [scalar]
+    start : int >= 0
         Start point, :math:`S`.
+
+    dim : int
+        Dimension along which to shift the tensors.
 
     """
 
-    def __init__(self, period, start=0):
-        super(Interpolation, self).__init__()
+    def __init__(self, period, start=0, dim=-1):
+        super(Decimation, self).__init__()
 
         self.period = period
         self.start = start
+        self.dim = dim
 
         assert 1 <= self.period
         assert 0 <= self.start
 
-    def forward(self, x, dim=-1):
-        """Interpolate signal.
+    def forward(self, x):
+        """Decimate signal.
 
         Parameters
         ----------
@@ -50,28 +54,27 @@ class Interpolation(nn.Module):
             Signal.
 
         dim : int [scalar]
-            Dimension along which to interpolate the tensors.
+            Dimension along which to decimate the tensors.
 
         Returns
         -------
-        y : Tensor [shape=(..., TxP+S, ...)]
-            Interpolated signal.
+        Tensor [shape=(..., T/P-S, ...)]
+            Decimated signal.
 
         Examples
         --------
-        >>> x = torch.arange(1, 4)
-        >>> interpolate = diffsptk.Interpolation(3, start=1)
-        >>> y = interpolate(x)
+        >>> x = diffsptk.ramp(9)
+        >>> decimate = diffsptk.Decimation(3, start=1)
+        >>> y = decimate(x)
         >>> y
-        tensor([0, 1, 0, 0, 2, 0, 0, 3, 0, 0])
+        tensor([1., 4., 7.])
 
         """
-        T = x.shape[dim] * self.period + self.start
-        indices = torch.arange(
-            self.start, T, self.period, dtype=torch.long, device=x.device
-        )
-        size = list(x.shape)
-        size[dim] = T
-        y = torch.zeros(size, dtype=x.dtype, device=x.device)
-        y.index_add_(dim, indices, x)
+        return self._forward(x, self.period, self.start, self.dim)
+
+    @staticmethod
+    def _forward(x, period, start, dim):
+        T = x.shape[dim]
+        indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
+        y = torch.index_select(x, dim, indices)
         return y

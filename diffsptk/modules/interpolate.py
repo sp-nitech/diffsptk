@@ -18,57 +18,65 @@ import torch
 import torch.nn as nn
 
 
-class Decimation(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/decimate.html>`_
+class Interpolation(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/interpolate.html>`_
     for details.
 
     Parameters
     ----------
-    period : int >= 1 [scalar]
-        Decimation period, :math:`P`.
+    period : int >= 1
+        Interpolation period, :math:`P`.
 
-    start : int >= 0 [scalar]
+    start : int >= 0
         Start point, :math:`S`.
+
+    dim : int
+        Dimension along which to interpolate the tensors.
 
     """
 
-    def __init__(self, period, start=0):
-        super(Decimation, self).__init__()
+    def __init__(self, period, start=0, dim=-1):
+        super(Interpolation, self).__init__()
 
         self.period = period
         self.start = start
+        self.dim = dim
 
         assert 1 <= self.period
         assert 0 <= self.start
 
-    def forward(self, x, dim=-1):
-        """Decimate signal.
+    def forward(self, x):
+        """Interpolate signal.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
             Signal.
 
-        dim : int [scalar]
-            Dimension along which to decimate the tensors.
-
         Returns
         -------
-        y : Tensor [shape=(..., T/P-S, ...)]
-            Decimated signal.
+        y : Tensor [shape=(..., TxP+S, ...)]
+            Interpolated signal.
 
         Examples
         --------
-        >>> x = torch.arange(9)
-        >>> decimate = diffsptk.Decimation(3, start=1)
-        >>> y = decimate(x)
+        >>> x = diffsptk.ramp(1, 3)
+        >>> interpolate = diffsptk.Interpolation(3, start=1)
+        >>> y = interpolate(x)
         >>> y
-        tensor([1, 4, 7])
+        tensor([0., 1., 0., 0., 2., 0., 0., 3., 0., 0.])
 
         """
-        T = x.shape[dim]
-        indices = torch.arange(
-            self.start, T, self.period, dtype=torch.long, device=x.device
-        )
-        y = torch.index_select(x, dim, indices)
+        return self._forward(x, self.period, self.start, self.dim)
+
+    @staticmethod
+    def _forward(x, period, start, dim):
+        # Determine the size of the output tensor.
+        T = x.shape[dim] * period + start
+        size = list(x.shape)
+        size[dim] = T
+
+        y = torch.zeros(size, dtype=x.dtype, device=x.device)
+        indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
+        y.index_add_(dim, indices, x)
         return y

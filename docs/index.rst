@@ -6,7 +6,7 @@ The package is mainly developed by the members of Tokuda, Nankaku, and Hashimoto
 
 .. toctree::
 
-   Core API <core/index>
+   Modules <modules/index>
    Misc <misc/index>
 
 

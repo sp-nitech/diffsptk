@@ -34,7 +34,6 @@ def test_compatibility(device, S, keeplen, T=20, B=2):
         f"ramp -l {T}",
         f"delay -s {S} {opt}",
         [],
-        opt={"dim": 0},
     )
 
     U.check_differentiable(device, delay, [B, T])

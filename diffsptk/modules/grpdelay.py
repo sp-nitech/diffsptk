@@ -20,6 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import numpy_to_torch
+from ..misc.utils import remove_gain
 
 
 class GroupDelay(nn.Module):
@@ -28,18 +29,18 @@ class GroupDelay(nn.Module):
 
     Parameters
     ----------
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
-    alpha : float > 0 [scalar]
+    alpha : float > 0
         Tuning parameter, :math:`\\alpha`.
 
-    gamma : float > 0 [scalar]
+    gamma : float > 0
         Tuning parameter, :math:`\\gamma`.
 
     """
 
-    def __init__(self, fft_length, alpha=1, gamma=1):
+    def __init__(self, fft_length, alpha=1, gamma=1, stateful=True):
         super(GroupDelay, self).__init__()
 
         self.fft_length = fft_length
@@ -50,23 +51,24 @@ class GroupDelay(nn.Module):
         assert 0 < self.alpha
         assert 0 < self.gamma
 
-        ramp = np.arange(self.fft_length)
-        self.register_buffer("ramp", numpy_to_torch(ramp))
+        if stateful:
+            ramp = np.arange(self.fft_length)
+            self.register_buffer("ramp", numpy_to_torch(ramp))
 
-    def forward(self, b, a=None):
+    def forward(self, b=None, a=None):
         """Compute group delay.
 
         Parameters
         ----------
-        b : Tensor [shape=(..., M+1)]
+        b : Tensor [shape=(..., M+1)] or None
             Numerator coefficients.
 
-        a : Tensor [shape=(..., N+1)]
+        a : Tensor [shape=(..., N+1)] or None
             Denominator coefficients.
 
         Returns
         -------
-        g : Tensor [shape=(..., L/2+1)]
+        Tensor [shape=(..., L/2+1)]
             Group delay or modified group delay function.
 
         Examples
@@ -78,35 +80,54 @@ class GroupDelay(nn.Module):
         tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])
 
         """
+        return self._forward(
+            b,
+            a,
+            fft_length=self.fft_length,
+            alpha=self.alpha,
+            gamma=self.gamma,
+            ramp=self.ramp if hasattr(self, "ramp") else None,
+        )
+
+    @staticmethod
+    def _forward(b, a, fft_length, alpha, gamma, **kwargs):
+        if b is None and a is None:
+            raise ValueError("Either b or a must be specified.")
+
         if a is None:
             order = 0
-            c = b
         else:
+            a = remove_gain(a)
             order = a.size(-1) - 1
 
-            # Remove gain.
-            K, a1 = torch.split(a, [1, order], dim=-1)
-            a2 = F.pad(a1, (1, 0), value=1).unsqueeze(-1)
-
+        if b is None:
+            c = a.flip(-1)
+        elif a is None:
+            c = b
+        else:
             # Perform full convolution.
             b1 = F.pad(b, (order, order))
             b2 = b1.unfold(-1, b.size(-1) + order, 1)
-            c = (b2 * a2).sum(-2)
+            c = (b2 * a.unsqueeze(-1)).sum(-2)
 
-        length = c.size(-1)
-        assert length <= self.fft_length, "Please increase FFT length"
+        data_length = c.size(-1)
+        if fft_length < data_length:
+            raise RuntimeError("Please increase FFT length")
 
-        d = c * self.ramp[:length]
-        C = torch.fft.rfft(c, n=self.fft_length)
-        D = torch.fft.rfft(d, n=self.fft_length)
+        if kwargs.get("ramp") is None:
+            ramp = torch.arange(data_length, dtype=c.dtype, device=c.device)
+        else:
+            ramp = kwargs.get("ramp")[:data_length]
+        d = c * ramp
+        C = torch.fft.rfft(c, n=fft_length)
+        D = torch.fft.rfft(d, n=fft_length)
 
-        denom = C.real * C.real + C.imag * C.imag
-        if self.gamma != 1:
-            denom = torch.pow(denom, self.gamma)
         numer = C.real * D.real + C.imag * D.imag
+        denom = C.real * C.real + C.imag * C.imag
+        if gamma != 1:
+            denom = torch.pow(denom, gamma)
 
         g = numer / denom - order
-        if self.alpha != 1:
-            g = torch.sign(g) * torch.pow(torch.abs(g), self.alpha)
-
+        if alpha != 1:
+            g = torch.sign(g) * torch.pow(torch.abs(g), alpha)
         return g

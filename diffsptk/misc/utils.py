@@ -94,6 +94,16 @@ def replicate1(x, left=True, right=True):
     return y
 
 
+def remove_gain(a, return_gain=False):
+    K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
+    a = F.pad(a1, (1, 0), value=1)
+    if return_gain:
+        ret = (K, a)
+    else:
+        ret = a
+    return ret
+
+
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     """Compute frequency warping factor under given sample rate.
 

@@ -1,5 +1,5 @@
-diffsptk.core
-=============
+diffsptk.modules
+================
 
 .. toctree::
    :glob:
