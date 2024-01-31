@@ -74,13 +74,23 @@ def numpy_to_torch(x):
 
 
 def to_3d(x):
-    d = x.dim()
-    if d == 1:
-        y = x.view(1, 1, -1)
-    elif d == 2:
-        y = x.unsqueeze(1)
-    else:
-        y = x.view(-1, 1, x.size(-1))
+    y = x.view(-1, 1, x.size(-1))
+    return y
+
+
+def reflect(x):
+    d = x.size(-1)
+    y = x.view(-1, d)
+    y = F.pad(y, (d - 1, 0), mode="reflect")
+    y = y.view(*x.size()[:-1], -1)
+    return y
+
+
+def replicate1(x, left=True, right=True):
+    d = x.size(-1)
+    y = x.view(-1, d)
+    y = F.pad(y, (1 if left else 0, 1 if right else 0), mode="replicate")
+    y = y.view(*x.size()[:-1], -1)
     return y
 
 
@@ -177,7 +187,7 @@ def get_gamma(gamma, c):
 
 def symmetric_toeplitz(x):
     d = x.size(-1)
-    xx = torch.cat((x[..., 1:].flip(-1), x), dim=-1)
+    xx = reflect(x)
     X = xx.unfold(-1, d, 1).flip(-2)
     return X
 

@@ -34,6 +34,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
         super(ParcorCoefficientsToLinearPredictiveCoefficients, self).__init__()
 
         self.lpc_order = lpc_order
+
         assert 0 <= self.lpc_order
 
     def forward(self, k):

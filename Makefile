@@ -14,9 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-PROJECT        := diffsptk
-PYTHON_VERSION := 3.8
-MODULE         :=
+PROJECT := diffsptk
+MODULE  :=
+
+PYTHON_VERSION     := 3.8
+TORCH_VERSION      := 1.11.0
+TORCHAUDIO_VERSION := 0.11.0
+PLATFORM           := cu113
 
 init:
 	pip install -e .
@@ -24,12 +28,14 @@ init:
 dev:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	. ./venv/bin/activate; python -m pip install pip --upgrade; \
-	python -m pip install torch==1.11.0+cu113 torchaudio==0.11.0+cu113 -f https://download.pytorch.org/whl/cu113/torch_stable.html; \
+	python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
+		-f https://download.pytorch.org/whl/$(PLATFORM)/torch_stable.html; \
 	python -m pip install -e .[dev]
 
 dist:
-	. ./venv/bin/activate; python -m build --wheel; \
-	twine check dist/*
+	. ./venv/bin/activate; \
+	python -m build --wheel; \
+	python -m twine check dist/*.whl
 
 dist-clean:
 	rm -rf dist
@@ -65,7 +71,7 @@ test:
 	fi
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-		python -m pytest -s --cov=./ --cov-report=xml $$module
+	python -m pytest -s --cov=./ --cov-report=xml $$module
 
 test-clean:
 	rm -rf tests/__pycache__

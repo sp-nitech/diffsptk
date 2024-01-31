@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import replicate1
+
 
 class ZeroCrossingAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/zcross.html>`_
@@ -65,7 +67,7 @@ class ZeroCrossingAnalysis(nn.Module):
 
         """
         x = torch.sign(x)
-        x = torch.cat((x[..., :1], x), dim=-1)
+        x = replicate1(x, right=False)
         x = x.unfold(-1, self.frame_length + 1, self.frame_length)
         z = 0.5 * (x[..., 1:] - x[..., :-1]).abs().sum(-1)
         if self.norm:

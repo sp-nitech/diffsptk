@@ -20,6 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import cexp
+from ..misc.utils import check_size
 from ..misc.utils import clog
 from ..misc.utils import numpy_to_torch
 from .freqt import FrequencyTransform
@@ -80,6 +81,8 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
             Output cepstrum.
 
         """
+        check_size(c1.size(-1), self.in_order + 1, "dimension of cepstrum")
+
         c01 = F.pad(c1[..., 1:], (1, 0))
         C1 = torch.fft.fft(c01, n=self.n_fft)
 

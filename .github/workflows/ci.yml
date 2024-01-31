@@ -20,8 +20,8 @@ jobs:
             torch: 1.11.0
             torchaudio: 0.11.0
           - python: 3.11
-            torch: 2.1.2
-            torchaudio: 2.1.2
+            torch: 2.2.0
+            torchaudio: 2.2.0
 
     steps:
       - name: Clone
@@ -37,10 +37,9 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get install -qq -y libsndfile1
-          pip3 install torch==${{ matrix.torch }}+cpu torchaudio==${{ matrix.torchaudio }}+cpu -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Install
-        run: make PYTHON_VERSION=${{ matrix.python }} dev tool
+        run: make PYTHON_VERSION=${{ matrix.python }} TORCH_VERSION=${{ matrix.torch }} TORCHAUDIO_VERSION=${{ matrix.torchaudio }} PLATFORM=cpu dev tool
 
       - name: Check
         run: make check

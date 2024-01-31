@@ -19,6 +19,7 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import numpy_to_torch
+from ..misc.utils import replicate1
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
@@ -156,7 +157,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
         """
         y, E = self.fbank(x)
         y = (torch.exp(y) * self.equal_loudness_curve) ** self.compression_factor
-        y = torch.cat((y[..., :1], y, y[..., -1:]), dim=-1)
+        y = replicate1(y)
         y = torch.fft.hfft(y, norm="forward")[..., : self.plp_order + 1].real
         y = self.levdur(y)
         y = self.lpc2c(y)
