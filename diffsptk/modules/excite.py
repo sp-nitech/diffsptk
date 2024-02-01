@@ -51,8 +51,6 @@ class ExcitationGeneration(nn.Module):
         assert self.voiced_region in ("pulse", "sinusoidal", "sawtooth")
         assert self.unvoiced_region in ("gauss", "zeros")
 
-        self.linear_intpl = LinearInterpolation(self.frame_period)
-
     def forward(self, p):
         """Generate a simple excitation signal.
 
@@ -63,7 +61,7 @@ class ExcitationGeneration(nn.Module):
 
         Returns
         -------
-        e : Tensor [shape=(..., NxP)]
+        Tensor [shape=(..., NxP)]
             Excitation signal.
 
         Examples
@@ -75,10 +73,16 @@ class ExcitationGeneration(nn.Module):
         tensor([1.4142, 0.0000, 1.6330, 0.0000, 0.0000, 1.7321])
 
         """
+        return self._forward(
+            p, self.frame_period, self.voiced_region, self.unvoiced_region
+        )
+
+    @staticmethod
+    def _forward(p, frame_period, voiced_region, unvoiced_region):
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
         mask = torch.ne(base_mask, UNVOICED_SYMBOL)
-        mask = torch.repeat_interleave(mask, self.frame_period, dim=-1)
+        mask = torch.repeat_interleave(mask, frame_period, dim=-1)
 
         # Extend right side for interpolation.
         tmp_mask = F.pad(base_mask, (1, 0))
@@ -88,7 +92,7 @@ class ExcitationGeneration(nn.Module):
         # Interpolate pitch.
         if p.dim() != 1:
             p = p.mT
-        p = self.linear_intpl(p)
+        p = LinearInterpolation._forward(p, frame_period)
         if p.dim() != 1:
             p = p.mT
         p *= mask
@@ -101,24 +105,24 @@ class ExcitationGeneration(nn.Module):
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
 
-        if self.voiced_region == "pulse":
+        if voiced_region == "pulse":
             r = torch.ceil(phase)
             r = F.pad(r, (1, 0))
             pulse_pos = torch.ge(r[..., 1:] - r[..., :-1], 1)
             e = torch.zeros_like(p)
             e[pulse_pos] = torch.sqrt(p[pulse_pos])
-        elif self.voiced_region == "sinusoidal":
+        elif voiced_region == "sinusoidal":
             e = torch.sin(TWO_PI * phase)
-        elif self.voiced_region == "sawtooth":
+        elif voiced_region == "sawtooth":
             e = torch.fmod(phase, 2) - 1
         else:
-            raise RuntimeError
+            raise ValueError(f"voiced_region {voiced_region} is not supported.")
 
-        if self.unvoiced_region == "gauss":
+        if unvoiced_region == "gauss":
             e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
-        elif self.unvoiced_region == "zeros":
+        elif unvoiced_region == "zeros":
             pass
         else:
-            raise RuntimeError
+            raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
 
         return e

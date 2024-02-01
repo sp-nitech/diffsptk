@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def c2ndps(x, fft_length=512):
+def c2ndps(c, fft_length=512):
     """Convert cepstrum to NDPS.
 
     Parameters
@@ -35,7 +35,7 @@ def c2ndps(x, fft_length=512):
 
     """
     return nn.CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
-        x, fft_length=fft_length
+        c, fft_length=fft_length
     )
 
 
@@ -116,6 +116,37 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     """
     return nn.InverseUniformQuantization._forward(
         y, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
+    )
+
+
+def excite(p, frame_period=1, voiced_region="pulse", unvoiced_region="gauss"):
+    """Generate a simple excitation signal.
+
+    Parameters
+    ----------
+    p : Tensor [shape=(..., N)]
+        Pitch in seconds.
+
+    frame_period : int >= 1
+        Frame period in samples, :math:`P`.
+
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth']
+        Value on voiced region.
+
+    unvoiced_region : ['gauss', 'zeros']
+        Value on unvoiced region.
+
+    Returns
+    -------
+    Tensor [shape=(..., NxP)]
+        Excitation signal.
+
+    """
+    return nn.ExcitationGeneration._forward(
+        p,
+        frame_period=frame_period,
+        voiced_region=voiced_region,
+        unvoiced_region=unvoiced_region,
     )
 
 
@@ -420,6 +451,7 @@ def spec(
         out_format=out_format,
     )
 
+
 def zcross(x, frame_length=1, norm=False):
     """Compute zero-crossing rate.
 
@@ -436,7 +468,7 @@ def zcross(x, frame_length=1, norm=False):
 
     Returns
     -------
-    z : Tensor [shape=(..., T/L)]
+    Tensor [shape=(..., T/L)]
         Zero-crossing rate.
 
     """
