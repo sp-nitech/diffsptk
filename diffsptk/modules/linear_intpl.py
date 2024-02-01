@@ -28,7 +28,7 @@ class LinearInterpolation(nn.Module):
 
     Parameters
     ----------
-    upsampling_factor : int >= 1 [scalar]
+    upsampling_factor : int >= 1
         Upsampling factor, :math:`P`.
 
     """
@@ -50,7 +50,7 @@ class LinearInterpolation(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
+        Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
             Upsampled filter coefficients.
 
         Examples
@@ -64,8 +64,11 @@ class LinearInterpolation(nn.Module):
         tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
 
         """
-        # Pass through if upsampling factor is one.
-        if self.upsampling_factor == 1:
+        return self._forward(x, self.upsampling_factor)
+
+    @staticmethod
+    def _forward(x, upsampling_factor):
+        if upsampling_factor == 1:
             return x
 
         d = x.dim()
@@ -80,7 +83,7 @@ class LinearInterpolation(nn.Module):
         x = replicate1(x, left=False)
         x = F.interpolate(
             x,
-            size=T * self.upsampling_factor + 1,
+            size=T * upsampling_factor + 1,
             mode="linear",
             align_corners=True,
         )[

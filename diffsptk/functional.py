@@ -196,6 +196,56 @@ def interpolate(x, period=1, start=0, dim=-1):
     return nn.Interpolation._forward(x, period=period, start=start, dim=dim)
 
 
+def linear_intpl(x, upsampling_factor=1):
+    """Interpolate filter coefficients.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        Filter coefficients.
+
+    upsampling_factor : int >= 1
+        Upsampling factor, :math:`P`.
+
+    Returns
+    -------
+    y : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
+        Upsampled filter coefficients.
+
+    """
+    return nn.LinearInterpolation_.forward(x, upsampling_factor=upsampling_factor)
+
+
+def magic_intpl(x, magic_number=0):
+    """Interpolate magic number.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        Data containing magic number.
+
+    magic_number : float or Tensor
+        Magic number.
+
+    Returns
+    -------
+    Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        Data after interpolation.
+
+    Examples
+    --------
+    >>> x = torch.tensor([0, 1, 2, 0, 4, 0]).float()
+    >>> x
+    tensor([0., 1., 2., 0., 4., 0.])
+    >>> magic_intpl = diffsptk.MagicNumberInterpolation(0)
+    >>> y = magic_intpl(x)
+    >>> y
+    tensor([1., 1., 2., 3., 4., 4.])
+
+    """
+    return nn.MagicNumberInterpolation._forward(x, magic_number=magic_number)
+
+
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):
     """Compute phase spectrum.
 

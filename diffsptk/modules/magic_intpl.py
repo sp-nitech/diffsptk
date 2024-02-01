@@ -26,7 +26,7 @@ class MagicNumberInterpolation(nn.Module):
 
     Parameters
     ----------
-    magic_number : float [scalar]
+    magic_number : float
         Magic number.
 
     """
@@ -34,7 +34,6 @@ class MagicNumberInterpolation(nn.Module):
     def __init__(self, magic_number=UNVOICED_SYMBOL):
         super(MagicNumberInterpolation, self).__init__()
 
-        self.impl = MagicNumberInterpolationImpl.apply
         self.register_buffer("magic_number", torch.tensor(magic_number))
 
     def forward(self, x):
@@ -47,7 +46,7 @@ class MagicNumberInterpolation(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        Tensor [shape=(B, N, D) or (N, D) or (N,)]
             Data after interpolation.
 
         Examples
@@ -61,8 +60,13 @@ class MagicNumberInterpolation(nn.Module):
         tensor([1., 1., 2., 3., 4., 4.])
 
         """
-        y = self.impl(x, self.magic_number)
-        return y
+        return self._forward(x, self.magic_number)
+
+    @staticmethod
+    def _forward(x, magic_number):
+        if not torch.is_tensor(magic_number):
+            magic_number = torch.tensor(magic_number, dtype=x.dtype, device=x.device)
+        return MagicNumberInterpolationImpl.apply(x, magic_number)
 
 
 class MagicNumberInterpolationImpl(torch.autograd.Function):
