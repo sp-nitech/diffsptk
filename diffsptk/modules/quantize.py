@@ -17,6 +17,13 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check
+
+_quantization_level = {
+    "mid-rise": lambda n_bit: 1 << n_bit,
+    "mid-tread": lambda n_bit: (1 << n_bit) - 1,
+}
+
 
 class Floor(torch.autograd.Function):
     @staticmethod
@@ -59,19 +66,11 @@ class UniformQuantization(nn.Module):
         super(UniformQuantization, self).__init__()
 
         self.abs_max = abs_max
-        self.quantizer = quantizer
+        self.n_bit = n_bit
+        self.quantizer = check(quantizer, _quantization_level)
 
         assert 0 < self.abs_max
-        assert 1 <= n_bit
-
-        if quantizer == 0 or quantizer == "mid-rise":
-            self.level = int(2**n_bit)
-            self.quantizer = "mid-rise"
-        elif quantizer == 1 or quantizer == "mid-tread":
-            self.level = int(2**n_bit) - 1
-            self.quantizer = "mid-tread"
-        else:
-            raise ValueError("quantizer {quantizer} is not supported")
+        assert 1 <= self.n_bit
 
     def forward(self, x):
         """Quantize input.
@@ -83,7 +82,7 @@ class UniformQuantization(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(...,)]
+        Tensor [shape=(...,)]
             Quantized input.
 
         Examples
@@ -95,15 +94,23 @@ class UniformQuantization(nn.Module):
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
         """
-        x = x * self.level / (2 * self.abs_max)
-        if self.quantizer == "mid-rise":
-            x = x + self.level // 2
+        return self._forward(x, self.abs_max, self.n_bit, self.quantizer)
+
+    @staticmethod
+    def _forward(x, abs_max, n_bit, quantizer):
+        try:
+            level = _quantization_level[quantizer](n_bit)
+        except KeyError:
+            raise ValueError(f"quantizer {quantizer} is not supported")
+
+        x = x * (level / (2 * abs_max))
+        if quantizer == "mid-rise":
+            x += level // 2
             y = Floor.apply(x)
-        elif self.quantizer == "mid-tread":
-            x = x + (self.level - 1) // 2
+        elif quantizer == "mid-tread":
+            x += (level - 1) // 2
             y = Round.apply(x)
         else:
-            raise RuntimeError
-
-        y = torch.clip(y, min=0, max=self.level - 1)
+            raise ValueError(f"quantizer {quantizer} is not supported")
+        y = torch.clip(y, min=0, max=level - 1)
         return y

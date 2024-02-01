@@ -17,6 +17,9 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check
+from .quantize import _quantization_level
+
 
 class InverseUniformQuantization(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/dequantize.html>`_
@@ -24,10 +27,10 @@ class InverseUniformQuantization(nn.Module):
 
     Parameters
     ----------
-    abs_max : float > 0 [scalar]
+    abs_max : float > 0
         Absolute maximum value of input.
 
-    n_bit : int >= 1 [scalar]
+    n_bit : int >= 1
         Number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
@@ -39,19 +42,11 @@ class InverseUniformQuantization(nn.Module):
         super(InverseUniformQuantization, self).__init__()
 
         self.abs_max = abs_max
-        self.quantizer = quantizer
+        self.n_bit = n_bit
+        self.quantizer = check(quantizer, _quantization_level)
 
         assert 0 < self.abs_max
-        assert 1 <= n_bit
-
-        if quantizer == 0 or quantizer == "mid-rise":
-            self.level = int(2**n_bit)
-            self.quantizer = "mid-rise"
-        elif quantizer == 1 or quantizer == "mid-tread":
-            self.level = int(2**n_bit) - 1
-            self.quantizer = "mid-tread"
-        else:
-            raise ValueError("quantizer {quantizer} is not supported")
+        assert 1 <= self.n_bit
 
     def forward(self, y):
         """Dequantize input.
@@ -63,7 +58,7 @@ class InverseUniformQuantization(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(...,)]
+        Tensor [shape=(...,)]
             Dequantized input.
 
         Examples
@@ -78,13 +73,21 @@ class InverseUniformQuantization(nn.Module):
         tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
 
         """
-        if self.quantizer == "mid-rise":
-            y = y - (self.level // 2 - 0.5)
-        elif self.quantizer == "mid-tread":
-            y = y - (self.level - 1) // 2
-        else:
-            raise RuntimeError
+        return self._forward(y, self.abs_max, self.n_bit, self.quantizer)
 
-        x = y * (2 * self.abs_max / self.level)
-        x = torch.clip(x, min=-self.abs_max, max=self.abs_max)
+    @staticmethod
+    def _forward(y, abs_max, n_bit, quantizer):
+        try:
+            level = _quantization_level[quantizer](n_bit)
+        except KeyError:
+            raise ValueError(f"quantizer {quantizer} is not supported")
+
+        if quantizer == "mid-rise":
+            y = y - (level // 2 - 0.5)
+        elif quantizer == "mid-tread":
+            y = y - (level - 1) // 2
+        else:
+            raise ValueError(f"quantizer {quantizer} is not supported")
+        x = y * (2 * abs_max / level)
+        x = torch.clip(x, min=-abs_max, max=abs_max)
         return x

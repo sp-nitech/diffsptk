@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check
 from ..misc.utils import remove_gain
 
 _spec2spec = {
@@ -52,6 +53,7 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
+        self.out_format = check(out_format)
 
         assert 2 <= self.fft_length
         assert 0 <= self.eps
@@ -61,11 +63,6 @@ class Spectrum(nn.Module):
         else:
             assert relative_floor < 0
             self.relative_floor = 10 ** (relative_floor / 10)
-
-        if type(out_format) is int and 0 <= out_format <= len(_spec2spec.keys()):
-            out_format = list(_spec2spec.keys())[out_format]
-        assert out_format in _spec2spec.keys()
-        self.out_format = out_format
 
     def forward(self, b=None, a=None):
         """Compute spectrum.
@@ -125,5 +122,8 @@ class Spectrum(nn.Module):
         if relative_floor is not None:
             m, _ = torch.max(s, dim=-1, keepdim=True)
             s = torch.maximum(s, m * relative_floor)
-        s = _spec2spec[out_format](s)
+        try:
+            s = _spec2spec[out_format](s)
+        except KeyError:
+            raise ValueError(f"out_format {out_format} is not supported.")
         return s

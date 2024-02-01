@@ -78,6 +78,14 @@ def to_3d(x):
     return y
 
 
+def check(x, names):
+    if type(x) is int and 0 <= x <= len(names):
+        x = list(names)[x]
+    if x not in names:
+        raise ValueError(f"Unsupported value: {x}")
+    return x
+
+
 def reflect(x):
     d = x.size(-1)
     y = x.view(-1, d)

@@ -86,6 +86,44 @@ def delay(x, start=0, keeplen=False, dim=-1):
     return fm.Delay._forward(x, start=start, keeplen=keeplen, dim=dim)
 
 
+def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
+    """Dequantize input.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(...,)]
+        Quantized input.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    n_bit : int >= 1
+        Number of quantization bits.
+
+    quantizer : ['mid-rise', 'mid-tread']
+        Quantizer.
+
+    Returns
+    -------
+    Tensor [shape=(...,)]
+        Dequantized input.
+
+    Examples
+    --------
+    >>> x = diffsptk.ramp(-4, 4)
+    >>> x
+    tensor([-4., -3., -2., -1.,  0.,  1.,  2.,  3.,  4.])
+    >>> y = diffsptk.functional.quantize(x, 4, 2)
+    >>> z = diffsptk.functional.dequantize(y, 4, 2)
+    >>> z
+    tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
+
+    """
+    return fm.InverseUniformQuantization_.forward(
+        y, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
+    )
+
+
 def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     """Compute group delay.
 
@@ -188,6 +226,41 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
 
     """
     return fm.Phase._forward(b, a, fft_length=fft_length, unwrap=unwrap)
+
+
+def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
+    """Quantize input.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(...,)]
+        Input.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    n_bit : int >= 1
+        Number of quantization bits.
+
+    quantizer : ['mid-rise', 'mid-tread']
+        Quantizer.
+
+    Returns
+    -------
+    Tensor [shape=(...,)]
+        Quantized input.
+
+    Examples
+    --------
+    >>> x = diffsptk.ramp(-4, 4)
+    >>> y = diffsptk.functional.quantize(4, 2)
+    >>> y
+    tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
+
+    """
+    return fm.UniformQuantization._forward(
+        x, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
+    )
 
 
 def spec(
