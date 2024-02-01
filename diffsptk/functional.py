@@ -25,7 +25,7 @@ def c2ndps(x, fft_length=512):
     c : Tensor [shape=(..., M+1)]
         Cepstrum.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
     Returns
@@ -235,7 +235,7 @@ def linear_intpl(x, upsampling_factor=1):
         Upsampled filter coefficients.
 
     """
-    return nn.LinearInterpolation_.forward(x, upsampling_factor=upsampling_factor)
+    return nn.LinearInterpolation._forward(x, upsampling_factor=upsampling_factor)
 
 
 def magic_intpl(x, magic_number=0):
@@ -268,7 +268,7 @@ def magic_intpl(x, magic_number=0):
     return nn.MagicNumberInterpolation._forward(x, magic_number=magic_number)
 
 
-def ndps2c(n, cep_order=24):
+def ndps2c(n, cep_order=0):
     """Convert NPDS to cepstrum.
 
     Parameters
@@ -276,7 +276,7 @@ def ndps2c(n, cep_order=24):
     n : Tensor [shape=(..., L/2+1)]
         NDPS, where :math:`L` is the number of FFT bins.
 
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
     Returns
