@@ -26,10 +26,10 @@ class ZeroCrossingAnalysis(nn.Module):
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
+    frame_length : int >= 1
         Frame length, :math:`L`.
 
-    norm : bool [scalar]
+    norm : bool
         If True, divide zero-crossing rate by frame length.
 
     """
@@ -52,7 +52,7 @@ class ZeroCrossingAnalysis(nn.Module):
 
         Returns
         -------
-        z : Tensor [shape=(..., T/L)]
+        Tensor [shape=(..., T/L)]
             Zero-crossing rate.
 
         Examples
@@ -66,10 +66,14 @@ class ZeroCrossingAnalysis(nn.Module):
         tensor([2., 1.])
 
         """
+        return self._forward(x, self.frame_length, self.norm)
+
+    @staticmethod
+    def _forward(x, frame_length, norm):
         x = torch.sign(x)
         x = replicate1(x, right=False)
-        x = x.unfold(-1, self.frame_length + 1, self.frame_length)
+        x = x.unfold(-1, frame_length + 1, frame_length)
         z = 0.5 * (x[..., 1:] - x[..., :-1]).abs().sum(-1)
-        if self.norm:
-            z = z / self.frame_length
+        if norm:
+            z /= frame_length
         return z

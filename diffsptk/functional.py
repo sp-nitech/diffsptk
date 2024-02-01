@@ -419,3 +419,25 @@ def spec(
         relative_floor=relative_floor,
         out_format=out_format,
     )
+
+def zcross(x, frame_length=1, norm=False):
+    """Compute zero-crossing rate.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Waveform.
+
+    frame_length : int >= 1
+        Frame length, :math:`L`.
+
+    norm : bool
+        If True, divide zero-crossing rate by frame length.
+
+    Returns
+    -------
+    z : Tensor [shape=(..., T/L)]
+        Zero-crossing rate.
+
+    """
+    return nn.ZeroCrossingAnalysis._forward(x, frame_length=frame_length, norm=norm)
