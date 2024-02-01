@@ -27,13 +27,13 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    gamma : float [-1 <= gamma <= 1]
+    gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
-    c : int >= 1 [scalar]
+    c : int >= 1 or None
         Number of stages.
 
     """
@@ -71,15 +71,17 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
 
         """
         check_size(y.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(y, self.gamma)
 
-        K, y = torch.split(y, [1, self.cep_order], dim=-1)
-        if self.gamma == 0:
+    @staticmethod
+    def _forward(y, gamma):
+        K, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
+        if gamma == 0:
             x0 = torch.log(K)
             x1 = y
         else:
-            z = torch.pow(K, self.gamma)
-            x0 = (z - 1) / self.gamma
+            z = torch.pow(K, gamma)
+            x0 = (z - 1) / gamma
             x1 = y * z
-
         x = torch.cat((x0, x1), dim=-1)
         return x

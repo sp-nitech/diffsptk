@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import check
+from ..misc.utils import check_mode
 
 _quantization_level = {
     "mid-rise": lambda n_bit: 1 << n_bit,
@@ -67,7 +67,7 @@ class UniformQuantization(nn.Module):
 
         self.abs_max = abs_max
         self.n_bit = n_bit
-        self.quantizer = check(quantizer, _quantization_level)
+        self.quantizer = check_mode(quantizer, _quantization_level)
 
         assert 0 < self.abs_max
         assert 1 <= self.n_bit

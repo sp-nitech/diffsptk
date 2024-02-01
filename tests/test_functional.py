@@ -14,27 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import pytest
-
 import diffsptk
-import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("gamma, c", [(0, None), (1, None), (0, 2)])
-def test_compatibility(device, gamma, c, M=4, B=2):
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma, c)
-
-    opt = f"-g {gamma}" if c is None else f"-c {c}"
-    U.check_compatibility(
-        device,
-        gnorm,
-        [],
-        f"nrand -l {B*(M+1)}",
-        f"gnorm -m {M} {opt}",
-        [],
-        dx=M + 1,
-        dy=M + 1,
-    )
-
-    U.check_differentiable(device, gnorm, [B, M + 1])
+def test_call():
+    funcs = dir(diffsptk.functional)
+    for func in funcs:
+        if func.startswith("__") or func == "nn":
+            continue
+        x = diffsptk.impulse(1)
+        getattr(diffsptk.functional, func)(x)

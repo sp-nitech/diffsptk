@@ -27,13 +27,13 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    gamma : float [-1 <= gamma <= 1]
+    gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
-    c : int >= 1 [scalar]
+    c : int >= 1 or None
         Number of stages.
 
     """
@@ -57,7 +57,7 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Normalized generalized cepstrum.
 
         Examples
@@ -70,15 +70,17 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
 
         """
         check_size(x.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(x, self.gamma)
 
-        x0, x1 = torch.split(x, [1, self.cep_order], dim=-1)
-        if self.gamma == 0:
+    @staticmethod
+    def _forward(x, gamma):
+        x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
+        if gamma == 0:
             K = torch.exp(x0)
             y = x1
         else:
-            z = 1 + self.gamma * x0
-            K = torch.pow(z, 1 / self.gamma)
+            z = 1 + gamma * x0
+            K = torch.pow(z, 1 / gamma)
             y = x1 / z
-
         y = torch.cat((K, y), dim=-1)
         return y

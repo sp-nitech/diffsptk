@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from . import modules as fm
+from . import modules as nn
 
 
 def decimate(x, period=1, start=0, dim=-1):
@@ -39,15 +39,8 @@ def decimate(x, period=1, start=0, dim=-1):
     Tensor [shape=(..., T/P-S, ...)]
         Decimated signal.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(9)
-    >>> y = diffsptk.functional.decimate(x, 3, start=1)
-    >>> y
-    tensor([1., 4., 7.])
-
     """
-    return fm.Decimation._forward(x, period=period, start=start, dim=dim)
+    return nn.Decimation._forward(x, period=period, start=start, dim=dim)
 
 
 def delay(x, start=0, keeplen=False, dim=-1):
@@ -72,18 +65,8 @@ def delay(x, start=0, keeplen=False, dim=-1):
     Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
         Delayed signal.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(1, 3)
-    >>> y = diffsptk.functional.delay(x, 2)
-    >>> y
-    tensor([0., 0., 1., 2., 3.])
-    >>> y = diffsptk.functional.delay(x, 2, keeplen=True)
-    >>> y
-    tensor([0., 0., 1.])
-
     """
-    return fm.Delay._forward(x, start=start, keeplen=keeplen, dim=dim)
+    return nn.Delay._forward(x, start=start, keeplen=keeplen, dim=dim)
 
 
 def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
@@ -108,20 +91,32 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     Tensor [shape=(...,)]
         Dequantized input.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(-4, 4)
-    >>> x
-    tensor([-4., -3., -2., -1.,  0.,  1.,  2.,  3.,  4.])
-    >>> y = diffsptk.functional.quantize(x, 4, 2)
-    >>> z = diffsptk.functional.dequantize(y, 4, 2)
-    >>> z
-    tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
-
     """
-    return fm.InverseUniformQuantization_.forward(
+    return nn.InverseUniformQuantization._forward(
         y, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
     )
+
+
+def gnorm(x, gamma=0):
+    """Perform cepstrum gain normalization.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., M+1)]
+        Generalized cepstrum.
+
+    Parameters
+    ----------
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Normalized generalized cepstrum.
+
+    """
+    return nn.GeneralizedCepstrumGainNormalization._forward(x, gamma=gamma)
 
 
 def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
@@ -149,17 +144,30 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     Tensor [shape=(..., L/2+1)]
         Group delay or modified group delay function.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(3)
-    >>> g = diffsptk.functional.grpdelay(x, fft_length=8)
-    >>> g
-    tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])
-
     """
-    return fm.GroupDelay._forward(
+    return nn.GroupDelay._forward(
         b, a, fft_length=fft_length, alpha=alpha, gamma=gamma, **kwargs
     )
+
+
+def ignorm(y, gamma=0):
+    """Perform cepstrum inverse gain normalization.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., M+1)]
+        Normalized generalized cepstrum.
+
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    Returns
+    -------
+    x : Tensor [shape=(..., M+1)]
+        Generalized cepstrum.
+
+    """
+    return nn.GeneralizedCepstrumInverseGainNormalization._forward(y, gamma=gamma)
 
 
 def interpolate(x, period=1, start=0, dim=-1):
@@ -184,15 +192,8 @@ def interpolate(x, period=1, start=0, dim=-1):
     Tensor [shape=(..., TxP+S, ...)]
         Interpolated signal.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(1, 3)
-    >>> y = diffsptk.functional.interpolate(x, 3, start=1)
-    >>> y
-    tensor([0., 1., 0., 0., 2., 0., 0., 3., 0., 0.])
-
     """
-    return fm.Interpolation._forward(x, period=period, start=start, dim=dim)
+    return nn.Interpolation._forward(x, period=period, start=start, dim=dim)
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):
@@ -217,15 +218,8 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
     Tensor [shape=(..., L/2+1)]
         Phase spectrum [:math:`\\pi` rad].
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(3)
-    >>> p = diffsptk.functional.phase(x, fft_length=8)
-    >>> p
-    tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])
-
     """
-    return fm.Phase._forward(b, a, fft_length=fft_length, unwrap=unwrap)
+    return nn.Phase._forward(b, a, fft_length=fft_length, unwrap=unwrap)
 
 
 def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
@@ -250,15 +244,8 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
     Tensor [shape=(...,)]
         Quantized input.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(-4, 4)
-    >>> y = diffsptk.functional.quantize(4, 2)
-    >>> y
-    tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
-
     """
-    return fm.UniformQuantization._forward(
+    return nn.UniformQuantization._forward(
         x, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
     )
 
@@ -293,16 +280,8 @@ def spec(
     Tensor [shape=(..., L/2+1)]
         Spectrum.
 
-    Examples
-    --------
-    >>> x = diffsptk.ramp(1, 3)
-    tensor([1., 2., 3.])
-    >>> s = diffsptk.functional.spec(x, fft_length=8)
-    >>> s
-    tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
-
     """
-    return fm.Spectrum._forward(
+    return nn.Spectrum._forward(
         b,
         a,
         fft_length=fft_length,

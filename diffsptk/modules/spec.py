@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import check
+from ..misc.utils import check_mode
 from ..misc.utils import remove_gain
 
 _spec2spec = {
@@ -53,7 +53,7 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
-        self.out_format = check(out_format)
+        self.out_format = check_mode(out_format, _spec2spec)
 
         assert 2 <= self.fft_length
         assert 0 <= self.eps
