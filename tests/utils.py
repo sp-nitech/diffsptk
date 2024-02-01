@@ -137,7 +137,18 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
-def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1):
+def check_differentiable(
+    device,
+    modules,
+    shapes,
+    *,
+    checks=None,
+    opt={},
+    load=1,
+    check_zero_grad=True,
+    check_nan_grad=True,
+    check_inf_grad=True,
+):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -171,12 +182,12 @@ def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1
         if not checks[i]:
             continue
         g = x[i].grad.cpu().numpy()
-        if not np.any(g):
-            warnings.warn(f"detect zero gradient at {i}-th input")
-        if np.any(np.isnan(g)):
-            warnings.warn(f"detect NaN-gradient at {i}-th input")
-        if np.any(np.isinf(g)):
-            warnings.warn(f"detect Inf-gradient at {i}-th input")
+        if check_zero_grad and not np.any(g):
+            warnings.warn(f"Detected zero gradient at {i}-th input")
+        if check_nan_grad and np.any(np.isnan(g)):
+            warnings.warn(f"Detected NaN-gradient at {i}-th input")
+        if check_inf_grad and np.any(np.isinf(g)):
+            warnings.warn(f"Detected Inf-gradient at {i}-th input")
 
 
 def check_various_shape(module, shapes, *, preprocess=None):

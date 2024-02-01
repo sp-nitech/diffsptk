@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class Frame(nn.Module):
@@ -43,20 +44,11 @@ class Frame(nn.Module):
 
         self.frame_length = frame_length
         self.frame_period = frame_period
+        self.center = center
         self.zmean = zmean
 
         assert 1 <= self.frame_length
         assert 1 <= self.frame_period
-
-        # Make padding module.
-        if center:
-            left_pad_width = self.frame_length // 2
-            right_pad_width = (self.frame_length - 1) // 2
-        else:
-            left_pad_width = 0
-            right_pad_width = self.frame_length - 1
-
-        self.pad = nn.ConstantPad1d((left_pad_width, right_pad_width), 0)
 
     def forward(self, x):
         """Apply framing to given waveform.
@@ -68,7 +60,7 @@ class Frame(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T/P, L)]
+        Tensor [shape=(..., T/P, L)]
             Framed waveform.
 
         Examples
@@ -84,8 +76,18 @@ class Frame(nn.Module):
                 [7., 8., 9., 0., 0.]])
 
         """
-        y = self.pad(x)
-        y = y.unfold(-1, self.frame_length, self.frame_period)
-        if self.zmean:
+        return self._forward(
+            x, self.frame_length, self.frame_period, self.center, self.zmean
+        )
+
+    @staticmethod
+    def _forward(x, frame_length, frame_period, center, zmean):
+        if center:
+            padding = (frame_length // 2, (frame_length - 1) // 2)
+        else:
+            padding = (0, frame_length - 1)
+        x = F.pad(x, padding)
+        y = x.unfold(-1, frame_length, frame_period)
+        if zmean:
             y = y - y.mean(-1, keepdim=True)
         return y

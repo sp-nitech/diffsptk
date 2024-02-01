@@ -119,6 +119,42 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
+def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
+    """Perform framing.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Waveform.
+
+    frame_length : int >= 1
+        Frame length, :math:`L`.
+
+    frame_peirod : int >= 1
+        Frame period, :math:`P`.
+
+    center : bool
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
+    zmean : bool
+        If True, perform mean subtraction on each frame.
+
+    Returns
+    -------
+    Tensor [shape=(..., T/P, L)]
+        Framed waveform.
+
+    """
+    return nn.Frame._forward(
+        x,
+        frame_length=frame_length,
+        frame_period=frame_period,
+        center=center,
+        zmean=zmean,
+    )
+
+
 def gnorm(x, gamma=0):
     """Perform cepstrum gain normalization.
 
