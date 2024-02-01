@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import check_size
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
@@ -27,29 +26,26 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
     """
 
-    def __init__(self, cep_order, fft_length):
+    def __init__(self, cep_order, fft_length, stateful=True):
         super(NegativeDerivativeOfPhaseSpectrumToCepstrum, self).__init__()
 
         self.cep_order = cep_order
-        half_fft_length = fft_length // 2
+        self.half_fft_length = fft_length // 2
 
         assert 0 <= self.cep_order
-        assert 2 <= fft_length
-        assert self.cep_order <= half_fft_length
+        assert max(1, self.cep_order) <= self.half_fft_length
 
-        ramp = np.arange(self.cep_order + 1, dtype=np.float64) * half_fft_length
-        if self.cep_order == half_fft_length:
-            ramp[-1] *= 2
-        ramp[1:] = 1 / ramp[1:]
-        self.register_buffer("ramp", numpy_to_torch(ramp))
+        if stateful:
+            ramp = self._make_ramp(self.cep_order, self.half_fft_length)
+            self.register_buffer("ramp", ramp)
 
     def forward(self, n):
         """Convert NPDS to cepstrum.
@@ -61,7 +57,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
 
         Returns
         -------
-        c : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Cepstrum.
 
         Examples
@@ -73,6 +69,28 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
         tensor([ 0.0000, -1.7071,  0.0000, -0.0976,  0.0000])
 
         """
-        c = torch.fft.hfft(n)[..., : self.cep_order + 1]
-        c = c * self.ramp
+        check_size(n.size(-1), self.half_fft_length + 1, "dimension of spectrum")
+        return self._forward(
+            n, self.cep_order, ramp=self.ramp if hasattr(self, "ramp") else None
+        )
+
+    @staticmethod
+    def _forward(n, cep_order, **kwargs):
+        c = torch.fft.hfft(n)[..., : cep_order + 1]
+        if kwargs.get("ramp") is None:
+            ramp = NegativeDerivativeOfPhaseSpectrumToCepstrum._make_ramp(
+                cep_order, n.size(-1) - 1, dtype=n.dtype, device=n.device
+            )
+        else:
+            ramp = kwargs.get("ramp")
+        c *= ramp
         return c
+
+    @staticmethod
+    def _make_ramp(cep_order, half_fft_length, dtype=torch.double, device=None):
+        ramp = torch.arange(cep_order + 1, dtype=dtype, device=device)
+        ramp *= half_fft_length
+        if cep_order == half_fft_length:
+            ramp[-1] *= 2
+        ramp[1:] = 1 / ramp[1:]
+        return ramp

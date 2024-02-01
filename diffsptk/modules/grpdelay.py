@@ -14,12 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import numpy_to_torch
 from ..misc.utils import remove_gain
 
 
@@ -52,8 +50,7 @@ class GroupDelay(nn.Module):
         assert 0 < self.gamma
 
         if stateful:
-            ramp = np.arange(self.fft_length)
-            self.register_buffer("ramp", numpy_to_torch(ramp))
+            self.register_buffer("ramp", self._make_ramp(self.fft_length))
 
     def forward(self, b=None, a=None):
         """Compute group delay.
@@ -83,9 +80,9 @@ class GroupDelay(nn.Module):
         return self._forward(
             b,
             a,
-            fft_length=self.fft_length,
-            alpha=self.alpha,
-            gamma=self.gamma,
+            self.fft_length,
+            self.alpha,
+            self.gamma,
             ramp=self.ramp if hasattr(self, "ramp") else None,
         )
 
@@ -115,7 +112,7 @@ class GroupDelay(nn.Module):
             raise RuntimeError("Please increase FFT length")
 
         if kwargs.get("ramp") is None:
-            ramp = torch.arange(data_length, dtype=c.dtype, device=c.device)
+            ramp = GroupDelay._make_ramp(data_length, dtype=c.dtype, device=c.device)
         else:
             ramp = kwargs.get("ramp")[:data_length]
         d = c * ramp
@@ -131,3 +128,7 @@ class GroupDelay(nn.Module):
         if alpha != 1:
             g = torch.sign(g) * torch.pow(torch.abs(g), alpha)
         return g
+
+    @staticmethod
+    def _make_ramp(length, dtype=torch.double, device=None):
+        return torch.arange(length, dtype=dtype, device=device)

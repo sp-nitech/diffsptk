@@ -21,8 +21,11 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=8, L=16, B=2):
-    ndps2c = diffsptk.NegativeDerivativeOfPhaseSpectrumToCepstrum(M, L)
+@pytest.mark.parametrize("stateful", [False, True])
+def test_compatibility(device, stateful, M=8, L=16, B=2):
+    ndps2c = diffsptk.NegativeDerivativeOfPhaseSpectrumToCepstrum(
+        M, L, stateful=stateful
+    )
 
     H = L // 2 + 1
     U.check_compatibility(

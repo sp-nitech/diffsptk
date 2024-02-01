@@ -94,10 +94,10 @@ class Spectrum(nn.Module):
         return self._forward(
             b,
             a,
-            fft_length=self.fft_length,
-            eps=self.eps,
-            relative_floor=self.relative_floor,
-            out_format=self.out_format,
+            self.fft_length,
+            self.eps,
+            self.relative_floor,
+            self.out_format,
         )
 
     @staticmethod

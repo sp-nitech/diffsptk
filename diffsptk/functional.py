@@ -17,6 +17,28 @@
 from . import modules as nn
 
 
+def c2ndps(x, fft_length=512):
+    """Convert cepstrum to NDPS.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        Cepstrum.
+
+    fft_length : int >= 2 [scalar]
+        Number of FFT bins, :math:`L`.
+
+    Returns
+    -------
+    Tensor [shape=(..., L/2+1)]
+        NDPS.
+
+    """
+    return nn.CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
+        x, fft_length=fft_length
+    )
+
+
 def decimate(x, period=1, start=0, dim=-1):
     """Decimate signal.
 
@@ -244,6 +266,28 @@ def magic_intpl(x, magic_number=0):
 
     """
     return nn.MagicNumberInterpolation._forward(x, magic_number=magic_number)
+
+
+def ndps2c(n, cep_order=24):
+    """Convert NPDS to cepstrum.
+
+    Parameters
+    ----------
+    n : Tensor [shape=(..., L/2+1)]
+        NDPS, where :math:`L` is the number of FFT bins.
+
+    cep_order : int >= 0 [scalar]
+        Order of cepstrum, :math:`M`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Cepstrum.
+
+    """
+    return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
+        n, cep_order=cep_order
+    )
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):

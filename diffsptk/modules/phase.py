@@ -67,7 +67,7 @@ class Phase(nn.Module):
         tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])
 
         """
-        return self._forward(b, a, fft_length=self.fft_length, unwrap=self.unwrap)
+        return self._forward(b, a, self.fft_length, self.unwrap)
 
     @staticmethod
     def _forward(b, a, fft_length, unwrap):
