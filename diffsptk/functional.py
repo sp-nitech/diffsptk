@@ -37,6 +37,31 @@ def b2mc(b, alpha=0):
     return nn.MLSADigitalFilterCoefficientsToMelCepstrum._forward(b, alpha=alpha)
 
 
+def c2mpir(c, ir_length=1, n_fft=512):
+    """Convert cepstrum to minimum phase impulse response.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        Cepstral coefficients.
+
+    ir_length : int >= 1
+        Length of impulse response, :math:`N`.
+
+    n_fft : int >> :math:`N`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., N)]
+        Truncated minimum phase impulse response.
+
+    """
+    return nn.CepstrumToMinimumPhaseImpulseResponse._forward(
+        c, ir_length=ir_length, n_fft=n_fft
+    )
+
+
 def c2ndps(c, fft_length=512):
     """Convert cepstrum to NDPS.
 
@@ -373,6 +398,31 @@ def mc2b(mc, alpha=0):
 
     """
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._forward(mc, alpha=alpha)
+
+
+def mpir2c(h, cep_order=0, n_fft=512):
+    """Convert minimum phase impulse response to cepstrum.
+
+    Parameters
+    ----------
+    h : Tensor [shape=(..., N)]
+        Minimum phase impulse response.
+
+    cep_order : int >= 0
+        Order of cepstrum, :math:`M`.
+
+    n_fft : int >> :math:`N`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Cepstrum.
+
+    """
+    return nn.MinimumPhaseImpulseResponseToCepstrum._forward(
+        h, cep_order=cep_order, n_fft=n_fft
+    )
 
 
 def ndps2c(n, cep_order=0):

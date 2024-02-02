@@ -23,17 +23,17 @@ from ..misc.utils import check_size
 
 class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
-    for details. The conversion uses FFT instead of recursive formula.
+    for details.
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    ir_length : int >= 1 [scalar]
+    ir_length : int >= 1
         Length of impulse response, :math:`N`.
 
-    n_fft : int >> :math:`N` [scalar]
+    n_fft : int >> :math:`N`
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -59,7 +59,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
 
         Returns
         -------
-        h : Tensor [shape=(..., N)]
+        Tensor [shape=(..., N)]
             Truncated minimum phase impulse response.
 
         Examples
@@ -72,7 +72,10 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
 
         """
         check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(c, self.ir_length, self.n_fft)
 
-        C = torch.fft.fft(c, n=self.n_fft)
-        h = torch.fft.ifft(cexp(C))[..., : self.ir_length].real
+    @staticmethod
+    def _forward(c, ir_length, n_fft):
+        C = torch.fft.fft(c, n=n_fft)
+        h = torch.fft.ifft(cexp(C))[..., :ir_length].real
         return h

@@ -23,17 +23,17 @@ from ..misc.utils import clog
 
 class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mpir2c.html>`_
-    for details. The conversion uses FFT instead of recursive formula.
+    for details.
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    ir_length : int >= 1 [scalar]
+    ir_length : int >= 1
         Length of impulse response, :math:`N`.
 
-    n_fft : int >> :math:`N` [scalar]
+    n_fft : int >> :math:`N`
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -72,8 +72,11 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
 
         """
         check_size(h.size(-1), self.ir_length, "impulse response length")
+        return self._forward(h, self.cep_order, self.n_fft)
 
-        H = torch.fft.fft(h, n=self.n_fft)
-        c = torch.fft.ifft(clog(H))[..., : self.cep_order + 1].real
+    @staticmethod
+    def _forward(h, cep_order, n_fft):
+        H = torch.fft.fft(h, n=n_fft)
+        c = torch.fft.ifft(clog(H))[..., : cep_order + 1].real
         c[..., 1:] *= 2
         return c
