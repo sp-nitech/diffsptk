@@ -14,11 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
@@ -27,25 +28,28 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order, alpha=0, stateful=True):
         super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
 
-        assert 0 <= cep_order
-        assert abs(alpha) < 1
+        self.cep_order = cep_order
+        self.alpha = alpha
 
-        # Make transform matrix.
-        A = np.eye(cep_order + 1)
-        np.fill_diagonal(A[:, 1:], alpha)
+        assert 0 <= self.cep_order
+        assert abs(self.alpha) < 1
 
-        self.register_buffer("A", numpy_to_torch(A.T))
+        if stateful:
+            # Make transform matrix.
+            A = torch.eye(self.cep_order + 1, dtype=torch.double)
+            A[:, 1:].fill_diagonal_(self.alpha)
+            self.register_buffer("A", to(A.T))
 
     def forward(self, b):
         """Convert MLSA filter coefficients to mel-cepstrum.
@@ -57,7 +61,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
         Returns
         -------
-        mc : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Mel-cepstral coefficients.
 
         Examples
@@ -70,5 +74,13 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        mc = torch.matmul(b, self.A)
+        check_size(b.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(b, alpha=self.alpha, A=getattr(self, "A", None))
+
+    @staticmethod
+    def _forward(b, alpha=0, **kwargs):
+        if kwargs.get("A") is None:
+            mc = b + F.pad(alpha * b[..., 1:], (0, 1))
+        else:
+            mc = torch.matmul(b, kwargs["A"])
         return mc

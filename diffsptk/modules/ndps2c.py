@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
@@ -70,9 +71,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
 
         """
         check_size(n.size(-1), self.half_fft_length + 1, "dimension of spectrum")
-        return self._forward(
-            n, self.cep_order, ramp=self.ramp if hasattr(self, "ramp") else None
-        )
+        return self._forward(n, self.cep_order, ramp=getattr(self, "ramp", None))
 
     @staticmethod
     def _forward(n, cep_order, **kwargs):
@@ -82,15 +81,15 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
                 cep_order, n.size(-1) - 1, dtype=n.dtype, device=n.device
             )
         else:
-            ramp = kwargs.get("ramp")
+            ramp = kwargs["ramp"]
         c *= ramp
         return c
 
     @staticmethod
-    def _make_ramp(cep_order, half_fft_length, dtype=torch.double, device=None):
-        ramp = torch.arange(cep_order + 1, dtype=dtype, device=device)
+    def _make_ramp(cep_order, half_fft_length, dtype=None, device=None):
+        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device)
         ramp *= half_fft_length
         if cep_order == half_fft_length:
             ramp[-1] *= 2
         ramp[1:] = 1 / ramp[1:]
-        return ramp
+        return to(ramp, dtype=dtype)

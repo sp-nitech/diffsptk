@@ -73,6 +73,12 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
+def to(x, dtype=None):
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+    return x.to(dtype)
+
+
 def to_3d(x):
     y = x.view(-1, 1, x.size(-1))
     return y

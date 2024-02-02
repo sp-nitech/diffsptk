@@ -14,11 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
@@ -27,28 +27,31 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order, alpha=0, stateful=True):
         super(MelCepstrumToMLSADigitalFilterCoefficients, self).__init__()
 
-        assert 0 <= cep_order
-        assert abs(alpha) < 1
+        self.cep_order = cep_order
+        self.alpha = alpha
+
+        assert 0 <= self.cep_order
+        assert abs(self.alpha) < 1
 
         # Make transform matrix.
-        A = np.eye(cep_order + 1)
-        a = 1
-        for m in range(1, len(A)):
-            a *= -alpha
-            np.fill_diagonal(A[:, m:], a)
-
-        self.register_buffer("A", numpy_to_torch(A.T))
+        if stateful:
+            a = 1
+            A = torch.eye(self.cep_order + 1, dtype=torch.double)
+            for m in range(1, len(A)):
+                a *= -self.alpha
+                A[:, m:].fill_diagonal_(a)
+            self.register_buffer("A", to(A.T))
 
     def forward(self, mc):
         """Convert mel-cepstrum to MLSA filter coefficients.
@@ -72,5 +75,17 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
         tensor([-0.1686,  0.5620,  1.4600,  1.8000,  4.0000])
 
         """
-        b = torch.matmul(mc, self.A)
+        check_size(mc.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(mc, alpha=self.alpha, A=getattr(self, "A", None))
+
+    @staticmethod
+    def _forward(mc, alpha=0, **kwargs):
+        if kwargs.get("A") is None:
+            M = mc.size(-1) - 1
+            b = torch.zeros_like(mc)
+            b[..., M] = mc[..., M]
+            for m in reversed(range(M)):
+                b[..., m] = mc[..., m] - alpha * b[..., m + 1]
+        else:
+            b = torch.matmul(mc, kwargs["A"])
         return b

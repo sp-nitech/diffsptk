@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import remove_gain
+from ..misc.utils import to
 
 
 class GroupDelay(nn.Module):
@@ -83,7 +84,7 @@ class GroupDelay(nn.Module):
             self.fft_length,
             self.alpha,
             self.gamma,
-            ramp=self.ramp if hasattr(self, "ramp") else None,
+            ramp=getattr(self, "ramp", None),
         )
 
     @staticmethod
@@ -114,7 +115,7 @@ class GroupDelay(nn.Module):
         if kwargs.get("ramp") is None:
             ramp = GroupDelay._make_ramp(data_length, dtype=c.dtype, device=c.device)
         else:
-            ramp = kwargs.get("ramp")[:data_length]
+            ramp = kwargs["ramp"][:data_length]
         d = c * ramp
         C = torch.fft.rfft(c, n=fft_length)
         D = torch.fft.rfft(d, n=fft_length)
@@ -130,5 +131,6 @@ class GroupDelay(nn.Module):
         return g
 
     @staticmethod
-    def _make_ramp(length, dtype=torch.double, device=None):
-        return torch.arange(length, dtype=dtype, device=device)
+    def _make_ramp(length, dtype=None, device=None):
+        ramp = torch.arange(length, device=device)
+        return to(ramp, dtype=dtype)

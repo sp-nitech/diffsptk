@@ -17,6 +17,26 @@
 from . import modules as nn
 
 
+def b2mc(b, alpha=0):
+    """Convert MLSA filter coefficients to mel-cepstrum.
+
+    Parameters
+    ----------
+    b : Tensor [shape=(..., M+1)]
+        MLSA filter coefficients.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Mel-cepstral coefficients.
+
+    """
+    return nn.MLSADigitalFilterCoefficientsToMelCepstrum._forward(b, alpha=alpha)
+
+
 def c2ndps(c, fft_length=512):
     """Convert cepstrum to NDPS.
 
@@ -333,6 +353,26 @@ def magic_intpl(x, magic_number=0):
 
     """
     return nn.MagicNumberInterpolation._forward(x, magic_number=magic_number)
+
+
+def mc2b(mc, alpha=0):
+    """Convert mel-cepstrum to MLSA digital filter coefficients.
+
+    Parameters
+    ----------
+    mc : Tensor [shape=(..., M+1)]
+        Mel-cepstral coefficients.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        MLSA digital filter coefficients.
+
+    """
+    return nn.MelCepstrumToMLSADigitalFilterCoefficients._forward(mc, alpha=alpha)
 
 
 def ndps2c(n, cep_order=0):
