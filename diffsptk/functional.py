@@ -330,6 +330,23 @@ def interpolate(x, period=1, start=0, dim=-1):
     return nn.Interpolation._forward(x, period=period, start=start, dim=dim)
 
 
+def levdur(r):
+    """Solve a Yule-Walker linear system.
+
+    Parameters
+    ----------
+    r : Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Gain and LPC coefficients.
+
+    """
+    return nn.LevinsonDurbin._forward(r)
+
+
 def linear_intpl(x, upsampling_factor=1):
     """Interpolate filter coefficients.
 
@@ -499,6 +516,23 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
     return nn.UniformQuantization._forward(
         x, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
     )
+
+
+def rlevdur(a):
+    """Solve a Yule-Walker linear system given LPC coefficients.
+
+    Parameters
+    ----------
+    a : Tensor [shape=(..., M+1)]
+        Gain and LPC coefficients.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    """
+    return nn.ReverseLevinsonDurbin._forward(a)
 
 
 def spec(

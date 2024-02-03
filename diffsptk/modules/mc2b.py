@@ -79,13 +79,13 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
         return self._forward(mc, alpha=self.alpha, A=getattr(self, "A", None))
 
     @staticmethod
-    def _forward(mc, alpha=0, **kwargs):
-        if kwargs.get("A") is None:
+    def _forward(mc, alpha=0, A=None):
+        if A is None:
             M = mc.size(-1) - 1
             b = torch.zeros_like(mc)
             b[..., M] = mc[..., M]
             for m in reversed(range(M)):
                 b[..., m] = mc[..., m] - alpha * b[..., m + 1]
         else:
-            b = torch.matmul(mc, kwargs["A"])
+            b = torch.matmul(mc, A)
         return b

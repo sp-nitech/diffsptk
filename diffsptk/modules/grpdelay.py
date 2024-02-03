@@ -88,7 +88,7 @@ class GroupDelay(nn.Module):
         )
 
     @staticmethod
-    def _forward(b, a, fft_length, alpha, gamma, **kwargs):
+    def _forward(b, a, fft_length, alpha, gamma, ramp=None):
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 
@@ -112,11 +112,9 @@ class GroupDelay(nn.Module):
         if fft_length < data_length:
             raise RuntimeError("Please increase FFT length")
 
-        if kwargs.get("ramp") is None:
+        if ramp is None:
             ramp = GroupDelay._make_ramp(data_length, dtype=c.dtype, device=c.device)
-        else:
-            ramp = kwargs["ramp"][:data_length]
-        d = c * ramp
+        d = c * ramp[:data_length]
         C = torch.fft.rfft(c, n=fft_length)
         D = torch.fft.rfft(d, n=fft_length)
 

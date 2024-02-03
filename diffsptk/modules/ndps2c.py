@@ -74,14 +74,12 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
         return self._forward(n, self.cep_order, ramp=getattr(self, "ramp", None))
 
     @staticmethod
-    def _forward(n, cep_order, **kwargs):
+    def _forward(n, cep_order, ramp=None):
         c = torch.fft.hfft(n)[..., : cep_order + 1]
-        if kwargs.get("ramp") is None:
+        if ramp is None:
             ramp = NegativeDerivativeOfPhaseSpectrumToCepstrum._make_ramp(
                 cep_order, n.size(-1) - 1, dtype=n.dtype, device=n.device
             )
-        else:
-            ramp = kwargs["ramp"]
         c *= ramp
         return c
 

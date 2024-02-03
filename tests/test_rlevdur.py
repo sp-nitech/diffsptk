@@ -21,8 +21,9 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=30, L=52, B=2):
-    rlevdur = diffsptk.ReverseLevinsonDurbin(M)
+@pytest.mark.parametrize("stateful", [False, True])
+def test_compatibility(device, stateful, M=30, L=52, B=2):
+    rlevdur = diffsptk.ReverseLevinsonDurbin(M, stateful=stateful)
 
     U.check_compatibility(
         device,

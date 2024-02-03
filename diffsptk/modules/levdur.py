@@ -27,7 +27,7 @@ class LevinsonDurbin(nn.Module):
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC coefficients, :math:`M`.
 
     """
@@ -64,18 +64,20 @@ class LevinsonDurbin(nn.Module):
 
         """
         check_size(r.size(-1), self.lpc_order + 1, "dimension of autocorrelation")
+        return self._forward(r)
+
+    @staticmethod
+    def _forward(r):
+        r0, r1 = torch.split(r, [1, r.size(-1) - 1], dim=-1)
 
         # Make Toeplitz matrix.
-        R = symmetric_toeplitz(r[..., :-1])
+        R = symmetric_toeplitz(r[..., :-1])  # [..., M, M]
 
         # Solve system.
-        r1 = r[..., 1:]
-        a = torch.einsum("...mn,...m->...n", R.inverse(), -r1)
+        a = torch.matmul(R.inverse(), -r1.unsqueeze(-1)).squeeze(-1)
 
         # Compute gain.
-        r0 = r[..., 0]
-        K = torch.sqrt(torch.einsum("...m,...m->...", r1, a) + r0)
-        K = K.unsqueeze(-1)
+        K = torch.sqrt((r1 * a).sum(-1, keepdim=True) + r0)
 
         a = torch.cat((K, a), dim=-1)
         return a

@@ -19,6 +19,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
+from ..misc.utils import remove_gain
 
 
 class ReverseLevinsonDurbin(nn.Module):
@@ -27,19 +28,20 @@ class ReverseLevinsonDurbin(nn.Module):
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC coefficients, :math:`M`.
 
     """
 
-    def __init__(self, lpc_order):
+    def __init__(self, lpc_order, stateful=True):
         super(ReverseLevinsonDurbin, self).__init__()
 
         self.lpc_order = lpc_order
 
         assert 0 <= self.lpc_order
 
-        self.register_buffer("eye", torch.eye(self.lpc_order + 1))
+        if stateful:
+            self.register_buffer("eye", self._make_eye(self.lpc_order + 1))
 
     def forward(self, a):
         """Solve a Yule-Walker linear system given LPC coefficients.
@@ -69,16 +71,18 @@ class ReverseLevinsonDurbin(nn.Module):
 
         """
         check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC coefficients")
+        return self._forward(a, eye=getattr(self, "eye", None))
 
-        K, a1 = torch.split(a, [1, self.lpc_order], dim=-1)
-        u = F.pad(a1.flip(-1), (0, 1), value=1)
-        e = K**2
+    @staticmethod
+    def _forward(a, eye=None):
+        M = a.size(-1) - 1
+        K, a = remove_gain(a, return_gain=True)
 
-        U = [u]
-        E = [e]
-        for m in range(self.lpc_order):
+        U = [a.flip(-1)]
+        E = [K**2]
+        for m in range(M):
             u0 = U[-1][..., :1]
-            u1 = U[-1][..., 1 : self.lpc_order - m]
+            u1 = U[-1][..., 1 : M - m]
             t = 1 / (1 - u0**2)
             u = (u1 - u0 * u1.flip(-1)) * t
             u = F.pad(u, (0, m + 2))
@@ -88,7 +92,12 @@ class ReverseLevinsonDurbin(nn.Module):
         U = torch.stack(U[::-1], dim=-1)
         E = torch.stack(E[::-1], dim=-1)
 
-        V = torch.linalg.solve_triangular(U, self.eye, upper=True, unitriangular=True)
+        if eye is None:
+            eye = ReverseLevinsonDurbin._make_eye(M + 1, dtype=a.dtype, device=a.device)
+        V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
         r = torch.matmul(V[..., :1].mT * E, V).squeeze(-2)
-        assert a.shape == r.shape
         return r
+
+    @staticmethod
+    def _make_eye(length, dtype=None, device=None):
+        return torch.eye(length, dtype=dtype, device=device)
