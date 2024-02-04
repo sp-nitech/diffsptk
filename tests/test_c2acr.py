@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_compatibility(device, m=4, M=5, L=16, B=2):
-    c2acr = diffsptk.CepstrumToAutocorrelation(M, L)
+    c2acr = diffsptk.CepstrumToAutocorrelation(m, M, L)
 
     U.check_compatibility(
         device,

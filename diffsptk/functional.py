@@ -37,6 +37,29 @@ def b2mc(b, alpha=0):
     return nn.MLSADigitalFilterCoefficientsToMelCepstrum._forward(b, alpha=alpha)
 
 
+def c2acr(c, acr_order=0, n_fft=512):
+    """Convert cepstrum to autocorrelation.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        Cepstral coefficients.
+
+    acr_order : int >= 0
+        Order of autocorrelation, :math:`N`.
+
+    n_fft : int >> :math:`N`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., N+1)]
+        Autocorrelation.
+
+    """
+    return nn.CepstrumToAutocorrelation._forward(c, acr_order=acr_order, n_fft=n_fft)
+
+
 def c2mpir(c, ir_length=1, n_fft=512):
     """Convert cepstrum to minimum phase impulse response.
 

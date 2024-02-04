@@ -17,6 +17,8 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
+
 
 class CepstrumToAutocorrelation(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2acr.html>`_
@@ -24,35 +26,39 @@ class CepstrumToAutocorrelation(nn.Module):
 
     Parameters
     ----------
-    acr_order : int >= 0 [scalar]
-        Order of autocorrelation, :math:`M_2`.
+    cep_order : int >= 0
+        Order of cepstrum, :math:`M`.
 
-    fft_length : int >= 2 [scalar]
-        Number of FFT bins, :math:`L`.
+    acr_order : int >= 0
+        Order of autocorrelation, :math:`N`.
+
+    n_fft : int >> :math:`N`
+        Number of FFT bins. Accurate conversion requires the large value.
 
     """
 
-    def __init__(self, acr_order, fft_length):
+    def __init__(self, cep_order, acr_order, n_fft=512):
         super(CepstrumToAutocorrelation, self).__init__()
 
+        self.cep_order = cep_order
         self.acr_order = acr_order
-        self.fft_length = fft_length
+        self.n_fft = n_fft
 
+        assert 0 <= self.cep_order
         assert 0 <= self.acr_order
-        assert 2 <= self.fft_length
-        assert self.acr_order <= self.fft_length // 2
+        assert max(self.cep_order + 1, self.acr_order + 1) < self.n_fft
 
     def forward(self, c):
         """Convert cepstrum to autocorrelation.
 
         Parameters
         ----------
-        c : Tensor [shape=(..., M1+1)]
-            Cepstrum.
+        c : Tensor [shape=(..., M+1)]
+            Cepstral coefficients.
 
         Returns
         -------
-        r : Tensor [shape=(..., M2+1)]
+        Tensor [shape=(..., N+1)]
             Autocorrelation.
 
         Examples
@@ -66,7 +72,12 @@ class CepstrumToAutocorrelation(nn.Module):
         tensor([ 1.0672, -0.0485, -0.1564,  0.2666, -0.4551])
 
         """
-        x = torch.fft.rfft(c, n=self.fft_length).real
+        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
+        return self._forward(c, self.acr_order, self.n_fft)
+
+    @staticmethod
+    def _forward(c, acr_order, n_fft):
+        x = torch.fft.rfft(c, n=n_fft).real
         x = torch.exp(2 * x)
-        r = torch.fft.hfft(x, norm="forward")[..., : self.acr_order + 1]
+        r = torch.fft.hfft(x, norm="forward")[..., : acr_order + 1]
         return r
