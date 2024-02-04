@@ -78,7 +78,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         return self._forward(b, alpha=self.alpha, A=getattr(self, "A", None))
 
     @staticmethod
-    def _forward(b, alpha=0, A=None):
+    def _forward(b, alpha, A=None):
         if A is None:
             mc = b + F.pad(alpha * b[..., 1:], (0, 1))
         else:

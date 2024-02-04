@@ -231,6 +231,29 @@ def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
     )
 
 
+def freqt(c, out_order=None, alpha=0):
+    """Perform frequency transform.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M1+1)]
+        Cepstral coefficients.
+
+    out_order : int >= 0 or None
+        Order of output cepstrum, :math:`M_2`. If None, set to :math:`M_1`.
+
+    alpha : float in (-1, 1)
+        Frquency warping factor, :math:`\\alpha`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M2+1)]
+        Warped cepstral coefficients.
+
+    """
+    return nn.FrequencyTransform._forward(c, out_order=out_order, alpha=alpha)
+
+
 def gnorm(x, gamma=0):
     """Perform cepstrum gain normalization.
 

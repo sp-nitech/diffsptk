@@ -14,11 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class FrequencyTransform(nn.Module):
@@ -27,52 +27,44 @@ class FrequencyTransform(nn.Module):
 
     Parameters
     ----------
-    in_order : int >= 0 [scalar]
+    in_order : int >= 0
         Order of input sequence, :math:`M_1`.
 
-    out_order : int >= 0 [scalar]
+    out_order : int >= 0
         Order of output sequence, :math:`M_2`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     """
 
-    def __init__(self, in_order, out_order, alpha=0):
+    def __init__(self, in_order, out_order, alpha=0, stateful=True):
         super(FrequencyTransform, self).__init__()
 
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert abs(alpha) < 1
+        self.in_order = in_order
+        self.out_order = out_order
+        self.alpha = alpha
 
-        beta = 1 - alpha * alpha
-        L1 = in_order + 1
-        L2 = out_order + 1
+        assert 0 <= self.in_order
+        assert 0 <= self.out_order
+        assert abs(self.alpha) < 1
 
-        # Make transform matrix.
-        A = np.zeros((L2, L1))
-        A[0, :] = alpha ** np.arange(L1)
-        if 1 < L2 and 1 < L1:
-            A[1, 1:] = alpha ** np.arange(L1 - 1) * np.arange(1, L1) * beta
-        for i in range(2, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+        if stateful:
+            self.register_buffer(
+                "A", self._make_A(self.in_order, self.out_order, self.alpha)
+            )
 
-        self.register_buffer("A", numpy_to_torch(A.T))
-
-    def forward(self, c1):
+    def forward(self, c):
         """Perform frequency transform.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M1+1)]
+        c : Tensor [shape=(..., M1+1)]
             Input sequence.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M2+1)]
+        Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         Examples
@@ -90,5 +82,36 @@ class FrequencyTransform(nn.Module):
         tensor([-9.8953e-10,  1.0000e+00,  2.0000e+00,  3.0000e+00])
 
         """
-        c2 = torch.matmul(c1, self.A)
-        return c2
+        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
+        return self._forward(c, self.out_order, self.alpha, A=getattr(self, "A", None))
+
+    @staticmethod
+    def _forward(c, out_order, alpha, A=None):
+        if A is None:
+            in_order = c.size(-1) - 1
+            if out_order is None:
+                out_order = in_order
+            A = FrequencyTransform._make_A(
+                in_order, out_order, alpha, dtype=c.dtype, device=c.device
+            )
+        d = torch.matmul(c, A)
+        return d
+
+    @staticmethod
+    def _make_A(in_order, out_order, alpha, dtype=None, device=None):
+        L1 = in_order + 1
+        L2 = out_order + 1
+        beta = 1 - alpha * alpha
+
+        # Make transform matrix.
+        arange = torch.arange(L1, dtype=torch.double)
+        A = torch.zeros((L2, L1), dtype=torch.double)
+        A[0, :] = alpha**arange
+        if 1 < L2 and 1 < L1:
+            A[1, 1:] = A[0, :-1] * beta * arange[1:]
+        for i in range(2, L2):
+            i1 = i - 1
+            for j in range(1, L1):
+                j1 = j - 1
+                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+        return to(A.T, dtype=dtype)
