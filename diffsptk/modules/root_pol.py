@@ -17,36 +17,37 @@
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_mode
 from ..misc.utils import check_size
+
+_convert = {
+    "rectangular": lambda x: x,
+    "polar": lambda x: torch.complex(x.abs(), x.angle()),
+}
 
 
 class PolynomialToRoots(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/root_pol.html>`_
     for details.
 
-    order : int >= 1 [scalar]
-        Order of coefficients.
+    order : int >= 1
+        Order of polynomial.
 
     out_format : ['rectangular', 'polar']
         Output format.
 
     """
 
-    def __init__(self, order, out_format="rectangular"):
+    def __init__(self, order, out_format="rectangular", stateful=True):
         super(PolynomialToRoots, self).__init__()
 
         self.order = order
+        self.out_format = check_mode(out_format, _convert)
 
         assert 1 <= self.order
 
-        if out_format == 0 or out_format == "rectangular":
-            self.convert = lambda x: x
-        elif out_format == 1 or out_format == "polar":
-            self.convert = lambda x: torch.complex(x.abs(), x.angle())
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
-
-        self.register_buffer("eye", torch.eye(order - 1, order))
+        if stateful:
+            self.register_buffer("eye", self._make_eye(self.order))
 
     def forward(self, a):
         """Find roots of polynomial.
@@ -58,7 +59,7 @@ class PolynomialToRoots(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(..., M)]
+        Tensor [shape=(..., M)]
             Complex roots.
 
         Examples
@@ -71,15 +72,30 @@ class PolynomialToRoots(nn.Module):
 
         """
         check_size(a.size(-1), self.order + 1, "dimension of coefficients")
+        return self._forward(a, self.out_format, eye=getattr(self, "eye", None))
+
+    @staticmethod
+    def _forward(a, out_format, eye=None):
         if torch.any(a[..., 0] == 0):
             raise RuntimeError("leading coefficient must be non-zero")
 
         # Make companion matrix.
         a = -a[..., 1:] / a[..., :1]  # (..., M)
-        E = self.eye.expand(a.size()[:-1] + self.eye.size())
+        if eye is None:
+            eye = PolynomialToRoots._make_eye(
+                a.size(-1), dtype=a.dtype, device=a.device
+            )
+        E = eye.expand(a.size()[:-1] + eye.size())
         A = torch.cat((a.unsqueeze(-2), E), dim=-2)  # (..., M, M)
 
         # Find roots as eigenvalues.
         x, _ = torch.linalg.eig(A)
-        x = self.convert(x)
+        try:
+            x = _convert[out_format](x)
+        except KeyError:
+            raise ValueError(f"out_format: {out_format} is not supported.")
         return x
+
+    @staticmethod
+    def _make_eye(order, dtype=None, device=None):
+        return torch.eye(order - 1, order, dtype=dtype, device=device)

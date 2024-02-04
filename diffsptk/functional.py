@@ -513,6 +513,23 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
     return nn.Phase._forward(b, a, fft_length=fft_length, unwrap=unwrap)
 
 
+def pol_root(x):
+    """Compute polynomial coefficients from roots.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., M)]
+        Complex roots.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Polynomial coefficients.
+
+    """
+    return nn.RootsToPolynomial._forward(x)
+
+
 def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
     """Quantize input.
 
@@ -556,6 +573,26 @@ def rlevdur(a):
 
     """
     return nn.ReverseLevinsonDurbin._forward(a)
+
+
+def root_pol(a, out_format="rectangular"):
+    """Compute roots of polynomial.
+
+    Parameters
+    ----------
+    a : Tensor [shape=(..., M+1)]
+        Polynomial coefficients.
+
+    out_format : ['rectangular', 'polar']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(..., M)]
+        Roots of polynomial.
+
+    """
+    return nn.PolynomialToRoots._forward(a, out_format=out_format)
 
 
 def spec(

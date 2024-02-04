@@ -24,8 +24,9 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1])
-def test_compatibility(device, out_format, M=12, B=2):
-    root_pol = diffsptk.PolynomialToRoots(M, out_format=out_format)
+@pytest.mark.parametrize("stateful", [False, True])
+def test_compatibility(device, stateful, out_format, M=12, B=2):
+    root_pol = diffsptk.PolynomialToRoots(M, out_format=out_format, stateful=stateful)
 
     def eq(y_hat, y):
         y_hat = np.sort_complex(y_hat)

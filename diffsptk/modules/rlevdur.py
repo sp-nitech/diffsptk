@@ -41,7 +41,7 @@ class ReverseLevinsonDurbin(nn.Module):
         assert 0 <= self.lpc_order
 
         if stateful:
-            self.register_buffer("eye", self._make_eye(self.lpc_order + 1))
+            self.register_buffer("eye", self._make_eye(self.lpc_order))
 
     def forward(self, a):
         """Solve a Yule-Walker linear system given LPC coefficients.
@@ -93,11 +93,11 @@ class ReverseLevinsonDurbin(nn.Module):
         E = torch.stack(E[::-1], dim=-1)
 
         if eye is None:
-            eye = ReverseLevinsonDurbin._make_eye(M + 1, dtype=a.dtype, device=a.device)
+            eye = ReverseLevinsonDurbin._make_eye(M, dtype=a.dtype, device=a.device)
         V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
         r = torch.matmul(V[..., :1].mT * E, V).squeeze(-2)
         return r
 
     @staticmethod
-    def _make_eye(length, dtype=None, device=None):
-        return torch.eye(length, dtype=dtype, device=device)
+    def _make_eye(order, dtype=None, device=None):
+        return torch.eye(order + 1, dtype=dtype, device=device)

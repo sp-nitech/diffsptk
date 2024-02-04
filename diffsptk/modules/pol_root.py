@@ -24,8 +24,8 @@ from ..misc.utils import check_size
 class RootsToPolynomial(nn.Module):
     """This is the opposite module to :func:`~diffsptk.PolynomialToRoots`.
 
-    order : int >= 1 [scalar]
-        Order of coefficients.
+    order : int >= 1
+        Order of polynomial.
 
     """
 
@@ -46,7 +46,7 @@ class RootsToPolynomial(nn.Module):
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Polynomial coefficients.
 
         Examples
@@ -59,8 +59,13 @@ class RootsToPolynomial(nn.Module):
 
         """
         check_size(x.size(-1), self.order, "number of roots")
+        return self._forward(x)
 
-        a = F.pad(torch.ones_like(x[..., :1]), (0, self.order))
-        for m in range(self.order):
-            a[..., 1:] = a[..., 1:].clone() - x[..., m : m + 1] * a[..., :-1].clone()
+    @staticmethod
+    def _forward(x):
+        M = x.size(-1)
+        a = F.pad(torch.zeros_like(x), (1, 0), value=1)
+        for m in range(M):
+            z = a.clone()
+            a[..., 1:] = z[..., 1:] - x[..., m : m + 1] * z[..., :-1]
         return a

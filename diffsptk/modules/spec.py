@@ -20,7 +20,7 @@ import torch.nn as nn
 from ..misc.utils import check_mode
 from ..misc.utils import remove_gain
 
-_spec2spec = {
+_convert = {
     "db": lambda x: 10 * torch.log10(x),
     "log-magnitude": lambda x: 0.5 * torch.log(x),
     "magnitude": lambda x: torch.sqrt(x),
@@ -53,7 +53,7 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
-        self.out_format = check_mode(out_format, _spec2spec)
+        self.out_format = check_mode(out_format, _convert)
 
         assert 2 <= self.fft_length
         assert 0 <= self.eps
@@ -123,7 +123,7 @@ class Spectrum(nn.Module):
             m, _ = torch.max(s, dim=-1, keepdim=True)
             s = torch.maximum(s, m * relative_floor)
         try:
-            s = _spec2spec[out_format](s)
+            s = _convert[out_format](s)
         except KeyError:
             raise ValueError(f"out_format {out_format} is not supported.")
         return s
