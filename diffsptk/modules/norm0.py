@@ -26,7 +26,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
 
     Parameters
     ----------
-    filter_order : int >= 0 [scalar]
+    filter_order : int >= 0
         Order of filter coefficients, :math:`M`.
 
     """
@@ -35,6 +35,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         super(AllPoleToAllZeroDigitalFilterCoefficients, self).__init__()
 
         self.filter_order = filter_order
+
         assert 0 <= self.filter_order
 
     def forward(self, a):
@@ -60,8 +61,11 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
 
         """
         check_size(a.size(-1), self.filter_order + 1, "dimension of coefficients")
+        return self._forward(a)
 
-        K, a1 = torch.split(a, [1, self.filter_order], dim=-1)
+    @staticmethod
+    def _forward(a):
+        K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
         b0 = torch.reciprocal(K)
         b1 = a1 * b0
         b = torch.cat((b0, b1), dim=-1)

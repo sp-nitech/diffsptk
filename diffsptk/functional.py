@@ -241,6 +241,34 @@ def excite(p, frame_period=1, voiced_region="pulse", unvoiced_region="gauss"):
     )
 
 
+def fftcep(x, cep_order=0, n_iter=0, accel=0):
+    """Estimate cepstrum from spectrum.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        Power spectrum.
+
+    cep_order : int >= 0
+        Order of cepstrum, :math:`M`.
+
+    n_iter : int >= 0
+        Number of iterations.
+
+    accel : float >= 0
+        Acceleration factor.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Cepstrum.
+
+    """
+    return nn.CepstralAnalysis._forward(
+        x, cep_order=cep_order, n_iter=n_iter, accel=accel
+    )
+
+
 def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
     """Perform framing.
 
@@ -577,6 +605,23 @@ def ndps2c(n, cep_order=0):
     return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
         n, cep_order=cep_order
     )
+
+
+def norm0(a):
+    """Convert all-pole to all-zero filter coefficients vice versa.
+
+    Parameters
+    ----------
+    a : Tensor [shape=(..., M+1)]
+        All-pole or all-zero filter coefficients.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        All-zero or all-pole filter coefficients.
+
+    """
+    return nn.AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):

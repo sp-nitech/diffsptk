@@ -22,7 +22,8 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("n_iter", [0, 3])
-def test_compatibility(device, n_iter, M=8, L=16, B=2, accel=0.001):
+@pytest.mark.parametrize("M", [7, 8])
+def test_compatibility(device, n_iter, M, L=16, B=2, accel=0.001):
     spec = diffsptk.Spectrum(L, eps=0)
     fftcep = diffsptk.CepstralAnalysis(M, L, n_iter=n_iter, accel=accel)
 

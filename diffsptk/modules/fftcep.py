@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from ..misc.utils import is_power_of_two
+from ..misc.utils import check_size
 
 
 class CepstralAnalysis(nn.Module):
@@ -27,16 +27,16 @@ class CepstralAnalysis(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    fft_length : int >= 2M [scalar]
+    fft_length : int >= 2M
         Number of FFT bins, :math:`L`.
 
-    n_iter : int >= 0 [scalar]
+    n_iter : int >= 0
         Number of iterations.
 
-    accel : float >= 0 [scalar]
+    accel : float >= 0
         Acceleration factor.
 
     """
@@ -47,13 +47,11 @@ class CepstralAnalysis(nn.Module):
         self.cep_order = cep_order
         self.fft_length = fft_length
         self.n_iter = n_iter
-        self.accel = 1 + accel
+        self.accel = accel
 
-        assert 0 <= self.cep_order
-        assert self.cep_order <= self.fft_length // 2
-        assert is_power_of_two(self.fft_length)
+        assert 0 <= self.cep_order <= self.fft_length // 2
         assert 0 <= self.n_iter
-        assert 1 <= self.accel
+        assert 0 <= self.accel
 
     def forward(self, x):
         """Estimate cepstrum from spectrum.
@@ -79,22 +77,26 @@ class CepstralAnalysis(nn.Module):
                 [-0.8539,  4.6173, -0.5496, -0.3207]])
 
         """
-        M = self.cep_order
-        H = self.fft_length // 2
+        check_size(x.size(-1), self.fft_length // 2 + 1, "dimension of spectrum")
+        return self._forward(x, self.cep_order, self.n_iter, self.accel)
+
+    @staticmethod
+    def _forward(x, cep_order, n_iter, accel):
+        N = cep_order + 1
+        H = x.size(-1)
 
         e = torch.fft.irfft(torch.log(x))
-        v = e[..., : M + 1]
-        e = F.pad(e[..., M + 1 : H + 1], (M + 1, 0))
+        v = e[..., :N]
+        e = F.pad(e[..., N:H], (N, 0))
 
-        for _ in range(self.n_iter):
+        for _ in range(n_iter):
             e = torch.fft.hfft(e)
             e.masked_fill_(e < 0, 0)
             e = torch.fft.ihfft(e).real
+            t = e[..., :N] * (1 + accel)
+            v += t
+            e -= F.pad(t, (0, H - N))
 
-            t = e[..., : M + 1] * self.accel
-            v = v + t
-            e = e - F.pad(t, (0, H - M))
-
-        indices = [0, M] if H == M else [0]
+        indices = [0, N - 1] if H == N else [0]
         v[..., indices] *= 0.5
         return v
