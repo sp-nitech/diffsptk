@@ -41,7 +41,7 @@ class MuLawExpansion(nn.Module):
         assert 0 < self.abs_max
         assert 1 <= self.mu
 
-        self.const = self.abs_max / self.mu
+        self.const = self._make_const(self.abs_max, self.mu)
 
     def forward(self, y):
         """Expand waveform by :math:`\\mu`-law algorithm.
@@ -66,6 +66,16 @@ class MuLawExpansion(nn.Module):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        y_abs = y.abs() / self.abs_max
-        x = self.const * torch.sign(y) * (torch.pow(1 + self.mu, y_abs) - 1)
+        return self._forward(y, self.abs_max, self.mu, const=self.const)
+
+    @staticmethod
+    def _forward(y, abs_max, mu, const=None):
+        y_abs = y.abs() / abs_max
+        if const is None:
+            const = MuLawExpansion._make_const(abs_max, mu)
+        x = const * torch.sign(y) * (torch.pow(1 + mu, y_abs) - 1)
         return x
+
+    @staticmethod
+    def _make_const(abs_max, mu):
+        return abs_max / mu

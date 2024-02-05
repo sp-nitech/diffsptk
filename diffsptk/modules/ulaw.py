@@ -43,7 +43,7 @@ class MuLawCompression(nn.Module):
         assert 0 < self.abs_max
         assert 1 <= self.mu
 
-        self.const = self.abs_max / math.log1p(self.mu)
+        self.const = self._make_const(self.abs_max, self.mu)
 
     def forward(self, x):
         """Compress waveform by :math:`\\mu`-law algorithm.
@@ -67,6 +67,16 @@ class MuLawCompression(nn.Module):
         tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
 
         """
-        x_abs = x.abs() / self.abs_max
-        y = self.const * torch.sign(x) * torch.log1p(self.mu * x_abs)
+        return self._forward(x, self.abs_max, self.mu, const=self.const)
+
+    @staticmethod
+    def _forward(x, abs_max, mu, const=None):
+        x_abs = x.abs() / abs_max
+        if const is None:
+            const = MuLawCompression._make_const(abs_max, mu)
+        y = const * torch.sign(x) * torch.log1p(mu * x_abs)
         return y
+
+    @staticmethod
+    def _make_const(abs_max, mu):
+        return abs_max / math.log1p(mu)

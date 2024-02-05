@@ -33,7 +33,7 @@ def alaw(x, abs_max=1, a=87.6):
 
     Returns
     -------
-    y : Tensor [shape=(...,)]
+    Tensor [shape=(...,)]
         Compressed waveform.
 
     """
@@ -369,7 +369,7 @@ def ialaw(y, abs_max=1, a=87.6):
 
     Returns
     -------
-    x : Tensor [shape=(...,)]
+    Tensor [shape=(...,)]
         Waveform.
 
     """
@@ -420,6 +420,29 @@ def interpolate(x, period=1, start=0, dim=-1):
 
     """
     return nn.Interpolation._forward(x, period=period, start=start, dim=dim)
+
+
+def iulaw(y, abs_max=1, mu=255):
+    """Expand waveform by :math:`\\mu`-law algorithm.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(...,)]
+        Compressed waveform.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    mu : int >= 1
+        Compression factor, :math:`\\mu`.
+
+    Returns
+    -------
+    Tensor [shape=(...,)]
+        Waveform.
+
+    """
+    return nn.MuLawExpansion._forward(y, abs_max=abs_max, mu=mu)
 
 
 def levdur(r):
@@ -703,6 +726,29 @@ def spec(
         relative_floor=relative_floor,
         out_format=out_format,
     )
+
+
+def ulaw(x, abs_max=1, mu=255):
+    """Compress waveform by :math:`\\mu`-law algorithm.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(...,)]
+        Waveform.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    mu : int >= 1
+        Compression factor, :math:`\\mu`.
+
+    Returns
+    -------
+    Tensor [shape=(...,)]
+        Compressed waveform.
+
+    """
+    return nn.MuLawCompression._forward(x, abs_max=abs_max, mu=mu)
 
 
 def zcross(x, frame_length=1, norm=False):
