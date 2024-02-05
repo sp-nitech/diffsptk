@@ -26,10 +26,10 @@ class ALawCompression(nn.Module):
 
     Parameters
     ----------
-    abs_max : float > 0 [scalar]
+    abs_max : float > 0
         Absolute maximum value of input.
 
-    a : float >= 1 [scalar]
+    a : float >= 1
         Compression factor, :math:`A`.
 
     """
@@ -43,7 +43,7 @@ class ALawCompression(nn.Module):
         assert 0 < self.abs_max
         assert 1 <= self.a
 
-        self.const = self.abs_max / (1 + math.log(self.a))
+        self.const = self._make_const(self.abs_max, self.a)
 
     def forward(self, x):
         """Compress waveform by A-law algorithm.
@@ -67,9 +67,19 @@ class ALawCompression(nn.Module):
         tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
 
         """
-        x_abs = x.abs() / self.abs_max
-        x1 = self.a * x_abs
+        return self._forward(x, self.abs_max, self.a, const=self.const)
+
+    @staticmethod
+    def _forward(x, abs_max, a, const=None):
+        x_abs = x.abs() / abs_max
+        x1 = a * x_abs
         x2 = 1 + torch.log(x1)
-        condition = x_abs < (1 / self.a)
-        y = self.const * torch.sign(x) * torch.where(condition, x1, x2)
+        condition = x_abs < 1 / a
+        if const is None:
+            const = ALawCompression._make_const(abs_max, a)
+        y = const * torch.sign(x) * torch.where(condition, x1, x2)
         return y
+
+    @staticmethod
+    def _make_const(abs_max, a):
+        return abs_max / (1 + math.log(a))

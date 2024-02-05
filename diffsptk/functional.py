@@ -17,6 +17,29 @@
 from . import modules as nn
 
 
+def alaw(x, abs_max=1, a=87.6):
+    """Compress waveform by A-law algorithm.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(...,)]
+        Waveform.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    a : float >= 1
+        Compression factor, :math:`A`.
+
+    Returns
+    -------
+    y : Tensor [shape=(...,)]
+        Compressed waveform.
+
+    """
+    return nn.ALawCompression._forward(x, abs_max=abs_max, a=a)
+
+
 def b2mc(b, alpha=0):
     """Convert MLSA filter coefficients to mel-cepstrum.
 
@@ -328,6 +351,29 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     return nn.GroupDelay._forward(
         b, a, fft_length=fft_length, alpha=alpha, gamma=gamma, **kwargs
     )
+
+
+def ialaw(y, abs_max=1, a=87.6):
+    """Expand waveform by A-law algorithm.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(...,)]
+        Compressed waveform.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    a : float >= 1
+        Compression factor, :math:`A`.
+
+    Returns
+    -------
+    x : Tensor [shape=(...,)]
+        Waveform.
+
+    """
+    return nn.ALawExpansion._forward(y, abs_max=abs_max, a=a)
 
 
 def ignorm(y, gamma=0):
