@@ -76,7 +76,7 @@ class LinearInterpolation(nn.Module):
         assert x.dim() == 3, "Input must be 3D tensor"
         B, T, D = x.shape
 
-        x = x.mT  # (B, D, T)
+        x = x.mT.contiguous()  # (B, D, T)
         x = replicate1(x, left=False)
         x = F.interpolate(
             x,

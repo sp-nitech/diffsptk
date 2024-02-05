@@ -75,15 +75,15 @@ def test_compatibility(
 @pytest.mark.parametrize("ignore_gain", [False, True])
 @pytest.mark.parametrize("phase", ["minimum", "maximum", "zero"])
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
-def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, M=4):
+def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, P=2, M=4):
     if mode == "multi-stage":
         params = {"cep_order": 10}
     elif mode == "single-stage":
         params = {"ir_length": 20, "n_fft": 32}
     elif mode == "freq-domain":
-        params = {"frame_length": 4, "fft_length": 16}
+        params = {"frame_length": 6, "fft_length": 16}
 
     mglsadf = diffsptk.MLSA(
-        M, 1, ignore_gain=ignore_gain, phase=phase, mode=mode, **params
+        M, P, ignore_gain=ignore_gain, phase=phase, mode=mode, **params
     )
-    U.check_differentiable(device, mglsadf, [(B, T), (B, T, M + 1)])
+    U.check_differentiable(device, mglsadf, [(B, T), (B, T // P, M + 1)])
