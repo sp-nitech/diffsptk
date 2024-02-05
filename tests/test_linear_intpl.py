@@ -21,7 +21,8 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, P=4, N=10):
+@pytest.mark.parametrize("P", [1, 4])
+def test_compatibility(device, P, N=10):
     linear_intpl = diffsptk.LinearInterpolation(P)
 
     tmp = "linear_intpl.tmp"
@@ -30,7 +31,11 @@ def test_compatibility(device, P=4, N=10):
         linear_intpl,
         [f"ramp -s 1 -e {N} > {tmp}"],
         f"cat {tmp}",
-        f"step -v 1 -l {N*P} | zerodf {tmp} -i 1 -m 0 -p {P}",
+        (
+            f"cat {tmp}"
+            if P == 1
+            else f"step -v 1 -l {N*P} | zerodf {tmp} -i 1 -m 0 -p {P}"
+        ),
         [f"rm {tmp}"],
     )
 

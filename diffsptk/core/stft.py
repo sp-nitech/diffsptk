@@ -81,13 +81,15 @@ class ShortTermFourierTransform(nn.Module):
         self.stft = nn.Sequential(
             Frame(frame_length, frame_period, center=center, zmean=zmean),
             Window(frame_length, fft_length, norm=norm, window=window),
-            Lambda(torch.fft.rfft)
-            if out_format == "complex"
-            else Spectrum(
-                fft_length,
-                out_format=out_format,
-                eps=eps,
-                relative_floor=relative_floor,
+            (
+                Lambda(torch.fft.rfft)
+                if out_format == "complex"
+                else Spectrum(
+                    fft_length,
+                    out_format=out_format,
+                    eps=eps,
+                    relative_floor=relative_floor,
+                )
             ),
         )
 
