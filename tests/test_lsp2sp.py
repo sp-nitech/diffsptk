@@ -38,4 +38,4 @@ def test_compatibility(device, M, out_format, L=16, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiable(device, [lsp2sp, torch.abs], [B, M + 1])
+    U.check_differentiability(device, [lsp2sp, torch.abs], [B, M + 1])

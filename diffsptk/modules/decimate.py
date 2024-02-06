@@ -78,3 +78,5 @@ class Decimation(nn.Module):
         indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
         y = torch.index_select(x, dim, indices)
         return y
+
+    _func = _forward

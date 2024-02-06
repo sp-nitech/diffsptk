@@ -38,4 +38,4 @@ def test_compatibility(device, reduction, B=2, M=19):
         dx=M + 1,
     )
 
-    U.check_differentiable(device, cdist, [(B, M + 1), (B, M + 1)])
+    U.check_differentiability(device, cdist, [(B, M + 1), (B, M + 1)])

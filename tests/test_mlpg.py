@@ -61,4 +61,4 @@ def test_compatibility(device, seed, T=100, D=2):
 def test_differentiable(device, B=2, T=20, D=2):
     delta = diffsptk.Delta()
     mlpg = diffsptk.MLPG(T)
-    U.check_differentiable(device, [mlpg, delta], [B, T, D])
+    U.check_differentiability(device, [mlpg, delta], [B, T, D])

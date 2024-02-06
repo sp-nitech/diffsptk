@@ -55,4 +55,4 @@ def test_compatibility(device, P, strict, fast, mod_type, M=9, L=32, alpha=0.1, 
         dy=M + 1,
     )
 
-    U.check_differentiable(device, mlsacheck, [B, M + 1])
+    U.check_differentiability(device, mlsacheck, [B, M + 1])

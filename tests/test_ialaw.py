@@ -33,4 +33,4 @@ def test_compatibility(device, v=10, a=80, L=10):
         [],
     )
 
-    U.check_differentiable(device, ialaw, [L])
+    U.check_differentiability(device, ialaw, [L])

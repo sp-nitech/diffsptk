@@ -37,4 +37,4 @@ def test_compatibility(device, stateful, M=30, L=52, B=2):
     )
 
     lpc = diffsptk.LPC(M, L)
-    U.check_differentiable(device, [rlevdur, lpc], [B, L])
+    U.check_differentiability(device, [rlevdur, lpc], [B, L])

@@ -45,4 +45,4 @@ def test_compatibility(
     y_hat = yingram(frame(x))
     assert torch.allclose(y, y_hat)
 
-    U.check_differentiable(device, yingram, [B, fl])
+    U.check_differentiability(device, yingram, [B, fl])

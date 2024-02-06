@@ -36,7 +36,7 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         dx=T,
     )
 
-    U.check_differentiable(device, ipqmf, [K, T], opt={"keepdim": False})
+    U.check_differentiability(device, ipqmf, [K, T], opt={"keepdim": False})
 
 
 def test_learnable(K=4, M=10, T=20):

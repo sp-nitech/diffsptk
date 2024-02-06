@@ -73,4 +73,4 @@ def test_compatibility(
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [mgc2mgc, torch.abs], [B, m + 1])
+    U.check_differentiability(device, [mgc2mgc, torch.abs], [B, m + 1])

@@ -21,9 +21,12 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("stateful", [False, True])
-def test_compatibility(device, stateful, m=19, M=29, alpha=0.1, B=2):
-    freqt = diffsptk.FrequencyTransform(m, M, alpha, stateful=stateful)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, m=19, M=29, alpha=0.1, B=2):
+    if module:
+        freqt = diffsptk.FrequencyTransform(m, M, alpha)
+    else:
+        freqt = U.argset(diffsptk.functional.freqt, M, alpha)
 
     U.check_compatibility(
         device,
@@ -36,4 +39,4 @@ def test_compatibility(device, stateful, m=19, M=29, alpha=0.1, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, freqt, [B, m + 1])
+    U.check_differentiability(device, freqt, [B, m + 1])

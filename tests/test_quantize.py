@@ -34,4 +34,4 @@ def test_compatibility(device, quantizer, v=3, n_bit=8, L=20):
         [],
     )
 
-    U.check_differentiable(device, quantize, [L])
+    U.check_differentiability(device, quantize, [L])

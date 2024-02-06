@@ -38,6 +38,6 @@ def test_compatibility(device, L=32, M=9, rate=0.8, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(
+    U.check_differentiability(
         device, [lspcheck, lambda x: torch.sort(x)[0], torch.abs], [B, M + 1]
     )

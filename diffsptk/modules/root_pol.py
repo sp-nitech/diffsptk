@@ -17,13 +17,7 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import check_mode
 from ..misc.utils import check_size
-
-_convert = {
-    "rectangular": lambda x: x,
-    "polar": lambda x: torch.complex(x.abs(), x.angle()),
-}
 
 
 class PolynomialToRoots(nn.Module):
@@ -38,16 +32,15 @@ class PolynomialToRoots(nn.Module):
 
     """
 
-    def __init__(self, order, out_format="rectangular", stateful=True):
+    def __init__(self, order, out_format="rectangular"):
         super(PolynomialToRoots, self).__init__()
 
         self.order = order
-        self.out_format = check_mode(out_format, _convert)
+        eye, self.out_format = self._precompute(self.order, out_format)
 
         assert 1 <= self.order
 
-        if stateful:
-            self.register_buffer("eye", self._make_eye(self.order))
+        self.register_buffer("eye", eye)
 
     def forward(self, a):
         """Find roots of polynomial.
@@ -72,30 +65,35 @@ class PolynomialToRoots(nn.Module):
 
         """
         check_size(a.size(-1), self.order + 1, "dimension of coefficients")
-        return self._forward(a, self.out_format, eye=getattr(self, "eye", None))
+        return self._forward(a, self.eye, self.out_format)
 
     @staticmethod
-    def _forward(a, out_format, eye=None):
+    def _forward(a, eye, out_format):
         if torch.any(a[..., 0] == 0):
             raise RuntimeError("leading coefficient must be non-zero")
 
         # Make companion matrix.
         a = -a[..., 1:] / a[..., :1]  # (..., M)
-        if eye is None:
-            eye = PolynomialToRoots._make_eye(
-                a.size(-1), dtype=a.dtype, device=a.device
-            )
         E = eye.expand(a.size()[:-1] + eye.size())
         A = torch.cat((a.unsqueeze(-2), E), dim=-2)  # (..., M, M)
 
         # Find roots as eigenvalues.
         x, _ = torch.linalg.eig(A)
-        try:
-            x = _convert[out_format](x)
-        except KeyError:
-            raise ValueError(f"out_format: {out_format} is not supported.")
+        x = out_format(x)
         return x
 
     @staticmethod
-    def _make_eye(order, dtype=None, device=None):
-        return torch.eye(order - 1, order, dtype=dtype, device=device)
+    def _func(a, out_format):
+        precomputes = PolynomialToRoots._precompute(
+            a.size(-1) - 1, out_format, dtype=a.dtype, device=a.device
+        )
+        return PolynomialToRoots._forward(a, *precomputes)
+
+    @staticmethod
+    def _precompute(order, out_format, dtype=None, device=None):
+        eye = torch.eye(order - 1, order, dtype=dtype, device=device)
+        if out_format == 0 or out_format == "rectangular":
+            return eye, lambda x: x
+        elif out_format == 1 or out_format == "polar":
+            return eye, lambda x: torch.complex(x.abs(), x.angle())
+        raise ValueError(f"out_format {out_format} is not supported.")

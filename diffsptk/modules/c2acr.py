@@ -46,7 +46,7 @@ class CepstrumToAutocorrelation(nn.Module):
 
         assert 0 <= self.cep_order
         assert 0 <= self.acr_order
-        assert max(self.cep_order + 1, self.acr_order + 1) < self.n_fft
+        assert max(self.cep_order + 1, self.acr_order + 1) <= self.n_fft
 
     def forward(self, c):
         """Convert cepstrum to autocorrelation.
@@ -81,3 +81,5 @@ class CepstrumToAutocorrelation(nn.Module):
         x = torch.exp(2 * x)
         r = torch.fft.hfft(x, norm="forward")[..., : acr_order + 1]
         return r
+
+    _func = _forward

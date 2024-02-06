@@ -17,9 +17,6 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import check_mode
-from .quantize import _quantization_level
-
 
 class InverseUniformQuantization(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/dequantize.html>`_
@@ -42,11 +39,10 @@ class InverseUniformQuantization(nn.Module):
         super(InverseUniformQuantization, self).__init__()
 
         self.abs_max = abs_max
-        self.n_bit = n_bit
-        self.quantizer = check_mode(quantizer, _quantization_level)
+        self.precomputes = self._precompute(n_bit, quantizer)
 
         assert 0 < self.abs_max
-        assert 1 <= self.n_bit
+        assert 1 <= n_bit
 
     def forward(self, y):
         """Dequantize input.
@@ -73,21 +69,35 @@ class InverseUniformQuantization(nn.Module):
         tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
 
         """
-        return self._forward(y, self.abs_max, self.n_bit, self.quantizer)
+        return self._forward(y, self.abs_max, self.precomputes)
 
     @staticmethod
-    def _forward(y, abs_max, n_bit, quantizer):
-        try:
-            level = _quantization_level[quantizer](n_bit)
-        except KeyError:
-            raise ValueError(f"quantizer {quantizer} is not supported")
-
-        if quantizer == "mid-rise":
-            y = y - (level // 2 - 0.5)
-        elif quantizer == "mid-tread":
-            y = y - (level - 1) // 2
-        else:
-            raise ValueError(f"quantizer {quantizer} is not supported")
+    def _forward(y, abs_max, precomputes):
+        level, func = precomputes
+        y = func(y)
         x = y * (2 * abs_max / level)
         x = torch.clip(x, min=-abs_max, max=abs_max)
         return x
+
+    @staticmethod
+    def _func(y, abs_max, n_bit, quantizer):
+        precomputes = InverseUniformQuantization._precompute(n_bit, quantizer)
+        return InverseUniformQuantization._forward(y, abs_max, precomputes)
+
+    @staticmethod
+    def _precompute(n_bit, quantizer):
+        if quantizer == 0 or quantizer == "mid-rise":
+            level = 1 << n_bit
+
+            def func(y):
+                return y - (level // 2 - 0.5)
+
+        elif quantizer == 1 or quantizer == "mid-tread":
+            level = (1 << n_bit) - 1
+
+            def func(y):
+                return y - (level // 2)
+
+        else:
+            raise ValueError(f"quantizer {quantizer} is not supported.")
+        return level, func

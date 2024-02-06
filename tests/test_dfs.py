@@ -37,7 +37,7 @@ def test_compatibility(device, mode, b=[-0.42, 1], a=[1, -0.42], T=100):
         [],
     )
 
-    U.check_differentiable(device, dfs, [T])
+    U.check_differentiability(device, dfs, [T])
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -58,7 +58,7 @@ def test_compatibility_b(device, mode, b=[-0.42, 1], T=100):
         [f"rm {tmp1} {tmp2}"],
     )
 
-    U.check_differentiable(device, dfs, [(T,), (len(b),)])
+    U.check_differentiability(device, dfs, [(T,), (len(b),)])
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
@@ -85,7 +85,7 @@ def test_compatibility_b_a(device, mode, b=[-0.42, 1], a=[1, -0.42, 0], T=100):
         [f"rm {tmp1} {tmp2} {tmp3}"],
     )
 
-    U.check_differentiable(device, dfs, [(T,), (len(b),), (len(a),)])
+    U.check_differentiability(device, dfs, [(T,), (len(b),), (len(a),)])
 
 
 def test_various_shape(T=10):

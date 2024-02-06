@@ -38,7 +38,7 @@ class FrequencyTransform(nn.Module):
 
     """
 
-    def __init__(self, in_order, out_order, alpha=0, stateful=True):
+    def __init__(self, in_order, out_order, alpha=0):
         super(FrequencyTransform, self).__init__()
 
         self.in_order = in_order
@@ -49,10 +49,9 @@ class FrequencyTransform(nn.Module):
         assert 0 <= self.out_order
         assert abs(self.alpha) < 1
 
-        if stateful:
-            self.register_buffer(
-                "A", self._make_A(self.in_order, self.out_order, self.alpha)
-            )
+        self.register_buffer(
+            "A", self._precompute(self.in_order, self.out_order, self.alpha)
+        )
 
     def forward(self, c):
         """Perform frequency transform.
@@ -83,22 +82,25 @@ class FrequencyTransform(nn.Module):
 
         """
         check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.out_order, self.alpha, A=getattr(self, "A", None))
+        return self._forward(c, self.A)
 
     @staticmethod
-    def _forward(c, out_order, alpha, A=None):
-        if A is None:
-            in_order = c.size(-1) - 1
-            if out_order is None:
-                out_order = in_order
-            A = FrequencyTransform._make_A(
-                in_order, out_order, alpha, dtype=c.dtype, device=c.device
-            )
+    def _forward(c, A):
         d = torch.matmul(c, A)
         return d
 
     @staticmethod
-    def _make_A(in_order, out_order, alpha, dtype=None, device=None):
+    def _func(c, out_order, alpha):
+        in_order = c.size(-1) - 1
+        if out_order is None:
+            out_order = in_order
+        A = FrequencyTransform._precompute(
+            in_order, out_order, alpha, dtype=c.dtype, device=c.device
+        )
+        return FrequencyTransform._forward(c, A)
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, dtype=None, device=None):
         L1 = in_order + 1
         L2 = out_order + 1
         beta = 1 - alpha * alpha

@@ -56,4 +56,4 @@ def test_compatibility(device, cov_type, B=10, M=4, N=3):
     def extract_eigenvector(x):
         return x[1]
 
-    U.check_differentiable(device, [extract_eigenvector, pca], [B, M + 1])
+    U.check_differentiability(device, [extract_eigenvector, pca], [B, M + 1])

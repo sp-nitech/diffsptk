@@ -37,4 +37,4 @@ def test_compatibility(device, L=32, M=9, gamma=0.9, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, lpc2par, [B, M + 1])
+    U.check_differentiability(device, lpc2par, [B, M + 1])

@@ -46,4 +46,4 @@ def test_compatibility(device, seed, T=10, L=2):
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 def test_differentiable(device, B=2, T=20, L=2):
     delta = diffsptk.Delta()
-    U.check_differentiable(device, delta, [B, T, L])
+    U.check_differentiability(device, delta, [B, T, L])

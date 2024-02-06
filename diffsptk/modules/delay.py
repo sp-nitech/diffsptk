@@ -89,3 +89,5 @@ class Delay(nn.Module):
             return y
 
         return x
+
+    _func = _forward

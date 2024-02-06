@@ -40,7 +40,7 @@ def test_compatibility(device, stateful, L=16, alpha=0.4, gamma=0.9, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiable(device, grpdelay, [(B, M), (B, N)])
+    U.check_differentiability(device, grpdelay, [(B, M), (B, N)])
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

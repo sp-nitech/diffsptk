@@ -42,7 +42,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         super(GeneralizedCepstrumInverseGainNormalization, self).__init__()
 
         self.cep_order = cep_order
-        self.gamma = get_gamma(gamma, c)
+        self.gamma = self._precompute(gamma, c)
 
         assert 0 <= self.cep_order
         assert abs(self.gamma) <= 1
@@ -85,3 +85,12 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
             x1 = y * z
         x = torch.cat((x0, x1), dim=-1)
         return x
+
+    @staticmethod
+    def _func(y, gamma, c):
+        gamma = GeneralizedCepstrumInverseGainNormalization._precompute(gamma, c)
+        return GeneralizedCepstrumInverseGainNormalization._forward(y, gamma)
+
+    @staticmethod
+    def _precompute(gamma, c):
+        return get_gamma(gamma, c)

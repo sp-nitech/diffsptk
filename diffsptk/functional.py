@@ -37,7 +37,7 @@ def alaw(x, abs_max=1, a=87.6):
         Compressed waveform.
 
     """
-    return nn.ALawCompression._forward(x, abs_max=abs_max, a=a)
+    return nn.ALawCompression._func(x, abs_max=abs_max, a=a)
 
 
 def b2mc(b, alpha=0):
@@ -57,7 +57,7 @@ def b2mc(b, alpha=0):
         Mel-cepstral coefficients.
 
     """
-    return nn.MLSADigitalFilterCoefficientsToMelCepstrum._forward(b, alpha=alpha)
+    return nn.MLSADigitalFilterCoefficientsToMelCepstrum._func(b, alpha=alpha)
 
 
 def c2acr(c, acr_order=0, n_fft=512):
@@ -80,7 +80,7 @@ def c2acr(c, acr_order=0, n_fft=512):
         Autocorrelation.
 
     """
-    return nn.CepstrumToAutocorrelation._forward(c, acr_order=acr_order, n_fft=n_fft)
+    return nn.CepstrumToAutocorrelation._func(c, acr_order=acr_order, n_fft=n_fft)
 
 
 def c2mpir(c, ir_length=1, n_fft=512):
@@ -103,7 +103,7 @@ def c2mpir(c, ir_length=1, n_fft=512):
         Truncated minimum phase impulse response.
 
     """
-    return nn.CepstrumToMinimumPhaseImpulseResponse._forward(
+    return nn.CepstrumToMinimumPhaseImpulseResponse._func(
         c, ir_length=ir_length, n_fft=n_fft
     )
 
@@ -125,7 +125,7 @@ def c2ndps(c, fft_length=512):
         NDPS.
 
     """
-    return nn.CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
+    return nn.CepstrumToNegativeDerivativeOfPhaseSpectrum._func(
         c, fft_length=fft_length
     )
 
@@ -153,7 +153,7 @@ def decimate(x, period=1, start=0, dim=-1):
         Decimated signal.
 
     """
-    return nn.Decimation._forward(x, period=period, start=start, dim=dim)
+    return nn.Decimation._func(x, period=period, start=start, dim=dim)
 
 
 def delay(x, start=0, keeplen=False, dim=-1):
@@ -179,7 +179,7 @@ def delay(x, start=0, keeplen=False, dim=-1):
         Delayed signal.
 
     """
-    return nn.Delay._forward(x, start=start, keeplen=keeplen, dim=dim)
+    return nn.Delay._func(x, start=start, keeplen=keeplen, dim=dim)
 
 
 def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
@@ -205,7 +205,7 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
         Dequantized input.
 
     """
-    return nn.InverseUniformQuantization._forward(
+    return nn.InverseUniformQuantization._func(
         y, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
     )
 
@@ -233,7 +233,7 @@ def excite(p, frame_period=1, voiced_region="pulse", unvoiced_region="gauss"):
         Excitation signal.
 
     """
-    return nn.ExcitationGeneration._forward(
+    return nn.ExcitationGeneration._func(
         p,
         frame_period=frame_period,
         voiced_region=voiced_region,
@@ -264,9 +264,7 @@ def fftcep(x, cep_order=0, n_iter=0, accel=0):
         Cepstrum.
 
     """
-    return nn.CepstralAnalysis._forward(
-        x, cep_order=cep_order, n_iter=n_iter, accel=accel
-    )
+    return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
 
 
 def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
@@ -296,7 +294,7 @@ def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
         Framed waveform.
 
     """
-    return nn.Frame._forward(
+    return nn.Frame._func(
         x,
         frame_length=frame_length,
         frame_period=frame_period,
@@ -325,7 +323,7 @@ def freqt(c, out_order=None, alpha=0):
         Warped cepstral coefficients.
 
     """
-    return nn.FrequencyTransform._forward(c, out_order=out_order, alpha=alpha)
+    return nn.FrequencyTransform._func(c, out_order=out_order, alpha=alpha)
 
 
 def gnorm(x, gamma=0):
@@ -347,7 +345,7 @@ def gnorm(x, gamma=0):
         Normalized generalized cepstrum.
 
     """
-    return nn.GeneralizedCepstrumGainNormalization._forward(x, gamma=gamma)
+    return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma)
 
 
 def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
@@ -376,7 +374,7 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
         Group delay or modified group delay function.
 
     """
-    return nn.GroupDelay._forward(
+    return nn.GroupDelay._func(
         b, a, fft_length=fft_length, alpha=alpha, gamma=gamma, **kwargs
     )
 
@@ -401,10 +399,10 @@ def ialaw(y, abs_max=1, a=87.6):
         Waveform.
 
     """
-    return nn.ALawExpansion._forward(y, abs_max=abs_max, a=a)
+    return nn.ALawExpansion._func(y, abs_max=abs_max, a=a)
 
 
-def ignorm(y, gamma=0):
+def ignorm(y, gamma=0, c=None):
     """Perform cepstrum inverse gain normalization.
 
     Parameters
@@ -415,13 +413,16 @@ def ignorm(y, gamma=0):
     gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
+    c : int >= 1 or None
+        Number of stages.
+
     Returns
     -------
-    x : Tensor [shape=(..., M+1)]
+    Tensor [shape=(..., M+1)]
         Generalized cepstrum.
 
     """
-    return nn.GeneralizedCepstrumInverseGainNormalization._forward(y, gamma=gamma)
+    return nn.GeneralizedCepstrumInverseGainNormalization._func(y, gamma=gamma, c=c)
 
 
 def interpolate(x, period=1, start=0, dim=-1):
@@ -447,7 +448,7 @@ def interpolate(x, period=1, start=0, dim=-1):
         Interpolated signal.
 
     """
-    return nn.Interpolation._forward(x, period=period, start=start, dim=dim)
+    return nn.Interpolation._func(x, period=period, start=start, dim=dim)
 
 
 def iulaw(y, abs_max=1, mu=255):
@@ -470,7 +471,7 @@ def iulaw(y, abs_max=1, mu=255):
         Waveform.
 
     """
-    return nn.MuLawExpansion._forward(y, abs_max=abs_max, mu=mu)
+    return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
 
 
 def levdur(r):
@@ -487,7 +488,7 @@ def levdur(r):
         Gain and LPC coefficients.
 
     """
-    return nn.LevinsonDurbin._forward(r)
+    return nn.LevinsonDurbin._func(r)
 
 
 def linear_intpl(x, upsampling_factor=1):
@@ -507,7 +508,7 @@ def linear_intpl(x, upsampling_factor=1):
         Upsampled filter coefficients.
 
     """
-    return nn.LinearInterpolation._forward(x, upsampling_factor=upsampling_factor)
+    return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
 def magic_intpl(x, magic_number=0):
@@ -537,7 +538,7 @@ def magic_intpl(x, magic_number=0):
     tensor([1., 1., 2., 3., 4., 4.])
 
     """
-    return nn.MagicNumberInterpolation._forward(x, magic_number=magic_number)
+    return nn.MagicNumberInterpolation._func(x, magic_number=magic_number)
 
 
 def mc2b(mc, alpha=0):
@@ -557,7 +558,7 @@ def mc2b(mc, alpha=0):
         MLSA digital filter coefficients.
 
     """
-    return nn.MelCepstrumToMLSADigitalFilterCoefficients._forward(mc, alpha=alpha)
+    return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
 def mpir2c(h, cep_order=0, n_fft=512):
@@ -580,7 +581,7 @@ def mpir2c(h, cep_order=0, n_fft=512):
         Cepstrum.
 
     """
-    return nn.MinimumPhaseImpulseResponseToCepstrum._forward(
+    return nn.MinimumPhaseImpulseResponseToCepstrum._func(
         h, cep_order=cep_order, n_fft=n_fft
     )
 
@@ -602,9 +603,7 @@ def ndps2c(n, cep_order=0):
         Cepstrum.
 
     """
-    return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
-        n, cep_order=cep_order
-    )
+    return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._func(n, cep_order=cep_order)
 
 
 def norm0(a):
@@ -621,7 +620,7 @@ def norm0(a):
         All-zero or all-pole filter coefficients.
 
     """
-    return nn.AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
+    return nn.AllPoleToAllZeroDigitalFilterCoefficients._func(a)
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):
@@ -647,7 +646,7 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
         Phase spectrum [:math:`\\pi` rad].
 
     """
-    return nn.Phase._forward(b, a, fft_length=fft_length, unwrap=unwrap)
+    return nn.Phase._func(b, a, fft_length=fft_length, unwrap=unwrap)
 
 
 def pol_root(x):
@@ -664,7 +663,7 @@ def pol_root(x):
         Polynomial coefficients.
 
     """
-    return nn.RootsToPolynomial._forward(x)
+    return nn.RootsToPolynomial._func(x)
 
 
 def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
@@ -690,7 +689,7 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
         Quantized input.
 
     """
-    return nn.UniformQuantization._forward(
+    return nn.UniformQuantization._func(
         x, abs_max=abs_max, n_bit=n_bit, quantizer=quantizer
     )
 
@@ -709,7 +708,7 @@ def rlevdur(a):
         Autocorrelation.
 
     """
-    return nn.ReverseLevinsonDurbin._forward(a)
+    return nn.ReverseLevinsonDurbin._func(a)
 
 
 def root_pol(a, out_format="rectangular"):
@@ -729,7 +728,7 @@ def root_pol(a, out_format="rectangular"):
         Roots of polynomial.
 
     """
-    return nn.PolynomialToRoots._forward(a, out_format=out_format)
+    return nn.PolynomialToRoots._func(a, out_format=out_format)
 
 
 def spec(
@@ -763,7 +762,7 @@ def spec(
         Spectrum.
 
     """
-    return nn.Spectrum._forward(
+    return nn.Spectrum._func(
         b,
         a,
         fft_length=fft_length,
@@ -793,7 +792,7 @@ def ulaw(x, abs_max=1, mu=255):
         Compressed waveform.
 
     """
-    return nn.MuLawCompression._forward(x, abs_max=abs_max, mu=mu)
+    return nn.MuLawCompression._func(x, abs_max=abs_max, mu=mu)
 
 
 def zcross(x, frame_length=1, norm=False):
@@ -816,4 +815,4 @@ def zcross(x, frame_length=1, norm=False):
         Zero-crossing rate.
 
     """
-    return nn.ZeroCrossingAnalysis._forward(x, frame_length=frame_length, norm=norm)
+    return nn.ZeroCrossingAnalysis._func(x, frame_length=frame_length, norm=norm)

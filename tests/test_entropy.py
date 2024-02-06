@@ -36,4 +36,4 @@ def test_compatibility(device, unit, L=5, B=2):
         dx=L,
     )
 
-    U.check_differentiable(device, [entropy, torch.abs], [B, L])
+    U.check_differentiability(device, [entropy, torch.abs], [B, L])

@@ -17,15 +17,7 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import check_mode
 from ..misc.utils import remove_gain
-
-_convert = {
-    "db": lambda x: 10 * torch.log10(x),
-    "log-magnitude": lambda x: 0.5 * torch.log(x),
-    "magnitude": lambda x: torch.sqrt(x),
-    "power": lambda x: x,
-}
 
 
 class Spectrum(nn.Module):
@@ -53,16 +45,12 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
-        self.out_format = check_mode(out_format, _convert)
+        self.relative_floor = relative_floor
+        self.out_format = self._make_out_format(out_format)
 
         assert 2 <= self.fft_length
         assert 0 <= self.eps
-
-        if relative_floor is None:
-            self.relative_floor = None
-        else:
-            assert relative_floor < 0
-            self.relative_floor = 10 ** (relative_floor / 10)
+        assert self.relative_floor is None or self.relative_floor < 0
 
     def forward(self, b=None, a=None):
         """Compute spectrum.
@@ -121,9 +109,21 @@ class Spectrum(nn.Module):
         s = torch.square(X) + eps
         if relative_floor is not None:
             m, _ = torch.max(s, dim=-1, keepdim=True)
-            s = torch.maximum(s, m * relative_floor)
-        try:
-            s = _convert[out_format](s)
-        except KeyError:
-            raise ValueError(f"out_format {out_format} is not supported.")
+            r = 10 ** (0.1 * relative_floor)
+            s = torch.maximum(s, m * r)
+        if not callable(out_format):
+            out_format = Spectrum._make_out_format(out_format)
+        s = out_format(s)
         return s
+
+    @staticmethod
+    def _make_out_format(out_format):
+        if out_format == 0 or out_format == "db":
+            return lambda x: 10 * torch.log10(x)
+        elif out_format == 1 or out_format == "log-magnitude":
+            return lambda x: 0.5 * torch.log(x)
+        elif out_format == 2 or out_format == "magnitude":
+            return lambda x: torch.sqrt(x)
+        elif out_format == 3 or out_format == "power":
+            return lambda x: x
+        raise ValueError(f"out_format {out_format} is not supported.")

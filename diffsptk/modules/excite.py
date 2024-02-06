@@ -126,3 +126,5 @@ class ExcitationGeneration(nn.Module):
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
 
         return e
+
+    _func = _forward

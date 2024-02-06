@@ -100,3 +100,5 @@ class CepstralAnalysis(nn.Module):
         indices = [0, N - 1] if H == N else [0]
         v[..., indices] *= 0.5
         return v
+
+    _func = _forward

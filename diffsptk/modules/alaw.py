@@ -37,13 +37,12 @@ class ALawCompression(nn.Module):
     def __init__(self, abs_max=1, a=87.6):
         super(ALawCompression, self).__init__()
 
+        assert 0 < abs_max
+        assert 1 <= a
+
         self.abs_max = abs_max
         self.a = a
-
-        assert 0 < self.abs_max
-        assert 1 <= self.a
-
-        self.const = self._make_const(self.abs_max, self.a)
+        self.const = self._precompute(self.abs_max, self.a)
 
     def forward(self, x):
         """Compress waveform by A-law algorithm.
@@ -67,19 +66,22 @@ class ALawCompression(nn.Module):
         tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
 
         """
-        return self._forward(x, self.abs_max, self.a, const=self.const)
+        return self._forward(x, self.abs_max, self.a, self.const)
 
     @staticmethod
-    def _forward(x, abs_max, a, const=None):
+    def _forward(x, abs_max, a, const):
         x_abs = x.abs() / abs_max
         x1 = a * x_abs
         x2 = 1 + torch.log(x1)
         condition = x_abs < 1 / a
-        if const is None:
-            const = ALawCompression._make_const(abs_max, a)
         y = const * torch.sign(x) * torch.where(condition, x1, x2)
         return y
 
     @staticmethod
-    def _make_const(abs_max, a):
+    def _func(x, abs_max, a):
+        const = ALawCompression._precompute(abs_max, a)
+        return ALawCompression._forward(x, abs_max, a, const)
+
+    @staticmethod
+    def _precompute(abs_max, a):
         return abs_max / (1 + math.log(a))

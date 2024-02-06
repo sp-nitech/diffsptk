@@ -91,3 +91,5 @@ class Frame(nn.Module):
         if zmean:
             y = y - y.mean(-1, keepdim=True)
         return y
+
+    _func = _forward

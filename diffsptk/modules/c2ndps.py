@@ -35,7 +35,7 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, fft_length, stateful=True):
+    def __init__(self, cep_order, fft_length):
         super(CepstrumToNegativeDerivativeOfPhaseSpectrum, self).__init__()
 
         self.cep_order = cep_order
@@ -44,9 +44,8 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
         assert 0 <= self.cep_order
         assert max(1, self.cep_order) <= self.fft_length // 2
 
-        if stateful:
-            ramp = self._make_ramp(self.cep_order, self.fft_length // 2)
-            self.register_buffer("ramp", ramp)
+        ramp = self._precompute(self.cep_order, self.fft_length // 2)
+        self.register_buffer("ramp", ramp)
 
     def forward(self, c):
         """Convert cepstrum to NDPS.
@@ -71,20 +70,23 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
 
         """
         check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.fft_length, ramp=getattr(self, "ramp", None))
+        return self._forward(c, self.fft_length, self.ramp)
 
     @staticmethod
-    def _forward(c, fft_length, ramp=None):
-        if ramp is None:
-            ramp = CepstrumToNegativeDerivativeOfPhaseSpectrum._make_ramp(
-                c.size(-1) - 1, fft_length // 2, dtype=c.dtype, device=c.device
-            )
+    def _forward(c, fft_length, ramp):
         v = c * ramp
         n = torch.fft.hfft(v, n=fft_length)[..., : fft_length // 2 + 1]
         return n
 
     @staticmethod
-    def _make_ramp(cep_order, half_fft_length, dtype=None, device=None):
+    def _func(c, fft_length):
+        ramp = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
+            c.size(-1) - 1, fft_length // 2, dtype=c.dtype, device=c.device
+        )
+        return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(c, fft_length, ramp)
+
+    @staticmethod
+    def _precompute(cep_order, half_fft_length, dtype=None, device=None):
         ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
         if cep_order == half_fft_length:
             ramp[-1] *= 2

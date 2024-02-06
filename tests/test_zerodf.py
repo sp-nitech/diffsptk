@@ -38,4 +38,4 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
         dx=[None, M + 1],
     )
 
-    U.check_differentiable(device, zerodf, [(T,), (T // P, M + 1)])
+    U.check_differentiability(device, zerodf, [(T,), (T // P, M + 1)])

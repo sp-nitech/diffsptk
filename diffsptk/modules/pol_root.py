@@ -69,3 +69,5 @@ class RootsToPolynomial(nn.Module):
             z = a.clone()
             a[..., 1:] = z[..., 1:] - x[..., m : m + 1] * z[..., :-1]
         return a
+
+    _func = _forward

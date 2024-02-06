@@ -36,4 +36,4 @@ def test_compatibility(device, M=12, L=32, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [pol_root, root_pol], [B, M + 1])
+    U.check_differentiability(device, [pol_root, root_pol], [B, M + 1])

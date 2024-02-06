@@ -36,4 +36,4 @@ def test_compatibility(device, M=30, L=52, B=2):
     )
 
     acorr = diffsptk.AutocorrelationAnalysis(M, L)
-    U.check_differentiable(device, [levdur, acorr], [B, L])
+    U.check_differentiability(device, [levdur, acorr], [B, L])

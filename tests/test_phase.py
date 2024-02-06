@@ -39,7 +39,7 @@ def test_compatibility(device, unwrap, L=16, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiable(device, phase, [(B, L), (B, L)])
+    U.check_differentiability(device, phase, [(B, L), (B, L)])
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])

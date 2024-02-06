@@ -44,6 +44,10 @@ def allclose(a, b, rtol=None, atol=None):
     return np.allclose(a, b, rtol=rtol, atol=atol)
 
 
+def argset(func, *params, **kwargs):
+    return lambda x: func(x, *params, **kwargs)
+
+
 def call(cmd, get=True):
     if get:
         res = subprocess.run(
@@ -137,7 +141,7 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
-def check_differentiable(
+def check_differentiability(
     device,
     modules,
     shapes,

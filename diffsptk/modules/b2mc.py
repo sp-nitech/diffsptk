@@ -36,7 +36,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, alpha=0, stateful=True):
+    def __init__(self, cep_order, alpha=0):
         super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
 
         self.cep_order = cep_order
@@ -45,11 +45,10 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         assert 0 <= self.cep_order
         assert abs(self.alpha) < 1
 
-        if stateful:
-            # Make transform matrix.
-            A = torch.eye(self.cep_order + 1, dtype=torch.double)
-            A[:, 1:].fill_diagonal_(self.alpha)
-            self.register_buffer("A", to(A.T))
+        # Make transform matrix.
+        A = torch.eye(self.cep_order + 1, dtype=torch.double)
+        A[:, 1:].fill_diagonal_(self.alpha)
+        self.register_buffer("A", to(A.T))
 
     def forward(self, b):
         """Convert MLSA filter coefficients to mel-cepstrum.
@@ -75,12 +74,12 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
 
         """
         check_size(b.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(b, alpha=self.alpha, A=getattr(self, "A", None))
+        return self._forward(b, self.A)
 
     @staticmethod
-    def _forward(b, alpha, A=None):
-        if A is None:
-            mc = b + F.pad(alpha * b[..., 1:], (0, 1))
-        else:
-            mc = torch.matmul(b, A)
-        return mc
+    def _forward(b, A):
+        return torch.matmul(b, A)
+
+    @staticmethod
+    def _func(b, alpha):
+        return b + F.pad(alpha * b[..., 1:], (0, 1))

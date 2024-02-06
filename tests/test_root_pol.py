@@ -23,10 +23,13 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1])
-@pytest.mark.parametrize("stateful", [False, True])
-def test_compatibility(device, stateful, out_format, M=12, B=2):
-    root_pol = diffsptk.PolynomialToRoots(M, out_format=out_format, stateful=stateful)
+def test_compatibility(device, module, out_format, M=12, B=2):
+    if module:
+        root_pol = diffsptk.PolynomialToRoots(M, out_format)
+    else:
+        root_pol = U.argset(diffsptk.functional.root_pol, out_format)
 
     def eq(y_hat, y):
         y_hat = np.sort_complex(y_hat)
@@ -43,4 +46,4 @@ def test_compatibility(device, stateful, out_format, M=12, B=2):
         eq=eq,
     )
 
-    U.check_differentiable(device, [torch.abs, root_pol], [B, M + 1])
+    U.check_differentiability(device, [torch.abs, root_pol], [B, M + 1])

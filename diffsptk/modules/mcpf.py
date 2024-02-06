@@ -55,7 +55,7 @@ class MelCepstrumPostfiltering(nn.Module):
 
         self.mc2en = nn.Sequential(
             FrequencyTransform(cep_order, ir_length - 1, -alpha),
-            CepstrumToAutocorrelation(0, ir_length),
+            CepstrumToAutocorrelation(ir_length - 1, 0, ir_length),
         )
         self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha)
         self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha)

@@ -38,4 +38,4 @@ def test_compatibility(device, stateful, M=9, alpha=0.1, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, mc2b, [B, M + 1])
+    U.check_differentiability(device, mc2b, [B, M + 1])

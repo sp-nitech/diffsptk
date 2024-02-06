@@ -282,14 +282,6 @@ def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
 
 
-def check_mode(x, names):
-    if type(x) is int and 0 <= x <= len(names):
-        x = list(names)[x]
-    if x not in names:
-        raise ValueError(f"Unsupported item: {x}")
-    return x
-
-
 def read(filename, double=False, **kwargs):
     """Read waveform from file.
 

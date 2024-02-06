@@ -36,4 +36,4 @@ def test_compatibility(device, M=19, N=30, L=256, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [mpir2c, torch.abs], [B, N])
+    U.check_differentiability(device, [mpir2c, torch.abs], [B, N])

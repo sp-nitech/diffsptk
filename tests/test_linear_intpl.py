@@ -39,7 +39,7 @@ def test_compatibility(device, P, N=10):
         [f"rm {tmp}"],
     )
 
-    U.check_differentiable(device, linear_intpl, [N])
+    U.check_differentiability(device, linear_intpl, [N])
 
 
 def test_various_shape(P=4, N=10):

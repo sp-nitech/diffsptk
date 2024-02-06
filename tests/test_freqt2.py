@@ -36,4 +36,4 @@ def test_compatibility(device, m=19, M=29, alpha=0.1, theta=0.2, B=2):
         dy=m + 1,
     )
 
-    U.check_differentiable(device, [ifreqt2, freqt2], [B, m + 1])
+    U.check_differentiability(device, [ifreqt2, freqt2], [B, m + 1])
