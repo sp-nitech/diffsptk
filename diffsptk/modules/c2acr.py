@@ -40,13 +40,13 @@ class CepstrumToAutocorrelation(nn.Module):
     def __init__(self, cep_order, acr_order, n_fft=512):
         super(CepstrumToAutocorrelation, self).__init__()
 
+        assert 0 <= cep_order
+        assert 0 <= acr_order
+        assert max(cep_order + 1, acr_order + 1) <= n_fft
+
         self.cep_order = cep_order
         self.acr_order = acr_order
         self.n_fft = n_fft
-
-        assert 0 <= self.cep_order
-        assert 0 <= self.acr_order
-        assert max(self.cep_order + 1, self.acr_order + 1) <= self.n_fft
 
     def forward(self, c):
         """Convert cepstrum to autocorrelation.

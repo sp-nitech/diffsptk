@@ -29,7 +29,7 @@ class ExcitationGeneration(nn.Module):
 
     Parameters
     ----------
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
     voiced_region : ['pulse', 'sinusoidal', 'sawtooth']
@@ -43,13 +43,13 @@ class ExcitationGeneration(nn.Module):
     def __init__(self, frame_period, voiced_region="pulse", unvoiced_region="gauss"):
         super(ExcitationGeneration, self).__init__()
 
+        assert 1 <= frame_period
+        assert voiced_region in ("pulse", "sinusoidal", "sawtooth")
+        assert unvoiced_region in ("gauss", "zeros")
+
         self.frame_period = frame_period
         self.voiced_region = voiced_region
         self.unvoiced_region = unvoiced_region
-
-        assert 1 <= self.frame_period
-        assert self.voiced_region in ("pulse", "sinusoidal", "sawtooth")
-        assert self.unvoiced_region in ("gauss", "zeros")
 
     def forward(self, p):
         """Generate a simple excitation signal.

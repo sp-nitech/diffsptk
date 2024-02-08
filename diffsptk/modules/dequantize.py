@@ -38,11 +38,11 @@ class InverseUniformQuantization(nn.Module):
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super(InverseUniformQuantization, self).__init__()
 
-        self.abs_max = abs_max
-        self.precomputes = self._precompute(n_bit, quantizer)
-
-        assert 0 < self.abs_max
+        assert 0 < abs_max
         assert 1 <= n_bit
+
+        self.abs_max = abs_max
+        self.const = self._precompute(n_bit, quantizer)
 
     def forward(self, y):
         """Dequantize input.
@@ -69,11 +69,10 @@ class InverseUniformQuantization(nn.Module):
         tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
 
         """
-        return self._forward(y, self.abs_max, self.precomputes)
+        return self._forward(y, self.abs_max, *self.const)
 
     @staticmethod
-    def _forward(y, abs_max, precomputes):
-        level, func = precomputes
+    def _forward(y, abs_max, level, func):
         y = func(y)
         x = y * (2 * abs_max / level)
         x = torch.clip(x, min=-abs_max, max=abs_max)
@@ -81,23 +80,15 @@ class InverseUniformQuantization(nn.Module):
 
     @staticmethod
     def _func(y, abs_max, n_bit, quantizer):
-        precomputes = InverseUniformQuantization._precompute(n_bit, quantizer)
-        return InverseUniformQuantization._forward(y, abs_max, precomputes)
+        const = InverseUniformQuantization._precompute(n_bit, quantizer)
+        return InverseUniformQuantization._forward(y, abs_max, *const)
 
     @staticmethod
     def _precompute(n_bit, quantizer):
         if quantizer == 0 or quantizer == "mid-rise":
             level = 1 << n_bit
-
-            def func(y):
-                return y - (level // 2 - 0.5)
-
+            return level, lambda y: y - (level // 2 - 0.5)
         elif quantizer == 1 or quantizer == "mid-tread":
             level = (1 << n_bit) - 1
-
-            def func(y):
-                return y - (level // 2)
-
-        else:
-            raise ValueError(f"quantizer {quantizer} is not supported.")
-        return level, func
+            return level, lambda y: y - (level // 2)
+        raise ValueError(f"quantizer {quantizer} is not supported.")

@@ -49,7 +49,7 @@ class GroupDelay(nn.Module):
         self.fft_length = fft_length
         self.alpha = alpha
         self.gamma = gamma
-        self.register_buffer("ramp", self._precompute_tensor(fft_length))
+        self.register_buffer("ramp", self._precompute(self.fft_length))
 
     def forward(self, b=None, a=None):
         """Compute group delay.
@@ -135,12 +135,10 @@ class GroupDelay(nn.Module):
         else:
             data_length = a.size(-1)
             c = a
-        tensor = GroupDelay._precompute_tensor(
-            data_length, dtype=c.dtype, device=c.device
-        )
-        return GroupDelay._forward(b, a, fft_length, alpha, gamma, tensor)
+        ramp = GroupDelay._precompute(data_length, dtype=c.dtype, device=c.device)
+        return GroupDelay._forward(b, a, fft_length, alpha, gamma, ramp)
 
     @staticmethod
-    def _precompute_tensor(length, dtype=None, device=None):
+    def _precompute(length, dtype=None, device=None):
         ramp = torch.arange(length, device=device)
         return to(ramp, dtype=dtype)

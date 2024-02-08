@@ -49,7 +49,7 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
-        self.const = self._precompute_const(relative_floor, out_format)
+        self.const = self._precompute(relative_floor, out_format)
 
     def forward(self, b=None, a=None):
         """Compute spectrum.
@@ -107,11 +107,11 @@ class Spectrum(nn.Module):
 
     @staticmethod
     def _func(b, a, fft_length, eps, relative_floor, out_format):
-        const = Spectrum._precompute_const(relative_floor, out_format)
+        const = Spectrum._precompute(relative_floor, out_format)
         return Spectrum._forward(b, a, fft_length, eps, *const)
 
     @staticmethod
-    def _precompute_const(relative_floor, out_format):
+    def _precompute(relative_floor, out_format):
         if relative_floor is None:
             r = relative_floor
         else:

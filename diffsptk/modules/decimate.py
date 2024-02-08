@@ -38,12 +38,12 @@ class Decimation(nn.Module):
     def __init__(self, period, start=0, dim=-1):
         super(Decimation, self).__init__()
 
+        assert 1 <= period
+        assert 0 <= start
+
         self.period = period
         self.start = start
         self.dim = dim
-
-        assert 1 <= self.period
-        assert 0 <= self.start
 
     def forward(self, x):
         """Decimate signal.

@@ -44,14 +44,14 @@ class CepstralAnalysis(nn.Module):
     def __init__(self, cep_order, fft_length, n_iter=0, accel=0):
         super(CepstralAnalysis, self).__init__()
 
+        assert 0 <= cep_order <= fft_length // 2
+        assert 0 <= n_iter
+        assert 0 <= accel
+
         self.cep_order = cep_order
         self.fft_length = fft_length
         self.n_iter = n_iter
         self.accel = accel
-
-        assert 0 <= self.cep_order <= self.fft_length // 2
-        assert 0 <= self.n_iter
-        assert 0 <= self.accel
 
     def forward(self, x):
         """Estimate cepstrum from spectrum.
@@ -63,7 +63,7 @@ class CepstralAnalysis(nn.Module):
 
         Returns
         -------
-        v : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Cepstrum.
 
         Examples

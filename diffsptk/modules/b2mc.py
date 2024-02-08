@@ -39,11 +39,11 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
     def __init__(self, cep_order, alpha=0):
         super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
 
+        assert 0 <= cep_order
+        assert abs(alpha) < 1
+
         self.cep_order = cep_order
         self.alpha = alpha
-
-        assert 0 <= self.cep_order
-        assert abs(self.alpha) < 1
 
         # Make transform matrix.
         A = torch.eye(self.cep_order + 1, dtype=torch.double)

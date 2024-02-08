@@ -27,10 +27,10 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
     """
@@ -38,13 +38,12 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
     def __init__(self, cep_order, fft_length):
         super(CepstrumToNegativeDerivativeOfPhaseSpectrum, self).__init__()
 
+        assert 0 <= cep_order
+        assert max(1, cep_order) <= fft_length // 2
+
         self.cep_order = cep_order
         self.fft_length = fft_length
-
-        assert 0 <= self.cep_order
-        assert max(1, self.cep_order) <= self.fft_length // 2
-
-        ramp = self._precompute(self.cep_order, self.fft_length // 2)
+        ramp = self._precompute(self.cep_order, self.fft_length)
         self.register_buffer("ramp", ramp)
 
     def forward(self, c):
@@ -81,12 +80,13 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
     @staticmethod
     def _func(c, fft_length):
         ramp = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
-            c.size(-1) - 1, fft_length // 2, dtype=c.dtype, device=c.device
+            c.size(-1) - 1, fft_length, dtype=c.dtype, device=c.device
         )
         return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(c, fft_length, ramp)
 
     @staticmethod
-    def _precompute(cep_order, half_fft_length, dtype=None, device=None):
+    def _precompute(cep_order, fft_length, dtype=None, device=None):
+        half_fft_length = fft_length // 2
         ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
         if cep_order == half_fft_length:
             ramp[-1] *= 2

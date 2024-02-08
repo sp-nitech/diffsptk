@@ -28,7 +28,6 @@ def test_compatibility(device, module, M=30, L=52, B=2):
         diffsptk.ReverseLevinsonDurbin,
         diffsptk.functional.rlevdur,
         {"lpc_order": M},
-        {},
     )
 
     U.check_compatibility(

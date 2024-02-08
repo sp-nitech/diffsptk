@@ -34,7 +34,7 @@ class MagicNumberInterpolation(nn.Module):
     def __init__(self, magic_number=UNVOICED_SYMBOL):
         super(MagicNumberInterpolation, self).__init__()
 
-        self.register_buffer("magic_number", self._precompute_tensor(magic_number))
+        self.register_buffer("magic_number", self._precompute(magic_number))
 
     def forward(self, x):
         """Interpolate magic number.
@@ -68,13 +68,13 @@ class MagicNumberInterpolation(nn.Module):
 
     @staticmethod
     def _func(x, magic_number):
-        magic_number = MagicNumberInterpolation._precompute_tensor(
+        magic_number = MagicNumberInterpolation._precompute(
             magic_number, dtype=x.dtype, device=x.device
         )
         return MagicNumberInterpolation._forward(x, magic_number)
 
     @staticmethod
-    def _precompute_tensor(magic_number, dtype=None, device=None):
+    def _precompute(magic_number, dtype=None, device=None):
         if not torch.is_tensor(magic_number):
             magic_number = torch.tensor(magic_number, dtype=dtype, device=device)
         return magic_number

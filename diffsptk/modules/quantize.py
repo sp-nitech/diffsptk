@@ -62,7 +62,7 @@ class UniformQuantization(nn.Module):
         assert 1 <= n_bit
 
         self.abs_max = abs_max
-        self.const = self._precompute_const(n_bit, quantizer)
+        self.const = self._precompute(n_bit, quantizer)
 
     def forward(self, x):
         """Quantize input.
@@ -96,11 +96,11 @@ class UniformQuantization(nn.Module):
 
     @staticmethod
     def _func(x, abs_max, n_bit, quantizer):
-        const = UniformQuantization._precompute_const(n_bit, quantizer)
+        const = UniformQuantization._precompute(n_bit, quantizer)
         return UniformQuantization._forward(x, abs_max, *const)
 
     @staticmethod
-    def _precompute_const(n_bit, quantizer):
+    def _precompute(n_bit, quantizer):
         if quantizer == 0 or quantizer == "mid-rise":
             level = 1 << n_bit
             return level, lambda x: Floor.apply(x + level // 2)

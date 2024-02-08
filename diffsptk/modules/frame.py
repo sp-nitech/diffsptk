@@ -24,17 +24,17 @@ class Frame(nn.Module):
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
+    frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1 [scalar]
+    frame_peirod : int >= 1
         Frame period, :math:`P`.
 
-    center : bool [scalar]
+    center : bool
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
-    zmean : bool [scalar]
+    zmean : bool
         If True, perform mean subtraction on each frame.
 
     """

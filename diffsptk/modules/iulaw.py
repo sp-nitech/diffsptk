@@ -24,10 +24,10 @@ class MuLawExpansion(nn.Module):
 
     Parameters
     ----------
-    abs_max : float > 0 [scalar]
+    abs_max : float > 0
         Absolute maximum value of input.
 
-    mu : int >= 1 [scalar]
+    mu : int >= 1
         Compression factor, :math:`\\mu`.
 
     """
@@ -40,7 +40,7 @@ class MuLawExpansion(nn.Module):
 
         self.abs_max = abs_max
         self.mu = mu
-        self.const = self._precompute_const(self.abs_max, self.mu)
+        self.const = self._precompute(self.abs_max, self.mu)
 
     def forward(self, y):
         """Expand waveform by :math:`\\mu`-law algorithm.
@@ -75,9 +75,9 @@ class MuLawExpansion(nn.Module):
 
     @staticmethod
     def _func(y, abs_max, mu):
-        const = MuLawExpansion._precompute_const(abs_max, mu)
+        const = MuLawExpansion._precompute(abs_max, mu)
         return MuLawExpansion._forward(y, abs_max, mu, const)
 
     @staticmethod
-    def _precompute_const(abs_max, mu):
+    def _precompute(abs_max, mu):
         return abs_max / mu

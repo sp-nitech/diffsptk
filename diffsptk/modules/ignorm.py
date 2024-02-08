@@ -45,7 +45,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         assert abs(gamma) <= 1
 
         self.cep_order = cep_order
-        self.gamma = self._precompute_const(gamma, c)
+        self.gamma = self._precompute(gamma, c)
 
     def forward(self, y):
         """Perform cepstrum inverse gain normalization.
@@ -88,9 +88,9 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
 
     @staticmethod
     def _func(y, gamma, c):
-        gamma = GeneralizedCepstrumInverseGainNormalization._precompute_const(gamma, c)
+        gamma = GeneralizedCepstrumInverseGainNormalization._precompute(gamma, c)
         return GeneralizedCepstrumInverseGainNormalization._forward(y, gamma)
 
     @staticmethod
-    def _precompute_const(gamma, c):
+    def _precompute(gamma, c):
         return get_gamma(gamma, c)

@@ -28,7 +28,6 @@ def test_compatibility(device, module, B=2, M=4):
         diffsptk.AllPoleToAllZeroDigitalFilterCoefficients,
         diffsptk.functional.norm0,
         {"filter_order": M},
-        {},
     )
 
     U.check_compatibility(

@@ -42,7 +42,7 @@ class MuLawCompression(nn.Module):
 
         self.abs_max = abs_max
         self.mu = mu
-        self.const = self._precompute_const(self.abs_max, self.mu)
+        self.const = self._precompute(self.abs_max, self.mu)
 
     def forward(self, x):
         """Compress waveform by :math:`\\mu`-law algorithm.
@@ -76,9 +76,9 @@ class MuLawCompression(nn.Module):
 
     @staticmethod
     def _func(x, abs_max, mu):
-        const = MuLawCompression._precompute_const(abs_max, mu)
+        const = MuLawCompression._precompute(abs_max, mu)
         return MuLawCompression._forward(x, abs_max, mu, const)
 
     @staticmethod
-    def _precompute_const(abs_max, mu):
+    def _precompute(abs_max, mu):
         return abs_max / math.log1p(mu)

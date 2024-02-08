@@ -29,7 +29,6 @@ def test_compatibility(device, module, M=12, L=32, B=2):
         diffsptk.RootsToPolynomial,
         diffsptk.functional.pol_root,
         {"order": M},
-        {},
     )
 
     U.check_compatibility(

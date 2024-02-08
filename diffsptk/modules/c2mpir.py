@@ -41,13 +41,13 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     def __init__(self, cep_order, ir_length, n_fft=512):
         super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
 
+        assert 0 <= cep_order
+        assert 1 <= ir_length
+        assert max(cep_order + 1, ir_length) <= n_fft
+
         self.cep_order = cep_order
         self.ir_length = ir_length
         self.n_fft = n_fft
-
-        assert 0 <= self.cep_order
-        assert 1 <= self.ir_length
-        assert max(self.cep_order + 1, self.ir_length) < self.n_fft
 
     def forward(self, c):
         """Convert cepstrum to minimum phase impulse response.

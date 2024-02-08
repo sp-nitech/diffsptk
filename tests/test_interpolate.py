@@ -21,8 +21,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, P=2, S=1, T=20, L=4):
-    interpolate = diffsptk.Interpolation(P, S, dim=0)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, P=2, S=1, T=20, L=4):
+    interpolate = U.choice(
+        module,
+        diffsptk.Interpolation,
+        diffsptk.functional.interpolate,
+        {},
+        {"period": P, "start": S, "dim": 0},
+    )
 
     U.check_compatibility(
         device,

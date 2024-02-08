@@ -26,10 +26,10 @@ class ALawExpansion(nn.Module):
 
     Parameters
     ----------
-    abs_max : float > 0 [scalar]
+    abs_max : float > 0
         Absolute maximum value of input.
 
-    a : float >= 1 [scalar]
+    a : float >= 1
         Compression factor, :math:`A`.
 
     """
@@ -42,7 +42,7 @@ class ALawExpansion(nn.Module):
 
         self.abs_max = abs_max
         self.a = a
-        self.const = self._precompute_const(self.abs_max, self.a)
+        self.const = self._precompute(self.abs_max, self.a)
 
     def forward(self, y):
         """Expand waveform by A-law algorithm.
@@ -80,9 +80,9 @@ class ALawExpansion(nn.Module):
 
     @staticmethod
     def _func(y, abs_max, a):
-        const = ALawExpansion._precompute_const(abs_max, a)
+        const = ALawExpansion._precompute(abs_max, a)
         return ALawExpansion._forward(y, abs_max, *const)
 
     @staticmethod
-    def _precompute_const(abs_max, a):
+    def _precompute(abs_max, a):
         return abs_max / a, 1 + math.log(a)

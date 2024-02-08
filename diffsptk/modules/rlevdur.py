@@ -39,7 +39,7 @@ class ReverseLevinsonDurbin(nn.Module):
         assert 0 <= lpc_order
 
         self.lpc_order = lpc_order
-        self.register_buffer("eye", self._precompute_tensor(lpc_order))
+        self.register_buffer("eye", self._precompute(self.lpc_order))
 
     def forward(self, a):
         """Solve a Yule-Walker linear system given LPC coefficients.
@@ -96,11 +96,11 @@ class ReverseLevinsonDurbin(nn.Module):
 
     @staticmethod
     def _func(a):
-        tensor = ReverseLevinsonDurbin._precompute_tensor(
+        tensor = ReverseLevinsonDurbin._precompute(
             a.size(-1) - 1, dtype=a.dtype, device=a.device
         )
         return ReverseLevinsonDurbin._forward(a, tensor)
 
     @staticmethod
-    def _precompute_tensor(order, dtype=None, device=None):
+    def _precompute(order, dtype=None, device=None):
         return torch.eye(order + 1, dtype=dtype, device=device)
