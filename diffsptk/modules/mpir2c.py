@@ -41,13 +41,13 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     def __init__(self, cep_order, ir_length, n_fft=512):
         super(MinimumPhaseImpulseResponseToCepstrum, self).__init__()
 
+        assert 0 <= cep_order
+        assert 1 <= ir_length
+        assert max(cep_order + 1, ir_length) <= n_fft
+
         self.cep_order = cep_order
         self.ir_length = ir_length
         self.n_fft = n_fft
-
-        assert 0 <= self.cep_order
-        assert 1 <= self.ir_length
-        assert max(self.cep_order + 1, self.ir_length) < self.n_fft
 
     def forward(self, h):
         """Convert minimum phase impulse response to cepstrum.
@@ -80,3 +80,5 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         c = torch.fft.ifft(clog(H))[..., : cep_order + 1].real
         c[..., 1:] *= 2
         return c
+
+    _func = _forward

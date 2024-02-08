@@ -25,10 +25,13 @@ import tests.utils as U
 @pytest.mark.parametrize("S", [-2, 0, 2])
 @pytest.mark.parametrize("keeplen", [False, True])
 def test_compatibility(device, module, S, keeplen, T=20, B=2):
-    if module:
-        delay = diffsptk.Delay(S, keeplen)
-    else:
-        delay = U.argset(diffsptk.functional.delay, S, keeplen)
+    delay = U.choice(
+        module,
+        diffsptk.Delay,
+        diffsptk.functional.delay,
+        {},
+        {"start": S, "keeplen": keeplen},
+    )
 
     opt = "-k" if keeplen else ""
     U.check_compatibility(

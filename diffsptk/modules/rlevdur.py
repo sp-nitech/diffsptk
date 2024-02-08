@@ -33,15 +33,13 @@ class ReverseLevinsonDurbin(nn.Module):
 
     """
 
-    def __init__(self, lpc_order, stateful=True):
+    def __init__(self, lpc_order):
         super(ReverseLevinsonDurbin, self).__init__()
 
+        assert 0 <= lpc_order
+
         self.lpc_order = lpc_order
-
-        assert 0 <= self.lpc_order
-
-        if stateful:
-            self.register_buffer("eye", self._make_eye(self.lpc_order))
+        self.register_buffer("eye", self._precompute_tensor(lpc_order))
 
     def forward(self, a):
         """Solve a Yule-Walker linear system given LPC coefficients.
@@ -71,10 +69,10 @@ class ReverseLevinsonDurbin(nn.Module):
 
         """
         check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC coefficients")
-        return self._forward(a, eye=getattr(self, "eye", None))
+        return self._forward(a, self.eye)
 
     @staticmethod
-    def _forward(a, eye=None):
+    def _forward(a, eye):
         M = a.size(-1) - 1
         K, a = remove_gain(a, return_gain=True)
 
@@ -92,12 +90,17 @@ class ReverseLevinsonDurbin(nn.Module):
         U = torch.stack(U[::-1], dim=-1)
         E = torch.stack(E[::-1], dim=-1)
 
-        if eye is None:
-            eye = ReverseLevinsonDurbin._make_eye(M, dtype=a.dtype, device=a.device)
         V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
         r = torch.matmul(V[..., :1].mT * E, V).squeeze(-2)
         return r
 
     @staticmethod
-    def _make_eye(order, dtype=None, device=None):
+    def _func(a):
+        tensor = ReverseLevinsonDurbin._precompute_tensor(
+            a.size(-1) - 1, dtype=a.dtype, device=a.device
+        )
+        return ReverseLevinsonDurbin._forward(a, tensor)
+
+    @staticmethod
+    def _precompute_tensor(order, dtype=None, device=None):
         return torch.eye(order + 1, dtype=dtype, device=device)

@@ -24,10 +24,13 @@ import tests.utils as U
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("quantizer", [0, 1])
 def test_compatibility(device, module, quantizer, v=10, n_bit=3, L=10):
-    if module:
-        dequantize = diffsptk.InverseUniformQuantization(v, n_bit, quantizer)
-    else:
-        dequantize = U.argset(diffsptk.functional.dequantize, v, n_bit, quantizer)
+    dequantize = U.choice(
+        module,
+        diffsptk.InverseUniformQuantization,
+        diffsptk.functional.dequantize,
+        {},
+        {"abs_max": v, "n_bit": n_bit, "quantizer": quantizer},
+    )
 
     U.check_compatibility(
         device,

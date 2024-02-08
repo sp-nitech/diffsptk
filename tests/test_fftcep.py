@@ -26,10 +26,17 @@ import tests.utils as U
 @pytest.mark.parametrize("n_iter", [0, 3])
 def test_compatibility(device, module, M, n_iter, L=16, B=2, accel=0.001):
     spec = diffsptk.Spectrum(L, eps=0)
-    if module:
-        fftcep = diffsptk.CepstralAnalysis(M, L, n_iter, accel)
-    else:
-        fftcep = U.argset(diffsptk.functional.fftcep, M, n_iter, accel)
+    fftcep = U.choice(
+        module,
+        diffsptk.CepstralAnalysis,
+        diffsptk.functional.fftcep,
+        {"fft_length": L},
+        {
+            "cep_order": M,
+            "n_iter": n_iter,
+            "accel": accel,
+        },
+    )
 
     U.check_compatibility(
         device,

@@ -27,10 +27,13 @@ import tests.utils as U
 @pytest.mark.parametrize("center", [False, True])
 @pytest.mark.parametrize("zmean", [False, True])
 def test_compatibility(device, module, fl, fp, center, zmean, T=20):
-    if module:
-        frame = diffsptk.Frame(fl, fp, center=center, zmean=zmean)
-    else:
-        frame = U.argset(diffsptk.functional.frame, fl, fp, center=center, zmean=zmean)
+    frame = U.choice(
+        module,
+        diffsptk.Frame,
+        diffsptk.functional.frame,
+        {},
+        {"frame_length": fl, "frame_period": fp, "center": center, "zmean": zmean},
+    )
 
     opt = "-z" if zmean else ""
     n = 0 if center else 1

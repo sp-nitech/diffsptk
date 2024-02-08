@@ -36,9 +36,9 @@ class LinearInterpolation(nn.Module):
     def __init__(self, upsampling_factor):
         super(LinearInterpolation, self).__init__()
 
-        self.upsampling_factor = upsampling_factor
+        assert 1 <= upsampling_factor
 
-        assert 1 <= self.upsampling_factor
+        self.upsampling_factor = upsampling_factor
 
     def forward(self, x):
         """Interpolate filter coefficients.
@@ -96,3 +96,5 @@ class LinearInterpolation(nn.Module):
         elif d == 2:
             y = y.squeeze(0)
         return y
+
+    _func = _forward

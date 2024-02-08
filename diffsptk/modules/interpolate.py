@@ -38,12 +38,12 @@ class Interpolation(nn.Module):
     def __init__(self, period, start=0, dim=-1):
         super(Interpolation, self).__init__()
 
+        assert 1 <= period
+        assert 0 <= start
+
         self.period = period
         self.start = start
         self.dim = dim
-
-        assert 1 <= self.period
-        assert 0 <= self.start
 
     def forward(self, x):
         """Interpolate signal.
@@ -80,3 +80,5 @@ class Interpolation(nn.Module):
         indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
         y.index_add_(dim, indices, x)
         return y
+
+    _func = _forward

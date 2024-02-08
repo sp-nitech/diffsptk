@@ -32,9 +32,9 @@ class RootsToPolynomial(nn.Module):
     def __init__(self, order):
         super(RootsToPolynomial, self).__init__()
 
-        self.order = order
+        assert 1 <= order
 
-        assert 1 <= self.order
+        self.order = order
 
     def forward(self, x):
         """Convert roots to polynomial coefficients.

@@ -23,10 +23,13 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, module, M=19, N=30, L=512, B=2):
-    if module:
-        c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(M, N, L)
-    else:
-        c2mpir = U.argset(diffsptk.functional.c2mpir, N, L)
+    c2mpir = U.choice(
+        module,
+        diffsptk.CepstrumToMinimumPhaseImpulseResponse,
+        diffsptk.functional.c2mpir,
+        {"cep_order": M},
+        {"ir_length": N, "n_fft": L},
+    )
 
     U.check_compatibility(
         device,

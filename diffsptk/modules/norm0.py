@@ -34,9 +34,9 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
     def __init__(self, filter_order):
         super(AllPoleToAllZeroDigitalFilterCoefficients, self).__init__()
 
-        self.filter_order = filter_order
+        assert 0 <= filter_order
 
-        assert 0 <= self.filter_order
+        self.filter_order = filter_order
 
     def forward(self, a):
         """Convert all-pole to all-zero filter coefficients vice versa.
@@ -70,3 +70,5 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         b1 = a1 * b0
         b = torch.cat((b0, b1), dim=-1)
         return b
+
+    _func = _forward

@@ -21,9 +21,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("gamma, c", [(0, None), (1, None), (0, 2)])
-def test_compatibility(device, gamma, c, M=4, B=2):
-    gnorm = diffsptk.GeneralizedCepstrumGainNormalization(M, gamma, c)
+def test_compatibility(device, module, gamma, c, M=4, B=2):
+    gnorm = U.choice(
+        module,
+        diffsptk.GeneralizedCepstrumGainNormalization,
+        diffsptk.functional.gnorm,
+        {"cep_order": M},
+        {"gamma": gamma, "c": c},
+    )
 
     opt = f"-g {gamma}" if c is None else f"-c {c}"
     U.check_compatibility(

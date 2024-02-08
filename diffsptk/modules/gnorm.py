@@ -41,11 +41,11 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
     def __init__(self, cep_order, gamma=0, c=None):
         super(GeneralizedCepstrumGainNormalization, self).__init__()
 
-        self.cep_order = cep_order
-        self.gamma = get_gamma(gamma, c)
+        assert 0 <= cep_order
+        assert abs(gamma) <= 1
 
-        assert 0 <= self.cep_order
-        assert abs(self.gamma) <= 1
+        self.cep_order = cep_order
+        self.gamma = self._precompute_const(gamma, c)
 
     def forward(self, x):
         """Perform cepstrum gain normalization.
@@ -84,3 +84,12 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
             y = x1 / z
         y = torch.cat((K, y), dim=-1)
         return y
+
+    @staticmethod
+    def _func(y, gamma, c):
+        gamma = GeneralizedCepstrumGainNormalization._precompute_const(gamma, c)
+        return GeneralizedCepstrumGainNormalization._forward(y, gamma)
+
+    @staticmethod
+    def _precompute_const(gamma, c):
+        return get_gamma(gamma, c)

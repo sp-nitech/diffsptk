@@ -39,19 +39,17 @@ class GroupDelay(nn.Module):
 
     """
 
-    def __init__(self, fft_length, alpha=1, gamma=1, stateful=True):
+    def __init__(self, fft_length, alpha=1, gamma=1):
         super(GroupDelay, self).__init__()
+
+        assert 2 <= fft_length
+        assert 0 < alpha
+        assert 0 < gamma
 
         self.fft_length = fft_length
         self.alpha = alpha
         self.gamma = gamma
-
-        assert 2 <= self.fft_length
-        assert 0 < self.alpha
-        assert 0 < self.gamma
-
-        if stateful:
-            self.register_buffer("ramp", self._make_ramp(self.fft_length))
+        self.register_buffer("ramp", self._precompute_tensor(fft_length))
 
     def forward(self, b=None, a=None):
         """Compute group delay.
@@ -84,11 +82,11 @@ class GroupDelay(nn.Module):
             self.fft_length,
             self.alpha,
             self.gamma,
-            ramp=getattr(self, "ramp", None),
+            self.ramp,
         )
 
     @staticmethod
-    def _forward(b, a, fft_length, alpha, gamma, ramp=None):
+    def _forward(b, a, fft_length, alpha, gamma, ramp):
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 
@@ -112,8 +110,6 @@ class GroupDelay(nn.Module):
         if fft_length < data_length:
             raise RuntimeError("Please increase FFT length")
 
-        if ramp is None:
-            ramp = GroupDelay._make_ramp(data_length, dtype=c.dtype, device=c.device)
         d = c * ramp[:data_length]
         C = torch.fft.rfft(c, n=fft_length)
         D = torch.fft.rfft(d, n=fft_length)
@@ -129,6 +125,22 @@ class GroupDelay(nn.Module):
         return g
 
     @staticmethod
-    def _make_ramp(length, dtype=None, device=None):
+    def _func(b, a, fft_length, alpha, gamma):
+        if b is not None and a is not None:
+            data_length = b.size(-1) + a.size(-1) - 1
+            c = b
+        elif b is not None:
+            data_length = b.size(-1)
+            c = b
+        else:
+            data_length = a.size(-1)
+            c = a
+        tensor = GroupDelay._precompute_tensor(
+            data_length, dtype=c.dtype, device=c.device
+        )
+        return GroupDelay._forward(b, a, fft_length, alpha, gamma, tensor)
+
+    @staticmethod
+    def _precompute_tensor(length, dtype=None, device=None):
         ramp = torch.arange(length, device=device)
         return to(ramp, dtype=dtype)

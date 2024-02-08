@@ -21,8 +21,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, v=10, u=255, L=10):
-    iulaw = diffsptk.MuLawExpansion(v, u)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, v=10, u=255, L=10):
+    iulaw = U.choice(
+        module,
+        diffsptk.MuLawExpansion,
+        diffsptk.functional.iulaw,
+        {},
+        {"abs_max": v, "mu": u},
+    )
 
     U.check_compatibility(
         device,

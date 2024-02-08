@@ -37,10 +37,10 @@ class Phase(nn.Module):
     def __init__(self, fft_length, unwrap=False):
         super(Phase, self).__init__()
 
+        assert 2 <= fft_length
+
         self.fft_length = fft_length
         self.unwrap = unwrap
-
-        assert 2 <= fft_length
 
     def forward(self, b=None, a=None):
         """Compute phase spectrum.
@@ -99,3 +99,5 @@ class Phase(nn.Module):
             s = torch.cumsum(bias, dim=-1)
             p[..., 1:] += s
         return p
+
+    _func = _forward

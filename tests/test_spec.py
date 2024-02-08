@@ -21,11 +21,22 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("relative_floor", [None, -40])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility(device, relative_floor, out_format, eps=0.01, L=16, B=2):
-    spec = diffsptk.Spectrum(
-        L, eps=eps, relative_floor=relative_floor, out_format=out_format
+def test_compatibility(device, module, relative_floor, out_format, eps=0.01, L=16, B=2):
+    spec = U.choice(
+        module,
+        diffsptk.Spectrum,
+        diffsptk.functional.spec,
+        {},
+        {
+            "fft_length": L,
+            "eps": eps,
+            "relative_floor": relative_floor,
+            "out_format": out_format,
+        },
+        n_input=2,
     )
 
     opt = f"-e {eps} -o {out_format} "

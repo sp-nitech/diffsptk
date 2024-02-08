@@ -42,13 +42,13 @@ class Frame(nn.Module):
     def __init__(self, frame_length, frame_period, center=True, zmean=False):
         super(Frame, self).__init__()
 
+        assert 1 <= frame_length
+        assert 1 <= frame_period
+
         self.frame_length = frame_length
         self.frame_period = frame_period
         self.center = center
         self.zmean = zmean
-
-        assert 1 <= self.frame_length
-        assert 1 <= self.frame_period
 
     def forward(self, x):
         """Apply framing to given waveform.

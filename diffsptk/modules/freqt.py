@@ -41,16 +41,16 @@ class FrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha=0):
         super(FrequencyTransform, self).__init__()
 
+        assert 0 <= in_order
+        assert 0 <= out_order
+        assert abs(alpha) < 1
+
         self.in_order = in_order
         self.out_order = out_order
         self.alpha = alpha
 
-        assert 0 <= self.in_order
-        assert 0 <= self.out_order
-        assert abs(self.alpha) < 1
-
         self.register_buffer(
-            "A", self._precompute(self.in_order, self.out_order, self.alpha)
+            "A", self._precompute_tensor(self.in_order, self.out_order, self.alpha)
         )
 
     def forward(self, c):
@@ -94,13 +94,13 @@ class FrequencyTransform(nn.Module):
         in_order = c.size(-1) - 1
         if out_order is None:
             out_order = in_order
-        A = FrequencyTransform._precompute(
+        A = FrequencyTransform._precompute_tensor(
             in_order, out_order, alpha, dtype=c.dtype, device=c.device
         )
         return FrequencyTransform._forward(c, A)
 
     @staticmethod
-    def _precompute(in_order, out_order, alpha, dtype=None, device=None):
+    def _precompute_tensor(in_order, out_order, alpha, dtype=None, device=None):
         L1 = in_order + 1
         L2 = out_order + 1
         beta = 1 - alpha * alpha

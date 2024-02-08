@@ -33,17 +33,18 @@ def test_compatibility(device, module, voiced_region, unvoiced_region, P=80):
 
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
-    if module:
-        excite = diffsptk.ExcitationGeneration(
-            P, voiced_region=voiced_region, unvoiced_region=unvoiced_region
-        ).to(device)
-    else:
-        excite = U.argset(
-            diffsptk.functional.excite,
-            P,
-            voiced_region=voiced_region,
-            unvoiced_region=unvoiced_region,
-        )
+
+    excite = U.choice(
+        module,
+        diffsptk.ExcitationGeneration,
+        diffsptk.functional.excite,
+        {},
+        {
+            "frame_period": P,
+            "voiced_region": voiced_region,
+            "unvoiced_region": unvoiced_region,
+        },
+    )
 
     # Compute pitch and excitation on C++ version.
     cmd = "x2x +sd tools/SPTK/asset/data.short | "

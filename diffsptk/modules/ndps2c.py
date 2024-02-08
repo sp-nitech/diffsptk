@@ -35,18 +35,16 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
 
     """
 
-    def __init__(self, cep_order, fft_length, stateful=True):
+    def __init__(self, cep_order, fft_length):
         super(NegativeDerivativeOfPhaseSpectrumToCepstrum, self).__init__()
 
+        assert 0 <= cep_order
+        assert max(1, cep_order) <= fft_length // 2
+
         self.cep_order = cep_order
-        self.half_fft_length = fft_length // 2
-
-        assert 0 <= self.cep_order
-        assert max(1, self.cep_order) <= self.half_fft_length
-
-        if stateful:
-            ramp = self._make_ramp(self.cep_order, self.half_fft_length)
-            self.register_buffer("ramp", ramp)
+        self.fft_length = fft_length
+        ramp = self._precompute_tensor(fft_length // 2, cep_order)
+        self.register_buffer("ramp", ramp)
 
     def forward(self, n):
         """Convert NPDS to cepstrum.
@@ -70,21 +68,26 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
         tensor([ 0.0000, -1.7071,  0.0000, -0.0976,  0.0000])
 
         """
-        check_size(n.size(-1), self.half_fft_length + 1, "dimension of spectrum")
+        check_size(n.size(-1), self.fft_length // 2 + 1, "dimension of spectrum")
         return self._forward(n, self.cep_order, ramp=getattr(self, "ramp", None))
 
     @staticmethod
-    def _forward(n, cep_order, ramp=None):
+    def _forward(n, cep_order, ramp):
         c = torch.fft.hfft(n)[..., : cep_order + 1]
-        if ramp is None:
-            ramp = NegativeDerivativeOfPhaseSpectrumToCepstrum._make_ramp(
-                cep_order, n.size(-1) - 1, dtype=n.dtype, device=n.device
-            )
         c *= ramp
         return c
 
     @staticmethod
-    def _make_ramp(cep_order, half_fft_length, dtype=None, device=None):
+    def _func(n, cep_order):
+        tensor = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute_tensor(
+            n.size(-1) - 1, cep_order, dtype=n.dtype, device=n.device
+        )
+        return NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
+            n, cep_order, tensor
+        )
+
+    @staticmethod
+    def _precompute_tensor(half_fft_length, cep_order, dtype=None, device=None):
         ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device)
         ramp *= half_fft_length
         if cep_order == half_fft_length:

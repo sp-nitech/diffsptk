@@ -37,13 +37,12 @@ class ALawExpansion(nn.Module):
     def __init__(self, abs_max=1, a=87.6):
         super(ALawExpansion, self).__init__()
 
+        assert 0 < abs_max
+        assert 1 <= a
+
         self.abs_max = abs_max
         self.a = a
-
-        assert 0 < self.abs_max
-        assert 1 <= self.a
-
-        self.consts = self._precompute(self.abs_max, self.a)
+        self.const = self._precompute_const(self.abs_max, self.a)
 
     def forward(self, y):
         """Expand waveform by A-law algorithm.
@@ -68,10 +67,10 @@ class ALawExpansion(nn.Module):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, self.abs_max, *self.consts)
+        return self._forward(y, self.abs_max, *self.const)
 
     @staticmethod
-    def _forward(y, abs_max, a, const, z):
+    def _forward(y, abs_max, const, z):
         y_abs = y.abs() / abs_max
         y1 = z * y_abs
         y2 = torch.exp(y1 - 1)
@@ -81,9 +80,9 @@ class ALawExpansion(nn.Module):
 
     @staticmethod
     def _func(y, abs_max, a):
-        precomputes = ALawExpansion._precompute(abs_max, a)
-        return ALawExpansion._forward(y, abs_max, *precomputes)
+        const = ALawExpansion._precompute_const(abs_max, a)
+        return ALawExpansion._forward(y, abs_max, *const)
 
     @staticmethod
-    def _precompute(abs_max, a):
+    def _precompute_const(abs_max, a):
         return abs_max / a, 1 + math.log(a)

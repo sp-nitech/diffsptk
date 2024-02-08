@@ -35,23 +35,22 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
 
     """
 
-    def __init__(self, cep_order, alpha=0, stateful=True):
+    def __init__(self, cep_order, alpha=0):
         super(MelCepstrumToMLSADigitalFilterCoefficients, self).__init__()
+
+        assert 0 <= cep_order
+        assert abs(alpha) < 1
 
         self.cep_order = cep_order
         self.alpha = alpha
 
-        assert 0 <= self.cep_order
-        assert abs(self.alpha) < 1
-
         # Make transform matrix.
-        if stateful:
-            a = 1
-            A = torch.eye(self.cep_order + 1, dtype=torch.double)
-            for m in range(1, len(A)):
-                a *= -self.alpha
-                A[:, m:].fill_diagonal_(a)
-            self.register_buffer("A", to(A.T))
+        a = 1
+        A = torch.eye(self.cep_order + 1, dtype=torch.double)
+        for m in range(1, len(A)):
+            a *= -self.alpha
+            A[:, m:].fill_diagonal_(a)
+        self.register_buffer("A", to(A.T))
 
     def forward(self, mc):
         """Convert mel-cepstrum to MLSA filter coefficients.
@@ -76,16 +75,16 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
 
         """
         check_size(mc.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(mc, alpha=self.alpha, A=getattr(self, "A", None))
+        return self._forward(mc, self.A)
 
     @staticmethod
-    def _forward(mc, alpha, A=None):
-        if A is None:
-            M = mc.size(-1) - 1
-            b = torch.zeros_like(mc)
-            b[..., M] = mc[..., M]
-            for m in reversed(range(M)):
-                b[..., m] = mc[..., m] - alpha * b[..., m + 1]
-        else:
-            b = torch.matmul(mc, A)
+    def _forward(mc, A):
+        return torch.matmul(mc, A)
+
+    def _func(mc, alpha):
+        M = mc.size(-1) - 1
+        b = torch.zeros_like(mc)
+        b[..., M] = mc[..., M]
+        for m in reversed(range(M)):
+            b[..., m] = mc[..., m] - alpha * b[..., m + 1]
         return b

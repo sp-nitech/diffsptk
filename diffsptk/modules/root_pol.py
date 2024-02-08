@@ -35,12 +35,11 @@ class PolynomialToRoots(nn.Module):
     def __init__(self, order, out_format="rectangular"):
         super(PolynomialToRoots, self).__init__()
 
+        assert 1 <= order
+
         self.order = order
-        eye, self.out_format = self._precompute(self.order, out_format)
-
-        assert 1 <= self.order
-
-        self.register_buffer("eye", eye)
+        self.out_format = self._precompute_const(out_format)
+        self.register_buffer("eye", self._precompute_tensor(self.order))
 
     def forward(self, a):
         """Find roots of polynomial.
@@ -64,11 +63,11 @@ class PolynomialToRoots(nn.Module):
         tensor([[-0.6667+1.1055j, -0.6667-1.1055j]])
 
         """
-        check_size(a.size(-1), self.order + 1, "dimension of coefficients")
-        return self._forward(a, self.eye, self.out_format)
+        check_size(a.size(-1), self.order + 1, "order of polynomial")
+        return self._forward(a, self.out_format, self.eye)
 
     @staticmethod
-    def _forward(a, eye, out_format):
+    def _forward(a, out_format, eye):
         if torch.any(a[..., 0] == 0):
             raise RuntimeError("leading coefficient must be non-zero")
 
@@ -84,16 +83,20 @@ class PolynomialToRoots(nn.Module):
 
     @staticmethod
     def _func(a, out_format):
-        precomputes = PolynomialToRoots._precompute(
-            a.size(-1) - 1, out_format, dtype=a.dtype, device=a.device
+        const = PolynomialToRoots._precompute_const(out_format)
+        tensor = PolynomialToRoots._precompute_tensor(
+            a.size(-1) - 1, dtype=a.dtype, device=a.device
         )
-        return PolynomialToRoots._forward(a, *precomputes)
+        return PolynomialToRoots._forward(a, const, tensor)
 
     @staticmethod
-    def _precompute(order, out_format, dtype=None, device=None):
-        eye = torch.eye(order - 1, order, dtype=dtype, device=device)
+    def _precompute_const(out_format):
         if out_format == 0 or out_format == "rectangular":
-            return eye, lambda x: x
+            return lambda x: x
         elif out_format == 1 or out_format == "polar":
-            return eye, lambda x: torch.complex(x.abs(), x.angle())
+            return lambda x: torch.complex(x.abs(), x.angle())
         raise ValueError(f"out_format {out_format} is not supported.")
+
+    @staticmethod
+    def _precompute_tensor(order, dtype=None, device=None):
+        return torch.eye(order - 1, order, dtype=dtype, device=device)

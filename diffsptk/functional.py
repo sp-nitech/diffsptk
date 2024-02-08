@@ -326,7 +326,7 @@ def freqt(c, out_order=None, alpha=0):
     return nn.FrequencyTransform._func(c, out_order=out_order, alpha=alpha)
 
 
-def gnorm(x, gamma=0):
+def gnorm(x, gamma=0, c=None):
     """Perform cepstrum gain normalization.
 
     Parameters
@@ -339,13 +339,16 @@ def gnorm(x, gamma=0):
     gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
+    c : int >= 1 or None
+        Number of stages.
+
     Returns
     -------
     Tensor [shape=(..., M+1)]
         Normalized generalized cepstrum.
 
     """
-    return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma)
+    return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma, c=c)
 
 
 def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):

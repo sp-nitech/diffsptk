@@ -35,6 +35,17 @@ def compose(*fs):
     return functools.reduce(compose2_outer_kwargs, fs)
 
 
+def choice(first, a, b, a_params, params={}, n_input=1):
+    if first:
+        return a(**a_params, **params)
+    if n_input == 1:
+        return lambda x: b(x, **params)
+    elif n_input == 2:
+        return lambda x, y: b(x, y, **params)
+    else:
+        raise ValueError("n_input must be 1 or 2")
+
+
 def allclose(a, b, rtol=None, atol=None):
     is_double = torch.get_default_dtype() == torch.float64
     if rtol is None:
@@ -42,10 +53,6 @@ def allclose(a, b, rtol=None, atol=None):
     if atol is None:
         atol = 1e-8 if is_double else 1e-6
     return np.allclose(a, b, rtol=rtol, atol=atol)
-
-
-def argset(func, *params, **kwargs):
-    return lambda x: func(x, *params, **kwargs)
 
 
 def call(cmd, get=True):

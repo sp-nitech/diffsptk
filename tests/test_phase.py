@@ -21,9 +21,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("unwrap", [False, True])
-def test_compatibility(device, unwrap, L=16, B=2):
-    phase = diffsptk.Phase(L, unwrap=unwrap)
+def test_compatibility(device, module, unwrap, L=16, B=2):
+    phase = U.choice(
+        module,
+        diffsptk.Phase,
+        diffsptk.functional.phase,
+        {},
+        {"fft_length": L, "unwrap": unwrap},
+        n_input=2,
+    )
 
     opt = "-u" if unwrap else ""
     tmp1 = "phase.tmp1"

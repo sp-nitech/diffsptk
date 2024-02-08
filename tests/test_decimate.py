@@ -23,10 +23,13 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, module, P=2, S=1, T=20, L=4):
-    if module:
-        decimate = diffsptk.Decimation(P, S, dim=0)
-    else:
-        decimate = U.argset(diffsptk.functional.decimate, P, S, dim=0)
+    decimate = U.choice(
+        module,
+        diffsptk.Decimation,
+        diffsptk.functional.decimate,
+        {},
+        {"period": P, "start": S, "dim": 0},
+    )
 
     U.check_compatibility(
         device,

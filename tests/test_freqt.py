@@ -23,10 +23,13 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, module, m=19, M=29, alpha=0.1, B=2):
-    if module:
-        freqt = diffsptk.FrequencyTransform(m, M, alpha)
-    else:
-        freqt = U.argset(diffsptk.functional.freqt, M, alpha)
+    freqt = U.choice(
+        module,
+        diffsptk.FrequencyTransform,
+        diffsptk.functional.freqt,
+        {"in_order": m},
+        {"out_order": M, "alpha": alpha},
+    )
 
     U.check_compatibility(
         device,

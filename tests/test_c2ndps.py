@@ -23,10 +23,13 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, module, M=8, L=16, B=2):
-    if module:
-        c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(M, L)
-    else:
-        c2ndps = U.argset(diffsptk.functional.c2ndps, L)
+    c2ndps = U.choice(
+        module,
+        diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum,
+        diffsptk.functional.c2ndps,
+        {"cep_order": M},
+        {"fft_length": L},
+    )
 
     U.check_compatibility(
         device,

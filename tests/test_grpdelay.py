@@ -21,9 +21,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("stateful", [False, True])
-def test_compatibility(device, stateful, L=16, alpha=0.4, gamma=0.9, B=2):
-    grpdelay = diffsptk.GroupDelay(L, alpha=alpha, gamma=gamma, stateful=stateful)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
+    grpdelay = U.choice(
+        module,
+        diffsptk.GroupDelay,
+        diffsptk.functional.grpdelay,
+        {},
+        {"fft_length": L, "alpha": alpha, "gamma": gamma},
+        n_input=2,
+    )
 
     tmp1 = "grpdelay.tmp1"
     tmp2 = "grpdelay.tmp2"

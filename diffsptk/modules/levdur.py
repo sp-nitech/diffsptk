@@ -35,9 +35,9 @@ class LevinsonDurbin(nn.Module):
     def __init__(self, lpc_order):
         super(LevinsonDurbin, self).__init__()
 
-        self.lpc_order = lpc_order
+        assert 0 <= lpc_order
 
-        assert 0 <= self.lpc_order
+        self.lpc_order = lpc_order
 
     def forward(self, r):
         """Solve a Yule-Walker linear system.
@@ -81,3 +81,5 @@ class LevinsonDurbin(nn.Module):
 
         a = torch.cat((K, a), dim=-1)
         return a
+
+    _func = _forward

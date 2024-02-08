@@ -37,10 +37,10 @@ class ZeroCrossingAnalysis(nn.Module):
     def __init__(self, frame_length, norm=False):
         super(ZeroCrossingAnalysis, self).__init__()
 
+        assert 1 <= frame_length
+
         self.frame_length = frame_length
         self.norm = norm
-
-        assert 1 <= self.frame_length
 
     def forward(self, x):
         """Compute zero-crossing rate.
@@ -77,3 +77,5 @@ class ZeroCrossingAnalysis(nn.Module):
         if norm:
             z /= frame_length
         return z
+
+    _func = _forward

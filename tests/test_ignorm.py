@@ -25,10 +25,13 @@ import tests.utils as U
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("gamma, c", [(0, None), (1, None), (0, 2)])
 def test_compatibility(device, module, gamma, c, M=4, B=2):
-    if module:
-        ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(M, gamma, c)
-    else:
-        ignorm = U.argset(diffsptk.functional.ignorm, gamma, c)
+    ignorm = U.choice(
+        module,
+        diffsptk.GeneralizedCepstrumInverseGainNormalization,
+        diffsptk.functional.ignorm,
+        {"cep_order": M},
+        {"gamma": gamma, "c": c},
+    )
 
     opt = f"-g {gamma}" if c is None else f"-c {c}"
     U.check_compatibility(

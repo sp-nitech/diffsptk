@@ -43,14 +43,13 @@ class Spectrum(nn.Module):
     def __init__(self, fft_length, eps=0, relative_floor=None, out_format="power"):
         super(Spectrum, self).__init__()
 
+        assert 2 <= fft_length
+        assert 0 <= eps
+        assert relative_floor is None or relative_floor < 0
+
         self.fft_length = fft_length
         self.eps = eps
-        self.relative_floor = relative_floor
-        self.out_format = self._make_out_format(out_format)
-
-        assert 2 <= self.fft_length
-        assert 0 <= self.eps
-        assert self.relative_floor is None or self.relative_floor < 0
+        self.const = self._precompute_const(relative_floor, out_format)
 
     def forward(self, b=None, a=None):
         """Compute spectrum.
@@ -79,14 +78,7 @@ class Spectrum(nn.Module):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        return self._forward(
-            b,
-            a,
-            self.fft_length,
-            self.eps,
-            self.relative_floor,
-            self.out_format,
-        )
+        return self._forward(b, a, self.fft_length, self.eps, *self.const)
 
     @staticmethod
     def _forward(b, a, fft_length, eps, relative_floor, out_format):
@@ -109,21 +101,28 @@ class Spectrum(nn.Module):
         s = torch.square(X) + eps
         if relative_floor is not None:
             m, _ = torch.max(s, dim=-1, keepdim=True)
-            r = 10 ** (0.1 * relative_floor)
-            s = torch.maximum(s, m * r)
-        if not callable(out_format):
-            out_format = Spectrum._make_out_format(out_format)
+            s = torch.maximum(s, m * relative_floor)
         s = out_format(s)
         return s
 
     @staticmethod
-    def _make_out_format(out_format):
+    def _func(b, a, fft_length, eps, relative_floor, out_format):
+        const = Spectrum._precompute_const(relative_floor, out_format)
+        return Spectrum._forward(b, a, fft_length, eps, *const)
+
+    @staticmethod
+    def _precompute_const(relative_floor, out_format):
+        if relative_floor is None:
+            r = relative_floor
+        else:
+            r = 10 ** (relative_floor / 10)
+
         if out_format == 0 or out_format == "db":
-            return lambda x: 10 * torch.log10(x)
+            return r, lambda x: 10 * torch.log10(x)
         elif out_format == 1 or out_format == "log-magnitude":
-            return lambda x: 0.5 * torch.log(x)
+            return r, lambda x: 0.5 * torch.log(x)
         elif out_format == 2 or out_format == "magnitude":
-            return lambda x: torch.sqrt(x)
+            return r, lambda x: torch.sqrt(x)
         elif out_format == 3 or out_format == "power":
-            return lambda x: x
+            return r, lambda x: x
         raise ValueError(f"out_format {out_format} is not supported.")

@@ -58,11 +58,11 @@ class UniformQuantization(nn.Module):
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super(UniformQuantization, self).__init__()
 
-        self.abs_max = abs_max
-        self.precomputes = self._precompute(n_bit, quantizer)
-
-        assert 0 < self.abs_max
+        assert 0 < abs_max
         assert 1 <= n_bit
+
+        self.abs_max = abs_max
+        self.const = self._precompute_const(n_bit, quantizer)
 
     def forward(self, x):
         """Quantize input.
@@ -86,34 +86,25 @@ class UniformQuantization(nn.Module):
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
         """
-        return self._forward(x, self.abs_max, self.precomputes)
+        return self._forward(x, self.abs_max, *self.const)
 
     @staticmethod
-    def _forward(x, abs_max, precomputes):
-        level, func = precomputes
+    def _forward(x, abs_max, level, func):
         y = func(x * (level / (2 * abs_max)))
         y = torch.clip(y, min=0, max=level - 1)
         return y
 
     @staticmethod
     def _func(x, abs_max, n_bit, quantizer):
-        precomputes = UniformQuantization._precompute(n_bit, quantizer)
-        return UniformQuantization._forward(x, abs_max, precomputes)
+        const = UniformQuantization._precompute_const(n_bit, quantizer)
+        return UniformQuantization._forward(x, abs_max, *const)
 
     @staticmethod
-    def _precompute(n_bit, quantizer):
+    def _precompute_const(n_bit, quantizer):
         if quantizer == 0 or quantizer == "mid-rise":
             level = 1 << n_bit
-
-            def func(x):
-                return Floor.apply(x + level // 2)
-
+            return level, lambda x: Floor.apply(x + level // 2)
         elif quantizer == 1 or quantizer == "mid-tread":
             level = (1 << n_bit) - 1
-
-            def func(x):
-                return Round.apply(x + (level - 1) // 2)
-
-        else:
-            raise ValueError(f"quantizer {quantizer} is not supported.")
-        return level, func
+            return level, lambda x: Round.apply(x + (level - 1) // 2)
+        raise ValueError(f"quantizer {quantizer} is not supported.")

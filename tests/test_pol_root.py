@@ -21,9 +21,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=12, L=32, B=2):
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=12, L=32, B=2):
     root_pol = diffsptk.PolynomialToRoots(M)
-    pol_root = diffsptk.RootsToPolynomial(M)
+    pol_root = U.choice(
+        module,
+        diffsptk.RootsToPolynomial,
+        diffsptk.functional.pol_root,
+        {"order": M},
+        {},
+    )
 
     U.check_compatibility(
         device,

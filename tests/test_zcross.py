@@ -21,14 +21,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, L=10, T=50):
-    zcross = diffsptk.ZeroCrossingAnalysis(L, norm=True)
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("norm", [False, True])
+def test_compatibility(device, module, norm, L=10, T=50):
+    zcross = U.choice(
+        module,
+        diffsptk.ZeroCrossingAnalysis,
+        diffsptk.functional.zcross,
+        {},
+        {"frame_length": L, "norm": norm},
+    )
 
+    opt = "-o 1" if norm else ""
     U.check_compatibility(
         device,
         zcross,
         [],
         f"nrand -l {T}",
-        f"zcross -l {L} -o 1",
+        f"zcross -l {L} {opt}",
         [],
     )
