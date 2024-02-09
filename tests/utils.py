@@ -47,7 +47,7 @@ def choice(first, a, b, a_params, params={}, n_input=1):
 
 
 def allclose(a, b, rtol=None, atol=None):
-    is_double = torch.get_default_dtype() == torch.float64
+    is_double = torch.get_default_dtype() == torch.double
     if rtol is None:
         rtol = 1e-5 if is_double else 1e-4
     if atol is None:
@@ -63,9 +63,9 @@ def call(cmd, get=True):
             text=True,
             stdout=subprocess.PIPE,
         )
-        is_double = torch.get_default_dtype() == torch.float64
+        is_double = torch.get_default_dtype() == torch.double
         data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.float64 if is_double else np.float32
+            res.stdout, sep="\n", dtype=np.double if is_double else np.float32
         )
         assert len(data) > 0, f"Failed to run command {cmd}"
         return data

@@ -14,11 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
+import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import check_size
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 
 
 class Window(nn.Module):
@@ -27,62 +28,29 @@ class Window(nn.Module):
 
     Parameters
     ----------
-    in_length : int >= 1 [scalar]
+    in_length : int >= 1
         Input length or window length, :math:`L_1`.
 
-    out_length : int >= L1 [scalar]
+    out_length : int >= L1 or None
         Output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
-
-    norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular']
         Window type.
 
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
     """
 
-    def __init__(self, in_length, out_length=None, norm="power", window="blackman"):
+    def __init__(self, in_length, out_length=None, *, window="blackman", norm="power"):
         super(Window, self).__init__()
-
-        self.in_length = in_length
 
         assert 1 <= in_length
 
-        # Make window.
-        if window == 0 or window == "blackman":
-            w = np.blackman(in_length)
-        elif window == 1 or window == "hamming":
-            w = np.hamming(in_length)
-        elif window == 2 or window == "hanning":
-            w = np.hanning(in_length)
-        elif window == 3 or window == "bartlett":
-            w = np.bartlett(in_length)
-        elif window == 4 or window == "trapezoidal":
-            slope = np.linspace(0, 4, in_length)
-            w = np.minimum(np.clip(slope, 0, 1), np.flip(slope))
-        elif window == 5 or window == "rectangular":
-            w = np.ones(in_length)
-        else:
-            raise ValueError(f"window {window} is not supported")
-
-        # Normalize window.
-        if norm == 0 or norm == "none":
-            w /= 1
-        elif norm == 1 or norm == "power":
-            w /= np.sqrt(np.sum(w**2))
-        elif norm == 2 or norm == "magnitude":
-            w /= np.sum(w)
-        else:
-            raise ValueError(f"norm {norm} is not supported")
-        self.register_buffer("window", numpy_to_torch(w))
-
-        # Make padding module.
-        if out_length is None or in_length == out_length:
-            self.pad = lambda x: x
-        else:
-            assert in_length <= out_length
-            self.pad = nn.ConstantPad1d((0, out_length - in_length), 0)
+        self.in_length = in_length
+        self.out_length = out_length
+        self.register_buffer("window", self._precompute(self.in_length, window, norm))
 
     def forward(self, x):
         """Apply a window function to given waveform.
@@ -94,7 +62,7 @@ class Window(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., L2)]
+        Tensor [shape=(..., L2)]
             Windowed waveform.
 
         Examples
@@ -107,6 +75,51 @@ class Window(nn.Module):
 
         """
         check_size(x.size(-1), self.in_length, "input length")
+        return self._forward(x, self.out_length, self.window)
 
-        y = self.pad(x * self.window)
+    @staticmethod
+    def _forward(x, out_length, window):
+        y = x * window
+        if out_length is not None:
+            in_length = x.size(-1)
+            y = F.pad(y, (0, out_length - in_length))
         return y
+
+    @staticmethod
+    def _func(x, out_length, window, norm):
+        window = Window._precompute(
+            x.size(-1), window, norm, dtype=x.dtype, device=x.device
+        )
+        return Window._forward(x, out_length, window)
+
+    @staticmethod
+    def _precompute(length, window, norm, dtype=None, device=None):
+        # Make window.
+        params = {"dtype": torch.double, "device": device}
+        if window == 0 or window == "blackman":
+            w = torch.blackman_window(length, periodic=False, **params)
+        elif window == 1 or window == "hamming":
+            w = torch.hamming_window(length, periodic=False, **params)
+        elif window == 2 or window == "hanning":
+            w = torch.hann_window(length, periodic=False, **params)
+        elif window == 3 or window == "bartlett":
+            w = torch.bartlett_window(length, periodic=False, **params)
+        elif window == 4 or window == "trapezoidal":
+            slope = torch.linspace(0, 4, length, **params)
+            w = torch.minimum(torch.clip(slope, 0, 1), torch.flip(slope, [0]))
+        elif window == 5 or window == "rectangular":
+            w = torch.ones(length, **params)
+        else:
+            raise ValueError(f"window {window} is not supported.")
+
+        # Normalize window.
+        if norm == 0 or norm == "none":
+            pass
+        elif norm == 1 or norm == "power":
+            w /= torch.sqrt(torch.sum(w**2))
+        elif norm == 2 or norm == "magnitude":
+            w /= torch.sum(w)
+        else:
+            raise ValueError(f"norm {norm} is not supported.")
+
+        return to(w, dtype=dtype)

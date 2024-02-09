@@ -798,6 +798,33 @@ def ulaw(x, abs_max=1, mu=255):
     return nn.MuLawCompression._func(x, abs_max=abs_max, mu=mu)
 
 
+def window(x, out_length=None, *, window="blackman", norm="power"):
+    """Apply window function.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L1)]
+        Framed waveform.
+
+    out_length : int >= L1 or None
+        Output length, :math:`L_2`.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+              'rectangular']
+        Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    Returns
+    -------
+    Tensor [shape=(..., L2)]
+        Windowed waveform.
+
+    """
+    return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
+
+
 def zcross(x, frame_length=1, norm=False):
     """Compute zero-crossing rate.
 

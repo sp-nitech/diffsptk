@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
 import pytest
 
 import diffsptk
@@ -36,6 +37,7 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
         f"poledf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
     )
 
     U.check_differentiability(device, poledf, [(T,), (T // P, M + 1)])

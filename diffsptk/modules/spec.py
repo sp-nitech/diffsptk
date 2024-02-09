@@ -40,7 +40,7 @@ class Spectrum(nn.Module):
 
     """
 
-    def __init__(self, fft_length, eps=0, relative_floor=None, out_format="power"):
+    def __init__(self, fft_length, *, eps=0, relative_floor=None, out_format="power"):
         super(Spectrum, self).__init__()
 
         assert 2 <= fft_length
