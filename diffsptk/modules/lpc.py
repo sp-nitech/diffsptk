@@ -38,7 +38,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         super(LinearPredictiveCodingAnalysis, self).__init__()
 
         self.lpc = nn.Sequential(
-            AutocorrelationAnalysis(lpc_order, frame_length),
+            AutocorrelationAnalysis(frame_length, lpc_order),
             LevinsonDurbin(lpc_order),
         )
 

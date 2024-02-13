@@ -96,7 +96,7 @@ class VectorQuantization(nn.Module):
         if d == 1:
             x = x.unsqueeze(0)
 
-        xq, indices, loss = self.vq(x.float())
+        xq, indices, loss = self.vq(x.float(), **kwargs)
 
         if d == 1:
             xq = xq.squeeze(0)

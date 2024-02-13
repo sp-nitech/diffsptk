@@ -17,6 +17,31 @@
 from . import modules as nn
 
 
+def acorr(x, acr_order=0, out_format="none"):
+    """Compute autocorrelation.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Framed waveform.
+
+    acr_order : int >= 0
+        Order of autocorrelation, :math:`M`.
+
+    out_format : ['none', 'normalized', 'biased', 'unbiased']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    """
+    return nn.AutocorrelationAnalysis._func(
+        x, acr_order=acr_order, out_format=out_format
+    )
+
+
 def alaw(x, abs_max=1, a=87.6):
     """Compress waveform by A-law algorithm.
 

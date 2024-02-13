@@ -17,55 +17,35 @@
 import torch
 import torch.nn as nn
 
-from .spec import Spectrum
+from ..misc.utils import check_size
 
 
 class AutocorrelationAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/acorr.html>`_
-    for details. Currently, spectrum input is not supported.
+    for details.
 
     Parameters
     ----------
-    acr_order : int >= 0 [scalar]
-        Order of autocorrelation, :math:`M`.
-
-    frame_length : int > M [scalar]
+    frame_length : int > M
         Frame length, :math:`L`.
 
-    norm : bool [scalar]
-        If True, normalize autocorrelation.
+    acr_order : int >= 0
+        Order of autocorrelation, :math:`M`.
 
-    acf : ['none', 'biased', 'unbiased']
-        Type of autocorrelation function.
+    out_format : ['none', 'normalized', 'biased', 'unbiased']
+        Output format.
 
     """
 
-    def __init__(self, acr_order, frame_length, norm=False, acf="none"):
+    def __init__(self, frame_length, acr_order, out_format="none"):
         super(AutocorrelationAnalysis, self).__init__()
 
+        assert 0 <= acr_order < frame_length
+
+        self.frame_length = frame_length
         self.acr_order = acr_order
-        self.norm = norm
-
-        assert 0 <= self.acr_order
-        assert self.acr_order < frame_length
-
-        # Make spectrum module.
-        fft_length = frame_length + self.acr_order
-        if fft_length % 2 == 1:
-            fft_length += 1
-        self.spec = Spectrum(fft_length)
-
-        # Prepare constants.
-        if acf == "none":
-            const = torch.tensor(1)
-        elif acf == "biased":
-            const = torch.tensor(frame_length)
-        elif acf == "unbiased":
-            const = torch.arange(frame_length, frame_length - self.acr_order - 1, -1)
-        else:
-            raise ValueError("acf {acf} is not supported")
-
-        self.register_buffer("const", torch.reciprocal(const))
+        self.out_format, const = self._precompute(frame_length, acr_order, out_format)
+        self.register_buffer("const", const)
 
     def forward(self, x):
         """Estimate autocorrelation of input.
@@ -77,7 +57,7 @@ class AutocorrelationAnalysis(nn.Module):
 
         Returns
         -------
-        r : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Autocorrelation.
 
         Examples
@@ -89,9 +69,48 @@ class AutocorrelationAnalysis(nn.Module):
         tensor([30.0000, 20.0000, 11.0000,  4.0000])
 
         """
-        X = self.spec(x)
-        r = torch.fft.irfft(X)[..., : self.acr_order + 1]
-        r = r * self.const
-        if self.norm:
-            r = r / r[..., :1]
+        check_size(x.size(-1), self.frame_length, "length of waveform")
+        return self._forward(x, self.acr_order, self.out_format, self.const)
+
+    @staticmethod
+    def _forward(x, acr_order, out_format, const):
+        fft_length = x.size(-1) + acr_order
+        if fft_length % 2 == 1:
+            fft_length += 1
+        X = torch.square(torch.fft.rfft(x, n=fft_length).abs())
+        r = torch.fft.irfft(X)[..., : acr_order + 1]
+        r = out_format(r, const)
         return r
+
+    @staticmethod
+    def _func(x, acr_order, out_format):
+        const = AutocorrelationAnalysis._precompute(
+            x.size(-1), acr_order, out_format, dtype=x.dtype, device=x.device
+        )
+        return AutocorrelationAnalysis._forward(x, acr_order, *const)
+
+    @staticmethod
+    def _precompute(frame_length, acr_order, out_format, dtype=None, device=None):
+        if out_format == 0 or out_format == "none":
+            return (
+                lambda x, c: x,
+                torch.tensor(1, dtype=dtype, device=device),
+            )
+        elif out_format == 1 or out_format == "normalized":
+            return (
+                lambda x, c: x / x[..., :1],
+                torch.tensor(1, dtype=dtype, device=device),
+            )
+        elif out_format == 2 or out_format == "biased":
+            return (
+                lambda x, c: x * c,
+                torch.tensor(1 / frame_length, dtype=dtype, device=device),
+            )
+        elif out_format == 3 or out_format == "unbiased":
+            return (
+                lambda x, c: x * c,
+                torch.arange(
+                    frame_length, frame_length - acr_order - 1, -1, device=device
+                ).reciprocal(),
+            )
+        raise ValueError(f"out_format {out_format} is not supported.")

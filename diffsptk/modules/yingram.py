@@ -83,8 +83,8 @@ class Yingram(nn.Module):
         assert 1 <= n_bin
 
         self.acorr = AutocorrelationAnalysis(
-            lag_max - 1,
             frame_length,
+            lag_max - 1,
         )
 
         midi_min = int(np.ceil(lag2midi(lag_max, sample_rate)))
