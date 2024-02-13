@@ -104,8 +104,8 @@ class FrequencyTransform(nn.Module):
         beta = 1 - alpha * alpha
 
         # Make transform matrix.
-        arange = torch.arange(L1, dtype=torch.double)
-        A = torch.zeros((L2, L1), dtype=torch.double)
+        arange = torch.arange(L1, dtype=torch.double, device=device)
+        A = torch.zeros((L2, L1), dtype=torch.double, device=device)
         A[0, :] = alpha**arange
         if 1 < L2 and 1 < L1:
             A[1, 1:] = A[0, :-1] * beta * arange[1:]
@@ -114,4 +114,4 @@ class FrequencyTransform(nn.Module):
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
-        return to(A.T, dtype=dtype, device=device)
+        return to(A.T, dtype=dtype)

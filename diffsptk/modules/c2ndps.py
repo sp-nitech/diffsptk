@@ -87,7 +87,7 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
     @staticmethod
     def _precompute(cep_order, fft_length, dtype=None, device=None):
         half_fft_length = fft_length // 2
-        ramp = torch.arange(cep_order + 1, dtype=torch.double) * 0.5
+        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
         if cep_order == half_fft_length:
             ramp[-1] *= 2
-        return to(ramp, dtype=dtype, device=device)
+        return to(ramp, dtype=dtype)

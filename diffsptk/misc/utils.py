@@ -23,7 +23,7 @@ import torch.nn.functional as F
 import torchaudio
 
 UNVOICED_SYMBOL = 0
-TWO_PI = 2 * torch.pi
+TWO_PI = 6.283185307179586
 
 
 class Lambda(torch.nn.Module):
@@ -71,10 +71,10 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
-def to(x, dtype=None, device=None):
+def to(x, dtype=None):
     if dtype is None:
         dtype = torch.get_default_dtype()
-    return x.to(dtype=dtype, device=device)
+    return x.to(dtype=dtype)
 
 
 def to_3d(x):

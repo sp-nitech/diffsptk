@@ -14,34 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
-
-
-def make_dct_matrix(L):
-    """Make DCT matrix.
-
-    Parameters
-    ----------
-    L : int >= 1 [scalar]
-        DCT length, :math:`L`.
-
-    Returns
-    -------
-    W : ndarray [shape=(L, L)]
-        DCT matrix.
-
-    """
-    W = np.empty((L, L))
-    n = (np.arange(L) + 0.5) * (np.pi / L)
-    c = np.sqrt(2 / L)
-    for k in range(L):
-        z = np.sqrt(1 / L) if k == 0 else c
-        W[:, k] = z * np.cos(k * n)
-    return W
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class DiscreteCosineTransform(nn.Module):
@@ -60,8 +37,8 @@ class DiscreteCosineTransform(nn.Module):
 
         assert 1 <= dct_length
 
-        W = make_dct_matrix(dct_length)
-        self.register_buffer("W", numpy_to_torch(W))
+        self.dct_length = dct_length
+        self.register_buffer("W", self._precompute(self.dct_length))
 
     def forward(self, x):
         """Apply DCT to input.
@@ -73,7 +50,7 @@ class DiscreteCosineTransform(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., L)]
+        Tensor [shape=(..., L)]
             DCT output.
 
         Examples
@@ -85,5 +62,25 @@ class DiscreteCosineTransform(nn.Module):
         tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
 
         """
-        y = torch.matmul(x, self.W)
-        return y
+        check_size(x.size(-1), self.dct_length, "dimension of input")
+        return self._forward(x, self.W)
+
+    @staticmethod
+    def _forward(x, W):
+        return torch.matmul(x, W)
+
+    @staticmethod
+    def _func(x):
+        W = DiscreteCosineTransform._precompute(
+            x.size(-1), dtype=x.dtype, device=x.device
+        )
+        return DiscreteCosineTransform._forward(x, W)
+
+    @staticmethod
+    def _precompute(length, dtype=None, device=None):
+        L = length
+        k = torch.arange(L, dtype=torch.double, device=device)
+        n = (k + 0.5) * (torch.pi / L)
+        z = torch.sqrt(torch.clip(1 + k, 1, 2) / L)
+        W = z.unsqueeze(0) * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
+        return to(W, dtype=dtype)

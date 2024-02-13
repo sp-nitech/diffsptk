@@ -8,4 +8,6 @@ idct
 .. autoclass:: diffsptk.InverseDiscreteCosineTransform
    :members:
 
+.. autofunction:: diffsptk.functional.idct
+
 .. seealso:: :ref:`dct`

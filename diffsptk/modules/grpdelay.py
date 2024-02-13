@@ -141,5 +141,5 @@ class GroupDelay(nn.Module):
 
     @staticmethod
     def _precompute(length, dtype=None, device=None):
-        ramp = torch.arange(length)
-        return to(ramp, dtype=dtype, device=device)
+        ramp = torch.arange(length, device=device)
+        return to(ramp, dtype=dtype)

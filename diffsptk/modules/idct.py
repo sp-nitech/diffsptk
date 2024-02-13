@@ -17,8 +17,8 @@
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
-from .dct import make_dct_matrix
+from ..misc.utils import check_size
+from .dct import DiscreteCosineTransform as DCT
 
 
 class InverseDiscreteCosineTransform(nn.Module):
@@ -37,8 +37,8 @@ class InverseDiscreteCosineTransform(nn.Module):
 
         assert 1 <= dct_length
 
-        W = make_dct_matrix(dct_length)
-        self.register_buffer("W", numpy_to_torch(W.T))
+        self.dct_length = dct_length
+        self.register_buffer("W", self._precompute(self.dct_length))
 
     def forward(self, y):
         """Apply inverse DCT to input.
@@ -50,7 +50,7 @@ class InverseDiscreteCosineTransform(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(..., L)]
+        Tensor [shape=(..., L)]
             Inverse DCT output.
 
         Examples
@@ -63,5 +63,20 @@ class InverseDiscreteCosineTransform(nn.Module):
         tensor([-4.4703e-08,  1.0000e+00,  2.0000e+00,  3.0000e+00])
 
         """
-        x = torch.matmul(y, self.W)
-        return x
+        check_size(y.size(-1), self.dct_length, "dimension of input")
+        return self._forward(y, self.W)
+
+    @staticmethod
+    def _forward(y, W):
+        return torch.matmul(y, W)
+
+    @staticmethod
+    def _func(y):
+        W = InverseDiscreteCosineTransform._precompute(
+            y.size(-1), dtype=y.dtype, device=y.device
+        )
+        return InverseDiscreteCosineTransform._forward(y, W)
+
+    @staticmethod
+    def _precompute(dct_length, dtype=None, device=None):
+        return DCT._precompute(dct_length, dtype=dtype, device=device).T

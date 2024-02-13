@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, L=8, B=2):
-    dct = diffsptk.DCT(L)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, L=8, B=2):
+    dct = U.choice(
+        module,
+        diffsptk.DCT,
+        diffsptk.functional.dct,
+        {"dct_length": L},
+    )
 
     U.check_compatibility(
         device,

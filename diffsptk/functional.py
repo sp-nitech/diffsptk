@@ -130,6 +130,23 @@ def c2ndps(c, fft_length=512):
     )
 
 
+def dct(x):
+    """Compute DCT.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Input signal.
+
+    Returns
+    -------
+    Tensor [shape=(..., L)]
+        DCT output.
+
+    """
+    return nn.DiscreteCosineTransform._func(x)
+
+
 def decimate(x, period=1, start=0, dim=-1):
     """Decimate signal.
 
@@ -403,6 +420,23 @@ def ialaw(y, abs_max=1, a=87.6):
 
     """
     return nn.ALawExpansion._func(y, abs_max=abs_max, a=a)
+
+
+def idct(y):
+    """Compute inverse DCT.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., L)]
+        Input.
+
+    Returns
+    -------
+    Tensor [shape=(..., L)]
+        Inverse DCT output.
+
+    """
+    return nn.InverseDiscreteCosineTransform._func(y)
 
 
 def ignorm(y, gamma=0, c=None):

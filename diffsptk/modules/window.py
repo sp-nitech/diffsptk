@@ -95,19 +95,20 @@ class Window(nn.Module):
     @staticmethod
     def _precompute(length, window, norm, dtype=None, device=None):
         # Make window.
+        params = {"dtype": dtype, "device": device}
         if window == 0 or window == "blackman":
-            w = torch.blackman_window(length, periodic=False, dtype=torch.double)
+            w = torch.blackman_window(length, periodic=False, **params)
         elif window == 1 or window == "hamming":
-            w = torch.hamming_window(length, periodic=False, dtype=torch.double)
+            w = torch.hamming_window(length, periodic=False, **params)
         elif window == 2 or window == "hanning":
-            w = torch.hann_window(length, periodic=False, dtype=torch.double)
+            w = torch.hann_window(length, periodic=False, **params)
         elif window == 3 or window == "bartlett":
-            w = torch.bartlett_window(length, periodic=False, dtype=torch.double)
+            w = torch.bartlett_window(length, periodic=False, **params)
         elif window == 4 or window == "trapezoidal":
-            slope = torch.linspace(0, 4, length, dtype=torch.double)
+            slope = torch.linspace(0, 4, length, **params)
             w = torch.minimum(torch.clip(slope, 0, 1), torch.flip(slope, [0]))
         elif window == 5 or window == "rectangular":
-            w = torch.ones(length, dtype=torch.double)
+            w = torch.ones(length, **params)
         else:
             raise ValueError(f"window {window} is not supported.")
 
@@ -121,4 +122,4 @@ class Window(nn.Module):
         else:
             raise ValueError(f"norm {norm} is not supported.")
 
-        return to(w, dtype=dtype, device=device)
+        return to(w, dtype=dtype)
