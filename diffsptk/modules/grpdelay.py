@@ -128,17 +128,18 @@ class GroupDelay(nn.Module):
     def _func(b, a, fft_length, alpha, gamma):
         if b is not None and a is not None:
             data_length = b.size(-1) + a.size(-1) - 1
-            c = b
         elif b is not None:
             data_length = b.size(-1)
-            c = b
         else:
             data_length = a.size(-1)
-            c = a
-        ramp = GroupDelay._precompute(data_length, dtype=c.dtype, device=c.device)
+        ramp = GroupDelay._precompute(
+            data_length,
+            dtype=a.dtype if b is None else b.dtype,
+            device=a.device if b is None else b.device,
+        )
         return GroupDelay._forward(b, a, fft_length, alpha, gamma, ramp)
 
     @staticmethod
     def _precompute(length, dtype=None, device=None):
-        ramp = torch.arange(length, device=device)
-        return to(ramp, dtype=dtype)
+        ramp = torch.arange(length)
+        return to(ramp, dtype=dtype, device=device)

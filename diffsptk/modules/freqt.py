@@ -85,8 +85,7 @@ class FrequencyTransform(nn.Module):
 
     @staticmethod
     def _forward(c, A):
-        d = torch.matmul(c, A)
-        return d
+        return torch.matmul(c, A)
 
     @staticmethod
     def _func(c, out_order, alpha):
@@ -115,4 +114,4 @@ class FrequencyTransform(nn.Module):
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
-        return to(A.T, dtype=dtype)
+        return to(A.T, dtype=dtype, device=device)

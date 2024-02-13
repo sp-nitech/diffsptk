@@ -38,7 +38,7 @@ def compose(*fs):
 def choice(first, a, b, a_params, params={}, n_input=1):
     if first:
         return a(**a_params, **params)
-    if n_input == 1:
+    elif n_input == 1:
 
         def func(x, **kwargs):
             return b(x, **params, **kwargs)
@@ -50,8 +50,7 @@ def choice(first, a, b, a_params, params={}, n_input=1):
             return b(x, y, **params, **kwargs)
 
         return func
-    else:
-        raise ValueError("n_input must be 1 or 2")
+    raise ValueError("n_input must be 1 or 2.")
 
 
 def allclose(a, b, rtol=None, atol=None):
@@ -97,6 +96,7 @@ def check_compatibility(
     dy=None,
     eq=None,
     opt={},
+    key=[],
     sr=None,
     verbose=False,
     **kwargs,
@@ -126,8 +126,6 @@ def check_compatibility(
                 x[-1] = x[-1].reshape(-1, *dx)
             else:
                 x[-1] = x[-1].reshape(-1, dx)
-        else:
-            pass
 
     if len(setup) == 0:
         y = call(f"{inputs[0]} | {target}")
@@ -140,7 +138,11 @@ def check_compatibility(
         call(cmd, get=False)
 
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
-    y_hat = module(*x, **opt).cpu().numpy()
+    if len(key) == 0:
+        y_hat = module(*x, **opt).cpu().numpy()
+    else:
+        x = {k: v for k, v in zip(key, x)}
+        y_hat = module(**x, **opt).cpu().numpy()
 
     if sr is not None:
         sf.write("output.wav", y_hat / 32768, sr)
