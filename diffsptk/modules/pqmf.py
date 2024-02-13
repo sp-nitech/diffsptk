@@ -126,7 +126,7 @@ def make_filter_banks(
     elif mode == "synthesis":
         sign = -1
     else:
-        raise ValueError("analysis or synthesis is expected")
+        raise ValueError("analysis or synthesis is expected.")
 
     filters = []
     for k in range(n_band):
@@ -174,7 +174,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
             n_band, filter_order, mode="analysis", alpha=alpha, **kwargs
         )
         if not is_converged:
-            warnings.warn("Failed to find PQMF coefficients")
+            warnings.warn("Failed to find PQMF coefficients.")
         filters = np.expand_dims(filters, 1)
         filters = np.flip(filters, 2).copy()
         filters = numpy_to_torch(filters)
@@ -222,7 +222,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
             x = x.view(1, 1, -1)
         elif x.dim() == 2:
             x = x.unsqueeze(1)
-        assert x.dim() == 3, "Input must be 3D tensor"
+        assert x.dim() == 3, "Input must be 3D tensor."
 
         y = F.conv1d(self.pad(x), self.filters)
         return y

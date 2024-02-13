@@ -69,7 +69,7 @@ class PolynomialToRoots(nn.Module):
     @staticmethod
     def _forward(a, out_format, eye):
         if torch.any(a[..., 0] == 0):
-            raise RuntimeError("leading coefficient must be non-zero")
+            raise RuntimeError("Leading coefficient must be non-zero.")
 
         # Make companion matrix.
         a = -a[..., 1:] / a[..., :1]  # (..., M)

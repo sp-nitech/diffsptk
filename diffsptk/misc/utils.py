@@ -50,8 +50,7 @@ def default_dtype():
         return np.float32
     elif t == torch.float64:  # pragma: no cover
         return np.float64
-    else:
-        raise RuntimeError("Unknown default dtype: {t}")
+    raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def default_complex_dtype():
@@ -60,8 +59,7 @@ def default_complex_dtype():
         return np.complex64
     elif t == torch.float64:  # pragma: no cover
         return np.complex128
-    else:
-        raise RuntimeError("Unknown default dtype: {t}")
+    raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def numpy_to_torch(x):
@@ -155,7 +153,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
         }
         key = str(int(sr))
         if key not in sr_to_alpha:
-            raise ValueError(f"unsupported sample rate: {sr}")
+            raise ValueError(f"Unsupported sample rate: {sr}.")
         selected_alpha = sr_to_alpha[key]
         return selected_alpha
 
@@ -187,7 +185,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     elif mode == "auto":
         alpha = get_auto_alpha(sr, n_freq, n_alpha)
     else:
-        raise ValueError("only hts and auto are supported")
+        raise ValueError("Only hts and auto are supported.")
 
     return alpha
 
@@ -279,7 +277,7 @@ def deconv1d(x, weight):
 
 
 def check_size(x, y, cause):
-    assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
+    assert x == y, f"Unexpected {cause} (input {x} vs target {y})."
 
 
 def read(filename, double=False, **kwargs):

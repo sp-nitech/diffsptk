@@ -59,7 +59,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
             n_band, filter_order, mode="synthesis", alpha=alpha, **kwargs
         )
         if not is_converged:
-            warnings.warn("Failed to find PQMF coefficients")
+            warnings.warn("Failed to find PQMF coefficients.")
         filters = np.expand_dims(filters, 0)
         filters = np.flip(filters, 2).copy()
         filters = numpy_to_torch(filters)
@@ -110,7 +110,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         """
         if y.dim() == 2:
             y = y.unsqueeze(0)
-        assert y.dim() == 3, "Input must be 3D tensor"
+        assert y.dim() == 3, "Input must be 3D tensor."
 
         x = F.conv1d(self.pad(y), self.filters)
         if not keepdim:

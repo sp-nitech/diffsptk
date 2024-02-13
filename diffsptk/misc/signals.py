@@ -212,7 +212,7 @@ def train(order, frame_period, norm="power", **kwargs):
     elif norm == 2 or norm == "magnitude":
         pulse = frame_period
     else:
-        raise ValueError(f"norm {norm} is not supported")
+        raise ValueError(f"norm {norm} is not supported.")
 
     frequency = 1 / frame_period
     v = torch.full((order + 2,), frequency)
