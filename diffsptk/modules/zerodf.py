@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn as nn
+import torch.nn.functional as F
 
 from ..misc.utils import check_size
 from .linear_intpl import LinearInterpolation
@@ -26,13 +27,13 @@ class AllZeroDigitalFilter(nn.Module):
 
     Parameters
     ----------
-    filter_order : int >= 0 [scalar]
+    filter_order : int >= 0
         Order of filter coefficients, :math:`M`.
 
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
-    ignore_gain : bool [scalar]
+    ignore_gain : bool
         If True, perform filtering without gain.
 
     """
@@ -40,16 +41,14 @@ class AllZeroDigitalFilter(nn.Module):
     def __init__(self, filter_order, frame_period, ignore_gain=False):
         super(AllZeroDigitalFilter, self).__init__()
 
+        assert 0 <= filter_order
+        assert 1 <= frame_period
+
         self.filter_order = filter_order
         self.frame_period = frame_period
         self.ignore_gain = ignore_gain
 
-        assert 0 <= self.filter_order
-
-        self.pad = nn.ConstantPad1d((self.filter_order, 0), 0)
-        self.linear_intpl = LinearInterpolation(self.frame_period)
-
-    def forward(self, x, h):
+    def forward(self, x, b):
         """Apply an all-zero digital filter.
 
         Parameters
@@ -57,31 +56,37 @@ class AllZeroDigitalFilter(nn.Module):
         x : Tensor [shape=(..., T)]
             Excitation signal.
 
-        h : Tensor [shape=(..., T/P, M+1)]
+        b : Tensor [shape=(..., T/P, M+1)]
             Filter coefficients.
 
         Returns
         -------
-        y : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Output signal.
 
         Examples
         --------
         >>> x = diffsptk.step(4)
-        >>> h = diffsptk.ramp(4)
+        >>> b = diffsptk.ramp(4)
         >>> zerodf = diffsptk.AllZeroDigitalFilter(0, 1)
-        >>> y = zerodf(x, h.view(-1, 1))
+        >>> y = zerodf(x, b.view(-1, 1))
         >>> y
         tensor([[0., 1., 2., 3., 4.]])
 
         """
-        check_size(h.size(-1), self.filter_order + 1, "dimension of impulse response")
-        check_size(x.size(-1), h.size(-2) * self.frame_period, "sequence length")
+        check_size(b.size(-1), self.filter_order + 1, "dimension of impulse response")
+        check_size(x.size(-1), b.size(-2) * self.frame_period, "sequence length")
+        return self._forward(x, b, self.frame_period, self.ignore_gain)
 
-        x = self.pad(x)
-        x = x.unfold(-1, self.filter_order + 1, 1)
-        h = self.linear_intpl(h.flip(-1))
-        if self.ignore_gain:
+    @staticmethod
+    def _forward(x, b, frame_period, ignore_gain):
+        M = b.size(-1) - 1
+        x = F.pad(x, (M, 0))
+        x = x.unfold(-1, M + 1, 1)
+        h = LinearInterpolation._forward(b.flip(-1), frame_period)
+        if ignore_gain:
             h = h / h[..., -1:]
         y = (x * h).sum(-1)
         return y
+
+    _func = _forward

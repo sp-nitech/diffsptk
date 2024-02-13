@@ -227,7 +227,7 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
-def excite(p, frame_period=1, voiced_region="pulse", unvoiced_region="gauss"):
+def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
     """Generate a simple excitation signal.
 
     Parameters
@@ -284,7 +284,7 @@ def fftcep(x, cep_order=0, n_iter=0, accel=0):
     return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
 
 
-def frame(x, frame_length=1, frame_period=1, center=True, zmean=False):
+def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
     """Perform framing.
 
     Parameters
@@ -493,7 +493,7 @@ def istft(
     *,
     out_length=None,
     frame_length=400,
-    frame_period=160,
+    frame_period=80,
     fft_length=512,
     center=True,
     window="blackman",
@@ -587,7 +587,7 @@ def levdur(r):
     return nn.LevinsonDurbin._func(r)
 
 
-def linear_intpl(x, upsampling_factor=1):
+def linear_intpl(x, upsampling_factor=80):
     """Interpolate filter coefficients.
 
     Parameters
@@ -762,6 +762,34 @@ def pol_root(x):
     return nn.RootsToPolynomial._func(x)
 
 
+def poledf(x, a, frame_period=80, ignore_gain=False):
+    """Apply an all-pole digital filter.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Excitation signal.
+
+    a : Tensor [shape=(..., T/P, M+1)]
+        Filter coefficients.
+
+    frame_period : int >= 1
+        Frame period, :math:`P`.
+
+    ignore_gain : bool
+        If True, perform filtering without gain.
+
+    Returns
+    -------
+    Tensor [shape=(..., T)]
+        Output signal.
+
+    """
+    return nn.AllPoleDigitalFilter._func(
+        x, a, frame_period=frame_period, ignore_gain=ignore_gain
+    )
+
+
 def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
     """Quantize input.
 
@@ -872,7 +900,7 @@ def stft(
     x,
     *,
     frame_length=400,
-    frame_period=160,
+    frame_period=80,
     fft_length=512,
     center=True,
     zmean=False,
@@ -970,8 +998,8 @@ def unframe(
     y,
     *,
     out_length=None,
-    frame_length=1,
-    frame_period=1,
+    frame_length=400,
+    frame_period=80,
     center=True,
     window="rectangular",
     norm="none",
@@ -1047,7 +1075,7 @@ def window(x, *, out_length=None, window="blackman", norm="power"):
     return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
 
 
-def zcross(x, frame_length=1, norm=False):
+def zcross(x, frame_length=80, norm=False):
     """Compute zero-crossing rate.
 
     Parameters
@@ -1068,3 +1096,31 @@ def zcross(x, frame_length=1, norm=False):
 
     """
     return nn.ZeroCrossingAnalysis._func(x, frame_length=frame_length, norm=norm)
+
+
+def zerodf(x, b, frame_period=80, ignore_gain=False):
+    """Apply an all-zero digital filter.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Excitation signal.
+
+    b : Tensor [shape=(..., T/P, M+1)]
+        Filter coefficients.
+
+    frame_period : int >= 1
+        Frame period, :math:`P`.
+
+    ignore_gain : bool
+        If True, perform filtering without gain.
+
+    Returns
+    -------
+    Tensor [shape=(..., T)]
+        Output signal.
+
+    """
+    return nn.AllZeroDigitalFilter._func(
+        x, b, frame_period=frame_period, ignore_gain=ignore_gain
+    )

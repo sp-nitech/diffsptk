@@ -28,13 +28,13 @@ class AllPoleDigitalFilter(nn.Module):
 
     Parameters
     ----------
-    filter_order : int >= 0 [scalar]
+    filter_order : int >= 0
         Order of filter coefficients, :math:`M`.
 
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
-    ignore_gain : bool [scalar]
+    ignore_gain : bool
         If True, perform filtering without gain.
 
     """
@@ -42,13 +42,12 @@ class AllPoleDigitalFilter(nn.Module):
     def __init__(self, filter_order, frame_period, ignore_gain=False):
         super(AllPoleDigitalFilter, self).__init__()
 
+        assert 0 <= filter_order
+        assert 1 <= frame_period
+
         self.filter_order = filter_order
         self.frame_period = frame_period
         self.ignore_gain = ignore_gain
-
-        assert 0 <= self.filter_order
-
-        self.linear_intpl = LinearInterpolation(self.frame_period)
 
     def forward(self, x, a):
         """Apply an all-pole digital filter.
@@ -63,7 +62,7 @@ class AllPoleDigitalFilter(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Output signal.
 
         Examples
@@ -78,19 +77,23 @@ class AllPoleDigitalFilter(nn.Module):
         """
         check_size(a.size(-1), self.filter_order + 1, "dimension of LPC coefficients")
         check_size(x.size(-1), a.size(-2) * self.frame_period, "sequence length")
+        return self._forward(x, a, self.frame_period, self.ignore_gain)
 
+    @staticmethod
+    def _forward(x, a, frame_period, ignore_gain):
         d = x.dim()
         if d == 1:
             a = a.unsqueeze(0)
             x = x.unsqueeze(0)
 
-        a = self.linear_intpl(a)
-        K, a = torch.split(a, [1, self.filter_order], dim=-1)
-        if not self.ignore_gain:
+        a = LinearInterpolation._forward(a, frame_period)
+        K, a = torch.split(a, [1, a.size(-1) - 1], dim=-1)
+        if not ignore_gain:
             x = K[..., 0] * x
 
         y = sample_wise_lpc(x, a)
-
         if d == 1:
             y = y.squeeze(0)
         return y
+
+    _func = _forward
