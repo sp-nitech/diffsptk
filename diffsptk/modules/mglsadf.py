@@ -22,12 +22,12 @@ from ..misc.utils import check_size
 from ..misc.utils import get_gamma
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
-from .istft import InverseShortTermFourierTransform
+from .istft import InverseShortTimeFourierTransform
 from .linear_intpl import LinearInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 from .mgc2sp import MelGeneralizedCepstrumToSpectrum
-from .stft import ShortTermFourierTransform
+from .stft import ShortTimeFourierTransform
 
 
 def mirror(x, half=False):
@@ -100,7 +100,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
 
     **stft_kwargs : additional keyword arguments
-        See :func:`~diffsptk.ShortTermFourierTransform` (valid only if **mode** is
+        See :func:`~diffsptk.ShortTimeFourierTransform` (valid only if **mode** is
         'freq-domain').
 
     References
@@ -382,10 +382,10 @@ class FrequencyDomainFIRFilter(nn.Module):
                 filter_order, alpha=alpha
             )
 
-        self.stft = ShortTermFourierTransform(
+        self.stft = ShortTimeFourierTransform(
             frame_length, frame_period, fft_length, out_format="complex", **stft_kwargs
         )
-        self.istft = InverseShortTermFourierTransform(
+        self.istft = InverseShortTimeFourierTransform(
             frame_length, frame_period, fft_length, **stft_kwargs
         )
         self.mgc2sp = MelGeneralizedCepstrumToSpectrum(

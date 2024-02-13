@@ -39,9 +39,17 @@ def choice(first, a, b, a_params, params={}, n_input=1):
     if first:
         return a(**a_params, **params)
     if n_input == 1:
-        return lambda x: b(x, **params)
+
+        def func(x, **kwargs):
+            return b(x, **params, **kwargs)
+
+        return func
     elif n_input == 2:
-        return lambda x, y: b(x, y, **params)
+
+        def func(x, y, **kwargs):
+            return b(x, y, **params, **kwargs)
+
+        return func
     else:
         raise ValueError("n_input must be 1 or 2")
 

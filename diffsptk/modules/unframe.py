@@ -25,22 +25,22 @@ class Unframe(nn.Module):
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
+    frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1 [scalar]
+    frame_peirod : int >= 1
         Frame period, :math:`P`.
 
     center : bool [scalar]
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
-    norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
-
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular']
         Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
 
     """
 
@@ -49,25 +49,19 @@ class Unframe(nn.Module):
         frame_length,
         frame_period,
         center=True,
-        norm="none",
         window="rectangular",
+        norm="none",
     ):
         super(Unframe, self).__init__()
 
+        assert 1 <= frame_period <= frame_length
+
         self.frame_length = frame_length
         self.frame_period = frame_period
-
-        assert 1 <= self.frame_length
-        assert 1 <= self.frame_period
-
-        if center:
-            self.left_pad_width = self.frame_length // 2
-        else:
-            self.left_pad_width = 0
-
+        self.center = center
         self.register_buffer(
             "window",
-            Window(frame_length, window=window, norm=norm).window.view(1, -1, 1),
+            Window._precompute(self.frame_length, window, norm).view(1, -1, 1),
         )
 
     def forward(self, y, out_length=None):
@@ -83,7 +77,7 @@ class Unframe(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Waveform.
 
         Examples
@@ -103,23 +97,35 @@ class Unframe(nn.Module):
         tensor([1., 2., 3., 4., 5., 6., 7., 8., 9.])
 
         """
+        return self._forward(
+            y,
+            out_length,
+            self.frame_period,
+            self.center,
+            self.window,
+        )
+
+    @staticmethod
+    def _forward(y, out_length, frame_period, center, window):
+        frame_length = window.size(-2)
+
         d = y.dim()
         N = y.size(-2)
-        assert 2 <= d <= 4, "Input must be 2D, 3D, or 4D tensor"
+        assert 2 <= d <= 4, "Input must be 2D, 3D, or 4D tensor."
 
         def fold(x):
             x = F.fold(
                 x,
-                (1, (N - 1) * self.frame_period + self.frame_length),
-                (1, self.frame_length),
-                stride=(1, self.frame_period),
+                (1, (N - 1) * frame_period + frame_length),
+                (1, frame_length),
+                stride=(1, frame_period),
             )
-            s = self.left_pad_width
+            s = frame_length // 2 if center else 0
             e = None if out_length is None else s + out_length
             x = x[..., 0, 0, s:e]
             return x
 
-        w = self.window.repeat(1, 1, N)
+        w = window.repeat(1, 1, N)
         x = y.mT
 
         if d == 2:
@@ -132,3 +138,16 @@ class Unframe(nn.Module):
         if d == 2:
             x = x.squeeze(0)
         return x
+
+    @staticmethod
+    def _func(y, out_length, frame_length, frame_period, center, window, norm):
+        window = Unframe._precompute(
+            frame_length, window, norm, dtype=y.dtype, device=y.device
+        )
+        return Unframe._forward(y, out_length, frame_period, center, window)
+
+    @staticmethod
+    def _precompute(length, window, norm, dtype=None, device=None):
+        return Window._precompute(
+            length, window, norm, dtype=dtype, device=device
+        ).view(1, -1, 1)

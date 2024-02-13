@@ -21,30 +21,30 @@ from ..misc.utils import Lambda
 from .unframe import Unframe
 
 
-class InverseShortTermFourierTransform(nn.Module):
-    """This is the opposite module to :func:`~diffsptk.ShortTermFourierTransform`
+class InverseShortTimeFourierTransform(nn.Module):
+    """This is the opposite module to :func:`~diffsptk.ShortTimeFourierTransform`
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
+    frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1 [scalar]
+    frame_peirod : int >= 1
         Frame period, :math:`P`.
 
-    fft_length : int >= L [scalar]
+    fft_length : int >= L
         Number of FFT bins, :math:`N`.
 
-    center : bool [scalar]
+    center : bool
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
-
-    norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular']
         Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
 
     """
 
@@ -55,10 +55,10 @@ class InverseShortTermFourierTransform(nn.Module):
         fft_length,
         *,
         center=True,
-        norm="power",
         window="blackman",
+        norm="power",
     ):
-        super(InverseShortTermFourierTransform, self).__init__()
+        super(InverseShortTimeFourierTransform, self).__init__()
 
         self.ifft = Lambda(
             lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
@@ -68,16 +68,19 @@ class InverseShortTermFourierTransform(nn.Module):
         )
 
     def forward(self, y, out_length=None):
-        """Compute inverse short-term Fourier transform.
+        """Compute inverse short-time Fourier transform.
 
         Parameters
         ----------
         y : Tensor [shape=(..., T/P, N/2+1)]
             Complex spectrum.
 
+        out_length : int or None
+            Length of output waveform.
+
         Returns
         -------
-        x : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Waveform.
 
         Examples
@@ -95,4 +98,20 @@ class InverseShortTermFourierTransform(nn.Module):
         """
         x = self.ifft(y)
         x = self.unframe(x, out_length=out_length)
+        return x
+
+    @staticmethod
+    def _func(
+        y, out_length, frame_length, frame_period, fft_length, center, window, norm
+    ):
+        x = torch.fft.irfft(y, n=fft_length)[..., :frame_length]
+        x = Unframe._func(
+            x,
+            out_length,
+            frame_length,
+            frame_period,
+            center=center,
+            window=window,
+            norm=norm,
+        )
         return x

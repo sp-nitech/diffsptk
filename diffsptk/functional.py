@@ -454,6 +454,65 @@ def interpolate(x, period=1, start=0, dim=-1):
     return nn.Interpolation._func(x, period=period, start=start, dim=dim)
 
 
+def istft(
+    y,
+    *,
+    out_length=None,
+    frame_length=400,
+    frame_period=160,
+    fft_length=512,
+    center=True,
+    window="blackman",
+    norm="power",
+):
+    """Compute inverse short-time Fourier transform.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., T/P, N/2+1)]
+        Complex spectrum.
+
+    out_length : int >= 1 or None
+        Length of output signal.
+
+    frame_length : int >= 1
+        Frame length, :math:`L`.
+
+    frame_peirod : int >= 1
+        Frame period, :math:`P`.
+
+    fft_length : int >= L
+        Number of FFT bins, :math:`N`.
+
+    center : bool
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+        'rectangular']
+        Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    Returns
+    -------
+    Tensor [shape=(..., T)]
+        Waveform.
+
+    """
+    return nn.InverseShortTimeFourierTransform._func(
+        y,
+        out_length=out_length,
+        frame_length=frame_length,
+        frame_period=frame_period,
+        fft_length=fft_length,
+        center=center,
+        window=window,
+        norm=norm,
+    )
+
+
 def iulaw(y, abs_max=1, mu=255):
     """Expand waveform by :math:`\\mu`-law algorithm.
 
@@ -775,6 +834,81 @@ def spec(
     )
 
 
+def stft(
+    x,
+    *,
+    frame_length=400,
+    frame_period=160,
+    fft_length=512,
+    center=True,
+    zmean=False,
+    window="blackman",
+    norm="power",
+    eps=1e-9,
+    relative_floor=None,
+    out_format="power",
+):
+    """Compute short-time Fourier transform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Waveform.
+
+    frame_length : int >= 1
+        Frame length, :math:`L`.
+
+    frame_peirod : int >= 1
+        Frame period, :math:`P`.
+
+    fft_length : int >= L
+        Number of FFT bins, :math:`N`.
+
+    center : bool
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
+    zmean : bool
+        If True, perform mean subtraction on each frame.
+
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+        'rectangular']
+        Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    eps : float >= 0
+        A small value added to power spectrum.
+
+    relative_floor : float < 0 or None
+        Relative floor in decibels.
+
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(..., T/P, N/2+1)]
+        Spectrum.
+
+    """
+    return nn.ShortTimeFourierTransform._func(
+        x,
+        frame_length=frame_length,
+        frame_period=frame_period,
+        fft_length=fft_length,
+        center=center,
+        zmean=zmean,
+        window=window,
+        norm=norm,
+        eps=eps,
+        relative_floor=relative_floor,
+        out_format=out_format,
+    )
+
+
 def ulaw(x, abs_max=1, mu=255):
     """Compress waveform by :math:`\\mu`-law algorithm.
 
@@ -798,7 +932,61 @@ def ulaw(x, abs_max=1, mu=255):
     return nn.MuLawCompression._func(x, abs_max=abs_max, mu=mu)
 
 
-def window(x, out_length=None, *, window="blackman", norm="power"):
+def unframe(
+    y,
+    *,
+    out_length=None,
+    frame_length=1,
+    frame_period=1,
+    center=True,
+    window="rectangular",
+    norm="none",
+):
+    """Revert framed waveform.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., T/P, L)]
+        Framed waveform.
+
+    out_length : int >= 1 or None
+        Length of original signal, `T`.
+
+    frame_length : int >= 1
+        Frame length, :math:`L`.
+
+    frame_peirod : int >= 1
+        Frame period, :math:`P`.
+
+    center : bool [scalar]
+        If True, assume that the center of data is the center of frame, otherwise
+        assume that the center of data is the left edge of frame.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+              'rectangular']
+        Window type.
+
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
+
+    Returns
+    -------
+    Tensor [shape=(..., T)]
+        Waveform.
+
+    """
+    return nn.Unframe._func(
+        y,
+        out_length=out_length,
+        frame_length=frame_length,
+        frame_period=frame_period,
+        center=center,
+        window=window,
+        norm=norm,
+    )
+
+
+def window(x, *, out_length=None, window="blackman", norm="power"):
     """Apply window function.
 
     Parameters

@@ -24,7 +24,7 @@ import torch.nn as nn
 from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import numpy_to_torch
 from .frame import Frame
-from .stft import ShortTermFourierTransform
+from .stft import ShortTimeFourierTransform
 
 
 class Pitch(nn.Module):
@@ -223,7 +223,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
             raise ValueError(f"Only {self.torchcrepe.SAMPLE_RATE} Hz is supported")
 
         self.frame = Frame(self.torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
-        self.stft = ShortTermFourierTransform(
+        self.stft = ShortTimeFourierTransform(
             self.torchcrepe.WINDOW_SIZE,
             frame_period,
             self.torchcrepe.WINDOW_SIZE,

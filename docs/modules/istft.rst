@@ -5,7 +5,9 @@ istft
 
 .. autoclass:: diffsptk.ISTFT
 
-.. autoclass:: diffsptk.InverseShortTermFourierTransform
+.. autoclass:: diffsptk.InverseShortTimeFourierTransform
    :members:
 
-.. seealso:: :ref:`frame`  :ref:`window`  :ref:`spec`  :ref:`stft`
+.. autofunction:: diffsptk.functional.istft
+
+.. seealso:: :ref:`unframe`  :ref:`window`  :ref:`spec`  :ref:`stft`

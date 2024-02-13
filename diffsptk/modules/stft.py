@@ -23,42 +23,43 @@ from .spec import Spectrum
 from .window import Window
 
 
-class ShortTermFourierTransform(nn.Module):
+class ShortTimeFourierTransform(nn.Module):
     """This module is a simple cascade of framing, windowing, and spectrum calculation.
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
+    frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1 [scalar]
+    frame_peirod : int >= 1
         Frame period, :math:`P`.
 
-    fft_length : int >= L [scalar]
+    fft_length : int >= L
         Number of FFT bins, :math:`N`.
 
-    center : bool [scalar]
+    center : bool
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
-    zmean : bool [scalar]
+    zmean : bool
         If True, perform mean subtraction on each frame.
 
-    norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
         'rectangular']
         Window type.
 
-    out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
-        Output format.
+    norm : ['none', 'power', 'magnitude']
+        Normalization type of window.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         A small value added to power spectrum.
 
-    relative_floor : float < 0 [scalar]
+    relative_floor : float < 0 or None
         Relative floor in decibels.
+
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
+        Output format.
 
     """
 
@@ -70,31 +71,31 @@ class ShortTermFourierTransform(nn.Module):
         *,
         center=True,
         zmean=False,
-        norm="power",
         window="blackman",
-        out_format="power",
+        norm="power",
         eps=1e-9,
         relative_floor=None,
+        out_format="power",
     ):
-        super(ShortTermFourierTransform, self).__init__()
+        super(ShortTimeFourierTransform, self).__init__()
 
         self.stft = nn.Sequential(
             Frame(frame_length, frame_period, center=center, zmean=zmean),
-            Window(frame_length, fft_length, norm=norm, window=window),
+            Window(frame_length, fft_length, window=window, norm=norm),
             (
                 Lambda(torch.fft.rfft)
                 if out_format == "complex"
                 else Spectrum(
                     fft_length,
-                    out_format=out_format,
                     eps=eps,
                     relative_floor=relative_floor,
+                    out_format=out_format,
                 )
             ),
         )
 
     def forward(self, x):
-        """Compute short-term Fourier transform.
+        """Compute short-time Fourier transform.
 
         Parameters
         ----------
@@ -103,7 +104,7 @@ class ShortTermFourierTransform(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T/P, N/2+1)]
+        Tensor [shape=(..., T/P, N/2+1)]
             Spectrum.
 
         Examples
@@ -120,4 +121,26 @@ class ShortTermFourierTransform(nn.Module):
 
         """
         y = self.stft(x)
+        return y
+
+    @staticmethod
+    def _func(
+        x,
+        frame_length,
+        frame_period,
+        fft_length,
+        center,
+        zmean,
+        window,
+        norm,
+        eps,
+        relative_floor,
+        out_format,
+    ):
+        y = Frame._func(x, frame_length, frame_period, center, zmean)
+        y = Window._func(y, None, window, norm)
+        if out_format == "complex":
+            y = torch.fft.rfft(y)
+        else:
+            y = Spectrum._func(y, None, fft_length, eps, relative_floor, out_format)
         return y

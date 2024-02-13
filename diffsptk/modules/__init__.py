@@ -39,8 +39,8 @@ from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
-from .istft import InverseShortTermFourierTransform
-from .istft import InverseShortTermFourierTransform as ISTFT
+from .istft import InverseShortTimeFourierTransform
+from .istft import InverseShortTimeFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
 from .ivq import InverseVectorQuantization
 from .lar2par import LogAreaRatioToParcorCoefficients
@@ -95,8 +95,8 @@ from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
 from .spec import Spectrum
-from .stft import ShortTermFourierTransform
-from .stft import ShortTermFourierTransform as STFT
+from .stft import ShortTimeFourierTransform
+from .stft import ShortTimeFourierTransform as STFT
 from .ulaw import MuLawCompression
 from .unframe import Unframe
 from .vq import VectorQuantization
