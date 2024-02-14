@@ -8,4 +8,6 @@ rmse
 .. autoclass:: diffsptk.RootMeanSquaredError
    :members:
 
+.. autofunction:: diffsptk.functional.rmse
+
 .. seealso:: :ref:`snr`

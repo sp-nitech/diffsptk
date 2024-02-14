@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 
 
-class RootMeanSquaredError(nn.Module):
+class RootMeanSquareError(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
     for details.
 
@@ -27,19 +27,19 @@ class RootMeanSquaredError(nn.Module):
     reduction : ['none', 'mean', 'sum']
         Reduction type.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         A small value to prevent NaN.
 
     """
 
     def __init__(self, reduction="mean", eps=1e-8):
-        super(RootMeanSquaredError, self).__init__()
+        super(RootMeanSquareError, self).__init__()
+
+        assert reduction in ("none", "mean", "sum")
+        assert 0 <= eps
 
         self.reduction = reduction
         self.eps = eps
-
-        assert self.reduction in ("none", "mean", "sum")
-        assert 0 <= self.eps
 
     def forward(self, x, y):
         """Calculate RMSE.
@@ -54,7 +54,7 @@ class RootMeanSquaredError(nn.Module):
 
         Returns
         -------
-        e : Tensor [shape=(...,) or scalar]
+        Tensor [shape=(...,) or scalar]
             RMSE.
 
         Examples
@@ -71,14 +71,19 @@ class RootMeanSquaredError(nn.Module):
         tensor(1.8340)
 
         """
-        e = torch.sqrt(torch.square(x - y).mean(-1) + self.eps)
-        if self.reduction == "none":
-            pass
-        elif self.reduction == "sum":
-            e = e.sum()
-        elif self.reduction == "mean":
-            e = e.mean()
-        else:
-            raise RuntimeError
+        return self._forward(x, y, self.reduction, self.eps)
 
-        return e
+    @staticmethod
+    def _forward(x, y, reduction, eps):
+        error = torch.sqrt(torch.square(x - y).mean(-1) + eps)
+        if reduction == "none":
+            pass
+        elif reduction == "sum":
+            error = error.sum()
+        elif reduction == "mean":
+            error = error.mean()
+        else:
+            raise ValueError(f"reduction {reduction} is not supported.")
+        return error
+
+    _func = _forward

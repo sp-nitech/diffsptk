@@ -8,4 +8,6 @@ snr
 .. autoclass:: diffsptk.SignalToNoiseRatio
    :members:
 
+.. autofunction:: diffsptk.functional.snr
+
 .. seealso:: :ref:`rmse`

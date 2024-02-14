@@ -24,16 +24,16 @@ class SignalToNoiseRatio(nn.Module):
 
     Parameters
     ----------
-    frame_length : int >= 1 [scalar]
-        Frame length, :math:`L`. If given, calculates segmental SNR.
+    frame_length : int >= 1 or None
+        Frame length, :math:`L`. If given, calculate segmental SNR.
 
-    full : bool [scalar]
+    full : bool
         If True, include the constant term in the SNR calculation.
 
     reduction : ['none', 'mean', 'sum']
         Reduction type.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         A small value to prevent NaN.
 
     """
@@ -41,15 +41,15 @@ class SignalToNoiseRatio(nn.Module):
     def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
         super(SignalToNoiseRatio, self).__init__()
 
+        if frame_length is not None:
+            assert 1 <= frame_length
+        assert reduction in ("none", "mean", "sum")
+        assert 0 <= eps
+
         self.frame_length = frame_length
         self.full = full
         self.reduction = reduction
         self.eps = eps
-
-        if self.frame_length is not None:
-            assert 1 <= self.frame_length
-        assert self.reduction in ("none", "mean", "sum")
-        assert 0 <= self.eps
 
     def forward(self, s, sn):
         """Calculate SNR.
@@ -64,7 +64,7 @@ class SignalToNoiseRatio(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(...,) or scalar]
+        Tensor [shape=(...,) or scalar]
             Signal-to-noise ratio.
 
         Examples
@@ -81,26 +81,34 @@ class SignalToNoiseRatio(nn.Module):
         tensor(16.0614)
 
         """
-        if self.frame_length is not None:
-            s = s.unfold(-1, self.frame_length, self.frame_length)
-            sn = sn.unfold(-1, self.frame_length, self.frame_length)
+        return self._forward(
+            s, sn, self.frame_length, self.full, self.reduction, self.eps
+        )
+
+    @staticmethod
+    def _forward(s, sn, frame_length, full, reduction, eps):
+        if frame_length is not None:
+            s = s.unfold(-1, frame_length, frame_length)
+            sn = sn.unfold(-1, frame_length, frame_length)
 
         s2 = torch.square(s).sum(-1)
         n2 = torch.square(sn - s).sum(-1)
-        y = torch.log10((s2 + self.eps) / (n2 + self.eps))
+        snr = torch.log10((s2 + eps) / (n2 + eps))
 
-        if self.frame_length is not None:
-            y = y.squeeze(-1)
+        if frame_length is not None:
+            snr = snr.squeeze(-1)
 
-        if self.reduction == "none":
+        if reduction == "none":
             pass
-        elif self.reduction == "sum":
-            y = y.sum()
-        elif self.reduction == "mean":
-            y = y.mean()
+        elif reduction == "sum":
+            snr = snr.sum()
+        elif reduction == "mean":
+            snr = snr.mean()
         else:
-            raise RuntimeError
+            raise ValueError(f"reduction {reduction} is not supported.")
 
-        if self.full:
-            y *= 10
-        return y
+        if full:
+            snr = 10 * snr
+        return snr
+
+    _func = _forward

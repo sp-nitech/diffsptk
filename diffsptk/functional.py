@@ -907,6 +907,32 @@ def rlevdur(a):
     return nn.ReverseLevinsonDurbin._func(a)
 
 
+def rmse(x, y, reduction="mean", eps=1e-8):
+    """Calculate RMSE.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(...,)]
+        Input.
+
+    y : Tensor [shape=(...,)]
+        Target.
+
+    reduction : ['none', 'mean', 'sum']
+        Reduction type.
+
+    eps : float >= 0
+        A small value to prevent NaN.
+
+    Returns
+    -------
+    Tensor [shape=(...,) or scalar]
+        RMSE.
+
+    """
+    return nn.RootMeanSquareError._func(x, y, reduction=reduction, eps=eps)
+
+
 def root_pol(a, out_format="rectangular"):
     """Compute roots of polynomial.
 
@@ -925,6 +951,40 @@ def root_pol(a, out_format="rectangular"):
 
     """
     return nn.PolynomialToRoots._func(a, out_format=out_format)
+
+
+def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
+    """Calculate SNR.
+
+    Parameters
+    ----------
+    s : Tensor [shape=(...,)]
+        Signal.
+
+    sn : Tensor [shape=(...,)]
+        Signal plus noise.
+
+    frame_length : int >= 1 or None
+        Frame length, :math:`L`. If given, calculate segmental SNR.
+
+    full : bool
+        If True, include the constant term in the SNR calculation.
+
+    reduction : ['none', 'mean', 'sum']
+        Reduction type.
+
+    eps : float >= 0
+        A small value to prevent NaN.
+
+    Returns
+    -------
+    Tensor [shape=(...,) or scalar]
+        Signal-to-noise ratio.
+
+    """
+    return nn.SignalToNoiseRatio._func(
+        s, sn, frame_length=frame_length, full=full, reduction=reduction, eps=eps
+    )
 
 
 def spec(
