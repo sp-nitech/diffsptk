@@ -66,7 +66,7 @@ class CepstrumToAutocorrelation(nn.Module):
         >>> c = diffsptk.nrand(4)
         >>> c
         tensor([-0.1751,  0.1950, -0.3211,  0.3523, -0.5453])
-        >>> c2acr = diffsptk.CepstrumToAutocorrelation(4, 16)
+        >>> c2acr = diffsptk.CepstrumToAutocorrelation(4, 4, 16)
         >>> r = c2acr(c)
         >>> r
         tensor([ 1.0672, -0.0485, -0.1564,  0.2666, -0.4551])

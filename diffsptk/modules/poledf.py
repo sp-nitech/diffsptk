@@ -86,7 +86,7 @@ class AllPoleDigitalFilter(nn.Module):
             a = a.unsqueeze(0)
             x = x.unsqueeze(0)
 
-        a = LinearInterpolation._forward(a, frame_period)
+        a = LinearInterpolation._func(a, frame_period)
         K, a = torch.split(a, [1, a.size(-1) - 1], dim=-1)
         if not ignore_gain:
             x = K[..., 0] * x

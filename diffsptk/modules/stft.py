@@ -120,8 +120,7 @@ class ShortTimeFourierTransform(nn.Module):
                 [9.0000, 9.0000, 9.0000, 9.0000, 9.0000]])
 
         """
-        y = self.stft(x)
-        return y
+        return self.stft(x)
 
     @staticmethod
     def _func(

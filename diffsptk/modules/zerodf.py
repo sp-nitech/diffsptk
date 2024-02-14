@@ -83,7 +83,7 @@ class AllZeroDigitalFilter(nn.Module):
         M = b.size(-1) - 1
         x = F.pad(x, (M, 0))
         x = x.unfold(-1, M + 1, 1)
-        h = LinearInterpolation._forward(b.flip(-1), frame_period)
+        h = LinearInterpolation._func(b.flip(-1), frame_period)
         if ignore_gain:
             h = h / h[..., -1:]
         y = (x * h).sum(-1)

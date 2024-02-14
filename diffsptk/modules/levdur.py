@@ -49,14 +49,14 @@ class LevinsonDurbin(nn.Module):
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Gain and LPC coefficients.
 
         Examples
         --------
         >>> x = diffsptk.nrand(4)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
-        >>> acorr = diffsptk.AutocorrelationAnalysis(2, 5)
+        >>> acorr = diffsptk.Autocorrelation(5, 2)
         >>> levdur = diffsptk.LevinsonDurbin(2)
         >>> a = levdur(acorr(x))
         >>> a

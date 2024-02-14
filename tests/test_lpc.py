@@ -14,12 +14,21 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import pytest
+
 import diffsptk
 import tests.utils as U
 
 
-def test_compatibility(M=14, L=30, B=2):
-    lpc = diffsptk.LPC(M, L)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(module, M=14, L=30, B=2):
+    lpc = U.choice(
+        module,
+        diffsptk.LPC,
+        diffsptk.functional.lpc,
+        {"frame_length": L},
+        {"lpc_order": M},
+    )
 
     U.check_compatibility(
         "cpu",

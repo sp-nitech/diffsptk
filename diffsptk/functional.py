@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order=0, out_format="none"):
+def acorr(x, acr_order, out_format="none"):
     """Compute autocorrelation.
 
     Parameters
@@ -37,9 +37,7 @@ def acorr(x, acr_order=0, out_format="none"):
         Autocorrelation.
 
     """
-    return nn.AutocorrelationAnalysis._func(
-        x, acr_order=acr_order, out_format=out_format
-    )
+    return nn.Autocorrelation._func(x, acr_order=acr_order, out_format=out_format)
 
 
 def alaw(x, abs_max=1, a=87.6):
@@ -85,7 +83,7 @@ def b2mc(b, alpha=0):
     return nn.MLSADigitalFilterCoefficientsToMelCepstrum._func(b, alpha=alpha)
 
 
-def c2acr(c, acr_order=0, n_fft=512):
+def c2acr(c, acr_order, n_fft=512):
     """Convert cepstrum to autocorrelation.
 
     Parameters
@@ -108,7 +106,7 @@ def c2acr(c, acr_order=0, n_fft=512):
     return nn.CepstrumToAutocorrelation._func(c, acr_order=acr_order, n_fft=n_fft)
 
 
-def c2mpir(c, ir_length=1, n_fft=512):
+def c2mpir(c, ir_length, n_fft=512):
     """Convert cepstrum to minimum phase impulse response.
 
     Parameters
@@ -133,7 +131,7 @@ def c2mpir(c, ir_length=1, n_fft=512):
     )
 
 
-def c2ndps(c, fft_length=512):
+def c2ndps(c, fft_length):
     """Convert cepstrum to NDPS.
 
     Parameters
@@ -283,7 +281,7 @@ def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
     )
 
 
-def fftcep(x, cep_order=0, n_iter=0, accel=0):
+def fftcep(x, cep_order, n_iter=0, accel=0):
     """Estimate cepstrum from spectrum.
 
     Parameters
@@ -632,6 +630,26 @@ def linear_intpl(x, upsampling_factor=80):
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
+def lpc(x, lpc_order):
+    """Compute LPC coefficients.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Framed waveform.
+
+    lpc_order : int >= 0
+        Order of LPC, :math:`M`.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Gain and LPC coefficients.
+
+    """
+    return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order)
+
+
 def magic_intpl(x, magic_number=0):
     """Interpolate magic number.
 
@@ -682,7 +700,7 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
-def mpir2c(h, cep_order=0, n_fft=512):
+def mpir2c(h, cep_order, n_fft=512):
     """Convert minimum phase impulse response to cepstrum.
 
     Parameters
@@ -707,7 +725,7 @@ def mpir2c(h, cep_order=0, n_fft=512):
     )
 
 
-def ndps2c(n, cep_order=0):
+def ndps2c(n, cep_order):
     """Convert NPDS to cepstrum.
 
     Parameters

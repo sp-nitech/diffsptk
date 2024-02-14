@@ -51,13 +51,13 @@ class ReverseLevinsonDurbin(nn.Module):
 
         Returns
         -------
-        r : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Autocorrelation.
 
         Examples
         --------
         >>> x = diffsptk.nrand(4)
-        >>> acorr = diffsptk.AutocorrelationAnalysis(2, 5)
+        >>> acorr = diffsptk.Autocorrelation(5, 2)
         >>> levdur = diffsptk.LevinsonDurbin(2)
         >>> rlevdur = diffsptk.ReverseLevinsonDurbin(2)
         >>> r = acorr(x)

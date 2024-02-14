@@ -20,7 +20,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
-from .acorr import AutocorrelationAnalysis
+from .acorr import Autocorrelation
 
 
 def midi2lag(midi, sample_rate=16000):
@@ -82,10 +82,7 @@ class Yingram(nn.Module):
         assert 1 <= lag_min <= lag_max <= frame_length
         assert 1 <= n_bin
 
-        self.acorr = AutocorrelationAnalysis(
-            frame_length,
-            lag_max - 1,
-        )
+        self.acorr = Autocorrelation(frame_length, lag_max - 1)
 
         midi_min = int(np.ceil(lag2midi(lag_max, sample_rate)))
         midi_max = int(lag2midi(lag_min, sample_rate))

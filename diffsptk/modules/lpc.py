@@ -16,7 +16,7 @@
 
 import torch.nn as nn
 
-from .acorr import AutocorrelationAnalysis
+from .acorr import Autocorrelation
 from .levdur import LevinsonDurbin
 
 
@@ -26,24 +26,24 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
-        Order of LPC, :math:`M`.
-
-    frame_length : int > M [scalar]
+    frame_length : int > M
         Frame length, :math:`L`.
+
+    lpc_order : int >= 0
+        Order of LPC, :math:`M`.
 
     """
 
-    def __init__(self, lpc_order, frame_length):
+    def __init__(self, frame_length, lpc_order):
         super(LinearPredictiveCodingAnalysis, self).__init__()
 
         self.lpc = nn.Sequential(
-            AutocorrelationAnalysis(frame_length, lpc_order),
+            Autocorrelation(frame_length, lpc_order),
             LevinsonDurbin(lpc_order),
         )
 
     def forward(self, x):
-        """Perform LPC analysis.
+        """Compute LPC coefficients.
 
         Parameters
         ----------
@@ -52,7 +52,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Gain and LPC coefficients.
 
         Examples
@@ -65,5 +65,10 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         tensor([0.8726, 0.1475, 0.5270])
 
         """
-        a = self.lpc(x)
+        return self.lpc(x)
+
+    @staticmethod
+    def _func(x, lpc_order):
+        r = Autocorrelation._func(x, lpc_order, "none")
+        a = LevinsonDurbin._func(r)
         return a

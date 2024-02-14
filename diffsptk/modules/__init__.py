@@ -1,4 +1,4 @@
-from .acorr import AutocorrelationAnalysis
+from .acorr import Autocorrelation
 from .alaw import ALawCompression
 from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum

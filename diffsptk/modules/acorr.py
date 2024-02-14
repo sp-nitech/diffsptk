@@ -20,7 +20,7 @@ import torch.nn as nn
 from ..misc.utils import check_size
 
 
-class AutocorrelationAnalysis(nn.Module):
+class Autocorrelation(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/acorr.html>`_
     for details.
 
@@ -38,7 +38,7 @@ class AutocorrelationAnalysis(nn.Module):
     """
 
     def __init__(self, frame_length, acr_order, out_format="none"):
-        super(AutocorrelationAnalysis, self).__init__()
+        super(Autocorrelation, self).__init__()
 
         assert 0 <= acr_order < frame_length
 
@@ -63,7 +63,7 @@ class AutocorrelationAnalysis(nn.Module):
         Examples
         --------
         >>> x = diffsptk.ramp(4)
-        >>> acorr = diffsptk.AutocorrelationAnalysis(3, 5)
+        >>> acorr = diffsptk.Autocorrelation(5, 3)
         >>> r = acorr(x)
         >>> r
         tensor([30.0000, 20.0000, 11.0000,  4.0000])
@@ -84,10 +84,10 @@ class AutocorrelationAnalysis(nn.Module):
 
     @staticmethod
     def _func(x, acr_order, out_format):
-        const = AutocorrelationAnalysis._precompute(
+        const = Autocorrelation._precompute(
             x.size(-1), acr_order, out_format, dtype=x.dtype, device=x.device
         )
-        return AutocorrelationAnalysis._forward(x, acr_order, *const)
+        return Autocorrelation._forward(x, acr_order, *const)
 
     @staticmethod
     def _precompute(frame_length, acr_order, out_format, dtype=None, device=None):
