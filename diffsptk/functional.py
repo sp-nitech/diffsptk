@@ -153,6 +153,35 @@ def c2ndps(c, fft_length):
     )
 
 
+def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
+    """Calculate cepstral distance between two inputs.
+
+    Parameters
+    ----------
+    c1 : Tensor [shape=(..., M+1)]
+        Input cepstral coefficients.
+
+    c2 : Tensor [shape=(..., M+1)]
+        Target cepstral coefficients.
+
+    full : bool
+        If True, include the constant term in the distance calculation.
+
+    reduction : ['none', 'mean', 'batchmean', 'sum']
+        Reduction type.
+
+    eps : float >= 0
+        A small value to prevent NaN.
+
+    Returns
+    -------
+    Tensor [shape=(...,) or scalar]
+        Cepstral distance.
+
+    """
+    return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction, eps=eps)
+
+
 def dct(x):
     """Compute DCT.
 

@@ -21,9 +21,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "batchmean"])
-def test_compatibility(device, reduction, B=2, M=19):
-    cdist = diffsptk.CepstralDistance(full=True, reduction=reduction)
+def test_compatibility(device, module, reduction, B=2, M=19):
+    cdist = U.choice(
+        module,
+        diffsptk.CepstralDistance,
+        diffsptk.functional.cdist,
+        {},
+        {"full": True, "reduction": reduction},
+        n_input=2,
+    )
 
     opt = "-f" if reduction == "none" else ""
     tmp1 = "cdist.tmp1"

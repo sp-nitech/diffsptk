@@ -26,13 +26,13 @@ class CepstralDistance(nn.Module):
 
     Parameters
     ----------
-    full : bool [scalar]
+    full : bool
         If True, include the constant term in the distance calculation.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         A small value to prevent NaN.
 
     """
@@ -40,15 +40,12 @@ class CepstralDistance(nn.Module):
     def __init__(self, full=False, reduction="mean", eps=1e-8):
         super(CepstralDistance, self).__init__()
 
+        assert reduction in ("none", "mean", "batchmean", "sum")
+        assert 0 <= eps
+
         self.full = full
         self.reduction = reduction
         self.eps = eps
-
-        assert self.reduction in ("none", "mean", "batchmean", "sum")
-        assert 0 <= self.eps
-
-        if self.full:
-            self.const = 10 * math.sqrt(2) / math.log(10)
 
     def forward(self, c1, c2):
         """Calculate cepstral distance between two inputs.
@@ -63,7 +60,7 @@ class CepstralDistance(nn.Module):
 
         Returns
         -------
-        distance : Tensor [shape=(...,) or scalar]
+        Tensor [shape=(...,) or scalar]
             Cepstral distance.
 
         Examples
@@ -80,18 +77,26 @@ class CepstralDistance(nn.Module):
         tensor(1.6551)
 
         """
-        distance = torch.sqrt((c1[..., 1:] - c2[..., 1:]).square().sum(-1) + self.eps)
-        if self.reduction == "none":
-            distance = distance + 0
-        elif self.reduction == "sum":
+        return self._forward(c1, c2, self.full, self.reduction, self.eps)
+
+    @staticmethod
+    def _forward(c1, c2, full, reduction, eps):
+        distance = torch.sqrt((c1[..., 1:] - c2[..., 1:]).square().sum(-1) + eps)
+
+        if reduction == "none":
+            pass
+        elif reduction == "sum":
             distance = distance.sum()
-        elif self.reduction == "mean":
-            distance = distance.mean() / math.sqrt(c1.shape[-1] - 1)
-        elif self.reduction == "batchmean":
+        elif reduction == "mean":
+            distance = distance.mean() / math.sqrt(c1.size(-1) - 1)
+        elif reduction == "batchmean":
             distance = distance.mean()
         else:
-            raise RuntimeError
+            raise ValueError(f"reduction {reduction} is not supported.")
 
-        if self.full:
-            distance *= self.const
+        if full:
+            # Multiply by 10 * math.sqrt(2) / math.log(10)
+            distance = distance * 6.141851463713754
         return distance
+
+    _func = _forward
