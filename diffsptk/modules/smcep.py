@@ -24,8 +24,18 @@ from ..misc.utils import is_power_of_two
 from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
 from .freqt2 import SecondOrderAllPassFrequencyTransform
-from .freqt2 import warp
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
+
+
+def warp(omega, alpha, theta):
+    x = omega - theta
+    y = omega + theta
+    w = (
+        omega
+        + np.arctan2(alpha * np.sin(x), 1 - alpha * np.cos(x))
+        + np.arctan2(alpha * np.sin(y), 1 - alpha * np.cos(y))
+    )
+    return w
 
 
 class CoefficientsFrequencyTransform(nn.Module):

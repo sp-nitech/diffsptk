@@ -8,4 +8,4 @@ freqt
 
 .. autofunction:: diffsptk.functional.freqt
 
-.. seealso:: :ref:`mgc2mgc`  :ref:`mgcep`
+.. seealso:: :ref:`mgc2mgc`  :ref:`freqt2`

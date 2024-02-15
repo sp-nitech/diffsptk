@@ -372,7 +372,7 @@ def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
     )
 
 
-def freqt(c, out_order=None, alpha=0):
+def freqt(c, out_order, alpha=0):
     """Perform frequency transform.
 
     Parameters
@@ -380,8 +380,8 @@ def freqt(c, out_order=None, alpha=0):
     c : Tensor [shape=(..., M1+1)]
         Cepstral coefficients.
 
-    out_order : int >= 0 or None
-        Order of output cepstrum, :math:`M_2`. If None, set to :math:`M_1`.
+    out_order : int >= 0
+        Order of output cepstrum, :math:`M_2`.
 
     alpha : float in (-1, 1)
         Frquency warping factor, :math:`\\alpha`.
@@ -393,6 +393,37 @@ def freqt(c, out_order=None, alpha=0):
 
     """
     return nn.FrequencyTransform._func(c, out_order=out_order, alpha=alpha)
+
+
+def freqt2(c, out_order, alpha=0, theta=0, n_fft=512):
+    """Perform second-order all-pass frequency transform.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M1+1)]
+        Cepstral coefficients.
+
+    out_order : int >= 0
+        Order of output cepstrum, :math:`M_2`.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    theta : float in [0, 1]
+        Emphasis frequency, :math:`\\theta`.
+
+    n_fft : int >> :math:`M_2`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., M2+1)]
+        Warped cepstral coefficients.
+
+    """
+    return nn.SecondOrderAllPassFrequencyTransform._func(
+        c, out_order=out_order, alpha=alpha, theta=theta, n_fft=n_fft
+    )
 
 
 def gnorm(x, gamma=0, c=None):
@@ -489,6 +520,37 @@ def idct(y):
 
     """
     return nn.InverseDiscreteCosineTransform._func(y)
+
+
+def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
+    """Perform second-order all-pass inverse frequency transform.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M1+1)]
+        Cepstral coefficients.
+
+    out_order : int >= 0
+        Order of output cepstrum, :math:`M_2`.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    theta : float in [0, 1]
+        Emphasis frequency, :math:`\\theta`.
+
+    n_fft : int >> :math:`M_1`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., M2+1)]
+        Warped cepstral coefficients.
+
+    """
+    return nn.SecondOrderAllPassInverseFrequencyTransform._func(
+        c, out_order=out_order, alpha=alpha, theta=theta, n_fft=n_fft
+    )
 
 
 def ignorm(y, gamma=0, c=None):

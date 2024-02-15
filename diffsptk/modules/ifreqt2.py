@@ -14,12 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
-from .freqt2 import warp
+from ..misc.utils import check_size
+from ..misc.utils import to
+from .freqt2 import SecondOrderAllPassFrequencyTransform
 
 
 class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
@@ -27,16 +27,16 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
 
     Parameters
     ----------
-    in_order : int >= 0 [scalar]
+    in_order : int >= 0
         Order of input sequence, :math:`M_1`.
 
-    out_order : int >= 0 [scalar]
+    out_order : int >= 0
         Order of output sequence, :math:`M_2`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    theta : float [0 <= theta <= 1]
+    theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
     n_fft : int >> math:`M_1` [scalar]
@@ -47,41 +47,28 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):
         super(SecondOrderAllPassInverseFrequencyTransform, self).__init__()
 
-        assert 0 <= in_order
+        assert 0 <= in_order < n_fft
         assert 0 <= out_order
-        assert in_order < n_fft
         assert abs(alpha) < 1
         assert 0 <= theta <= 1
 
-        theta *= np.pi
-        delta = 2 * np.pi / n_fft
-        omega = np.arange(n_fft) * delta
-        ww = warp(omega, alpha, theta)
+        self.in_order = in_order
+        self.out_order = out_order
+        self.register_buffer(
+            "A", self._precompute(self.in_order, self.out_order, alpha, theta, n_fft)
+        )
 
-        m1 = np.arange(-in_order, in_order + 1)
-        wwm1 = ww.reshape(-1, 1) * m1.reshape(1, -1)
-        real = np.cos(wwm1)
-        imag = -np.sin(wwm1)
-
-        M2 = out_order + 1
-        A = np.fft.ifft(real + 1j * imag, axis=0).real
-        A[:M2, in_order + 1 :] += np.flip(A[:M2, :in_order], axis=1)
-        A = A[:M2, in_order:]
-        A[0, 1:] /= 2
-        A[1:, 0] *= 2
-        self.register_buffer("A", numpy_to_torch(A.T))
-
-    def forward(self, c1):
+    def forward(self, c):
         """Perform second-order all-pass inverse frequency transform.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M1+1)]
+        c : Tensor [shape=(..., M1+1)]
             Warped sequence.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M2+1)]
+        Tensor [shape=(..., M2+1)]
             Output sequence.
 
         Examples
@@ -99,5 +86,39 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
         tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
 
         """
-        c2 = torch.matmul(c1, self.A)
-        return c2
+        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
+        return self._forward(c, self.A)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)
+
+    @staticmethod
+    def _func(c, out_order, alpha, theta, n_fft):
+        in_order = c.size(-1) - 1
+        A = SecondOrderAllPassInverseFrequencyTransform._precompute(
+            in_order, out_order, alpha, theta, n_fft, dtype=c.dtype, device=c.device
+        )
+        return SecondOrderAllPassInverseFrequencyTransform._forward(c, A)
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, theta, n_fft, dtype=None, device=None):
+        theta *= torch.pi
+
+        k = torch.arange(n_fft, dtype=torch.double, device=device)
+        omega = k * (2 * torch.pi / n_fft)
+        ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
+
+        m1 = torch.arange(-in_order, in_order + 1, dtype=torch.double, device=device)
+        wwm1 = ww.reshape(-1, 1) * m1.reshape(1, -1)
+        real = torch.cos(wwm1)
+        imag = -torch.sin(wwm1)
+
+        A = torch.fft.ifft(torch.complex(real, imag), dim=0).real
+        L = out_order + 1
+        M = in_order + 1
+        A[:L, M:] += A[:L, : (M - 1)].flip(1)
+        A = A[:L, (M - 1) :]
+        A[1:, 0] *= 2
+        A[0, 1:] /= 2
+        return to(A.T, dtype=dtype)

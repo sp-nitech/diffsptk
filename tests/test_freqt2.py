@@ -21,9 +21,22 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, m=19, M=29, alpha=0.1, theta=0.2, B=2):
-    freqt2 = diffsptk.SecondOrderAllPassFrequencyTransform(m, M, alpha, theta)
-    ifreqt2 = diffsptk.SecondOrderAllPassInverseFrequencyTransform(M, m, alpha, theta)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, m=19, M=29, alpha=0.1, theta=0.2, B=2):
+    freqt2 = U.choice(
+        module,
+        diffsptk.SecondOrderAllPassFrequencyTransform,
+        diffsptk.functional.freqt2,
+        {"in_order": m},
+        {"out_order": M, "alpha": alpha, "theta": theta},
+    )
+    ifreqt2 = U.choice(
+        module,
+        diffsptk.SecondOrderAllPassInverseFrequencyTransform,
+        diffsptk.functional.ifreqt2,
+        {"in_order": M},
+        {"out_order": m, "alpha": alpha, "theta": theta},
+    )
 
     U.check_compatibility(
         device,

@@ -47,9 +47,8 @@ class FrequencyTransform(nn.Module):
 
         self.in_order = in_order
         self.out_order = out_order
-        self.alpha = alpha
         self.register_buffer(
-            "A", self._precompute(self.in_order, self.out_order, self.alpha)
+            "A", self._precompute(self.in_order, self.out_order, alpha)
         )
 
     def forward(self, c):
@@ -90,8 +89,6 @@ class FrequencyTransform(nn.Module):
     @staticmethod
     def _func(c, out_order, alpha):
         in_order = c.size(-1) - 1
-        if out_order is None:
-            out_order = in_order
         A = FrequencyTransform._precompute(
             in_order, out_order, alpha, dtype=c.dtype, device=c.device
         )

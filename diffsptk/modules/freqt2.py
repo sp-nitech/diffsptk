@@ -14,41 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
-
-
-def warp(omega, alpha, theta):
-    """Warp frequency.
-
-    Parameters
-    ----------
-    omega : float [0 <= omega <= 2pi]
-        Frequency.
-
-    alpha : float [-1 < alpha < 1]
-        Frequency warping factor, :math:`\\alpha`.
-
-    theta : float [0 <= theta <= 1]
-        Emphasis frequency, :math:`\\theta`.
-
-    Returns
-    -------
-    w : float
-        Warped frequency.
-
-    """
-    x = omega - theta
-    y = omega + theta
-    w = (
-        omega
-        + np.arctan2(alpha * np.sin(x), 1 - alpha * np.cos(x))
-        + np.arctan2(alpha * np.sin(y), 1 - alpha * np.cos(y))
-    )
-    return w
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class SecondOrderAllPassFrequencyTransform(nn.Module):
@@ -56,19 +26,19 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
 
     Parameters
     ----------
-    in_order : int >= 0 [scalar]
+    in_order : int >= 0
         Order of input sequence, :math:`M_1`.
 
-    out_order : int >= 0 [scalar]
+    out_order : int >= 0
         Order of output sequence, :math:`M_2`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    theta : float [0 <= theta <= 1]
+    theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> :math:`M_2` [scalar]
+    n_fft : int >> :math:`M_2`
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -77,54 +47,27 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         super(SecondOrderAllPassFrequencyTransform, self).__init__()
 
         assert 0 <= in_order
-        assert 0 <= out_order
-        assert out_order < n_fft
+        assert 0 <= out_order < n_fft
         assert abs(alpha) < 1
         assert 0 <= theta <= 1
 
-        def diff_warp(omega, alpha, theta):
-            x = omega - theta
-            y = omega + theta
-            a1 = alpha
-            a2 = alpha + alpha
-            aa = alpha * alpha
-            return (
-                1
-                + (a1 * np.cos(x) - aa) / (1 - a2 * np.cos(x) + aa)
-                + (a1 * np.cos(y) - aa) / (1 - a2 * np.cos(y) + aa)
-            )
+        self.in_order = in_order
+        self.out_order = out_order
+        self.register_buffer(
+            "A", self._precompute(self.in_order, self.out_order, alpha, theta, n_fft)
+        )
 
-        theta *= np.pi
-        delta = 2 * np.pi / n_fft
-        omega = np.arange(n_fft) * delta
-        ww = warp(omega, alpha, theta)
-        dw = diff_warp(omega, alpha, theta)
-
-        m2 = np.arange(out_order + 1)
-        wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
-        real = np.cos(wwm2) * dw.reshape(-1, 1)
-        imag = -np.sin(wwm2) * dw.reshape(-1, 1)
-
-        M1 = in_order + 1
-        A = np.fft.ifft(real + 1j * imag, axis=0).real
-        if 2 <= M1:
-            A[1:M1] += np.flip(A[-(M1 - 1) :], axis=0)
-        A = A[:M1]
-        A[1:, 0] /= 2
-        A[0, 1:] *= 2
-        self.register_buffer("A", numpy_to_torch(A))
-
-    def forward(self, c1):
+    def forward(self, c):
         """Perform second-order all-pass frequency transform.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M1+1)]
+        c : Tensor [shape=(..., M1+1)]
             Input sequence.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M2+1)]
+        Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         Examples
@@ -142,5 +85,63 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
 
         """
-        c2 = torch.matmul(c1, self.A)
-        return c2
+        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
+        return self._forward(c, self.A)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)
+
+    @staticmethod
+    def _func(c, out_order, alpha, theta, n_fft):
+        in_order = c.size(-1) - 1
+        A = SecondOrderAllPassFrequencyTransform._precompute(
+            in_order, out_order, alpha, theta, n_fft, dtype=c.dtype, device=c.device
+        )
+        return SecondOrderAllPassFrequencyTransform._forward(c, A)
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, theta, n_fft, dtype=None, device=None):
+        theta *= torch.pi
+
+        k = torch.arange(n_fft, dtype=torch.double, device=device)
+        omega = k * (2 * torch.pi / n_fft)
+        ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
+        dw = SecondOrderAllPassFrequencyTransform.diff_warp(omega, alpha, theta)
+
+        m2 = k[: out_order + 1]
+        wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
+        real = torch.cos(wwm2) * dw.reshape(-1, 1)
+        imag = -torch.sin(wwm2) * dw.reshape(-1, 1)
+
+        A = torch.fft.ifft(torch.complex(real, imag), dim=0).real
+        L = in_order + 1
+        if 2 <= L:
+            A[1:L] += A[-(L - 1) :].flip(0)
+        A = A[:L]
+        A[1:, 0] /= 2
+        A[0, 1:] *= 2
+        return to(A, dtype=dtype)
+
+    @staticmethod
+    def warp(omega, alpha, theta):
+        x = omega - theta
+        y = omega + theta
+        return (
+            omega
+            + torch.atan2(alpha * torch.sin(x), 1 - alpha * torch.cos(x))
+            + torch.atan2(alpha * torch.sin(y), 1 - alpha * torch.cos(y))
+        )
+
+    @staticmethod
+    def diff_warp(omega, alpha, theta):
+        x = omega - theta
+        y = omega + theta
+        a1 = alpha
+        a2 = alpha + alpha
+        aa = alpha * alpha
+        return (
+            1
+            + (a1 * torch.cos(x) - aa) / (1 - a2 * torch.cos(x) + aa)
+            + (a1 * torch.cos(y) - aa) / (1 - a2 * torch.cos(y) + aa)
+        )
