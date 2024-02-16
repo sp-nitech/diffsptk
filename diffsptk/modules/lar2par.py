@@ -26,7 +26,7 @@ class LogAreaRatioToParcorCoefficients(nn.Module):
 
     Parameters
     ----------
-    par_order : int >= 0 [scalar]
+    par_order : int >= 0
         Order of PARCOR, :math:`M`.
 
     """
@@ -34,34 +34,39 @@ class LogAreaRatioToParcorCoefficients(nn.Module):
     def __init__(self, par_order):
         super(LogAreaRatioToParcorCoefficients, self).__init__()
 
+        assert 0 <= par_order
+
         self.par_order = par_order
 
-        assert 0 <= self.par_order
-
-    def forward(self, A):
+    def forward(self, g):
         """Convert LAR to PARCOR.
 
         Parameters
         ----------
-        A : Tensor [shape=(..., M+1)]
+        g : Tensor [shape=(..., M+1)]
             Log area ratio.
 
         Returns
         -------
-        k : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             PARCOR coefficients.
 
         Examples
         --------
-        >>> k = diffsptk.ramp(1, 4) * 0.1
-        >>> par2lar = diffsptk.ParcorCoefficientsToLogAreaRatio(3)
-        >>> A = par2lar(k)
-        >>> A
-        tensor([0.1000, 0.4055, 0.6190, 0.8473])
+        >>> g = diffsptk.ramp(1, 4) * 0.1
+        >>> lar2par = diffsptk.LogAreaRatioToParcorCoefficients(3)
+        >>> k = lar2par(g)
+        >>> k
+        tensor([0.1000, 0.0997, 0.1489, 0.1974])
 
         """
-        check_size(A.size(-1), self.par_order + 1, "dimension of parcor")
+        check_size(g.size(-1), self.par_order + 1, "dimension of parcor")
+        return self._forward(g)
 
-        K, A1 = torch.split(A, [1, self.par_order], dim=-1)
-        k = torch.cat((K, torch.tanh(0.5 * A1)), dim=-1)
+    @staticmethod
+    def _forward(g):
+        K, g = torch.split(g, [1, g.size(-1) - 1], dim=-1)
+        k = torch.cat((K, torch.tanh(0.5 * g)), dim=-1)
         return k
+
+    _func = _forward

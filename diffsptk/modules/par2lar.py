@@ -26,7 +26,7 @@ class ParcorCoefficientsToLogAreaRatio(nn.Module):
 
     Parameters
     ----------
-    par_order : int >= 0 [scalar]
+    par_order : int >= 0
         Order of PARCOR, :math:`M`.
 
     """
@@ -34,9 +34,9 @@ class ParcorCoefficientsToLogAreaRatio(nn.Module):
     def __init__(self, par_order):
         super(ParcorCoefficientsToLogAreaRatio, self).__init__()
 
-        self.par_order = par_order
+        assert 0 <= par_order
 
-        assert 0 <= self.par_order
+        self.par_order = par_order
 
     def forward(self, k):
         """Convert PARCOR to LAR.
@@ -48,7 +48,7 @@ class ParcorCoefficientsToLogAreaRatio(nn.Module):
 
         Returns
         -------
-        A : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Log area ratio.
 
         Examples
@@ -62,7 +62,12 @@ class ParcorCoefficientsToLogAreaRatio(nn.Module):
 
         """
         check_size(k.size(-1), self.par_order + 1, "dimension of parcor")
+        return self._forward(k)
 
-        K, k1 = torch.split(k, [1, self.par_order], dim=-1)
-        A = torch.cat((K, 2 * torch.atanh(k1)), dim=-1)
-        return A
+    @staticmethod
+    def _forward(k):
+        K, k = torch.split(k, [1, k.size(-1) - 1], dim=-1)
+        g = torch.cat((K, 2 * torch.atanh(k)), dim=-1)
+        return g
+
+    _func = _forward

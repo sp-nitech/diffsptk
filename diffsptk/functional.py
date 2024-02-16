@@ -684,6 +684,23 @@ def iulaw(y, abs_max=1, mu=255):
     return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
 
 
+def lar2par(g):
+    """Convert LAR to PARCOR.
+
+    Parameters
+    ----------
+    g : Tensor [shape=(..., M+1)]
+        Log area ratio.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    """
+    return nn.LogAreaRatioToParcorCoefficients._func(g)
+
+
 def levdur(r):
     """Solve a Yule-Walker linear system.
 
@@ -851,6 +868,23 @@ def norm0(a):
 
     """
     return nn.AllPoleToAllZeroDigitalFilterCoefficients._func(a)
+
+
+def par2lar(k):
+    """Convert PARCOR to LAR.
+
+    Parameters
+    ----------
+    k : Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Log area ratio.
+
+    """
+    return nn.ParcorCoefficientsToLogAreaRatio._func(k)
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):
