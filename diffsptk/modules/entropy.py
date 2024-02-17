@@ -26,22 +26,15 @@ class Entropy(nn.Module):
 
     Parameters
     ----------
-    unit : ['bit', 'nat', 'dit']
+    out_format : ['bit', 'nat', 'dit']
         Unit of entropy.
 
     """
 
-    def __init__(self, unit="nat"):
+    def __init__(self, out_format="nat"):
         super(Entropy, self).__init__()
 
-        if unit == 0 or unit == "bit":
-            self.convert = lambda x: x * math.log2(math.e)
-        elif unit == 1 or unit == "nat":
-            self.convert = lambda x: x
-        elif unit == 2 or unit == "dit":
-            self.convert = lambda x: x * math.log10(math.e)
-        else:
-            raise ValueError(f"unit {unit} is not supported")
+        self.const = self._precompute(out_format)
 
     def forward(self, p):
         """Compute entropy from probability sequence.
@@ -53,7 +46,7 @@ class Entropy(nn.Module):
 
         Returns
         -------
-        h : Tensor [shape=(...,)]
+        Tensor [shape=(...,)]
             Entropy.
 
         Examples
@@ -67,6 +60,24 @@ class Entropy(nn.Module):
         tensor(2.)
 
         """
-        h = torch.special.entr(p).sum(-1)
-        h = self.convert(h)
+        return self._forward(p, self.const)
+
+    @staticmethod
+    def _forward(p, const):
+        h = torch.special.entr(p).sum(-1) * const
         return h
+
+    @staticmethod
+    def _func(p, out_format):
+        const = Entropy._precompute(out_format)
+        return Entropy._forward(p, const)
+
+    @staticmethod
+    def _precompute(out_format):
+        if out_format == 0 or out_format == "bit":
+            return math.log2(math.e)
+        elif out_format == 1 or out_format == "nat":
+            return 1
+        elif out_format == 2 or out_format == "dit":
+            return math.log10(math.e)
+        raise ValueError(f"out_format {out_format} is not supported.")

@@ -22,16 +22,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("unit", [0, 1, 2])
-def test_compatibility(device, unit, L=5, B=2):
-    entropy = diffsptk.Entropy(unit)
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("out_format", [0, 1, 2])
+def test_compatibility(device, module, out_format, L=5, B=2):
+    entropy = U.choice(
+        module,
+        diffsptk.Entropy,
+        diffsptk.functional.entropy,
+        {},
+        {"out_format": out_format},
+    )
 
     U.check_compatibility(
         device,
         entropy,
         [],
         f"nrand -l {B*L} -d 0.5 | sopr -ABS",
-        f"entropy -l {L} -o {unit} -f",
+        f"entropy -l {L} -o {out_format} -f",
         [],
         dx=L,
     )

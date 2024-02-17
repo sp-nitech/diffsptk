@@ -279,6 +279,26 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
+def entropy(p, out_format="nat"):
+    """Calculate entropy.
+
+    Parameters
+    ----------
+    p : Tensor [shape=(..., N)]
+        Probability.
+
+    out_format : ['bit', 'nat', 'dit']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(...,)]
+        Entropy.
+
+    """
+    return nn.Entropy._func(p, out_format=out_format)
+
+
 def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
     """Generate a simple excitation signal.
 
