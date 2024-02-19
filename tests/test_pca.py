@@ -42,18 +42,13 @@ def test_compatibility(device, cov_type, B=10, M=4, N=3):
     U.call(f"rm {tmp1} {tmp2}", get=False)
 
     # Python
-    pca = diffsptk.PCA(N, cov_type=cov_type).to(device)
+    pca = diffsptk.PCA(M, N, cov_type=cov_type).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}")).reshape(B, M + 1).to(device)
     e, v, m = pca(x)
-    e2 = e.flip(-1).cpu().numpy()
-    v2 = torch.cat([m.unsqueeze(1), v.flip(-1)], dim=1).T.cpu().numpy()
-    y2 = torch.matmul(x - m, v.flip(-1)).cpu().numpy()
+    e2 = e.cpu().numpy()
+    v2 = torch.cat([m.unsqueeze(1), v], dim=1).T.cpu().numpy()
+    y2 = pca.transform(x).cpu().numpy()
 
     assert U.allclose(e1, e2)
     assert U.allclose(np.abs(v1), np.abs(v2))
     assert U.allclose(np.abs(y1), np.abs(y2))
-
-    def extract_eigenvector(x):
-        return x[1]
-
-    U.check_differentiability(device, [extract_eigenvector, pca], [B, M + 1])

@@ -28,25 +28,25 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lbg.html>`_
     for details. This module is not differentiable.
 
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of vector.
 
-    codebook_size : int >= 1 [scalar]
+    codebook_size : int >= 1
         Target codebook size, must be power of two.
 
-    min_data_per_cluster : int >= 1 [scalar]
+    min_data_per_cluster : int >= 1
         Minimum number of data points in a cluster.
 
-    n_iter : int >= 1 [scalar]
+    n_iter : int >= 1
         Number of iterations.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         Convergence threshold.
 
-    perturb_factor : float > 0 [scalar]
+    perturb_factor : float > 0
         Perturbation factor.
 
-    verbose : bool [scalar]
+    verbose : bool
         If True, print progress.
 
     """
@@ -63,6 +63,13 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     ):
         super(LindeBuzoGrayAlgorithm, self).__init__()
 
+        assert 0 <= order
+        assert is_power_of_two(codebook_size)
+        assert 1 <= min_data_per_cluster
+        assert 1 <= n_iter
+        assert 0 <= eps
+        assert 0 < perturb_factor
+
         self.order = order
         self.codebook_size = codebook_size
         self.min_data_per_cluster = min_data_per_cluster
@@ -70,13 +77,6 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.eps = eps
         self.perturb_factor = perturb_factor
         self.verbose = verbose
-
-        assert 0 <= self.order
-        assert is_power_of_two(self.codebook_size)
-        assert 1 <= self.min_data_per_cluster
-        assert 1 <= self.n_iter
-        assert 0 <= self.eps
-        assert 0 < self.perturb_factor
 
         self.vq = VectorQuantization(order, codebook_size).eval()
         self.vq.codebook[:] = 1e10

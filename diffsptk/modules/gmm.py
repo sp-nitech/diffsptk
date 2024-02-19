@@ -28,22 +28,22 @@ class GaussianMixtureModeling(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/gmm.html>`_
     for details. This module is not differentiable.
 
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of vector.
 
-    n_mixture : int >= 1 [scalar]
+    n_mixture : int >= 1
         Number of mixture components.
 
-    n_iter : int >= 1 [scalar]
+    n_iter : int >= 1
         Number of iterations.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         Convergence threshold.
 
-    weight_floor : float >= 0 [scalar]
+    weight_floor : float >= 0
         Floor value for mixture weights.
 
-    var_floor : float >= 0 [scalar]
+    var_floor : float >= 0
         Floor value for variance.
 
     var_type : ['diag', 'full']
@@ -55,10 +55,10 @@ class GaussianMixtureModeling(nn.Module):
     ubm : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
         Parameters of universal background model.
 
-    alpha : float [ 0 <= alpha <= 1 ]
+    alpha : float in [0, 1]
         Smoothing parameter.
 
-    verbose : bool [scalar]
+    verbose : bool
         If True, print progress.
 
     """
@@ -79,6 +79,14 @@ class GaussianMixtureModeling(nn.Module):
     ):
         super(GaussianMixtureModeling, self).__init__()
 
+        assert 0 <= order
+        assert 1 <= n_mixture
+        assert 1 <= n_iter
+        assert 0 <= eps
+        assert 0 <= weight_floor <= 1 / n_mixture
+        assert 0 <= var_floor
+        assert 0 <= alpha <= 1
+
         self.order = order
         self.n_mixture = n_mixture
         self.n_iter = n_iter
@@ -87,14 +95,6 @@ class GaussianMixtureModeling(nn.Module):
         self.var_floor = var_floor
         self.alpha = alpha
         self.verbose = verbose
-
-        assert 0 <= self.order
-        assert 1 <= self.n_mixture
-        assert 1 <= self.n_iter
-        assert 0 <= self.eps
-        assert 0 <= self.weight_floor <= 1 / self.n_mixture
-        assert 0 <= self.var_floor
-        assert 0 <= self.alpha <= 1
 
         if self.alpha != 0:
             assert ubm is not None
