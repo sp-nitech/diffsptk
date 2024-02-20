@@ -30,16 +30,16 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
 
     Parameters
     ----------
-    n_band : int >= 1 [scalar]
+    n_band : int >= 1
         Number of subbands, :math:`K`.
 
-    filter_order : int >= 2 [scalar]
+    filter_order : int >= 2
         Order of filter, :math:`M`.
 
-    alpha : float > 0 [scalar]
+    alpha : float > 0
         Stopband attenuation in dB.
 
-    learnable : bool [scalar]
+    learnable : bool
         Whether to make filter-bank coefficients learnable.
 
     **kwargs : additional keyword arguments

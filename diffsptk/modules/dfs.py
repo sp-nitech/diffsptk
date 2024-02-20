@@ -14,12 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
+
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from ..misc.utils import iir
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 from ..misc.utils import to_3d
 
 
@@ -29,60 +30,53 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
 
     Parameters
     ----------
-    b : List [shape=(M+1,)]
+    b : List [shape=(M+1,)] or None
         Numerator coefficients.
 
-    a : List [shape=(N+1,)]
+    a : List [shape=(N+1,)] or None
         Denominator coefficients.
 
-    ir_length : int >= 1 [scalar]
-        Length of impulse response (valid only if **mode** is 'fir').
+    ir_length : int >= 1
+        Length of impulse response.
 
-    mode : ['fir', 'iir']
-        If 'fir', filter is approximated by a finite impulse response.
+    learnable : bool
+        If True, the filter coefficients are learnable.
 
     """
 
-    def __init__(self, b=None, a=None, ir_length=None, mode="fir"):
+    def __init__(self, b=None, a=None, ir_length=None, learnable=False):
         super(InfiniteImpulseResponseDigitalFilter, self).__init__()
-
-        self.mode = mode
 
         if b is None:
             b = [1]
         if a is None:
             a = [1]
-        b = np.asarray(b)
-        a = np.asarray(a)
+        b = torch.tensor(b)
+        a = torch.tensor(a)
 
-        if self.mode == "fir":
-            # Pre-compute impulse response.
-            if ir_length is None:
-                ir_length = len(b)
-            assert 1 <= ir_length
+        if ir_length is None:
+            ir_length = len(b)
+        assert 1 <= ir_length
 
-            d = np.zeros(max(len(b), len(a)))
-            h = np.empty(ir_length)
-            a0 = a[0]
-            a1 = a[1:]
-            for t in range(ir_length):
-                x = a0 if t == 0 else 0
-                y = x - np.sum(d[: len(a1)] * a1)
-
-                d = np.roll(d, 1)
-                d[0] = y
-
-                y = np.sum(d[: len(b)] * b)
-                h[t] = y
-            h = h.reshape(1, 1, -1)
-            self.register_buffer("h", numpy_to_torch(h).flip(-1))
-        elif self.mode == "iir":
-            self.register_buffer("b", numpy_to_torch(b))
-            self.register_buffer("a", numpy_to_torch(a))
+        # Pre-compute impulse response.
+        d = torch.zeros(max(len(b), len(a)), dtype=torch.double)
+        h = torch.empty(ir_length, dtype=torch.double)
+        a0 = a[0]
+        a1 = a[1:]
+        for t in range(ir_length):
+            x = a0 if t == 0 else 0
+            y = x - torch.sum(d[: len(a1)] * a1)
+            d = torch.roll(d, 1)
+            d[0] = y
+            y = torch.sum(d[: len(b)] * b)
+            h[t] = y
+        h = to(h.reshape(1, 1, -1).flip(-1))
+        if learnable:
+            self.h = nn.Parameter(h)
         else:
-            raise ValueError(f"mode {mode} is not supported")
+            self.register_buffer("h", h)
 
-    def forward(self, x, b=None, a=None):
+    def forward(self, x):
         """Apply an IIR digital filter.
 
         Parameters
@@ -90,15 +84,9 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         x : Tensor [shape=(..., T)]
             Input waveform.
 
-        b : Tensor [shape=(M+1,)]
-            Numerator coefficients.
-
-        a : Tensor [shape=(N+1,)]
-            Denominator coefficients.
-
         Returns
         -------
-        y : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Filtered waveform.
 
         Examples
@@ -110,33 +98,16 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         tensor([0.0000, 1.0000, 1.0300, 1.0600, 1.0900])
 
         """
-        if self.mode == "fir":
-            y = self._forward_fir(x, b, a)
-        elif self.mode == "iir":
-            y = self._forward_iir(x, b, a)
-        else:
-            raise RuntimeError
-        return y
+        return self._forward(x, self.h)
 
-    def _forward_fir(self, x, b=None, a=None):
-        if a is None and b is None:
-            h = self.h
-        elif a is None and b is not None:
-            h = b.view(1, 1, -1).flip(-1)
-        else:
-            raise ValueError("Denominator coefficients must be set via constructor")
-
+    @staticmethod
+    def _forward(x, h):
         y = to_3d(x)
         y = F.pad(y, (h.size(-1) - 1, 0))
         y = F.conv1d(y, h)
         y = y.view_as(x)
         return y
 
-    def _forward_iir(self, x, b=None, a=None):
-        if b is None:
-            b = self.b
-        if a is None:
-            a = self.a
-
-        y = iir(x, b, a)
-        return y
+    @staticmethod
+    def _func(x, b=None, a=None):
+        return iir(x, b, a)

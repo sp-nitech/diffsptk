@@ -113,22 +113,22 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 
     Parameters
     ----------
-    sr : int >= 1 [scalar]
+    sr : int >= 1
         Sample rate in Hz.
 
     mode : ['hts', 'auto']
         'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
         alpha in L2 sense.
 
-    n_freq : int >= 2 [scalar]
+    n_freq : int >= 2
         Number of sample points in the frequency domain.
 
-    n_alpha : int >= 1 [scalar]
+    n_alpha : int >= 1
         Number of sample points to search alpha.
 
     Returns
     -------
-    alpha : float [0 <= alpha < 1]
+    alpha : float in [0, 1]
         Frequency warping factor, :math:`\\alpha`.
 
     Examples
@@ -221,26 +221,12 @@ def clog(x):
     return torch.log(x.abs())
 
 
-def iir(x, b, a):
-    """Apply IIR filter.
+def iir(x, b=None, a=None):
+    if b is None:
+        b = torch.ones(1, dtype=x.dtype, device=x.device)
+    if a is None:
+        a = torch.ones(1, dtype=x.dtype, device=x.device)
 
-    Parameters
-    ----------
-    x : Tensor [shape=(..., B, T) or (..., T)]
-        Input signal.
-
-    b : Tensor [shape=(B, M+1) or (M+1,)]
-        Numerator coefficients.
-
-    a : Tensor [shape=(B, N+1) or (N+1,)]
-        Denominator coefficients.
-
-    Returns
-    -------
-    y : Tensor [shape=(..., B, T) or (..., T)]
-        Output signal.
-
-    """
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
@@ -263,7 +249,7 @@ def deconv1d(x, weight):
 
     Returns
     -------
-    y : Tensor [shape=(..., T-M)]
+    Tensor [shape=(..., T-M)]
         Output signal.
 
     """
@@ -285,10 +271,10 @@ def read(filename, double=False, **kwargs):
 
     Parameters
     ----------
-    filename : str [scalar]
+    filename : str
         Path of wav file.
 
-    double : bool [scalar]
+    double : bool
         If True, return double-type tensor.
 
     **kwargs : additional keyword arguments
@@ -296,7 +282,7 @@ def read(filename, double=False, **kwargs):
 
     Returns
     -------
-    x : Tensor
+    Tensor
         Waveform.
 
     Examples
@@ -321,13 +307,13 @@ def write(filename, x, sr, **kwargs):
 
     Parameters
     ----------
-    filename : str [scalar]
+    filename : str
         Path of wav file.
 
     x : Tensor
         Waveform.
 
-    sr : int [scalar]
+    sr : int
         Sample rate in Hz.
 
     **kwargs : additional keyword arguments

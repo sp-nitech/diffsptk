@@ -8,4 +8,6 @@ dfs
 .. autoclass:: diffsptk.InfiniteImpulseResponseDigitalFilter
    :members:
 
+.. autofunction:: diffsptk.functional.dfs
+
 .. seealso:: :ref:`df2`

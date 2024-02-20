@@ -279,6 +279,29 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
+def dfs(x, b=None, a=None):
+    """Apply an IIR digital filter.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Input waveform.
+
+    b : Tensor [shape=(M+1,)] or None
+        Numerator coefficients.
+
+    a : Tensor [shape=(N+1,)] or None
+        Denominator coefficients.
+
+    Returns
+    -------
+    Tensor [shape=(..., T)]
+        Filtered waveform.
+
+    """
+    return nn.InfiniteImpulseResponseDigitalFilter._func(x, b=b, a=a)
+
+
 def entropy(p, out_format="nat"):
     """Calculate entropy.
 

@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
 import torch
 
 
@@ -27,7 +25,7 @@ def impulse(order, **kwargs):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of sequence, :math:`M`.
 
     **kwargs : additional keyword arguments
@@ -35,7 +33,7 @@ def impulse(order, **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(M+1,)]
+    Tensor [shape=(M+1,)]
         Impulse sequence.
 
     Examples
@@ -57,10 +55,10 @@ def step(order, value=1, **kwargs):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of sequence, :math:`M`.
 
-    value : float [scalar]
+    value : float
         Step value.
 
     **kwargs : additional keyword arguments
@@ -68,7 +66,7 @@ def step(order, value=1, **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(M+1,)]
+    Tensor [shape=(M+1,)]
         Step sequence.
 
     Examples
@@ -90,16 +88,16 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
 
     Parameters
     ----------
-    arg : float [scalar]
+    arg : float
         If `end` is `None` end value otherwise start value.
 
-    end : float [scalar]
+    end : float
         End value.
 
-    step : float != 0 [scalar]
+    step : float != 0
         Slope.
 
-    eps : float [scalar]
+    eps : float
         A correction value.
 
     **kwargs : additional keyword arguments
@@ -108,7 +106,7 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(?,)]
+    Tensor [shape=(?,)]
         Ramp sequence.
 
     Examples
@@ -139,13 +137,13 @@ def sin(order, period=None, magnitude=1, **kwargs):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of sequence, :math:`M`.
 
-    period : float > 0 [scalar]
+    period : float > 0
         Period.
 
-    magnitude : float [scalar]
+    magnitude : float
         Magnitude.
 
     **kwargs : additional keyword arguments
@@ -154,7 +152,7 @@ def sin(order, period=None, magnitude=1, **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(M+1,)]
+    Tensor [shape=(M+1,)]
         Sinusoidal sequence.
 
     Examples
@@ -167,7 +165,7 @@ def sin(order, period=None, magnitude=1, **kwargs):
     if period is None:
         period = order + 1
     x = torch.arange(order + 1, **kwargs)
-    x = torch.sin(x * (2 * math.pi / period)) * magnitude
+    x = torch.sin(x * (2 * torch.pi / period)) * magnitude
     return x
 
 
@@ -179,10 +177,10 @@ def train(order, frame_period, norm="power", **kwargs):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of sequence, :math:`M`.
 
-    frame_period : float >= 1 [scalar]
+    frame_period : float >= 1
         Frame period.
 
     norm : ['none', 'power', 'magnitude']
@@ -193,7 +191,7 @@ def train(order, frame_period, norm="power", **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(M+1,)]
+    Tensor [shape=(M+1,)]
         Pulse sequence.
 
     Examples
@@ -233,16 +231,16 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of sequence, :math:`M`.
 
-    mean : float [scalar]
+    mean : float
         Mean.
 
-    stdv : float >= 0 [scalar]
+    stdv : float >= 0
         Standard deviation.
 
-    var : float >= 0 [scalar]
+    var : float >= 0
         Variance.
 
     **kwargs : additional keyword arguments
@@ -250,7 +248,7 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
 
     Returns
     -------
-    x : Tensor [shape=(M+1,)]
+    Tensor [shape=(M+1,)]
         Random value sequence.
 
     Examples
