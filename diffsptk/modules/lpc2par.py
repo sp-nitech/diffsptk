@@ -14,41 +14,38 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_gamma
 
 
 class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc2par.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details.
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
-    gamma : float [-1 <= float <= 1]
+    gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
-    warn_type : ['ignore', 'warn', 'exit']
-        Behavior for unstable LPC.
+    c : int >= 1 or None
+        Number of stages.
 
     """
 
-    def __init__(self, lpc_order, gamma=1, warn_type="ignore"):
+    def __init__(self, lpc_order, gamma=1, c=None):
         super(LinearPredictiveCoefficientsToParcorCoefficients, self).__init__()
 
-        self.lpc_order = lpc_order
-        self.gamma = gamma
-        self.warn_type = warn_type
+        assert 0 <= lpc_order
+        assert abs(gamma) <= 1
 
-        assert 0 <= self.lpc_order
-        assert abs(self.gamma) <= 1
-        assert self.warn_type in ("ignore", "warn", "exit")
+        self.lpc_order = lpc_order
+        self.gamma = self._precompute(gamma, c)
 
     def forward(self, a):
         """Convert LPC to PARCOR.
@@ -60,7 +57,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
 
         Returns
         -------
-        k : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             PARCOR coefficients.
 
         Examples
@@ -68,7 +65,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         >>> x = diffsptk.nrand(4)
         >>> x
         tensor([ 0.7829, -0.2028,  1.6912,  0.1454,  0.4861])
-        >>> lpc = diffsptk.LPC(3, 5)
+        >>> lpc = diffsptk.LPC(5, 3)
         >>> a = lpc(x)
         >>> a
         tensor([ 1.6036,  0.0573, -0.5615, -0.0638])
@@ -79,24 +76,20 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
 
         """
         check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
+        return self._forward(a, self.gamma)
 
-        K, a = torch.split(a, [1, self.lpc_order], dim=-1)
+    @staticmethod
+    def _forward(a, gamma):
+        M = a.size(-1) - 1
+        K, a = torch.split(a, [1, M], dim=-1)
 
         ks = []
-        a = a * self.gamma
-        for m in range(self.lpc_order - 1, -1, -1):
+        a = a * gamma
+        for m in reversed(range(M)):
             km = a[..., m : m + 1]
-            if torch.any(1 <= torch.abs(km)):
-                if self.warn_type == "ignore":
-                    pass
-                elif self.warn_type == "warn":
-                    warnings.warn("Unstable LPC coefficients")
-                elif self.warn_type == "exit":
-                    raise RuntimeError("Unstable LPC coefficients")
-                else:
-                    raise RuntimeError
-
             ks.append(km)
+            if m == 0:
+                break
             z = 1 - km * km
             k = a[..., :-1]
             a = (k - km * k.flip(-1)) / z
@@ -104,3 +97,12 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         ks.append(K)
         k = torch.cat(ks[::-1], dim=-1)
         return k
+
+    @staticmethod
+    def _func(a, gamma, c):
+        gamma = LinearPredictiveCoefficientsToParcorCoefficients._precompute(gamma, c)
+        return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, gamma)
+
+    @staticmethod
+    def _precompute(gamma, c):
+        return get_gamma(gamma, c)

@@ -477,8 +477,6 @@ def gnorm(x, gamma=0, c=None):
     x : Tensor [shape=(..., M+1)]
         Generalized cepstrum.
 
-    Parameters
-    ----------
     gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
@@ -801,6 +799,31 @@ def lpc(x, lpc_order):
     return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order)
 
 
+def lpc2par(x, gamma=1, c=None):
+    """Convert LPC to PARCOR.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., M+1)]
+        LPC coefficients.
+
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    c : int >= 1 or None
+        Number of stages.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    """
+    return nn.LinearPredictiveCoefficientsToParcorCoefficients._func(
+        x, gamma=gamma, c=c
+    )
+
+
 def magic_intpl(x, magic_number=0):
     """Interpolate magic number.
 
@@ -928,6 +951,31 @@ def par2lar(k):
 
     """
     return nn.ParcorCoefficientsToLogAreaRatio._func(k)
+
+
+def par2lpc(k, gamma=1, c=None):
+    """Convert PARCOR to LPC.
+
+    Parameters
+    ----------
+    k : Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    c : int >= 1 or None
+        Number of stages.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        LPC coefficients.
+
+    """
+    return nn.ParcorCoefficientsToLinearPredictiveCoefficients._func(
+        k, gamma=gamma, c=c
+    )
 
 
 def phase(b=None, a=None, *, fft_length=512, unwrap=False):

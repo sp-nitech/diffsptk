@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import warnings
+
 import torch
 import torch.nn as nn
 
@@ -42,12 +44,11 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
         super(LinearPredictiveCoefficientsStabilityCheck, self).__init__()
 
         self.bound = 1 - margin
+        self.warn_type = warn_type
 
         assert 0 < margin < 1
 
-        self.lpc2par = LinearPredictiveCoefficientsToParcorCoefficients(
-            lpc_order, warn_type=warn_type
-        )
+        self.lpc2par = LinearPredictiveCoefficientsToParcorCoefficients(lpc_order)
         self.par2lpc = ParcorCoefficientsToLinearPredictiveCoefficients(lpc_order)
 
     def forward(self, a1):
@@ -78,6 +79,15 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
         """
         k1 = self.lpc2par(a1)
         K, k = torch.split(k1, [1, k1.size(-1) - 1], dim=-1)
+        if torch.any(1 <= torch.abs(k)):
+            if self.warn_type == "ignore":
+                pass
+            elif self.warn_type == "warn":
+                warnings.warn("Unstable LPC coefficients")
+            elif self.warn_type == "exit":
+                raise RuntimeError("Unstable LPC coefficients")
+            else:
+                raise RuntimeError
         k = torch.clip(k, -self.bound, self.bound)
         k2 = torch.cat((K, k), dim=-1)
         a2 = self.par2lpc(k2)

@@ -17,25 +17,34 @@
 import torch.nn as nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_gamma
 
 
 class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/par2lpc.html>`_
-    for details. This module may be slow due to recursive computation.
+    for details.
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC, :math:`M`.
+
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    c : int >= 1 or None
+        Number of stages.
 
     """
 
-    def __init__(self, lpc_order):
+    def __init__(self, lpc_order, gamma=1, c=None):
         super(ParcorCoefficientsToLinearPredictiveCoefficients, self).__init__()
 
-        self.lpc_order = lpc_order
+        assert 0 <= lpc_order
+        assert abs(gamma) <= 1
 
-        assert 0 <= self.lpc_order
+        self.lpc_order = lpc_order
+        self.gamma = self._precompute(gamma, c)
 
     def forward(self, k):
         """Convert PARCOR to LPC.
@@ -47,7 +56,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             LPC coefficients.
 
         Examples
@@ -67,10 +76,22 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
 
         """
         check_size(k.size(-1), self.lpc_order + 1, "dimension of PARCOR")
+        return self._forward(k, self.gamma)
 
-        a = k.clone()
-        for m in range(2, self.lpc_order + 1):
+    @staticmethod
+    def _forward(k, gamma):
+        a = k / gamma
+        for m in range(2, k.size(-1)):
             km = k[..., m : m + 1]
             am = a[..., 1:m]
             a[..., 1:m] = am + km * am.flip(-1)
         return a
+
+    @staticmethod
+    def _func(k, gamma, c):
+        gamma = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(gamma, c)
+        return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, gamma)
+
+    @staticmethod
+    def _precompute(gamma, c):
+        return get_gamma(gamma, c)
