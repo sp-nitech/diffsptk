@@ -41,5 +41,5 @@ def test_compatibility(device, module, M=30, L=52, B=2):
         dy=M + 1,
     )
 
-    lpc = diffsptk.LPC(M, L)
+    lpc = diffsptk.LPC(L, M)
     U.check_differentiability(device, [rlevdur, lpc], [B, L])
