@@ -83,7 +83,7 @@ class Autocorrelation(nn.Module):
         return r
 
     @staticmethod
-    def _func(x, acr_order, out_format):
+    def _func(x, acr_order, out_format="none"):
         const = Autocorrelation._precompute(
             x.size(-1), acr_order, out_format, dtype=x.dtype, device=x.device
         )

@@ -1346,7 +1346,38 @@ def window(x, *, out_length=None, window="blackman", norm="power"):
     return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
 
 
-def zcross(x, frame_length=80, norm=False):
+def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
+    """Pitch-related feature extraction module based on YIN.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Framed waveform.
+
+    sample_rate : int >= 1
+        Sample rate in Hz.
+
+    lag_min : int >= 1
+        Minimum lag in points.
+
+    lag_max : int <= :math:`L` or None
+        Maximum lag in points.
+
+    n_bin : int >= 1
+        Number of bins of Yingram to represent a semitone range.
+
+    Returns
+    -------
+    Tensor [shape=(..., M)]
+        Yingram.
+
+    """
+    return nn.Yingram._func(
+        x, sample_rate=sample_rate, lag_min=lag_min, lag_max=lag_max, n_bin=n_bin
+    )
+
+
+def zcross(x, frame_length=400, norm=False):
     """Compute zero-crossing rate.
 
     Parameters

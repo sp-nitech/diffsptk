@@ -27,7 +27,7 @@ import tests.utils as U
 def test_compatibility(device, module, M, out_format, L=14, B=2):
     acorr = U.choice(
         module,
-        diffsptk.AutocorrelationAnalysis,
+        diffsptk.Autocorrelation,
         diffsptk.functional.acorr,
         {"frame_length": L},
         {"acr_order": M, "out_format": out_format},

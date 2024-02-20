@@ -96,10 +96,10 @@ class ReverseLevinsonDurbin(nn.Module):
 
     @staticmethod
     def _func(a):
-        tensor = ReverseLevinsonDurbin._precompute(
+        eye = ReverseLevinsonDurbin._precompute(
             a.size(-1) - 1, dtype=a.dtype, device=a.device
         )
-        return ReverseLevinsonDurbin._forward(a, tensor)
+        return ReverseLevinsonDurbin._forward(a, eye)
 
     @staticmethod
     def _precompute(order, dtype=None, device=None):

@@ -27,19 +27,19 @@ class SecondOrderDigitalFilter(nn.Module):
 
     Parameters
     ----------
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
-    pole_frequency : float > 0 [scalar]
+    pole_frequency : float > 0
         Pole frequency in Hz.
 
-    pole_bandwidth : float > 0 [scalar]
+    pole_bandwidth : float > 0
         Pole bandwidth in Hz.
 
-    zero_frequency : float > 0 [scalar]
+    zero_frequency : float > 0
         Zero frequency in Hz.
 
-    zero_bandwidth : float > 0 [scalar]
+    zero_bandwidth : float > 0
         Zero bandwidth in Hz.
 
     **kwargs : additional keyword arguments
@@ -88,7 +88,7 @@ class SecondOrderDigitalFilter(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Filtered waveform.
 
         Examples
@@ -100,5 +100,4 @@ class SecondOrderDigitalFilter(nn.Module):
         tensor([0.0000, 1.0000, 2.0918, 3.4161, 5.1021])
 
         """
-        y = self.dfs(x)
-        return y
+        return self.dfs(x)
