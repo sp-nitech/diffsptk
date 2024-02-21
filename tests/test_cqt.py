@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import librosa
+import numpy as np
 import pytest
 import torch
 
@@ -22,13 +24,32 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, f_min=100, sr=16000, T=1000):
+@pytest.mark.parametrize("scale", [False, True])
+def test_compatibility(device, scale, n_bin=24, fp=512):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x = diffsptk.sin(T - 1, period=sr / f_min).to(device)
-    cqt = diffsptk.ConstantQTransform(T, sr, f_min=f_min).to(device)
-    X = cqt(x)
-    assert torch.argmax(X.abs()) == 0
+    x, sr = diffsptk.read(
+        "assets/data.wav",
+        double=torch.get_default_dtype() == torch.double,
+        device=device,
+    )
 
-    U.check_differentiability(device, [torch.abs, cqt], [T])
+    c1 = librosa.cqt(
+        x.cpu().numpy(),
+        sr=sr,
+        fmin=32.7,
+        n_bins=n_bin,
+        hop_length=fp,
+        scale=scale,
+        res_type="kaiser_best",
+        dtype=None,
+    ).T
+
+    cqt = diffsptk.CQT(fp, sr, n_bin=n_bin, scale=scale).to(device)
+    c2 = cqt(x).cpu().numpy()
+
+    error = np.mean(np.abs(c1 - c2))
+    assert error < 1e-4, f"Mean error: {error}"
+
+    U.check_differentiability(device, [torch.abs, cqt], [fp])

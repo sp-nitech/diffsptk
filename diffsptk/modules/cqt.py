@@ -14,78 +14,167 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
+import librosa
 import numpy as np
 import torch
 import torch.nn as nn
+import torchaudio
 
-from ..misc.utils import next_power_of_two
 from ..misc.utils import numpy_to_torch
-from .frame import Frame
+from .stft import ShortTimeFourierTransform as STFT
+
+_vqt_filter_fft = librosa.core.constantq.__vqt_filter_fft
+_bpo_to_alpha = librosa.core.constantq.__bpo_to_alpha
 
 
 class ConstantQTransform(nn.Module):
-    """Perform constant-Q transform. The implementation is based on the simple
-    matrix multiplication.
+    """Perform constant-Q transform based on the librosa implementation.
 
     Parameters
     ----------
-    frame_peirod : int >= 1 [scalar]
+    frame_peirod : int >= 1
         Frame period in samples.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
-    f_min : float > 0 [scalar]
+    f_min : float > 0
         Minimum center frequency in Hz.
 
-    f_max : float <= sample_rate // 2 [scalar]
-        Maximum center frequency in Hz.
+    n_bin : int >= 1
+        Number of CQ-bins.
 
-    n_bin_per_octave : int >= 1  [scalar]
+    n_bin_per_octave : int >= 1
         number of bins per octave, :math:`B`.
 
-    References
-    ----------
-    .. [1] J. C. Brown and M. S. Puckette, "An efficient algorithm for the
-           calculation of a constant Q transform," *Journal of the Acoustical
-           Society of America*, vol. 92, no. 5, pp. 2698-2701, 1992.
+    tuning : float
+        Tuning offset in fractions of a bin.
+
+    filter_scale : float > 0
+        Filter scale factor.
+
+    norm : float
+        Type of norm used in basis function normalization.
+
+    sparsity : float in [0, 1)
+        Sparsification factor.
+
+    window : str
+        Window function for the basis.
+
+    scale : bool
+        If True, scale the CQT responce by the length of filter.
+
+    **kwargs : additional keyword arguments
+        See `torchaudio.transforms.Resample
+        <https://pytorch.org/audio/main/generated/torchaudio.transforms.Resample.html>`_.
 
     """
 
     def __init__(
-        self, frame_period, sample_rate, f_min=32.7, f_max=None, n_bin_per_octave=12
+        self,
+        frame_period,
+        sample_rate,
+        *,
+        f_min=32.7,
+        n_bin=84,
+        n_bin_per_octave=12,
+        tuning=0,
+        filter_scale=1,
+        norm=1,
+        sparsity=0.01,
+        window="hann",
+        scale=True,
+        **kwargs,
     ):
         super(ConstantQTransform, self).__init__()
 
-        if f_max is None:
-            f_max = sample_rate / 2
+        assert 1 <= frame_period
+        assert 1 <= sample_rate
 
-        assert 0 < f_min < f_max <= sample_rate / 2
-        assert 1 <= n_bin_per_octave
+        self.frame_period = frame_period
+        self.sample_rate = sample_rate
 
-        B = n_bin_per_octave
-        Q = 1 / (2 ** (1 / B) - 1)
-        K = math.ceil(B * math.log2(f_max / f_min))
-        fft_length = next_power_of_two(math.ceil(Q * sample_rate / f_min))
+        n_octave = int(np.ceil(n_bin / n_bin_per_octave))
+        n_filter = min(n_bin_per_octave, n_bin)
 
-        temporal_kernels = np.zeros((K, fft_length), dtype=complex)
-        for k in range(K):
-            f_k = f_min * 2 ** (k / B)
-            N_k = 2 * round(Q * sample_rate / f_k / 2) + 1
-            n = np.arange(-(N_k - 1) // 2, (N_k - 1) // 2 + 1)
-            w = np.hamming(N_k) / N_k
-            s = fft_length // 2 + n[0]
-            temporal_kernels[k, s : s + N_k] = w * np.exp(
-                (2 * np.pi * 1j * Q / N_k) * n
+        f_min = f_min * 2 ** (tuning / n_bin_per_octave)
+
+        freqs = librosa.cqt_frequencies(
+            n_bins=n_bin,
+            fmin=f_min,
+            bins_per_octave=n_bin_per_octave,
+        )
+
+        alpha = _bpo_to_alpha(n_bin_per_octave)
+
+        if scale:
+            lengths, _ = librosa.filters.wavelet_lengths(
+                freqs=freqs,
+                sr=sample_rate,
+                window=window,
+                filter_scale=filter_scale,
+                alpha=alpha,
+            )
+            cqt_scale = 1 / np.sqrt(lengths)
+        else:
+            cqt_scale = np.ones(n_bin)
+        self.register_buffer("cqt_scale", numpy_to_torch(cqt_scale))
+
+        transforms = []
+        resamplers = []
+
+        fp = frame_period
+        sr = sample_rate
+        for i in range(n_octave):
+            if i == 0:
+                sl = slice(-n_filter, None)
+            else:
+                sl = slice(-n_filter * (i + 1), -n_filter * i)
+
+            fft_basis, n_fft, _ = _vqt_filter_fft(
+                sr,
+                freqs[sl],
+                filter_scale,
+                norm,
+                sparsity,
+                window=window,
+                alpha=alpha,
             )
 
-        spectral_kernels = np.fft.fft(temporal_kernels, axis=-1) / fft_length
-        assert np.all(spectral_kernels.imag == 0)
-        self.register_buffer("kernel", numpy_to_torch(spectral_kernels.T))
+            fft_basis[:] *= np.sqrt(sample_rate / sr)
+            self.register_buffer(
+                f"fft_basis_{i}", numpy_to_torch(fft_basis.todense()).T
+            )
 
-        self.frame = Frame(fft_length, frame_period)
+            transforms.append(
+                STFT(
+                    frame_length=n_fft,
+                    frame_period=fp,
+                    fft_length=n_fft,
+                    center=True,
+                    window="rectangular",
+                    norm="none",
+                    eps=0,
+                    out_format="complex",
+                )
+            )
+
+            if fp % 2 == 0:
+                fp //= 2
+                sr /= 2
+                resamplers.append(
+                    torchaudio.transforms.Resample(
+                        orig_freq=2,
+                        new_freq=1,
+                        dtype=torch.get_default_dtype(),
+                        **kwargs,
+                    )
+                )
+
+        self.transforms = nn.ModuleList(transforms)
+        self.resamplers = nn.ModuleList(resamplers)
+        self.resample_scale = 1 / np.sqrt(0.5)
 
     def forward(self, x):
         """Apply CQT to signal.
@@ -97,19 +186,46 @@ class ConstantQTransform(nn.Module):
 
         Returns
         -------
-        X : Tensor [shape=(..., N, K)]
+        Tensor [shape=(..., N, K)]
             CQT complex output, where N is the number of frames and K is CQ-bin.
 
         Examples
         --------
         >>> x = diffsptk.sin(99)
-        >>> cqt = diffsptk.CQT(100, 8000, n_bin_per_octave=1)
-        >>> X = cqt(x).abs()
-        >>> X
-        tensor([[0.1054, 0.1479, 0.1113, 0.0604, 0.0327, 0.0160, 0.0076]])
+        >>> cqt = diffsptk.CQT(100, 8000, n_bin=4)
+        >>> c = cqt(x).abs()
+        >>> c
+        tensor([[1.1259, 1.2069, 1.3008, 1.3885]])
 
         """
-        x = self.frame(x)
-        X = torch.fft.fft(x, dim=-1)
-        X = torch.matmul(X, self.kernel)
-        return X
+        c = []
+        fp = self.frame_period
+        for i in range(len(self.transforms)):
+            X = self.transforms[i](x)
+            W = getattr(self, f"fft_basis_{i}")
+            c.append(torch.matmul(X, W))
+            if fp % 2 == 0:
+                fp //= 2
+                x = self.resamplers[i](x) * self.resample_scale
+        c = self._trim_stack(c) * self.cqt_scale
+        return c
+
+    def _trim_stack(self, cqt_response):
+        max_col = min(c.shape[-2] for c in cqt_response)
+        n_bin = len(self.cqt_scale)
+        shape = list(cqt_response[0].shape)
+        shape[-2] = max_col
+        shape[-1] = n_bin
+        output = torch.empty(
+            shape, dtype=cqt_response[0].dtype, device=cqt_response[0].device
+        )
+
+        end = n_bin
+        for c in cqt_response:
+            n_octave = c.shape[-1]
+            if end < n_octave:
+                output[..., :end] = c[..., :max_col, -end:]
+            else:
+                output[..., end - n_octave : end] = c[..., :max_col, :]
+            end -= n_octave
+        return output

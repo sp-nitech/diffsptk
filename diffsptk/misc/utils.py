@@ -266,7 +266,7 @@ def check_size(x, y, cause):
     assert x == y, f"Unexpected {cause} (input {x} vs target {y})."
 
 
-def read(filename, double=False, **kwargs):
+def read(filename, double=False, device=None, **kwargs):
     """Read waveform from file.
 
     Parameters
@@ -277,13 +277,19 @@ def read(filename, double=False, **kwargs):
     double : bool
         If True, return double-type tensor.
 
+    device : torch.device or None
+        Device of returned tensor.
+
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read`.
 
     Returns
     -------
-    Tensor
+    x : Tensor
         Waveform.
+
+    sr : int
+        Sample rate in Hz.
 
     Examples
     --------
@@ -299,6 +305,8 @@ def read(filename, double=False, **kwargs):
         x = torch.DoubleTensor(x)
     else:
         x = torch.FloatTensor(x)
+    if device is not None:
+        x = x.to(device)
     return x, sr
 
 

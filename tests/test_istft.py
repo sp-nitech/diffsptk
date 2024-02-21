@@ -41,4 +41,4 @@ def test_compatibility(module):
 
     x = torch.from_numpy(U.call("x2x +sd tools/SPTK/asset/data.short"))
     y = istft(stft(x), out_length=x.size(0)).round()
-    assert torch.allclose(x, y)
+    assert U.allclose(x, y)
