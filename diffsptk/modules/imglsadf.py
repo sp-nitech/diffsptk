@@ -48,7 +48,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Residual signal.
 
         Examples

@@ -38,12 +38,12 @@ def mirror(x, half=False):
     x : Tensor [shape=(..., L)]
         Input tensor.
 
-    half : bool [scalar]
+    half : bool
         If True, multiply all elements except the first one by 0.5.
 
     Returns
     -------
-    y : Tensor [shape=(..., 2L-1)]
+    Tensor [shape=(..., 2L-1)]
         Output tensor.
 
     """
@@ -60,22 +60,22 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
     Parameters
     ----------
-    filter_order : int >= 0 [scalar]
+    filter_order : int >= 0
         Order of filter coefficients, :math:`M`.
 
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    gamma : float [-1 <= gamma <= 1]
+    gamma : float in [-1, 1]
         Gamma, :math:`\\gamma`.
 
-    c : int >= 1 [scalar]
+    c : int >= 1 or None
         Number of stages.
 
-    ignore_gain : bool [scalar]
+    ignore_gain : bool
         If True, perform filtering without gain.
 
     phase : ['minimum', 'maximum', 'zero']
@@ -87,16 +87,16 @@ class PseudoMGLSADigitalFilter(nn.Module):
         the impulse response converted from input mel-cepstral coefficients using FFT.
         'freq-domain' performs filtering in the frequency domain rather than time one.
 
-    taylor_order : int >= 0 [scalar]
+    taylor_order : int >= 0
         Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
 
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of linear cepstrum (valid only if **mode** is 'multi-stage').
 
-    ir_length : int >= 1 [scalar]
+    ir_length : int >= 1
         Length of impulse response (valid only if **mode** is 'single-stage').
 
-    n_fft : int >= 1 [scalar]
+    n_fft : int >= 1
         Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
 
     **stft_kwargs : additional keyword arguments
@@ -161,7 +161,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
                 **kwargs,
             )
         else:
-            raise ValueError(f"mode {mode} is not supported")
+            raise ValueError(f"mode {mode} is not supported.")
 
     def forward(self, x, mc):
         """Apply an MGLSA digital filter.
@@ -176,7 +176,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(..., T)]
+        Tensor [shape=(..., T)]
             Output signal.
 
         Examples
@@ -228,7 +228,7 @@ class MultiStageFIRFilter(nn.Module):
         elif self.phase == "zero":
             self.pad = nn.ConstantPad1d((cep_order, cep_order), 0)
         else:
-            raise ValueError(f"phase {phase} is not supported")
+            raise ValueError(f"phase {phase} is not supported.")
 
         self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
             filter_order,
@@ -289,7 +289,7 @@ class SingleStageFIRFilter(nn.Module):
         elif self.phase == "zero":
             self.pad = nn.ConstantPad1d((taps, taps), 0)
         else:
-            raise ValueError(f"phase {phase} is not supported")
+            raise ValueError(f"phase {phase} is not supported.")
 
         if self.phase in ["minimum", "maximum"]:
             self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(

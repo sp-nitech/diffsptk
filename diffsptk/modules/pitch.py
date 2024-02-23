@@ -32,10 +32,10 @@ class Pitch(nn.Module):
 
     Parameters
     ----------
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
     algorithm : ['crepe']
@@ -44,19 +44,19 @@ class Pitch(nn.Module):
     out_format : ['pitch', 'f0', 'log-f0', 'prob', 'embed']
         Output format.
 
-    f_min : float >= 0 [scalar]
+    f_min : float >= 0
         Minimum frequency in Hz.
 
-    f_max : float <= sample_rate // 2 [scalar]
+    f_max : float <= sample_rate // 2
         Maximum frequency in Hz.
 
-    voicing_threshold : float [scalar]
+    voicing_threshold : float
         Voiced/unvoiced threshold.
 
-    silence_threshold : float [scalar]
+    silence_threshold : float
         Silence threshold in dB.
 
-    filter_length : int >= 1 [scalar]
+    filter_length : int >= 1
         Window length of median and moving average filters.
 
     model : ['tiny', 'full']
@@ -80,7 +80,7 @@ class Pitch(nn.Module):
         if algorithm == "crepe":
             self.extractor = PitchExtractionByCrepe(frame_period, sample_rate, **kwargs)
         else:
-            raise ValueError(f"algorithm {algorithm} is not supported")
+            raise ValueError(f"algorithm {algorithm} is not supported.")
 
         def calc_pitch(x, convert, unvoiced_symbol=UNVOICED_SYMBOL):
             with torch.no_grad():
@@ -102,7 +102,7 @@ class Pitch(nn.Module):
         elif out_format == "embed":
             self.convert = lambda x: self.extractor.calc_embed(x)
         else:
-            raise ValueError(f"out_format {out_format} is not supported")
+            raise ValueError(f"out_format {out_format} is not supported.")
 
     def forward(self, x):
         """Compute pitch representation.
@@ -114,7 +114,7 @@ class Pitch(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
+        Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
             Pitch probability, embedding, or pitch, where N is the number of frames
             and C is the number of pitch classes or the dimension of embedding.
 
@@ -153,7 +153,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        y : Tensor [shape=(B, N, C)]
+        Tensor [shape=(B, N, C)]
             Probability, where C is the number of pitch classes.
 
         """
@@ -169,7 +169,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        y : Tensor [shape=(B, N, D)]
+        Tensor [shape=(B, N, D)]
             Embedding, where D is the dimension of embedding.
 
         """
@@ -185,7 +185,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        y : Tensor [shape=(B, N)]
+        Tensor [shape=(B, N)]
             F0 sequence.
 
         """
@@ -220,7 +220,10 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         assert self.model in ("tiny", "full")
 
         if sample_rate != self.torchcrepe.SAMPLE_RATE:
-            raise ValueError(f"Only {self.torchcrepe.SAMPLE_RATE} Hz is supported")
+            raise ValueError(
+                f"Only {self.torchcrepe.SAMPLE_RATE} Hz is supported. "
+                "Please use a resampler in advance."
+            )
 
         self.frame = Frame(self.torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
         self.stft = ShortTimeFourierTransform(
