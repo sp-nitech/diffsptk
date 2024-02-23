@@ -8,4 +8,4 @@ cqt
 .. autoclass:: diffsptk.ConstantQTransform
    :members:
 
-.. seealso:: :ref:`stft`
+.. seealso:: :ref:`icqt`  :ref:`stft`

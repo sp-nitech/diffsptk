@@ -44,11 +44,10 @@ Examples
 ```python
 import diffsptk
 
-# Set analysis condition.
-fl = 400
-fp = 80
-n_fft = 512
-M = 24
+fl = 400     # Frame length.
+fp = 80      # Frame period.
+n_fft = 512  # FFT length.
+M = 24       # Mel-cepstrum dimensions.
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -95,12 +94,11 @@ diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```python
 import diffsptk
 
-# Set analysis condition.
-fl = 400
-fp = 80
-n_fft = 512
-n_channel = 80
-M = 12
+fl = 400        # Frame length
+fp = 80         # Frame period
+n_fft = 512     # FFT length
+n_channel = 80  # Number of channels
+M = 12          # MFCC/PLP dimensions
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -167,10 +165,39 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
+### Constant-Q transform
+```python
+import diffsptk
+import librosa  # This is to get sample audio.
+
+fp = 128  # Frame period.
+K = 252   # Number of CQ-bins.
+B = 36    # Number of bins per octave.
+
+# Read waveform.
+x, sr = diffsptk.read(librosa.ex("trumpet"))
+
+# Transform x.
+cqt = diffsptk.CQT(fp, sr, n_bin=K, n_bin_per_octave=B)
+c = cqt(x)
+
+# Reconstruct x.
+icqt = diffsptk.ICQT(fp, sr, n_bin=K, n_bin_per_octave=B)
+x_hat = icqt(c, out_length=x.size(0))
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
 ### Vector quantization
 ```python
 import diffsptk
 
+# Set condition.
 K = 2  # Codebook size.
 M = 4  # Order of vector.
 

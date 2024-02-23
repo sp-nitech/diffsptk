@@ -163,6 +163,7 @@ def check_differentiability(
     modules,
     shapes,
     *,
+    dtype=None,
     checks=None,
     opt={},
     load=1,
@@ -182,7 +183,7 @@ def check_differentiability(
 
     x = []
     for shape in shapes:
-        x.append(torch.randn(*shape, requires_grad=True, device=device))
+        x.append(torch.randn(*shape, requires_grad=True, device=device, dtype=dtype))
 
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
     optimizer = torch.optim.SGD(x, lr=0.01)

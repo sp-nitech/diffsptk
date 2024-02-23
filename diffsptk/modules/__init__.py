@@ -29,6 +29,8 @@ from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
 from .ialaw import ALawExpansion
+from .icqt import InverseConstantQTransform
+from .icqt import InverseConstantQTransform as ICQT
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform

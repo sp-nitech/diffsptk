@@ -37,14 +37,14 @@ import torch.nn as nn
 import torchaudio
 
 from ..misc.utils import numpy_to_torch
-from .stft import ShortTimeFourierTransform as STFT
+from .istft import InverseShortTimeFourierTransform as ISTFT
 
 _vqt_filter_fft = librosa.core.constantq.__vqt_filter_fft
 _bpo_to_alpha = librosa.core.constantq.__bpo_to_alpha
 
 
-class ConstantQTransform(nn.Module):
-    """Perform constant-Q transform based on the librosa implementation.
+class InverseConstantQTransform(nn.Module):
+    """Perform inverse constant-Q transform based on the librosa implementation.
 
     Parameters
     ----------
@@ -103,7 +103,7 @@ class ConstantQTransform(nn.Module):
         scale=True,
         **kwargs,
     ):
-        super(ConstantQTransform, self).__init__()
+        super(InverseConstantQTransform, self).__init__()
 
         assert 1 <= frame_period
         assert 1 <= sample_rate
@@ -112,7 +112,6 @@ class ConstantQTransform(nn.Module):
         B = n_bin_per_octave
 
         n_octave = int(np.ceil(K / B))
-        n_filter = min(B, K)
 
         freqs = librosa.cqt_frequencies(
             n_bins=K,
@@ -121,19 +120,19 @@ class ConstantQTransform(nn.Module):
             tuning=tuning,
         )
 
-        alpha = _bpo_to_alpha(B)
+        alpha = _bpo_to_alpha(n_bin_per_octave)
 
+        lengths, _ = librosa.filters.wavelet_lengths(
+            freqs=freqs,
+            sr=sample_rate,
+            window=window,
+            filter_scale=filter_scale,
+            alpha=alpha,
+        )
         if scale:
-            lengths, _ = librosa.filters.wavelet_lengths(
-                freqs=freqs,
-                sr=sample_rate,
-                window=window,
-                filter_scale=filter_scale,
-                alpha=alpha,
-            )
-            cqt_scale = np.reciprocal(np.sqrt(lengths))
+            cqt_scale = np.sqrt(lengths)
         else:
-            cqt_scale = np.ones(K)
+            cqt_scale = np.ones(n_bin)
         self.register_buffer("cqt_scale", numpy_to_torch(cqt_scale))
 
         fp = [frame_period]
@@ -145,12 +144,17 @@ class ConstantQTransform(nn.Module):
             else:
                 fp.append(fp[i])
                 sr.append(sr[i])
+        fp = fp[::-1]
+        sr = sr[::-1]
 
+        slices = []
         transforms = []
         resamplers = []
 
         for i in range(n_octave):
-            sl = slice(-n_filter * (i + 1), None if i == 0 else (-n_filter * i))
+            n_filter = min(B, K - B * i)
+            sl = slice(B * i, B * i + n_filter)
+            slices.append(sl)
 
             fft_basis, fft_length, _ = _vqt_filter_fft(
                 sr[i],
@@ -162,89 +166,74 @@ class ConstantQTransform(nn.Module):
                 alpha=alpha,
             )
 
-            fft_basis[:] *= np.sqrt(sample_rate / sr[i])
-            self.register_buffer(
-                f"fft_basis_{i}", numpy_to_torch(fft_basis.todense()).T
-            )
+            fft_basis = np.asarray(fft_basis.conj().todense())
+            freq_power = np.reciprocal(np.sum(np.abs(fft_basis) ** 2, axis=1))
+            freq_power *= fft_length / lengths[sl]
+            fft_basis *= freq_power[:, None]
+            self.register_buffer(f"fft_basis_{i}", numpy_to_torch(fft_basis))
 
             transforms.append(
-                STFT(
+                ISTFT(
                     frame_length=fft_length,
                     frame_period=fp[i],
                     fft_length=fft_length,
                     center=True,
                     window="rectangular",
                     norm="none",
-                    eps=0,
-                    out_format="complex",
                 )
             )
 
-            if fp[i] % 2 == 0:
-                resamplers.append(
-                    torchaudio.transforms.Resample(
-                        orig_freq=2,
-                        new_freq=1,
-                        dtype=torch.get_default_dtype(),
-                        **kwargs,
-                    )
+            resamplers.append(
+                torchaudio.transforms.Resample(
+                    orig_freq=1,
+                    new_freq=sample_rate // sr[i],  # must be integer
+                    dtype=torch.get_default_dtype(),
+                    **kwargs,
                 )
+            )
 
+        self.slices = slices
         self.transforms = nn.ModuleList(transforms)
         self.resamplers = nn.ModuleList(resamplers)
-        self.resample_scale = 1 / np.sqrt(0.5)
-        self.frame_period = frame_period
 
-    def forward(self, x):
-        """Compute constant-Q transform.
+    def forward(self, c, out_length=None):
+        """Compute inverse constant-Q transform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., T)]
-            Waveform.
+        c : Tensor [shape=(..., T/P, K)]
+            CQT complex output, where K is CQ-bin.
+
+        out_length : int or None
+            Length of output waveform.
 
         Returns
         -------
-        Tensor [shape=(..., T/P, K)]
-            CQT complex output, where K is CQ-bin.
+        Tensor [shape=(..., T)]
+            Reconstructed waveform.
 
         Examples
         --------
         >>> x = diffsptk.sin(99)
         >>> cqt = diffsptk.CQT(100, 8000, n_bin=4)
-        >>> c = cqt(x).abs()
-        >>> c
-        tensor([[1.1259, 1.2069, 1.3008, 1.3885]])
+        >>> icqt = diffsptk.ICQT(100, 8000, n_bin=4)
+        >>> y = icqt(cqt(x), out_length=x.size(0))
+        >>> y.shape
+        torch.Size([100])
 
         """
-        cs = []
-        fp = self.frame_period
         for i in range(len(self.transforms)):
-            X = self.transforms[i](x)
+            C = c[..., self.slices[i]] * self.cqt_scale[self.slices[i]]
             W = getattr(self, f"fft_basis_{i}")
-            cs.append(torch.matmul(X, W))
-            if fp % 2 == 0:
-                fp //= 2
-                x = self.resamplers[i](x) * self.resample_scale
-        c = self._trim_stack(cs) * self.cqt_scale
-        return c
-
-    def _trim_stack(self, cqt_response):
-        max_col = min(c.shape[-2] for c in cqt_response)
-        n_bin = len(self.cqt_scale)
-        shape = list(cqt_response[0].shape)
-        shape[-2] = max_col
-        shape[-1] = n_bin
-        output = torch.empty(
-            shape, dtype=cqt_response[0].dtype, device=cqt_response[0].device
-        )
-
-        end = n_bin
-        for c in cqt_response:
-            n_octave = c.shape[-1]
-            if end < n_octave:
-                output[..., :end] = c[..., :max_col, -end:]
+            X = torch.matmul(C, W)
+            x = self.transforms[i](X)
+            x = self.resamplers[i](x)
+            if i == 0:
+                y = x[..., :out_length]
             else:
-                output[..., end - n_octave : end] = c[..., :max_col, :]
-            end -= n_octave
-        return output
+                if out_length is None:
+                    end = x.size(-1)
+                else:
+                    end = min(x.size(-1), out_length)
+                y[..., :end] += x[..., :end]
+        return y

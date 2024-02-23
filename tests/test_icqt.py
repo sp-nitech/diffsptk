@@ -25,15 +25,15 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("scale", [False, True])
-def test_compatibility(device, scale, K=24, B=12, fp=512, f_min=32.7):
+def test_compatibility(device, scale, K=252, B=36, fp=128, f_min=32.7, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x, sr = diffsptk.read(
-        "assets/data.wav",
-        double=torch.get_default_dtype() == torch.double,
-        device=device,
-    )
+    x, sr = diffsptk.read(librosa.ex("trumpet"))
+    T = x.size(0)
+
+    if verbose:
+        diffsptk.write("original.wav", x, sr)
 
     c1 = librosa.cqt(
         x.cpu().numpy(),
@@ -45,14 +45,33 @@ def test_compatibility(device, scale, K=24, B=12, fp=512, f_min=32.7):
         scale=scale,
         res_type="kaiser_best",
         dtype=None,
-    ).T
+    )
 
-    cqt = diffsptk.CQT(
+    y1 = librosa.icqt(
+        c1,
+        sr=sr,
+        fmin=f_min,
+        bins_per_octave=B,
+        hop_length=fp,
+        scale=scale,
+        res_type="kaiser_best",
+        dtype=np.float64 if torch.get_default_dtype() == torch.double else np.float32,
+        length=T,
+    )
+
+    if verbose:
+        diffsptk.write("liborsa.wav", y1, sr)
+
+    icqt = diffsptk.ICQT(
         fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale
     ).to(device)
-    c2 = cqt(x).cpu().numpy()
+    c2 = torch.from_numpy(c1).to(device).T
+    y2 = icqt(c2, out_length=T).cpu().numpy()
 
-    error = np.mean(np.abs(c1 - c2))
+    if verbose:
+        diffsptk.write("diffsptk.wav", y2, sr)
+
+    error = np.mean(np.abs(y1 - y2))
     assert error < 1e-4, f"Mean error: {error}"
 
-    U.check_differentiability(device, [torch.abs, cqt], [fp])
+    U.check_differentiability(device, icqt, [1, K], dtype=c2.dtype)

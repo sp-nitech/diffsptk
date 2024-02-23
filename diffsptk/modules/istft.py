@@ -81,7 +81,7 @@ class InverseShortTimeFourierTransform(nn.Module):
         Returns
         -------
         Tensor [shape=(..., T)]
-            Waveform.
+            Reconstructed waveform.
 
         Examples
         --------
