@@ -21,9 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, L=32, M=9, margin=0.01, B=2):
-    lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(
-        M, margin=margin, warn_type="ignore"
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, L=32, M=9, margin=0.01, B=2):
+    lpccheck = U.choice(
+        module,
+        diffsptk.LinearPredictiveCoefficientsStabilityCheck,
+        diffsptk.functional.lpccheck,
+        {"lpc_order": M},
+        {"margin": margin, "warn_type": "ignore"},
     )
 
     U.check_compatibility(

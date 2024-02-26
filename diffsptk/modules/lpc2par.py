@@ -99,7 +99,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         return k
 
     @staticmethod
-    def _func(a, gamma, c):
+    def _func(a, gamma=1, c=None):
         gamma = LinearPredictiveCoefficientsToParcorCoefficients._precompute(gamma, c)
         return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, gamma)
 

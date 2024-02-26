@@ -88,7 +88,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(nn.Module):
         return a
 
     @staticmethod
-    def _func(k, gamma, c):
+    def _func(k, gamma=1, c=None):
         gamma = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(gamma, c)
         return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, gamma)
 

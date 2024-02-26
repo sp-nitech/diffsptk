@@ -847,6 +847,31 @@ def lpc2par(x, gamma=1, c=None):
     )
 
 
+def lpccheck(a, margin=1e-16, warn_type="warn"):
+    """Check stability of LPC coefficients.
+
+    Parameters
+    ----------
+    a : Tensor [shape=(..., M+1)]
+        LPC coefficients.
+
+    margin : float in (0, 1)
+        Margin for stability.
+
+    warn_type : ['ignore', 'warn', 'exit']
+        Warning type.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Modified LPC coefficients.
+
+    """
+    return nn.LinearPredictiveCoefficientsStabilityCheck._func(
+        a, margin=margin, warn_type=warn_type
+    )
+
+
 def magic_intpl(x, magic_number=0):
     """Interpolate magic number.
 

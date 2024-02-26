@@ -19,6 +19,7 @@ import warnings
 import torch
 import torch.nn as nn
 
+from ..misc.utils import check_size
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 
@@ -29,39 +30,37 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
-    margin : [0 < float < 1]
-        Margin.
+    margin : float in (0, 1)
+        Margin for stability.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Behavior for unstable LPC.
+        Warning type.
 
     """
 
     def __init__(self, lpc_order, margin=1e-16, warn_type="warn"):
         super(LinearPredictiveCoefficientsStabilityCheck, self).__init__()
 
-        self.bound = 1 - margin
-        self.warn_type = warn_type
-
         assert 0 < margin < 1
 
-        self.lpc2par = LinearPredictiveCoefficientsToParcorCoefficients(lpc_order)
-        self.par2lpc = ParcorCoefficientsToLinearPredictiveCoefficients(lpc_order)
+        self.lpc_order = lpc_order
+        self.margin = margin
+        self.warn_type = warn_type
 
-    def forward(self, a1):
+    def forward(self, a):
         """Check stability of LPC.
 
         Parameters
         ----------
-        a1 : Tensor [shape=(..., M+1)]
+        a : Tensor [shape=(..., M+1)]
             LPC coefficients.
 
         Returns
         -------
-        a2 : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Modified LPC coefficients.
 
         Examples
@@ -77,18 +76,28 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
         tensor([ 1.1528, -0.2613, -0.0274,  0.1778])
 
         """
-        k1 = self.lpc2par(a1)
-        K, k = torch.split(k1, [1, k1.size(-1) - 1], dim=-1)
-        if torch.any(1 <= torch.abs(k)):
-            if self.warn_type == "ignore":
+        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
+        return self._forward(a, self.margin, self.warn_type)
+
+    @staticmethod
+    def _forward(a, margin, warn_type):
+        k = LinearPredictiveCoefficientsToParcorCoefficients._func(a)
+        K, k1 = torch.split(k, [1, k.size(-1) - 1], dim=-1)
+
+        if torch.any(1 <= torch.abs(k1)):
+            if warn_type == "ignore":
                 pass
-            elif self.warn_type == "warn":
-                warnings.warn("Unstable LPC coefficients")
-            elif self.warn_type == "exit":
-                raise RuntimeError("Unstable LPC coefficients")
+            elif warn_type == "warn":
+                warnings.warn("Detected unstable LPC coefficients.")
+            elif warn_type == "exit":
+                raise RuntimeError("Detected unstable LPC coefficients.")
             else:
                 raise RuntimeError
-        k = torch.clip(k, -self.bound, self.bound)
-        k2 = torch.cat((K, k), dim=-1)
-        a2 = self.par2lpc(k2)
+
+        bound = 1 - margin
+        k1 = torch.clip(k1, -bound, bound)
+        k2 = torch.cat((K, k1), dim=-1)
+        a2 = ParcorCoefficientsToLinearPredictiveCoefficients._func(k2)
         return a2
+
+    _func = _forward
