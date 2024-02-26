@@ -54,7 +54,7 @@ class ALawExpansion(nn.Module):
 
         Returns
         -------
-        x : Tensor [shape=(...,)]
+        Tensor [shape=(...,)]
             Waveform.
 
         Examples

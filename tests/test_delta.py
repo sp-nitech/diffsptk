@@ -21,9 +21,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("seed", [[[-1, 1], [-1, 0]], [3, 2]])
-def test_compatibility(device, seed, T=10, L=2):
-    delta = diffsptk.Delta(seed)
+def test_compatibility(device, module, seed, T=10, L=2):
+    delta = U.choice(
+        module,
+        diffsptk.Delta,
+        diffsptk.functional.delta,
+        {},
+        {"seed": seed},
+    )
 
     if U.is_array(seed[0]):
         opt = " ".join(["-d " + " ".join([str(w) for w in window]) for window in seed])
@@ -42,8 +49,4 @@ def test_compatibility(device, seed, T=10, L=2):
         dy=L * H,
     )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=2, T=20, L=2):
-    delta = diffsptk.Delta()
-    U.check_differentiability(device, delta, [B, T, L])
+    U.check_differentiability(device, delta, [1, T, L])

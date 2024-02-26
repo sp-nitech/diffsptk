@@ -75,7 +75,7 @@ class PrincipalComponentAnalysis(nn.Module):
         Returns
         -------
         e : Tensor [shape=(N,)]
-            Eigenvalues ordered in ascending order.
+            Eigenvalues.
 
         v : Tensor [shape=(M+1, N)]
             Eigenvectors.

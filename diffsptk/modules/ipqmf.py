@@ -88,12 +88,12 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
         y : Tensor [shape=(B, K, T) or (K, T)]
             Subband waveforms.
 
-        keepdim : bool [scalar]
+        keepdim : bool
             If True, the output shape is (B, 1, T) instead (B, T).
 
         Returns
         -------
-        x : Tensor [shape=(B, 1, T) or (B, T)]
+        Tensor [shape=(B, 1, T) or (B, T)]
             Reconstructed waveform.
 
         Examples

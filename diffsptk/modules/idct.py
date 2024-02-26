@@ -27,7 +27,7 @@ class InverseDiscreteCosineTransform(nn.Module):
 
     Parameters
     ----------
-    dct_length : int >= 1 [scalar]
+    dct_length : int >= 1
         DCT length, :math:`L`.
 
     """

@@ -38,28 +38,28 @@ def make_filter_banks(
 
     Parameters
     ----------
-    n_band : int >= 1 [scalar]
+    n_band : int >= 1
         Number of subbands, :math:`K`.
 
-    filter_order : int >= 1 [scalar]
+    filter_order : int >= 1
         Order of filter, :math:`M`.
 
     mode : ['analysis' or 'synthesis']
         Analysis or synthesis.
 
-    alpha : float > 0 [scalar]
+    alpha : float > 0
         Stopband attenuation in dB.
 
-    n_iter : int >= 1 [scalar]
+    n_iter : int >= 1
         Number of iterations.
 
-    step_size : float > 0 [scalar]
+    step_size : float > 0
         Step size.
 
-    decay : float > 0 [scalar]
+    decay : float > 0
         Decay factor of step size.
 
-    eps : float >= 0 [scalar]
+    eps : float >= 0
         Tolerance.
 
     Returns
@@ -205,7 +205,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(B, K, T)]
+        Tensor [shape=(B, K, T)]
             Subband waveforms.
 
         Examples

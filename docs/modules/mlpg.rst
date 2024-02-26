@@ -8,4 +8,6 @@ mlpg
 .. autoclass:: diffsptk.MaximumLikelihoodParameterGeneration
    :members:
 
+.. autofunction:: diffsptk.functional.mlpg
+
 .. seealso:: :ref:`delta`

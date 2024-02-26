@@ -215,11 +215,11 @@ class MultiStageFIRFilter(nn.Module):
     ):
         super(MultiStageFIRFilter, self).__init__()
 
+        assert 0 <= taylor_order
+
         self.ignore_gain = ignore_gain
         self.phase = phase
         self.taylor_order = taylor_order
-
-        assert 0 <= self.taylor_order
 
         if self.phase == "minimum":
             self.pad = nn.ConstantPad1d((cep_order, 0), 0)

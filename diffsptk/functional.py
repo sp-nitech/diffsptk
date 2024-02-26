@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order, out_format="none"):
+def acorr(x, acr_order, norm=False, out_format="none"):
     """Compute autocorrelation.
 
     Parameters
@@ -28,7 +28,10 @@ def acorr(x, acr_order, out_format="none"):
     acr_order : int >= 0
         Order of autocorrelation, :math:`M`.
 
-    out_format : ['none', 'normalized', 'biased', 'unbiased']
+    norm : bool
+        If True, normalize the autocorrelation.
+
+    out_format : ['none', 'biased', 'unbiased']
         Output format.
 
     Returns
@@ -37,7 +40,9 @@ def acorr(x, acr_order, out_format="none"):
         Autocorrelation.
 
     """
-    return nn.Autocorrelation._func(x, acr_order=acr_order, out_format=out_format)
+    return nn.Autocorrelation._func(
+        x, acr_order=acr_order, norm=norm, out_format=out_format
+    )
 
 
 def alaw(x, abs_max=1, a=87.6):
@@ -249,6 +254,24 @@ def delay(x, start=0, keeplen=False, dim=-1):
 
     """
     return nn.Delay._func(x, start=start, keeplen=keeplen, dim=dim)
+
+
+def delta(x, seed=[[-0.5, 0, 0.5]], static_out=True):
+    """Compute delta components.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(B, T, D) or (T, D)]
+        Static components.
+
+    seed : list[list[float]] or list[int]
+        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+
+    static_out : bool
+        If False, output only delta components.
+
+    """
+    return nn.Delta._func(x, seed, static_out=static_out)
 
 
 def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
@@ -874,6 +897,26 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
+def mlpg(u, seed=[[-0.5, 0, 0.5]]):
+    """Perform MLPG to obtain smoothed static sequence.
+
+    Parameters
+    ----------
+    u : Tensor [shape=(..., T, DxH)]
+        Time-variant mean vectors with delta components.
+
+    seed : list[list[float]] or list[int]
+        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+
+    Returns
+    -------
+    Tensor [shape=(..., T, D)]
+        Static components.
+
+    """
+    return nn.MaximumLikelihoodParameterGeneration._func(u, seed=seed)
+
+
 def mpir2c(h, cep_order, n_fft=512):
     """Convert minimum phase impulse response to cepstrum.
 
@@ -1339,7 +1382,7 @@ def unframe(
     frame_peirod : int >= 1
         Frame period, :math:`P`.
 
-    center : bool [scalar]
+    center : bool
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 

@@ -59,7 +59,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
 
         Returns
         -------
-        c : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Cepstral coefficients.
 
         Examples

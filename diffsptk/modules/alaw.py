@@ -54,7 +54,7 @@ class ALawCompression(nn.Module):
 
         Returns
         -------
-        y : Tensor [shape=(...,)]
+        Tensor [shape=(...,)]
             Compressed waveform.
 
         Examples

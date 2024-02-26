@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 import numpy as np
 import torch
 import torch.nn as nn
@@ -31,13 +29,13 @@ class Aperiodicity(nn.Module):
 
     Parameters
     ----------
-    frame_period : int >= 1 [scalar]
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
-    fft_length : int [scalar]
+    fft_length : int
         Size of double-sided aperiodicity, :math:`L`.
 
     algorithm : ['tandem']
@@ -46,16 +44,16 @@ class Aperiodicity(nn.Module):
     out_format : ['a', 'p', 'a/p', 'p/a']
         Output format.
 
-    lower_bound : float >= 0 [scalar]
+    lower_bound : float >= 0
         Lower bound of aperiodicity.
 
-    upper_bound : float <= 1 [scalar]
+    upper_bound : float <= 1
         Upper bound of aperiodicity.
 
-    window_length_ms : int >= 1 [scalar]
+    window_length_ms : int >= 1
         Window length in msec.
 
-    eps : float > 0 [scalar]
+    eps : float > 0
         A number used to stabilize colesky decomposition.
 
     """
@@ -79,7 +77,7 @@ class Aperiodicity(nn.Module):
                 frame_period, sample_rate, fft_length, **kwargs
             )
         else:
-            raise ValueError(f"algorithm {algorithm} is not supported")
+            raise ValueError(f"algorithm {algorithm} is not supported.")
 
         if out_format == 0 or out_format == "a":
             self.convert = lambda x: x
@@ -90,7 +88,7 @@ class Aperiodicity(nn.Module):
         elif out_format == 3 or out_format == "p/a":
             self.convert = lambda x: (1 - x) / x
         else:
-            raise ValueError(f"out_format {out_format} is not supported")
+            raise ValueError(f"out_format {out_format} is not supported.")
 
     def forward(self, x, f0):
         """Compute aperiodicity measure.
@@ -105,7 +103,7 @@ class Aperiodicity(nn.Module):
 
         Returns
         -------
-        ap : Tensor [shape=(B, N, L/2+1) or (N, L/2+1)]
+        Tensor [shape=(B, N, L/2+1) or (N, L/2+1)]
             Aperiodicity.
 
         Examples
@@ -153,20 +151,20 @@ class AperiodicityExtractionByTandem(nn.Module):
     ):
         super(AperiodicityExtractionByTandem, self).__init__()
 
+        assert fft_length % 2 == 0
+        assert 0 <= lower_bound < upper_bound <= 1
+        assert 1 <= window_length_ms
+        assert 0 < eps
+
         self.frame_period = frame_period
         self.sample_rate = sample_rate
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
         self.n_band = int(np.log2(sample_rate / 600))
+        assert self.n_band <= fft_length // 2
 
         self.default_f0 = 150
         self.n_trial = 10
-
-        assert fft_length % 2 == 0
-        assert self.n_band <= fft_length // 2
-        assert 0 <= lower_bound < upper_bound <= 1
-        assert 1 <= window_length_ms
-        assert 0 < eps
 
         self.cutoff_list = [sample_rate / 2**i for i in range(2, self.n_band + 1)]
         self.cutoff_list.append(self.cutoff_list[-1])
@@ -193,8 +191,8 @@ class AperiodicityExtractionByTandem(nn.Module):
         self.register_buffer("ramp", ramp)
         self.register_buffer("eye", torch.eye(6) * eps)
 
-        hHP = self.qmf_high()
-        hLP = self.qmf_low()
+        hHP = self._qmf_high()
+        hLP = self._qmf_low()
         self.register_buffer("hHP", numpy_to_torch(hHP).view(1, 1, -1))
         self.register_buffer("hLP", numpy_to_torch(hLP).view(1, 1, -1))
         self.hHP_pad = nn.ReflectionPad1d(self.hHP.size(-1) // 2)
@@ -259,10 +257,8 @@ class AperiodicityExtractionByTandem(nn.Module):
                 m = 10**n
                 u, info = torch.linalg.cholesky_ex(R + self.eye * m)
                 if 0 == info.sum().item():
-                    if n != 0:
-                        warnings.warn(
-                            f"Failed to compute Cholesky decomposition {n + 1} times"
-                        )
+                    if n == self.n_trial - 1:
+                        raise RuntimeError("Failed to compute Cholesky decomposition.")
                     break
 
             b = torch.matmul(Hw, X)  # (B, N, 6, 1)
@@ -291,7 +287,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         ap = torch.exp(y)
         return ap
 
-    def qmf_high(self, dtype=np.float64):
+    def _qmf_high(self, dtype=np.float64):
         hHP = np.zeros(41, dtype=dtype)
         hHP[0] = +0.00041447996898231424
         hHP[1] = +0.00078125051417292477
@@ -317,7 +313,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         hHP[21:] = hHP[19::-1]
         return hHP
 
-    def qmf_low(self, dtype=np.float64):
+    def _qmf_low(self, dtype=np.float64):
         hLP = np.zeros(37, dtype=dtype)
         hLP[0] = -0.00065488170077483048
         hLP[1] = +0.00007561994958159384

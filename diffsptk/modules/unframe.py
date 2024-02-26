@@ -31,7 +31,7 @@ class Unframe(nn.Module):
     frame_peirod : int >= 1
         Frame period, :math:`P`.
 
-    center : bool [scalar]
+    center : bool
         If True, assume that the center of data is the center of frame, otherwise
         assume that the center of data is the left edge of frame.
 
