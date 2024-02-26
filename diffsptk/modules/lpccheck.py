@@ -47,7 +47,7 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
         assert 0 < margin < 1
 
         self.lpc_order = lpc_order
-        self.margin = margin
+        self.bound = self._precompute(margin)
         self.warn_type = warn_type
 
     def forward(self, a):
@@ -77,10 +77,10 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
 
         """
         check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
-        return self._forward(a, self.margin, self.warn_type)
+        return self._forward(a, self.bound, self.warn_type)
 
     @staticmethod
-    def _forward(a, margin, warn_type):
+    def _forward(a, bound, warn_type):
         k = LinearPredictiveCoefficientsToParcorCoefficients._func(a)
         K, k1 = torch.split(k, [1, k.size(-1) - 1], dim=-1)
 
@@ -94,10 +94,16 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
             else:
                 raise RuntimeError
 
-        bound = 1 - margin
         k1 = torch.clip(k1, -bound, bound)
         k2 = torch.cat((K, k1), dim=-1)
         a2 = ParcorCoefficientsToLinearPredictiveCoefficients._func(k2)
         return a2
 
-    _func = _forward
+    @staticmethod
+    def _func(a, margin, warn_type):
+        const = LinearPredictiveCoefficientsStabilityCheck._precompute(margin)
+        return LinearPredictiveCoefficientsStabilityCheck._forward(a, const, warn_type)
+
+    @staticmethod
+    def _precompute(margin):
+        return 1 - margin

@@ -28,44 +28,44 @@ class LineSpectralPairsStabilityCheck(nn.Module):
 
     Parameters
     ----------
-    lsp_order : int >= 0 [scalar]
+    lsp_order : int >= 0
         Order of LSP, :math:`M`.
 
-    rate : [0 <= float <= 1]
+    rate : float in [0, 1]
         Rate of distance between two adjacent LSPs.
 
-    n_iter : int >= 0 [scalar]
+    n_iter : int >= 0
         Number of iterations for modification.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Behavior for unstable LSP.
+        Warning type.
 
     """
 
     def __init__(self, lsp_order, rate=0, n_iter=1, warn_type="warn"):
         super(LineSpectralPairsStabilityCheck, self).__init__()
 
+        assert 0 <= lsp_order
+        assert 0 <= rate <= 1
+        assert 0 <= n_iter
+        assert warn_type in ("ignore", "warn", "exit")
+
         self.lsp_order = lsp_order
-        self.min_distance = rate * torch.pi / (self.lsp_order + 1)
+        self.min_distance = self._precompute(lsp_order, rate)
         self.n_iter = n_iter
         self.warn_type = warn_type
 
-        assert 0 <= self.lsp_order
-        assert 0 <= rate <= 1
-        assert 0 <= self.n_iter
-        assert self.warn_type in ("ignore", "warn", "exit")
-
-    def forward(self, w1):
+    def forward(self, w):
         """Check stability of LSP.
 
         Parameters
         ----------
-        w1 : Tensor [shape=(..., M+1)]
+        w : Tensor [shape=(..., M+1)]
             LSP coefficients in radians.
 
         Returns
         -------
-        w2 : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Modified LSP coefficients.
 
         Examples
@@ -77,32 +77,45 @@ class LineSpectralPairsStabilityCheck(nn.Module):
         tensor([0.0000, 0.0105, 3.1311])
 
         """
-        check_size(w1.size(-1), self.lsp_order + 1, "dimension of LSP")
+        check_size(w.size(-1), self.lsp_order + 1, "dimension of LSP")
+        return self._forward(w, self.min_distance, self.n_iter, self.warn_type)
 
-        K, w = torch.split(w1, [1, self.lsp_order], dim=-1)
-        distance = w[..., 1:] - w[..., :-1]
+    @staticmethod
+    def _forward(w, min_distance, n_iter, warn_type):
+        K, w1 = torch.split(w, [1, w.size(-1) - 1], dim=-1)
+
+        distance = w1[..., 1:] - w1[..., :-1]
         if torch.any(distance <= 0) or torch.any(w <= 0) or torch.any(torch.pi <= w):
-            if self.warn_type == "ignore":
+            if warn_type == "ignore":
                 pass
-            elif self.warn_type == "warn":
-                warnings.warn("Unstable LSP coefficients")
-            elif self.warn_type == "exit":
-                raise RuntimeError("Unstable LSP coefficients")
+            elif warn_type == "warn":
+                warnings.warn("Detected unstable LSP coefficients.")
+            elif warn_type == "exit":
+                raise RuntimeError("Detected unstable LSP coefficients.")
             else:
                 raise RuntimeError
 
-        w = w.clone()
-        for _ in range(self.n_iter):
-            for m in range(self.lsp_order - 1):
+        w1 = w1.clone()
+        for _ in range(n_iter):
+            for m in range(w1.size(-1) - 1):
                 n = m + 1
-                distance = w[..., n] - w[..., m]
-                step_size = 0.5 * torch.clip(self.min_distance - distance, 0)
-                w[..., m] -= step_size
-                w[..., n] += step_size
-            w = torch.clip(w, self.min_distance, torch.pi - self.min_distance)
-            distance = w[..., 1:] - w[..., :-1]
-            if torch.all(self.min_distance - 1e-16 <= distance):
+                distance = w1[..., n] - w1[..., m]
+                step_size = 0.5 * torch.clip(min_distance - distance, 0)
+                w1[..., m] -= step_size
+                w1[..., n] += step_size
+            w1 = torch.clip(w1, min_distance, torch.pi - min_distance)
+            distance = w1[..., 1:] - w1[..., :-1]
+            if torch.all(min_distance - 1e-16 <= distance):
                 break
 
-        w2 = torch.cat((K, w), dim=-1)
+        w2 = torch.cat((K, w1), dim=-1)
         return w2
+
+    @staticmethod
+    def _func(w, rate, n_iter, warn_type):
+        const = LineSpectralPairsStabilityCheck._precompute(w.size(-1) - 1, rate)
+        return LineSpectralPairsStabilityCheck._forward(w, const, n_iter, warn_type)
+
+    @staticmethod
+    def _precompute(lsp_order, rate):
+        return rate * torch.pi / (lsp_order + 1)

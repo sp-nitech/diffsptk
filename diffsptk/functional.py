@@ -872,6 +872,34 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     )
 
 
+def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
+    """Check stability of LSP frequencies.
+
+    Parameters
+    ----------
+    w : Tensor [shape=(..., M+1)]
+        LSP frequencies in radians.
+
+    rate : float in [0, 1]
+        Rate of distance between two adjacent LSPs.
+
+    n_iter : int >= 0
+        Number of iterations for modification.
+
+    warn_type : ['ignore', 'warn', 'exit']
+        Warning type.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Modified LSP frequencies.
+
+    """
+    return nn.LineSpectralPairsStabilityCheck._func(
+        w, rate=rate, n_iter=n_iter, warn_type=warn_type
+    )
+
+
 def magic_intpl(x, magic_number=0):
     """Interpolate magic number.
 
