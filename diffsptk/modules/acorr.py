@@ -35,12 +35,12 @@ class Autocorrelation(nn.Module):
     norm : bool
         If True, normalize the autocorrelation.
 
-    out_format : ['none', 'biased', 'unbiased']
-        Output format.
+    estimator : ['none', 'biased', 'unbiased']
+        Type of estimator.
 
     """
 
-    def __init__(self, frame_length, acr_order, norm=False, out_format="none"):
+    def __init__(self, frame_length, acr_order, norm=False, estimator="none"):
         super(Autocorrelation, self).__init__()
 
         assert 0 <= acr_order < frame_length
@@ -49,7 +49,7 @@ class Autocorrelation(nn.Module):
         self.acr_order = acr_order
         self.norm = norm
         self.register_buffer(
-            "const", self._precompute(frame_length, acr_order, out_format)
+            "const", self._precompute(frame_length, acr_order, estimator)
         )
 
     def forward(self, x):
@@ -83,29 +83,28 @@ class Autocorrelation(nn.Module):
         if fft_length % 2 == 1:
             fft_length += 1
         X = torch.square(torch.fft.rfft(x, n=fft_length).abs())
-        r = torch.fft.irfft(X)[..., : acr_order + 1]
-        r *= const
+        r = torch.fft.irfft(X)[..., : acr_order + 1] * const
         if norm:
             r = r / r[..., :1]
         return r
 
     @staticmethod
-    def _func(x, acr_order, norm=False, out_format="none"):
+    def _func(x, acr_order, norm=False, estimator="none"):
         const = Autocorrelation._precompute(
-            x.size(-1), acr_order, out_format, dtype=x.dtype, device=x.device
+            x.size(-1), acr_order, estimator, dtype=x.dtype, device=x.device
         )
         return Autocorrelation._forward(x, acr_order, norm, const)
 
     @staticmethod
-    def _precompute(frame_length, acr_order, out_format, dtype=None, device=None):
-        if 0 <= out_format <= 1 or out_format == "none":
+    def _precompute(frame_length, acr_order, estimator, dtype=None, device=None):
+        if 0 <= estimator <= 1 or estimator == "none":
             return torch.tensor(1, dtype=dtype, device=device)
-        elif out_format == 2 or out_format == "biased":
+        elif estimator == 2 or estimator == "biased":
             return torch.full(
                 (acr_order + 1,), 1 / frame_length, dtype=dtype, device=device
             )
-        elif out_format == 3 or out_format == "unbiased":
+        elif estimator == 3 or estimator == "unbiased":
             return torch.arange(
                 frame_length, frame_length - acr_order - 1, -1, device=device
             ).reciprocal()
-        raise ValueError(f"out_format {out_format} is not supported.")
+        raise ValueError(f"estimator {estimator} is not supported.")

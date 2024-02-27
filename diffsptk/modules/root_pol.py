@@ -38,8 +38,8 @@ class PolynomialToRoots(nn.Module):
         assert 1 <= order
 
         self.order = order
-        self.out_format = self._precompute_const(out_format)
-        self.register_buffer("eye", self._precompute_tensor(self.order))
+        self.formatter = self._formatter(out_format)
+        self.register_buffer("eye", self._precompute(self.order))
 
     def forward(self, a):
         """Find roots of polynomial.
@@ -64,10 +64,10 @@ class PolynomialToRoots(nn.Module):
 
         """
         check_size(a.size(-1), self.order + 1, "order of polynomial")
-        return self._forward(a, self.out_format, self.eye)
+        return self._forward(a, self.formatter, self.eye)
 
     @staticmethod
-    def _forward(a, out_format, eye):
+    def _forward(a, formatter, eye):
         if torch.any(a[..., 0] == 0):
             raise RuntimeError("Leading coefficient must be non-zero.")
 
@@ -78,25 +78,25 @@ class PolynomialToRoots(nn.Module):
 
         # Find roots as eigenvalues.
         x, _ = torch.linalg.eig(A)
-        x = out_format(x)
+        x = formatter(x)
         return x
 
     @staticmethod
     def _func(a, out_format):
-        const = PolynomialToRoots._precompute_const(out_format)
-        tensor = PolynomialToRoots._precompute_tensor(
+        formatter = PolynomialToRoots._formatter(out_format)
+        eye = PolynomialToRoots._precompute(
             a.size(-1) - 1, dtype=a.dtype, device=a.device
         )
-        return PolynomialToRoots._forward(a, const, tensor)
+        return PolynomialToRoots._forward(a, formatter, eye)
 
     @staticmethod
-    def _precompute_const(out_format):
+    def _precompute(order, dtype=None, device=None):
+        return torch.eye(order - 1, order, dtype=dtype, device=device)
+
+    @staticmethod
+    def _formatter(out_format):
         if out_format == 0 or out_format == "rectangular":
             return lambda x: x
         elif out_format == 1 or out_format == "polar":
             return lambda x: torch.complex(x.abs(), x.angle())
         raise ValueError(f"out_format {out_format} is not supported.")
-
-    @staticmethod
-    def _precompute_tensor(order, dtype=None, device=None):
-        return torch.eye(order - 1, order, dtype=dtype, device=device)

@@ -29,28 +29,28 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
     Parameters
     ----------
-    mfcc_order : int >= 1 [scalar]
+    mfcc_order : int >= 1
         Order of MFCC, :math:`M`.
 
-    n_channel : int >= 1 [scalar]
+    n_channel : int >= 1
         Number of mel-filter banks, :math:`C`.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
-    lifter : int >= 1 [scalar]
+    lifter : int >= 1
         Liftering coefficient.
 
-    f_min : float >= 0 [scalar]
+    f_min : float >= 0
         Minimum frequency in Hz.
 
-    f_max : float <= sample_rate // 2 [scalar]
+    f_max : float <= sample_rate // 2
         Maximum frequency in Hz.
 
-    floor : float > 0 [scalar]
+    floor : float > 0
         Minimum mel-filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
@@ -70,21 +70,11 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
     ):
         super(MelFrequencyCepstralCoefficientsAnalysis, self).__init__()
 
-        self.mfcc_order = mfcc_order
-
-        assert 1 <= self.mfcc_order < n_channel
+        assert 1 <= mfcc_order < n_channel
         assert 1 <= lifter
 
-        if out_format == 0 or out_format == "y":
-            self.format_func = lambda y, c, E: y
-        elif out_format == 1 or out_format == "yE":
-            self.format_func = lambda y, c, E: torch.cat((y, E), dim=-1)
-        elif out_format == 2 or out_format == "yc":
-            self.format_func = lambda y, c, E: torch.cat((y, c), dim=-1)
-        elif out_format == 3 or out_format == "ycE":
-            self.format_func = lambda y, c, E: torch.cat((y, c, E), dim=-1)
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
+        self.mfcc_order = mfcc_order
+        self.formatter = self._formatter(out_format)
 
         self.fbank = MelFilterBankAnalysis(
             n_channel, fft_length, sample_rate, out_format="y,E", **fbank_kwargs
@@ -109,10 +99,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         y : Tensor [shape=(..., M)]
             MFCC without C0.
 
-        E : Tensor [shape=(..., 1)]
+        E : Tensor [shape=(..., 1)] (optional)
             Energy.
 
-        c : Tensor [shape=(..., 1)]
+        c : Tensor [shape=(..., 1)] (optional)
             C0.
 
         Examples
@@ -130,4 +120,16 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         y = self.dct(y)
         y = y[..., : self.mfcc_order + 1] * self.liftering_vector
         c, y = torch.split(y, [1, self.mfcc_order], dim=-1)
-        return self.format_func(y, c, E)
+        return self.formatter(y, c, E)
+
+    @staticmethod
+    def _formatter(out_format):
+        if out_format == 0 or out_format == "y":
+            return lambda y, c, E: y
+        elif out_format == 1 or out_format == "yE":
+            return lambda y, c, E: torch.cat((y, E), dim=-1)
+        elif out_format == 2 or out_format == "yc":
+            return lambda y, c, E: torch.cat((y, c), dim=-1)
+        elif out_format == 3 or out_format == "ycE":
+            return lambda y, c, E: torch.cat((y, c, E), dim=-1)
+        raise ValueError(f"out_format {out_format} is not supported.")

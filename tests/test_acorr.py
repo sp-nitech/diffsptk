@@ -30,7 +30,7 @@ def test_compatibility(device, module, M, out_format, L=14, B=2):
         diffsptk.Autocorrelation,
         diffsptk.functional.acorr,
         {"frame_length": L},
-        {"acr_order": M, "norm": out_format == 1, "out_format": out_format},
+        {"acr_order": M, "norm": out_format == 1, "estimator": out_format},
     )
 
     U.check_compatibility(

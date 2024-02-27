@@ -49,7 +49,8 @@ class Spectrum(nn.Module):
 
         self.fft_length = fft_length
         self.eps = eps
-        self.const = self._precompute(relative_floor, out_format)
+        self.relative_floor = self._precompute(relative_floor)
+        self.formatter = self._formatter(out_format)
 
     def forward(self, b=None, a=None):
         """Compute spectrum.
@@ -78,10 +79,12 @@ class Spectrum(nn.Module):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        return self._forward(b, a, self.fft_length, self.eps, *self.const)
+        return self._forward(
+            b, a, self.fft_length, self.eps, self.relative_floor, self.formatter
+        )
 
     @staticmethod
-    def _forward(b, a, fft_length, eps, relative_floor, out_format):
+    def _forward(b, a, fft_length, eps, relative_floor, formatter):
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 
@@ -102,27 +105,29 @@ class Spectrum(nn.Module):
         if relative_floor is not None:
             m, _ = torch.max(s, dim=-1, keepdim=True)
             s = torch.maximum(s, m * relative_floor)
-        s = out_format(s)
+        s = formatter(s)
         return s
 
     @staticmethod
     def _func(b, a, fft_length, eps, relative_floor, out_format):
-        const = Spectrum._precompute(relative_floor, out_format)
-        return Spectrum._forward(b, a, fft_length, eps, *const)
+        relative_floor = Spectrum._precompute(relative_floor)
+        formatter = Spectrum._formatter(out_format)
+        return Spectrum._forward(b, a, fft_length, eps, relative_floor, formatter)
 
     @staticmethod
-    def _precompute(relative_floor, out_format):
+    def _precompute(relative_floor):
         if relative_floor is None:
-            r = relative_floor
-        else:
-            r = 10 ** (relative_floor / 10)
+            return None
+        return 10 ** (relative_floor / 10)
 
+    @staticmethod
+    def _formatter(out_format):
         if out_format == 0 or out_format == "db":
-            return r, lambda x: 10 * torch.log10(x)
+            return lambda x: 10 * torch.log10(x)
         elif out_format == 1 or out_format == "log-magnitude":
-            return r, lambda x: 0.5 * torch.log(x)
+            return lambda x: 0.5 * torch.log(x)
         elif out_format == 2 or out_format == "magnitude":
-            return r, lambda x: torch.sqrt(x)
+            return lambda x: torch.sqrt(x)
         elif out_format == 3 or out_format == "power":
-            return r, lambda x: x
+            return lambda x: x
         raise ValueError(f"out_format {out_format} is not supported.")

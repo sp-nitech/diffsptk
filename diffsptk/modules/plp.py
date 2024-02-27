@@ -31,37 +31,37 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
 
     Parameters
     ----------
-    mfcc_order : int >= 1 [scalar]
+    mfcc_order : int >= 1
         Order of MFCC, :math:`M`.
 
-    n_channel : int >= 1 [scalar]
+    n_channel : int >= 1
         Number of mel-filter banks, :math:`C`.
 
-    fft_length : int >= 2 [scalar]
+    fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1
         Sample rate in Hz.
 
-    lifter : int >= 1 [scalar]
+    lifter : int >= 1
         Liftering coefficient.
 
-    compression_factor : float > 0 [scalar]
+    compression_factor : float > 0
         Amplitude compression factor.
 
-    f_min : float >= 0 [scalar]
+    f_min : float >= 0
         Minimum frequency in Hz.
 
-    f_max : float <= sample_rate // 2 [scalar]
+    f_max : float <= sample_rate // 2
         Maximum frequency in Hz.
 
-    floor : float > 0 [scalar]
+    floor : float > 0
         Minimum mel-filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
-    n_fft : int >> :math:`M` [scalar]
+    n_fft : int >> :math:`M`
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -80,23 +80,13 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
     ):
         super(PerceptualLinearPredictiveCoefficientsAnalysis, self).__init__()
 
+        assert 1 <= plp_order < n_channel
+        assert 1 <= lifter
+        assert 0 < compression_factor
+
         self.plp_order = plp_order
         self.compression_factor = compression_factor
-
-        assert 1 <= self.plp_order < n_channel
-        assert 1 <= lifter
-        assert 0 < self.compression_factor
-
-        if out_format == 0 or out_format == "y":
-            self.format_func = lambda y, c, E: y
-        elif out_format == 1 or out_format == "yE":
-            self.format_func = lambda y, c, E: torch.cat((y, E), dim=-1)
-        elif out_format == 2 or out_format == "yc":
-            self.format_func = lambda y, c, E: torch.cat((y, c), dim=-1)
-        elif out_format == 3 or out_format == "ycE":
-            self.format_func = lambda y, c, E: torch.cat((y, c, E), dim=-1)
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
+        self.formatter = self._formatter(out_format)
 
         self.fbank = MelFilterBankAnalysis(
             n_channel,
@@ -163,4 +153,16 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
         y = self.lpc2c(y)
         y *= self.liftering_vector
         c, y = torch.split(y, [1, self.plp_order], dim=-1)
-        return self.format_func(y, c, E)
+        return self.formatter(y, c, E)
+
+    @staticmethod
+    def _formatter(out_format):
+        if out_format == 0 or out_format == "y":
+            return lambda y, c, E: y
+        elif out_format == 1 or out_format == "yE":
+            return lambda y, c, E: torch.cat((y, E), dim=-1)
+        elif out_format == 2 or out_format == "yc":
+            return lambda y, c, E: torch.cat((y, c), dim=-1)
+        elif out_format == 3 or out_format == "ycE":
+            return lambda y, c, E: torch.cat((y, c, E), dim=-1)
+        raise ValueError(f"out_format {out_format} is not supported.")

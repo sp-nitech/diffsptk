@@ -376,6 +376,54 @@ def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
     )
 
 
+def fbank(x, n_channel, sample_rate, f_min=0, f_max=None, floor=1e-5, out_format="y"):
+    """Apply mel-filter banks to STFT.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        Power spectrum.
+
+    n_channel : int >= 1
+        Number of mel-filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        Sample rate in Hz.
+
+    f_min : float >= 0
+        Minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        Maximum frequency in Hz.
+
+    floor : float > 0
+        Minimum mel-filter bank output in linear scale.
+
+    out_format : ['y', 'yE', 'y,E']
+        `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
+        tensors are concatenated and return the tensor instead of the tuple.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., C)]
+        Mel-filter bank output.
+
+    E : Tensor [shape=(..., 1)] (optional)
+        Energy.
+
+    """
+    return nn.MelFilterBankAnalysis._func(
+        x,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        f_min=f_min,
+        f_max=f_max,
+        floor=floor,
+        use_power=False,
+        out_format=out_format,
+    )
+
+
 def fftcep(x, cep_order, n_iter=0, accel=0):
     """Estimate cepstrum from spectrum.
 
