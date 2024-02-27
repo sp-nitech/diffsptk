@@ -82,7 +82,7 @@ class PolynomialToRoots(nn.Module):
         return x
 
     @staticmethod
-    def _func(a, out_format):
+    def _func(a, out_format="rectangular"):
         formatter = PolynomialToRoots._formatter(out_format)
         eye = PolynomialToRoots._precompute(
             a.size(-1) - 1, dtype=a.dtype, device=a.device

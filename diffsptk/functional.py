@@ -870,12 +870,35 @@ def lpc(x, lpc_order):
     return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order)
 
 
-def lpc2par(x, gamma=1, c=None):
+def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
+    """Convert LPC to LSP.
+
+    Parameters
+    ----------
+    a : Tensor [shape=(..., M+1)]
+        LPC coefficients.
+
+    log_gain : bool
+        If True, output gain in log scale.
+
+    sample_rate : int >= 1 or None
+        Sample rate in Hz.
+
+    out_format : ['radian', 'cycle', 'khz', 'hz']
+        Output format.
+
+    """
+    return nn.LinearPredictiveCoefficientsToLineSpectralPairs._func(
+        a, log_gain=log_gain, sample_rate=sample_rate, out_format=out_format
+    )
+
+
+def lpc2par(a, gamma=1, c=None):
     """Convert LPC to PARCOR.
 
     Parameters
     ----------
-    x : Tensor [shape=(..., M+1)]
+    a : Tensor [shape=(..., M+1)]
         LPC coefficients.
 
     gamma : float in [-1, 1]
@@ -891,7 +914,7 @@ def lpc2par(x, gamma=1, c=None):
 
     """
     return nn.LinearPredictiveCoefficientsToParcorCoefficients._func(
-        x, gamma=gamma, c=c
+        a, gamma=gamma, c=c
     )
 
 
@@ -917,6 +940,28 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     """
     return nn.LinearPredictiveCoefficientsStabilityCheck._func(
         a, margin=margin, warn_type=warn_type
+    )
+
+
+def lsp2lpc(w, log_gain=False):
+    """Convert LSP to LPC.
+
+    Parameters
+    ----------
+    w : Tensor [shape=(..., M+1)]
+        LSP frequencies in radians.
+
+    log_gain : bool
+        If True, assume input gain is in log scale.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        LPC coefficients.
+
+    """
+    return nn.LineSpectralPairsToLinearPredictiveCoefficients._func(
+        w, log_gain=log_gain
     )
 
 

@@ -48,9 +48,11 @@ class Autocorrelation(nn.Module):
         self.frame_length = frame_length
         self.acr_order = acr_order
         self.norm = norm
-        self.register_buffer(
-            "const", self._precompute(frame_length, acr_order, estimator)
-        )
+        const = self._precompute(frame_length, acr_order, estimator)
+        if torch.is_tensor(const):
+            self.register_buffer("const", const)
+        else:
+            self.const = const
 
     def forward(self, x):
         """Estimate autocorrelation of input.
@@ -98,11 +100,9 @@ class Autocorrelation(nn.Module):
     @staticmethod
     def _precompute(frame_length, acr_order, estimator, dtype=None, device=None):
         if estimator == 0 or estimator == 1 or estimator == "none":
-            return torch.tensor(1, dtype=dtype, device=device)
+            return 1
         elif estimator == 2 or estimator == "biased":
-            return torch.full(
-                (acr_order + 1,), 1 / frame_length, dtype=dtype, device=device
-            )
+            return 1 / frame_length
         elif estimator == 3 or estimator == "unbiased":
             return torch.arange(
                 frame_length, frame_length - acr_order - 1, -1, device=device

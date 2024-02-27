@@ -21,7 +21,6 @@ import torch.nn.functional as F
 from ..misc.utils import TWO_PI
 from ..misc.utils import check_size
 from ..misc.utils import deconv1d
-from ..misc.utils import numpy_to_torch
 from .root_pol import PolynomialToRoots
 
 
@@ -31,13 +30,13 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
 
     Parameters
     ----------
-    lpc_order : int >= 0 [scalar]
+    lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
-    log_gain : bool [scalar]
+    log_gain : bool
         If True, output gain in log scale.
 
-    sample_rate : int >= 1 [scalar]
+    sample_rate : int >= 1 or None
         Sample rate in Hz.
 
     out_format : ['radian', 'cycle', 'khz', 'hz']
@@ -50,38 +49,14 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     ):
         super(LinearPredictiveCoefficientsToLineSpectralPairs, self).__init__()
 
+        assert 0 <= lpc_order
+
         self.lpc_order = lpc_order
         self.log_gain = log_gain
-
-        assert 0 <= self.lpc_order
-
-        if out_format == 0 or out_format == "radian":
-            self.convert = lambda x: x
-        elif out_format == 1 or out_format == "cycle":
-            self.convert = lambda x: x / TWO_PI
-        elif out_format == 2 or out_format == "khz":
-            assert sample_rate is not None and 0 < sample_rate
-            self.convert = lambda x: x * (sample_rate / 1000 / TWO_PI)
-        elif out_format == 3 or out_format == "hz":
-            assert sample_rate is not None and 0 < sample_rate
-            self.convert = lambda x: x * (sample_rate / TWO_PI)
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
-
-        if self.lpc_order == 0:
-            pass
-        elif self.lpc_order == 1:
-            self.root_q = PolynomialToRoots(lpc_order + 1)
-        elif self.lpc_order % 2 == 0:
-            self.root_p = PolynomialToRoots(lpc_order)
-            self.root_q = PolynomialToRoots(lpc_order)
-            self.register_buffer("kernel_p", numpy_to_torch([1, -1]))
-            self.register_buffer("kernel_q", numpy_to_torch([1, 1]))
-        else:
-            self.root_p = PolynomialToRoots(lpc_order - 1)
-            self.root_q = PolynomialToRoots(lpc_order + 1)
-            self.register_buffer("kernel_p", numpy_to_torch([1, 0, -1]))
-            self.register_buffer("kernel_q", numpy_to_torch([1]))
+        self.formatter = self._formatter(out_format, sample_rate)
+        kernel_p, kernel_q = self._precompute(self.lpc_order)
+        self.register_buffer("kernel_p", kernel_p)
+        self.register_buffer("kernel_q", kernel_q)
 
     def forward(self, a):
         """Convert LPC to LSP.
@@ -112,12 +87,18 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
 
         """
         check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
+        return self._forward(
+            a, self.log_gain, self.formatter, self.kernel_p, self.kernel_q
+        )
 
-        K, a = torch.split(a, [1, self.lpc_order], dim=-1)
+    @staticmethod
+    def _forward(a, log_gain, formatter, kernel_p, kernel_q):
+        M = a.size(-1) - 1
+        K, a = torch.split(a, [1, M], dim=-1)
 
-        if self.log_gain:
+        if log_gain:
             K = torch.log(K)
-        if self.lpc_order == 0:
+        if M == 0:
             return K
 
         a0 = F.pad(a, (1, 0), value=1)
@@ -125,19 +106,55 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
         a2 = a1.flip(-1)
         p = a1 - a2
         q = a1 + a2
-        if self.lpc_order == 1:
-            q = self.root_q(q)
+        if M == 1:
+            q = PolynomialToRoots._func(q)
             w = torch.angle(q[..., 0])
         else:
-            p = deconv1d(p, self.kernel_p)
-            q = deconv1d(q, self.kernel_q)
-            p = self.root_p(p)
-            q = self.root_q(q)
+            p = deconv1d(p, kernel_p)
+            q = deconv1d(q, kernel_q)
+            p = PolynomialToRoots._func(p)
+            q = PolynomialToRoots._func(q)
             p = torch.angle(p[..., 0::2])
             q = torch.angle(q[..., 0::2])
             w, _ = torch.sort(torch.cat((p, q), dim=-1))
 
         w = w.view_as(a)
-        w = self.convert(w)
+        w = formatter(w)
         w = torch.cat((K, w), dim=-1)
         return w
+
+    @staticmethod
+    def _func(a, log_gain, sample_rate, out_format):
+        formatter = LinearPredictiveCoefficientsToLineSpectralPairs._formatter(
+            out_format, sample_rate
+        )
+        kernels = LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
+            a.size(-1) - 1, dtype=a.dtype, device=a.device
+        )
+        return LinearPredictiveCoefficientsToLineSpectralPairs._forward(
+            a, log_gain, formatter, *kernels
+        )
+
+    @staticmethod
+    def _precompute(lpc_order, dtype=None, device=None):
+        if lpc_order % 2 == 0:
+            kernel_p = torch.tensor([1.0, -1.0], device=device)
+            kernel_q = torch.tensor([1.0, 1.0], device=device)
+        else:
+            kernel_p = torch.tensor([1.0, 0.0, -1.0], device=device)
+            kernel_q = torch.tensor([1.0], device=device)
+        return kernel_p, kernel_q
+
+    @staticmethod
+    def _formatter(out_format, sample_rate):
+        if out_format == 0 or out_format == "radian":
+            return lambda x: x
+        elif out_format == 1 or out_format == "cycle":
+            return lambda x: x / TWO_PI
+        elif out_format == 2 or out_format == "khz":
+            assert sample_rate is not None and 0 < sample_rate
+            return lambda x: x * (sample_rate / 1000 / TWO_PI)
+        elif out_format == 3 or out_format == "hz":
+            assert sample_rate is not None and 0 < sample_rate
+            return lambda x: x * (sample_rate / TWO_PI)
+        raise ValueError(f"out_format {out_format} is not supported.")
