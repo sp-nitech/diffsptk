@@ -993,6 +993,45 @@ def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
     )
 
 
+def lsp2sp(w, fft_length, alpha=0, gamma=-1, log_gain=False, out_format="power"):
+    """Convert line spectral pairs to spectrum.
+
+    Parameters
+    ----------
+    w : Tensor [shape=(..., M+1)]
+        Line spectral pairs in radians.
+
+    fft_length : int >= 1
+        Number of FFT bins, :math:`L`.
+
+    alpha : float in (-1, 1)
+        Warping factor, :math:`\\alpha`.
+
+    gamma : float in [-1, 0)
+        Gamma, :math:`\\gamma`.
+
+    log_gain : bool
+        If True, assume input gain is in log scale.
+
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(..., L/2+1)]
+        Spectrum.
+
+    """
+    return nn.LineSpectralPairsToSpectrum._func(
+        w,
+        fft_length=fft_length,
+        alpha=alpha,
+        gamma=gamma,
+        log_gain=log_gain,
+        out_format=out_format,
+    )
+
+
 def magic_intpl(x, magic_number=0):
     """Interpolate magic number.
 

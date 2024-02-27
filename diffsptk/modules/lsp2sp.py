@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 
 LOG_ZERO = -1.0e10
 
@@ -30,19 +30,19 @@ class LineSpectralPairsToSpectrum(nn.Module):
 
     Parameters
     ----------
-    lsp_order : int >= 0 [scalar]
+    lsp_order : int >= 0
         Order of line spectral pairs, :math:`M`.
 
-    fft_length : int >= 1 [scalar]
+    fft_length : int >= 1
         Number of FFT bins, :math:`L`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Warping factor, :math:`\\alpha`.
 
-    gamma : float [-1 <= gamma < 0]
+    gamma : float in [-1, 0)
         Gamma, :math:`\\gamma`.
 
-    log_gain : bool [scalar]
+    log_gain : bool
         If True, assume input gain is in log scale.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
@@ -61,47 +61,21 @@ class LineSpectralPairsToSpectrum(nn.Module):
     ):
         super(LineSpectralPairsToSpectrum, self).__init__()
 
-        self.lsp_order = lsp_order
-        self.log_gain = log_gain
-
-        assert 0 <= self.lsp_order
+        assert 0 <= lsp_order
         assert 1 <= fft_length
         assert abs(alpha) < 1
         assert -1 <= gamma < 0
 
-        omega = np.linspace(0, np.pi, fft_length // 2 + 1)
-        warped_omega = omega + 2 * np.arctan(
-            alpha * np.sin(omega) / (1 - alpha * np.cos(omega))
+        self.lsp_order = lsp_order
+        self.log_gain = log_gain
+        self.formatter = self._formatter(out_format)
+
+        cos_omega, p_bias, q_bias, self.c1, self.c2 = self._precompute(
+            lsp_order, fft_length, alpha, gamma
         )
-        cos_omega = np.cos(warped_omega).reshape(-1, 1)
-        self.register_buffer("cos_omega", numpy_to_torch(cos_omega))
-
-        def floor_log(x):
-            return np.log(x, where=0 < x, out=np.full_like(x, LOG_ZERO))
-
-        if lsp_order % 2 == 0:
-            p = floor_log(np.sin(0.5 * warped_omega))
-            q = floor_log(np.cos(0.5 * warped_omega))
-        else:
-            p = floor_log(np.sin(warped_omega))
-            q = np.zeros_like(warped_omega)
-        self.register_buffer("p_bias", numpy_to_torch(p))
-        self.register_buffer("q_bias", numpy_to_torch(q))
-
-        self.c1 = 0.5 / gamma
-        self.c2 = np.log(2) * (lsp_order if lsp_order % 2 == 0 else lsp_order - 1)
-
-        if out_format == 0 or out_format == "db":
-            c = 20 / np.log(10)
-            self.convert = lambda x: x * c
-        elif out_format == 1 or out_format == "log-magnitude":
-            self.convert = lambda x: x
-        elif out_format == 2 or out_format == "magnitude":
-            self.convert = lambda x: torch.exp(x)
-        elif out_format == 3 or out_format == "power":
-            self.convert = lambda x: torch.exp(2 * x)
-        else:
-            raise ValueError(f"out_format {out_format} is not supported")
+        self.register_buffer("cos_omega", cos_omega)
+        self.register_buffer("p_bias", p_bias)
+        self.register_buffer("q_bias", q_bias)
 
     def forward(self, w):
         """Convert line spectral pairs to spectrum.
@@ -113,8 +87,8 @@ class LineSpectralPairsToSpectrum(nn.Module):
 
         Returns
         -------
-        sp : Tensor [shape=(..., L/2+1)]
-            Amplitude spectrum.
+        Tensor [shape=(..., L/2+1)]
+            Spectrum.
 
         Examples
         --------
@@ -132,21 +106,81 @@ class LineSpectralPairsToSpectrum(nn.Module):
 
         """
         check_size(w.size(-1), self.lsp_order + 1, "dimension of LSP")
+        return self._forward(
+            w,
+            self.log_gain,
+            self.formatter,
+            self.cos_omega,
+            self.p_bias,
+            self.q_bias,
+            self.c1,
+            self.c2,
+        )
 
+    @staticmethod
+    def _forward(w, log_gain, formatter, cos_omega, p_bias, q_bias, c1, c2):
         def floor_log(x):
             return torch.clip(torch.log(x), min=LOG_ZERO)
 
-        K, w = torch.split(w, [1, self.lsp_order], dim=-1)
-        if not self.log_gain:
+        K, w = torch.split(w, [1, w.size(-1) - 1], dim=-1)
+        if not log_gain:
             K = floor_log(K)
 
         cos_w = torch.cos(w).unsqueeze(-2)
-        pq = floor_log(torch.abs(self.cos_omega - cos_w))  # [..., L/2+1, M]
+        pq = floor_log(torch.abs(cos_omega - cos_w))  # [..., L/2+1, M]
         p = pq[..., 1::2].sum(-1)
         q = pq[..., 0::2].sum(-1)
-        r = torch.logsumexp(
-            2 * torch.stack([p + self.p_bias, q + self.q_bias], dim=-1), dim=-1
-        )
-        sp = K + self.c1 * (self.c2 + r)
-        sp = self.convert(sp)
+        r = torch.logsumexp(2 * torch.stack([p + p_bias, q + q_bias], dim=-1), dim=-1)
+        sp = K + c1 * (c2 + r)
+        sp = formatter(sp)
         return sp
+
+    @staticmethod
+    def _func(w, fft_length, alpha, gamma, log_gain, out_format):
+        formatter = LineSpectralPairsToSpectrum._formatter(out_format)
+        precomputes = LineSpectralPairsToSpectrum._precompute(
+            w.size(-1) - 1, fft_length, alpha, gamma, dtype=w.dtype, device=w.device
+        )
+        return LineSpectralPairsToSpectrum._forward(
+            w, log_gain, formatter, *precomputes
+        )
+
+    @staticmethod
+    def _precompute(lsp_order, fft_length, alpha, gamma, dtype=None, device=None):
+        omega = torch.linspace(
+            0, torch.pi, fft_length // 2 + 1, dtype=torch.double, device=device
+        )
+        warped_omega = omega + 2 * torch.atan(
+            alpha * torch.sin(omega) / (1 - alpha * torch.cos(omega))
+        )
+        cos_omega = torch.cos(warped_omega).view(-1, 1)
+        cos_omega = to(cos_omega, dtype=dtype)
+
+        def floor_log(x):
+            return torch.nan_to_num(torch.log(x), nan=LOG_ZERO, neginf=LOG_ZERO)
+
+        if lsp_order % 2 == 0:
+            p = floor_log(torch.sin(0.5 * warped_omega))
+            q = floor_log(torch.cos(0.5 * warped_omega))
+        else:
+            p = floor_log(torch.sin(warped_omega))
+            q = torch.zeros_like(warped_omega)
+        p_bias = to(p, dtype=dtype)
+        q_bias = to(q, dtype=dtype)
+
+        c1 = 0.5 / gamma
+        c2 = np.log(2) * (lsp_order if lsp_order % 2 == 0 else (lsp_order - 1))
+        return cos_omega, p_bias, q_bias, c1, c2
+
+    @staticmethod
+    def _formatter(out_format):
+        if out_format == 0 or out_format == "db":
+            c = 20 / np.log(10)
+            return lambda x: x * c
+        elif out_format == 1 or out_format == "log-magnitude":
+            return lambda x: x
+        elif out_format == 2 or out_format == "magnitude":
+            return lambda x: torch.exp(x)
+        elif out_format == 3 or out_format == "power":
+            return lambda x: torch.exp(2 * x)
+        raise ValueError(f"out_format {out_format} is not supported.")
