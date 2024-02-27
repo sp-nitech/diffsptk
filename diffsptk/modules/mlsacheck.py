@@ -16,12 +16,11 @@
 
 import warnings
 
-import numpy as np
 import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 
 
 class MLSADigitalFilterStabilityCheck(nn.Module):
@@ -30,88 +29,75 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of mel-cepstrum, :math:`M`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    fft_length : int > M [scalar]
-        Number of FFT bins, :math:`L`.
-
-    pade_order : [4 <= int <= 7].
+    pade_order : int in [4, 7]
         Order of Pade approximation.
 
-    strict : bool [scalar]
+    strict : bool
         If True, keep maximum log approximation error rather than MLSA filter stability.
 
-    fast : bool [scalar]
-        Fast mode.
-
-    threshold : float > 0 [scalar]
+    threshold : float > 0 or None
         Threshold value. If not given, automatically computed.
+
+    fast : bool
+        Enable fast mode (do not use FFT).
+
+    n_fft : int > M
+        Number of FFT bins, :math:`L`. Used only in non-fast mode.
+
+    warn_type : ['ignore', 'warn', 'exit']
+        Warning type.
 
     mod_type : ['clip', 'scale']
         Modification type.
-
-    warn_type : ['ignore', 'warn', 'exit']
-        Behavior for unstable MLSA.
 
     """
 
     def __init__(
         self,
         cep_order,
+        *,
         alpha=0,
-        fft_length=256,
         pade_order=4,
         strict=True,
-        fast=True,
         threshold=None,
-        mod_type="scale",
+        fast=True,
+        n_fft=256,
         warn_type="warn",
+        mod_type="scale",
     ):
         super(MLSADigitalFilterStabilityCheck, self).__init__()
 
+        assert 0 <= cep_order
+        assert warn_type in ("ignore", "warn", "exit")
+        assert mod_type in ("clip", "scale")
+        assert not (fast and mod_type == "clip")
+
         self.cep_order = cep_order
-        self.fft_length = fft_length
         self.fast = fast
-        self.mod_type = mod_type
+        self.n_fft = n_fft
         self.warn_type = warn_type
+        self.mod_type = mod_type
+        self.threshold = self._threshold(threshold, pade_order, strict)
+        alpha_vector = self._precompute(cep_order, alpha)
+        self.register_buffer("alpha_vector", alpha_vector)
 
-        assert 0 <= self.cep_order
-        assert self.mod_type in ("clip", "scale")
-        assert self.warn_type in ("ignore", "warn", "exit")
-        assert not (self.fast and self.mod_type == "clip")
-
-        if threshold is None:
-            if pade_order == 4:
-                threshold = 4.5 if strict else 6.20
-            elif pade_order == 5:
-                threshold = 6.0 if strict else 7.65
-            elif pade_order == 6:
-                threshold = 7.4 if strict else 9.13
-            elif pade_order == 7:
-                threshold = 8.9 if strict else 10.6
-            else:
-                raise ValueError("Unexpected Pade order")
-        self.threshold = threshold
-        assert 0 < threshold
-
-        alpha_vector = (-alpha) ** np.arange(self.cep_order + 1)
-        self.register_buffer("alpha_vector", numpy_to_torch(alpha_vector))
-
-    def forward(self, c1):
+    def forward(self, c):
         """Check stability of MLSA filter.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M+1)]
+        c : Tensor [shape=(..., M+1)]
             Mel-cepstrum.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Modified mel-cepstrum.
 
         Examples
@@ -125,44 +111,90 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
         tensor([ 1.3336,  1.7537,  1.0254,  1.8462, -0.2922])
 
         """
-        check_size(c1.size(-1), self.cep_order + 1, "dimension of mel-cepstrum")
+        check_size(c.size(-1), self.cep_order + 1, "dimension of mel-cepstrum")
+        return self._forward(
+            c,
+            self.fast,
+            self.n_fft,
+            self.warn_type,
+            self.mod_type,
+            self.threshold,
+            self.alpha_vector,
+        )
 
-        gain = (c1 * self.alpha_vector).sum(-1, keepdim=True)
+    @staticmethod
+    def _forward(c, fast, n_fft, warn_type, mod_type, threshold, alpha_vector):
+        gain = (c * alpha_vector).sum(-1, keepdim=True)
 
-        if self.fast:
-            max_amplitude = c1.sum(-1, keepdim=True) - gain
+        if fast:
+            max_amplitude = c.sum(-1, keepdim=True) - gain
         else:
-            c1 = torch.cat((c1[..., :1] - gain, c1[..., 1:]), dim=-1)
-            C1 = torch.fft.rfft(c1, n=self.fft_length)
+            c1 = torch.cat((c[..., :1] - gain, c[..., 1:]), dim=-1)
+            C1 = torch.fft.rfft(c1, n=n_fft)
             C1_amplitude = C1.abs()
             max_amplitude, _ = C1_amplitude.max(-1, keepdim=True)
-        max_amplitude = torch.clip(max_amplitude, 1e-16)
+        max_amplitude = torch.clip(max_amplitude, min=1e-16)
 
-        if torch.any(self.threshold < max_amplitude):
-            if self.warn_type == "ignore":
+        if torch.any(threshold < max_amplitude):
+            if warn_type == "ignore":
                 pass
-            elif self.warn_type == "warn":
-                warnings.warn("Unstable MLSA filter")
-            elif self.warn_type == "exit":
-                raise RuntimeError("Unstable MLSA filter")
+            elif warn_type == "warn":
+                warnings.warn("Detected unstable MLSA filter.")
+            elif warn_type == "exit":
+                raise RuntimeError("Detected unstable MLSA filter.")
             else:
                 raise RuntimeError
 
-        if self.mod_type == "clip":
-            scale = self.threshold / C1_amplitude
-        elif self.mod_type == "scale":
-            scale = self.threshold / max_amplitude
+        if mod_type == "clip":
+            scale = threshold / C1_amplitude
+        elif mod_type == "scale":
+            scale = threshold / max_amplitude
         else:
             raise RuntimeError
         scale = torch.clip(scale, max=1)
 
-        if self.fast:
-            c0, cX = torch.split(c1, [1, self.cep_order], dim=-1)
+        cep_order = c.size(-1) - 1
+        if fast:
+            c0, c1 = torch.split(c, [1, cep_order], dim=-1)
             c0 = (c0 - gain) * scale + gain
-            cX = cX * scale
-            c2 = torch.cat((c0, cX), dim=-1)
+            c1 = c1 * scale
+            c2 = torch.cat((c0, c1), dim=-1)
         else:
-            c2 = torch.fft.irfft(C1 * scale)[..., : self.cep_order + 1]
+            c2 = torch.fft.irfft(C1 * scale)[..., : cep_order + 1]
             c2 = torch.cat((c2[..., :1] + gain, c2[..., 1:]), dim=-1)
-
         return c2
+
+    @staticmethod
+    def _func(
+        c, alpha, pade_order, strict, threshold, fast, n_fft, warn_type, mod_type
+    ):
+        threshold = MLSADigitalFilterStabilityCheck._threshold(
+            threshold, pade_order, strict
+        )
+        alpha_vector = MLSADigitalFilterStabilityCheck._precompute(
+            c.size(-1) - 1, alpha, dtype=c.dtype, device=c.device
+        )
+        return MLSADigitalFilterStabilityCheck._forward(
+            c, fast, n_fft, warn_type, mod_type, threshold, alpha_vector
+        )
+
+    @staticmethod
+    def _precompute(cep_order, alpha, dtype=None, device=None):
+        alpha_vector = (-alpha) ** torch.arange(
+            cep_order + 1, dtype=torch.double, device=device
+        )
+        return to(alpha_vector, dtype=dtype)
+
+    @staticmethod
+    def _threshold(threshold, pade_order, strict):
+        if threshold is not None:
+            return threshold
+        if pade_order == 4:
+            return 4.5 if strict else 6.20
+        elif pade_order == 5:
+            return 6.0 if strict else 7.65
+        elif pade_order == 6:
+            return 7.4 if strict else 9.13
+        elif pade_order == 7:
+            return 8.9 if strict else 10.6
+        raise ValueError("Unexpected Pade order.")

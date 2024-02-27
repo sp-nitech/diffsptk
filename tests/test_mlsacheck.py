@@ -21,29 +21,36 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("P", [4, 5, 6, 7])
 @pytest.mark.parametrize("strict", [False, True])
 @pytest.mark.parametrize("fast", [False, True])
 @pytest.mark.parametrize("mod_type", ["clip", "scale"])
-def test_compatibility(device, P, strict, fast, mod_type, M=9, L=32, alpha=0.1, B=10):
+def test_compatibility(
+    device, module, P, strict, fast, mod_type, M=9, L=32, alpha=0.1, B=10
+):
     if fast and mod_type == "clip":
         return
 
-    mlsacheck = diffsptk.MLSADigitalFilterStabilityCheck(
-        M,
-        alpha=alpha,
-        fft_length=L,
-        pade_order=P,
-        strict=strict,
-        fast=fast,
-        mod_type=mod_type,
-        warn_type="ignore",
+    mlsacheck = U.choice(
+        module,
+        diffsptk.MLSADigitalFilterStabilityCheck,
+        diffsptk.functional.mlsacheck,
+        {"cep_order": M},
+        {
+            "alpha": alpha,
+            "pade_order": P,
+            "strict": strict,
+            "fast": fast,
+            "n_fft": L,
+            "warn_type": "ignore",
+            "mod_type": mod_type,
+        },
     )
 
     opt = "-f " if fast else ""
     opt += "-r 0 " if strict else "-r 1 "
     opt += "-t 0 " if mod_type == "clip" else "-t 1 "
-
     U.check_compatibility(
         device,
         mlsacheck,

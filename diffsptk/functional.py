@@ -1018,6 +1018,68 @@ def mlpg(u, seed=[[-0.5, 0, 0.5]]):
     return nn.MaximumLikelihoodParameterGeneration._func(u, seed=seed)
 
 
+def mlsacheck(
+    c,
+    *,
+    alpha=0,
+    pade_order=4,
+    strict=True,
+    threshold=None,
+    fast=True,
+    n_fft=512,
+    warn_type="warn",
+    mod_type="scale",
+):
+    """Check stability of MLSA filter.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        Mel-cepstrum.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    pade_order : int in [4, 7]
+        Order of Pade approximation.
+
+    strict : bool
+        If True, keep maximum log approximation error rather than MLSA filter stability.
+
+    threshold : float > 0 or None
+        Threshold value. If not given, automatically computed.
+
+    fast : bool
+        Enable fast mode.
+
+    n_fft : int > M
+        Number of FFT bins, :math:`L`. Used only in non-fast mode.
+
+    warn_type : ['ignore', 'warn', 'exit']
+        Warning type.
+
+    mod_type : ['clip', 'scale']
+        Modification type.
+
+    Returns
+    -------
+    Tensor [shape=(..., M+1)]
+        Modified mel-cepstrum.
+
+    """
+    return nn.MLSADigitalFilterStabilityCheck._func(
+        c,
+        alpha=alpha,
+        pade_order=pade_order,
+        strict=strict,
+        threshold=threshold,
+        fast=fast,
+        n_fft=n_fft,
+        warn_type=warn_type,
+        mod_type=mod_type,
+    )
+
+
 def mpir2c(h, cep_order, n_fft=512):
     """Convert minimum phase impulse response to cepstrum.
 
