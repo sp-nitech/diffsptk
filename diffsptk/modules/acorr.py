@@ -36,7 +36,7 @@ class Autocorrelation(nn.Module):
         If True, normalize the autocorrelation.
 
     estimator : ['none', 'biased', 'unbiased']
-        Type of estimator.
+        Estimator of autocorrelation.
 
     """
 
@@ -97,7 +97,7 @@ class Autocorrelation(nn.Module):
 
     @staticmethod
     def _precompute(frame_length, acr_order, estimator, dtype=None, device=None):
-        if 0 <= estimator <= 1 or estimator == "none":
+        if estimator == 0 or estimator == 1 or estimator == "none":
             return torch.tensor(1, dtype=dtype, device=device)
         elif estimator == 2 or estimator == "biased":
             return torch.full(

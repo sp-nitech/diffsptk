@@ -136,7 +136,13 @@ class MelFilterBankAnalysis(nn.Module):
     ):
         formatter = MelFilterBankAnalysis._formatter(out_format)
         H, _ = MelFilterBankAnalysis._precompute(
-            n_channel, 2 * (x.size(-1) - 1), sample_rate, f_min, f_max
+            n_channel,
+            2 * (x.size(-1) - 1),
+            sample_rate,
+            f_min,
+            f_max,
+            dtype=x.dtype,
+            device=x.device,
         )
         return MelFilterBankAnalysis._forward(x, floor, use_power, formatter, H)
 

@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order, norm=False, out_format="none"):
+def acorr(x, acr_order, norm=False, estimator="none"):
     """Compute autocorrelation.
 
     Parameters
@@ -31,8 +31,8 @@ def acorr(x, acr_order, norm=False, out_format="none"):
     norm : bool
         If True, normalize the autocorrelation.
 
-    out_format : ['none', 'biased', 'unbiased']
-        Output format.
+    estimator : ['none', 'biased', 'unbiased']
+        Estimator of autocorrelation.
 
     Returns
     -------
@@ -41,7 +41,7 @@ def acorr(x, acr_order, norm=False, out_format="none"):
 
     """
     return nn.Autocorrelation._func(
-        x, acr_order=acr_order, norm=norm, out_format=out_format
+        x, acr_order=acr_order, norm=norm, estimator=estimator
     )
 
 
