@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
@@ -31,24 +30,24 @@ class MelCepstrumPostfiltering(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of mel-cepstrum, :math:`M`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    beta : float [scalar]
+    beta : float
         Intensity parameter, :math:`\\beta`.
 
-    onset : int >= 0 [scalar]
+    onset : int >= 0
         Onset index.
 
-    ir_length : int >= 1 [scalar]
+    ir_length : int >= 1
         Length of impulse response.
 
     """
 
-    def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=1024):
+    def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=128):
         super(MelCepstrumPostfiltering, self).__init__()
 
         assert 0 <= onset
@@ -60,21 +59,21 @@ class MelCepstrumPostfiltering(nn.Module):
         self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha)
         self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha)
 
-        weight = np.full(cep_order + 1, 1 + beta)
+        weight = torch.full((cep_order + 1,), 1 + beta)
         weight[:onset] = 1
-        self.register_buffer("weight", numpy_to_torch(weight))
+        self.register_buffer("weight", to(weight))
 
-    def forward(self, mc1):
+    def forward(self, mc):
         """Perform mel-cesptrum postfiltering.
 
         Parameters
         ----------
-        mc1 : Tensor [shape=(..., M+1)]
+        mc : Tensor [shape=(..., M+1)]
             Mel-cepstral coefficients.
 
         Returns
         -------
-        mc2 : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Postfiltered mel-cepstral coefficients.
 
         Examples
@@ -92,13 +91,13 @@ class MelCepstrumPostfiltering(nn.Module):
         tensor([-0.3256,  0.3486, -0.2984, -0.4320])
 
         """
+        mc1 = mc
         e1 = self.mc2en(mc1)
 
-        mc2 = mc1 * self.weight
+        mc2 = mc * self.weight
         e2 = self.mc2en(mc2)
 
         b2 = self.mc2b(mc2)
         b2[..., :1] += 0.5 * torch.log(e1 / e2)
         mc2 = self.b2mc(b2)
-
         return mc2
