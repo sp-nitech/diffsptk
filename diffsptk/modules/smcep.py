@@ -14,60 +14,41 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
-from ..misc.utils import is_power_of_two
-from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
+from ..misc.utils import to
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
-
-
-def warp(omega, alpha, theta):
-    x = omega - theta
-    y = omega + theta
-    w = (
-        omega
-        + np.arctan2(alpha * np.sin(x), 1 - alpha * np.cos(x))
-        + np.arctan2(alpha * np.sin(y), 1 - alpha * np.cos(y))
-    )
-    return w
 
 
 class CoefficientsFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha, theta, n_fft=512):
         super(CoefficientsFrequencyTransform, self).__init__()
 
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert out_order < n_fft
-        assert abs(alpha) < 1
-        assert 0 <= theta <= 1
+        theta *= torch.pi
 
-        theta *= np.pi
-        delta = 2 * np.pi / n_fft
-        omega = np.arange(n_fft) * delta
-        ww = warp(omega, alpha, theta)
+        k = torch.arange(n_fft, dtype=torch.double)
+        omega = k * (2 * torch.pi / n_fft)
+        ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 
-        m2 = np.arange(out_order + 1)
+        m2 = k[: out_order + 1]
         wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
-        real = np.cos(wwm2)
-        imag = -np.sin(wwm2)
+        real = torch.cos(wwm2)
+        imag = -torch.sin(wwm2)
 
-        M1 = in_order + 1
-        A = np.fft.ifft(real + 1j * imag, axis=0).real
-        if 2 <= M1:
-            A[1:M1] += np.flip(A[-(M1 - 1) :], axis=0)
-        A = A[:M1]
-        self.register_buffer("A", numpy_to_torch(A))
+        A = torch.fft.ifft(torch.complex(real, imag), dim=0).real
+        L = in_order + 1
+        if 2 <= L:
+            A[1:L] += A[-(L - 1) :].flip(0)
+        A = A[:L]
+        self.register_buffer("A", to(A))
 
-    def forward(self, c1):
-        c2 = torch.matmul(c1, self.A)
-        return c2
+    def forward(self, c):
+        return torch.matmul(c, self.A)
 
 
 class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
@@ -77,22 +58,22 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of mel-cepstrum, :math:`M`.
 
-    fft_length : int >= 2M [scalar]
+    fft_length : int >= 2M
         Number of FFT bins, :math:`L`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, < 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    theta : float [0 <= theta <= 1]
+    theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_iter : int >= 0 [scalar]
+    n_iter : int >= 0
         Number of iterations.
 
-    accuracy_factor : int >= 1 [scalar]
+    accuracy_factor : int >= 1
         Accuracy factor multiplied by FFT length.
 
     """
@@ -102,45 +83,45 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
     ):
         super(SecondOrderAllPassMelCepstralAnalysis, self).__init__()
 
+        assert 0 <= cep_order <= fft_length // 2
+        assert 0 <= n_iter
+
         self.cep_order = cep_order
         self.fft_length = fft_length
         self.n_iter = n_iter
 
-        assert 0 <= self.cep_order
-        assert self.cep_order <= self.fft_length // 2
-        assert is_power_of_two(self.fft_length)
-        assert 0 <= self.n_iter
+        n_fft = fft_length * accuracy_factor
 
         self.freqt = SecondOrderAllPassFrequencyTransform(
             self.fft_length // 2,
             self.cep_order,
             alpha,
             theta,
-            self.fft_length * accuracy_factor,
+            n_fft=n_fft,
         )
         self.ifreqt = SecondOrderAllPassInverseFrequencyTransform(
             self.cep_order,
             self.fft_length // 2,
             alpha,
             theta,
-            self.fft_length * accuracy_factor,
+            n_fft=n_fft,
         )
         self.rfreqt = CoefficientsFrequencyTransform(
             self.fft_length // 2,
             2 * self.cep_order,
             alpha,
             theta,
-            self.fft_length * accuracy_factor,
+            n_fft=n_fft,
         )
 
-        seed = np.ones(1)
+        seed = torch.ones(1)
         alpha_vector = CoefficientsFrequencyTransform(
             0,
             self.cep_order,
             alpha,
             theta,
-            self.fft_length * accuracy_factor,
-        )(numpy_to_torch(seed))
+            n_fft=n_fft,
+        )(seed)
         self.register_buffer("alpha_vector", alpha_vector)
 
     def forward(self, x):
@@ -153,7 +134,7 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
 
         Returns
         -------
-        mc : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Mel-cepstrum.
 
         Examples

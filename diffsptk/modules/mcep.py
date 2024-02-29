@@ -14,15 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
-from ..misc.utils import is_power_of_two
-from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
+from ..misc.utils import to
 from .freqt import FrequencyTransform
 
 
@@ -34,19 +32,18 @@ class CoefficientsFrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1))
-        A[:, 0] = (-alpha) ** np.arange(L2)
+        A = torch.zeros((L2, L1), dtype=torch.double)
+        A[:, 0] = (-alpha) ** torch.arange(L2, dtype=torch.double)
         for i in range(1, L2):
             i1 = i - 1
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", numpy_to_torch(A.T))
+        self.register_buffer("A", to(A.T))
 
     def forward(self, x):
-        y = torch.matmul(x, self.A)
-        return y
+        return torch.matmul(x, self.A)
 
 
 class MelCepstralAnalysis(nn.Module):
@@ -56,16 +53,16 @@ class MelCepstralAnalysis(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of mel-cepstrum, :math:`M`.
 
-    fft_length : int >= 2M [scalar]
+    fft_length : int >= 2M
         Number of FFT bins, :math:`L`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    n_iter : int >= 0 [scalar]
+    n_iter : int >= 0
         Number of iterations.
 
     """
@@ -73,14 +70,12 @@ class MelCepstralAnalysis(nn.Module):
     def __init__(self, cep_order, fft_length, alpha=0, n_iter=0):
         super(MelCepstralAnalysis, self).__init__()
 
+        assert 0 <= cep_order <= fft_length // 2
+        assert 0 <= n_iter
+
         self.cep_order = cep_order
         self.fft_length = fft_length
         self.n_iter = n_iter
-
-        assert 0 <= self.cep_order
-        assert self.cep_order <= self.fft_length // 2
-        assert is_power_of_two(self.fft_length)
-        assert 0 <= self.n_iter
 
         self.freqt = FrequencyTransform(self.fft_length // 2, self.cep_order, alpha)
         self.ifreqt = FrequencyTransform(self.cep_order, self.fft_length // 2, -alpha)
@@ -88,8 +83,8 @@ class MelCepstralAnalysis(nn.Module):
             self.fft_length // 2, 2 * self.cep_order, alpha
         )
 
-        alpha_vector = (-alpha) ** np.arange(self.cep_order + 1)
-        self.register_buffer("alpha_vector", numpy_to_torch(alpha_vector))
+        alpha_vector = (-alpha) ** torch.arange(self.cep_order + 1, dtype=torch.double)
+        self.register_buffer("alpha_vector", to(alpha_vector))
 
     def forward(self, x):
         """Estimate mel-cepstrum from spectrum.
@@ -101,7 +96,7 @@ class MelCepstralAnalysis(nn.Module):
 
         Returns
         -------
-        mc : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Mel-cepstrum.
 
         Examples

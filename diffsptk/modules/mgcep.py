@@ -14,15 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
-from ..misc.utils import is_power_of_two
-from ..misc.utils import numpy_to_torch
 from ..misc.utils import symmetric_toeplitz
+from ..misc.utils import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
@@ -40,17 +38,17 @@ class CoefficientsFrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = np.zeros((L2, L1))
+        A = torch.zeros((L2, L1), dtype=torch.double)
         A[0, 0] = 1
         if 1 < L2 and 1 < L1:
-            A[1, 1:] = alpha ** np.arange(L1 - 1) * beta
+            A[1, 1:] = alpha ** torch.arange(L1 - 1, dtype=torch.double) * beta
         for i in range(2, L2):
             i1 = i - 1
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", numpy_to_torch(A.T))
+        self.register_buffer("A", to(A.T))
 
     def forward(self, x):
         y = torch.matmul(x, self.A)
@@ -62,14 +60,14 @@ class PTransform(nn.Module):
         super(PTransform, self).__init__()
 
         # Make transform matrix.
-        A = np.eye(order + 1)
-        np.fill_diagonal(A[:, 1:], alpha)
+        A = torch.eye(order + 1, dtype=torch.double)
+        A[:, 1:].fill_diagonal_(alpha)
 
         A[0, 0] -= alpha * alpha
         A[0, 1] += alpha
         A[-1, -1] += alpha
 
-        self.register_buffer("A", numpy_to_torch(A.T))
+        self.register_buffer("A", to(A.T))
 
     def forward(self, p):
         p = torch.matmul(p, self.A)
@@ -81,13 +79,13 @@ class QTransform(nn.Module):
         super(QTransform, self).__init__()
 
         # Make transform matrix.
-        A = np.eye(order + 1)
-        np.fill_diagonal(A[1:], alpha)
+        A = torch.eye(order + 1, dtype=torch.double)
+        A[1:].fill_diagonal_(alpha)
 
         A[1, 0] = 0
         A[1, 1] += alpha
 
-        self.register_buffer("A", numpy_to_torch(A.T))
+        self.register_buffer("A", to(A.T))
 
     def forward(self, q):
         q = torch.matmul(q, self.A)
@@ -101,19 +99,19 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
 
     Parameters
     ----------
-    cep_order : int >= 0 [scalar]
+    cep_order : int >= 0
         Order of mel-cepstrum, :math:`M`.
 
-    fft_length : int >= 2M [scalar]
+    fft_length : int >= 2M
         Number of FFT bins, :math:`L`.
 
-    alpha : float [-1 < alpha < 1]
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
-    gamma : float [-1 <= gamma <= 0]
+    gamma : float in [-1, 0]
         Gamma, :math:`\\gamma`.
 
-    n_iter : int >= 0 [scalar]
+    n_iter : int >= 0
         Number of iterations.
 
     """
@@ -121,16 +119,14 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
     def __init__(self, cep_order, fft_length, alpha=0, gamma=0, n_iter=0):
         super(MelGeneralizedCepstralAnalysis, self).__init__()
 
+        assert 0 <= cep_order <= fft_length // 2
+        assert gamma <= 0
+        assert 0 <= n_iter
+
         self.cep_order = cep_order
         self.fft_length = fft_length
         self.gamma = gamma
         self.n_iter = n_iter
-
-        assert 0 <= self.cep_order
-        assert self.cep_order <= self.fft_length // 2
-        assert is_power_of_two(self.fft_length)
-        assert self.gamma <= 0
-        assert 0 <= self.n_iter
 
         if gamma == 0:
             self.mcep = MelCepstralAnalysis(cep_order, fft_length, alpha, n_iter=n_iter)
@@ -173,7 +169,7 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
 
         Returns
         -------
-        mc : Tensor [shape=(..., M+1)]
+        Tensor [shape=(..., M+1)]
             Mel-generalized cepstrum.
 
         Examples
