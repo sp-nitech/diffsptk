@@ -87,11 +87,11 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
         p = z[..., 1::2]
         q = z[..., 0::2]
         if M == 1:
-            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1)).real
+            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1), real=True)
             a = 0.5 * q[..., 1:-1]
         else:
-            p = RootsToPolynomial._func(torch.cat([p, p.conj()], dim=-1)).real
-            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1)).real
+            p = RootsToPolynomial._func(torch.cat([p, p.conj()], dim=-1), real=True)
+            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1), real=True)
             p = F.conv1d(p, kernel_p, padding=1 if M % 2 == 1 else 0)
             q = F.conv1d(q, kernel_q)
             a = 0.5 * (p + q)
