@@ -24,12 +24,15 @@ import tests.utils as U
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("P", [4, 5, 6, 7])
 @pytest.mark.parametrize("strict", [False, True])
+@pytest.mark.parametrize("threshold", [None, 4])
 @pytest.mark.parametrize("fast", [False, True])
 @pytest.mark.parametrize("mod_type", ["clip", "scale"])
 def test_compatibility(
-    device, module, P, strict, fast, mod_type, M=9, L=32, alpha=0.1, B=10
+    device, module, P, strict, threshold, fast, mod_type, M=9, L=32, alpha=0.1, B=10
 ):
     if fast and mod_type == "clip":
+        return
+    if threshold is not None and P != 4 and strict:
         return
 
     mlsacheck = U.choice(
@@ -41,6 +44,7 @@ def test_compatibility(
             "alpha": alpha,
             "pade_order": P,
             "strict": strict,
+            "threshold": threshold,
             "fast": fast,
             "n_fft": L,
             "warn_type": "ignore",
@@ -51,6 +55,7 @@ def test_compatibility(
     opt = "-f " if fast else ""
     opt += "-r 0 " if strict else "-r 1 "
     opt += "-t 0 " if mod_type == "clip" else "-t 1 "
+    opt += f"-R {threshold} " if threshold is not None else ""
     U.check_compatibility(
         device,
         mlsacheck,

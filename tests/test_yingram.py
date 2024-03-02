@@ -24,7 +24,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(
-    device, module, fl=2048, fp=80, sr=22050, lag_min=22, lag_max=204, n_bin=20, B=2
+    device, module, fl=2048, fp=80, sr=22050, lag_min=22, n_bin=20, B=2
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
@@ -37,7 +37,7 @@ def test_compatibility(
         diffsptk.Yingram,
         diffsptk.functional.yingram,
         {"frame_length": fl},
-        {"sample_rate": sr, "lag_min": lag_min, "lag_max": lag_max, "n_bin": n_bin},
+        {"sample_rate": sr, "lag_min": lag_min, "n_bin": n_bin},
     )
     if module:
         yingram = yingram.to(device)
@@ -46,7 +46,7 @@ def test_compatibility(
     U.call(f"curl -s {url} > tmp.py", get=False)
     from tmp import Yingram as Target
 
-    target = Target(fp, fl, lag_min, lag_max, n_bin, sr).to(device)
+    target = Target(fp, fl, lag_min, fl - 1, n_bin, sr).to(device)
     U.call("rm -f tmp.py", get=False)
 
     x = diffsptk.nrand(B, sr).to(device)

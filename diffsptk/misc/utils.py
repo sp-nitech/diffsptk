@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 import numpy as np
 import soundfile as sf
 import torch
@@ -46,25 +44,23 @@ def next_power_of_two(n):
 
 def default_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:  # pragma: no cover
+    if t == torch.float:  # pragma: no cover
         return np.float32
-    elif t == torch.float64:  # pragma: no cover
+    elif t == torch.double:  # pragma: no cover
         return np.float64
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def default_complex_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:  # pragma: no cover
+    if t == torch.float:  # pragma: no cover
         return np.complex64
-    elif t == torch.float64:  # pragma: no cover
+    elif t == torch.double:  # pragma: no cover
         return np.complex128
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def numpy_to_torch(x):
-    if isinstance(x, (list, tuple)):
-        x = np.array(x)
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
     else:
@@ -193,8 +189,6 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
-    if gamma != 0:
-        warnings.warn("gamma is given, but will be ignored")
     assert 1 <= c
     return -1 / c
 

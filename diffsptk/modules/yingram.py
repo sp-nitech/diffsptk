@@ -141,6 +141,8 @@ class Yingram(nn.Module):
 
     @staticmethod
     def _func(x, sample_rate, lag_min, lag_max, n_bin):
+        if lag_max is None:
+            lag_max = x.size(-1) - 1
         const = Yingram._precompute(
             sample_rate, lag_min, lag_max, n_bin, dtype=x.dtype, device=x.device
         )
