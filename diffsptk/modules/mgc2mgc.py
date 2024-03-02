@@ -216,12 +216,12 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         )
         self.seq = nn.Sequential(*seq)
 
-    def forward(self, c):
+    def forward(self, mc):
         """Convert mel-generalized cepstrum to mel-generalized cepstrum.
 
         Parameters
         ----------
-        c : Tensor [shape=(..., M1+1)]
+        mc : Tensor [shape=(..., M1+1)]
             Input mel-cepstrum.
 
         Returns
@@ -238,11 +238,11 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         tensor([-0.0830,  0.6831,  1.1464,  3.1334,  0.9063])
 
         """
-        return self.seq(c)
+        return self.seq(mc)
 
     @staticmethod
     def _func(
-        c,
+        mc,
         out_order,
         in_alpha,
         out_alpha,
@@ -256,7 +256,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     ):
         seq = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
             False,
-            c.size(-1) - 1,
+            mc.size(-1) - 1,
             out_order,
             in_alpha,
             out_alpha,
@@ -269,8 +269,8 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
             n_fft,
         )
         for func in seq:
-            c = func(c)
-        return c
+            mc = func(mc)
+        return mc
 
     @staticmethod
     def _precompute(

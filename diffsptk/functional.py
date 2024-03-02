@@ -1083,7 +1083,7 @@ def mc2b(mc, alpha=0):
 
 
 def mgc2mgc(
-    c,
+    mc,
     out_order,
     in_alpha=0,
     out_alpha=0,
@@ -1099,7 +1099,7 @@ def mgc2mgc(
 
     Parameters
     ----------
-    c : Tensor [shape=(..., M1+1)]
+    mc : Tensor [shape=(..., M1+1)]
         Input mel-cepstrum.
 
     out_order : int >= 0
@@ -1139,7 +1139,7 @@ def mgc2mgc(
 
     """
     return nn.MelGeneralizedCepstrumToMelGeneralizedCepstrum._func(
-        c,
+        mc,
         out_order=out_order,
         in_alpha=in_alpha,
         out_alpha=out_alpha,
@@ -1150,6 +1150,63 @@ def mgc2mgc(
         in_mul=in_mul,
         out_mul=out_mul,
         n_fft=n_fft,
+    )
+
+
+def mgc2sp(
+    mc,
+    fft_length,
+    alpha=0,
+    gamma=0,
+    norm=False,
+    mul=False,
+    n_fft=512,
+    out_format="power",
+):
+    """Convert mel-cepstrum to spectrum.
+
+    Parameters
+    ----------
+    mc : Tensor [shape=(..., M+1)]
+        Mel-cepstrum.
+
+    fft_length : int >= 2
+        Number of FFT bins, :math:`L`.
+
+    alpha : float in (-1, 1)
+        Warping factor, :math:`\\alpha`.
+
+    gamma : float in [-1, 1]
+        Gamma, :math:`\\gamma`.
+
+    norm : bool
+        If True, assume normalized cepstrum.
+
+    mul : bool
+        If True, assume gamma-multiplied cepstrum.
+
+    n_fft : int >> :math:`L`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
+                  'cycle', 'radian', 'degree', 'complex']
+        Output format.
+
+    Returns
+    -------
+    Tensor [shape=(..., L/2+1)]
+        Spectrum.
+
+    """
+    return nn.MelGeneralizedCepstrumToSpectrum._func(
+        mc,
+        fft_length=fft_length,
+        alpha=alpha,
+        gamma=gamma,
+        norm=norm,
+        mul=mul,
+        n_fft=n_fft,
+        out_format=out_format,
     )
 
 
