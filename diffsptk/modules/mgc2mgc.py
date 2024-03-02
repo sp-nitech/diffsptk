@@ -14,7 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -22,7 +21,7 @@ import torch.nn.functional as F
 from ..misc.utils import cexp
 from ..misc.utils import check_size
 from ..misc.utils import clog
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import to
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
 from .ignorm import (
@@ -31,29 +30,14 @@ from .ignorm import (
 
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
-    """Generalized cepstral transformation module.
-
-    Parameters
-    ----------
-    in_order : int >= 0 [scalar]
-        Order of input cepstrum, :math:`M_1`.
-
-    out_order : int >= 0 [scalar]
-        Order of output cepstrum, :math:`M_2`.
-
-    in_gamma : float [-1 <= in_gamma <= 1]
-        Input gamma, :math:`\\gamma_1`.
-
-    out_gamma : float [-1 <= out_gamma <= 1]
-        Output gamma, :math:`\\gamma_2`.
-
-    n_fft : int >> :math:`M_1, M_2` [scalar]
-        Number of FFT bins. Accurate conversion requires the large value.
-
-    """
-
     def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
         super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
+
+        assert 0 <= in_order
+        assert 0 <= out_order
+        assert abs(in_gamma) <= 1
+        assert abs(out_gamma) <= 1
+        assert max(in_order, out_order) + 1 < n_fft
 
         self.in_order = in_order
         self.out_order = out_order
@@ -61,72 +45,70 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
         self.out_gamma = out_gamma
         self.n_fft = n_fft
 
-        assert 0 <= self.in_order
-        assert 0 <= self.out_order
-        assert abs(self.in_gamma) <= 1
-        assert abs(self.out_gamma) <= 1
-        assert max(self.in_order, self.out_order) + 1 < self.n_fft
+    def forward(self, c):
+        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
+        return self._forward(
+            c, self.out_order, self.in_gamma, self.out_gamma, self.n_fft
+        )
 
-    def forward(self, c1):
-        """Perform generalized cepstral transformation.
-
-        Parameters
-        ----------
-        c1 : Tensor [shape=(..., M1+1)]
-            Input cepstrum.
-
-        Returns
-        -------
-        c2 : Tensor [shape=(..., M2+1)]
-            Output cepstrum.
-
-        """
-        check_size(c1.size(-1), self.in_order + 1, "dimension of cepstrum")
-
+    @staticmethod
+    def _forward(c1, out_order, in_gamma, out_gamma, n_fft):
         c01 = F.pad(c1[..., 1:], (1, 0))
-        C1 = torch.fft.fft(c01, n=self.n_fft)
+        C1 = torch.fft.fft(c01, n=n_fft)
 
-        if self.in_gamma == 0:
+        if in_gamma == 0:
             sC1 = cexp(C1)
         else:
-            C1 *= self.in_gamma
+            C1 *= in_gamma
             C1.real += 1
-            r = C1.abs() ** (1 / self.in_gamma)
-            theta = C1.angle() / self.in_gamma
+            r = C1.abs() ** (1 / in_gamma)
+            theta = C1.angle() / in_gamma
             sC1 = torch.polar(r, theta)
 
-        if self.out_gamma == 0:
+        if out_gamma == 0:
             C2 = clog(sC1)
         else:
-            r = sC1.abs() ** self.out_gamma
-            theta = sC1.angle() * self.out_gamma
-            C2 = (r * torch.cos(theta) - 1) / self.out_gamma
+            r = sC1.abs() ** out_gamma
+            theta = sC1.angle() * out_gamma
+            C2 = (r * torch.cos(theta) - 1) / out_gamma
 
-        c02 = torch.fft.ifft(C2)[..., : self.out_order + 1].real
+        c02 = torch.fft.ifft(C2)[..., : out_order + 1].real
         c2 = torch.cat((c1[..., :1], 2 * c02[..., 1:]), dim=-1)
         return c2
+
+    _func = _forward
 
 
 class GammaDivision(nn.Module):
     def __init__(self, cep_order, gamma):
         super(GammaDivision, self).__init__()
-        g = np.full(cep_order + 1, 1 / gamma)
+        g = torch.full((cep_order + 1,), 1 / gamma)
         g[0] = 1
-        self.register_buffer("g", numpy_to_torch(g))
+        self.register_buffer("g", to(g))
 
     def forward(self, c):
         return c * self.g
+
+    @staticmethod
+    def _func(c, gamma):
+        c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+        return torch.cat((c0, c1 / gamma), dim=-1)
 
 
 class GammaMultiplication(nn.Module):
     def __init__(self, cep_order, gamma):
         super(GammaMultiplication, self).__init__()
-        g = np.full(cep_order + 1, gamma)
+        g = torch.full((cep_order + 1,), gamma)
         g[0] = 1
-        self.register_buffer("g", numpy_to_torch(g))
+        self.register_buffer("g", to(g))
 
     def forward(self, c):
         return c * self.g
+
+    @staticmethod
+    def _func(c, gamma):
+        c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+        return torch.cat((c0, c1 * gamma), dim=-1)
 
 
 class ZerothGammaDivision(nn.Module):
@@ -137,8 +119,12 @@ class ZerothGammaDivision(nn.Module):
 
     def forward(self, c):
         c0, c1 = torch.split(c, [1, self.cep_order], dim=-1)
-        c0 = (c0 - 1) * self.g
-        return torch.cat((c0, c1), dim=-1)
+        return torch.cat(((c0 - 1) * self.g, c1), dim=-1)
+
+    @staticmethod
+    def _func(c, gamma):
+        c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+        return torch.cat(((c0 - 1) / gamma, c1), dim=-1)
 
 
 class ZerothGammaMultiplication(nn.Module):
@@ -149,8 +135,12 @@ class ZerothGammaMultiplication(nn.Module):
 
     def forward(self, c):
         c0, c1 = torch.split(c, [1, self.cep_order], dim=-1)
-        c0 = c0 * self.g + 1
-        return torch.cat((c0, c1), dim=-1)
+        return torch.cat((c0 * self.g + 1, c1), dim=-1)
+
+    @staticmethod
+    def _func(c, gamma):
+        c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+        return torch.cat((c0 * gamma + 1, c1), dim=-1)
 
 
 class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
@@ -159,37 +149,37 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
 
     Parameters
     ----------
-    in_order : int >= 0 [scalar]
+    in_order : int >= 0
         Order of input cepstrum, :math:`M_1`.
 
-    out_order : int >= 0 [scalar]
+    out_order : int >= 0
         Order of output cepstrum, :math:`M_2`.
 
-    in_alpha : float [-1 < in_alpha < 1]
+    in_alpha : float in (-1, 1)
         Input alpha, :math:`\\alpha_1`.
 
-    out_alpha : float [-1 < out_alpha < 1]
+    out_alpha : float in (-1, 1)
         Output alpha, :math:`\\alpha_2`.
 
-    in_gamma : float [-1 <= in_gamma <= 1]
+    in_gamma : float in [-1, 1]
         Input gamma, :math:`\\gamma_1`.
 
-    out_gamma : float [-1 <= out_gamma <= 1]
+    out_gamma : float in [-1, 1]
         Output gamma, :math:`\\gamma_2`.
 
-    in_norm : bool [scalar]
+    in_norm : bool
         If True, assume normalized input.
 
-    out_norm : bool [scalar]
+    out_norm : bool
         If True, assume normalized output.
 
-    in_mul : bool [scalar]
+    in_mul : bool
         If True, assume gamma-multiplied input.
 
-    out_mul : bool [scalar]
+    out_mul : bool
         If True, assume gamma-multiplied output.
 
-    n_fft : int >> :math:`M_1, M_2` [scalar]
+    n_fft : int >> :math:`M_1, M_2`
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -210,74 +200,33 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     ):
         super(MelGeneralizedCepstrumToMelGeneralizedCepstrum, self).__init__()
 
-        assert not (0 == in_gamma and in_mul)
+        seq = self._precompute(
+            True,
+            in_order,
+            out_order,
+            in_alpha,
+            out_alpha,
+            in_gamma,
+            out_gamma,
+            in_norm,
+            out_norm,
+            in_mul,
+            out_mul,
+            n_fft,
+        )
+        self.seq = nn.Sequential(*seq)
 
-        modules = []
-        if not in_norm and in_mul:
-            modules.append(ZerothGammaDivision(in_order, in_gamma))
-
-        alpha = (out_alpha - in_alpha) / (1 - in_alpha * out_alpha)
-        if 0 == alpha:
-            if in_order == out_order and in_gamma == out_gamma:
-                if not in_mul and out_mul:
-                    modules.append(GammaMultiplication(in_order, in_gamma))
-                if not in_norm and out_norm:
-                    modules.append(GainNormalization(in_order, in_gamma))
-                if in_norm and not out_norm:
-                    modules.append(InverseGainNormalization(out_order, out_gamma))
-                if in_mul and not out_mul:
-                    modules.append(GammaDivision(out_order, out_gamma))
-            else:
-                if in_mul:
-                    modules.append(GammaDivision(in_order, in_gamma))
-                if not in_norm:
-                    modules.append(GainNormalization(in_order, in_gamma))
-                if True:
-                    modules.append(
-                        GeneralizedCepstrumToGeneralizedCepstrum(
-                            in_order, out_order, in_gamma, out_gamma, n_fft
-                        )
-                    )
-                if not out_norm:
-                    modules.append(InverseGainNormalization(out_order, out_gamma))
-                if out_mul:
-                    modules.append(GammaMultiplication(out_order, out_gamma))
-        else:
-            if in_mul:
-                modules.append(GammaDivision(in_order, in_gamma))
-            if in_norm:
-                modules.append(InverseGainNormalization(in_order, in_gamma))
-            if True:
-                modules.append(FrequencyTransform(in_order, out_order, alpha))
-            if out_norm or in_gamma != out_gamma:
-                modules.append(GainNormalization(out_order, in_gamma))
-            if in_gamma != out_gamma:
-                modules.append(
-                    GeneralizedCepstrumToGeneralizedCepstrum(
-                        out_order, out_order, in_gamma, out_gamma, n_fft
-                    )
-                )
-            if not out_norm and in_gamma != out_gamma:
-                modules.append(InverseGainNormalization(out_order, out_gamma))
-            if out_mul:
-                modules.append(GammaMultiplication(out_order, out_gamma))
-
-        if not out_norm and out_mul:
-            modules.append(ZerothGammaMultiplication(out_order, out_gamma))
-
-        self.seq = nn.Sequential(*modules)
-
-    def forward(self, c1):
+    def forward(self, c):
         """Convert mel-generalized cepstrum to mel-generalized cepstrum.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M1+1)]
+        c : Tensor [shape=(..., M1+1)]
             Input mel-cepstrum.
 
         Returns
         -------
-        c2 : Tensor [shape=(..., M2+1)]
+        Tensor [shape=(..., M2+1)]
             Converted mel-cepstrum.
 
         Examples
@@ -289,5 +238,146 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         tensor([-0.0830,  0.6831,  1.1464,  3.1334,  0.9063])
 
         """
-        c2 = self.seq(c1)
-        return c2
+        return self.seq(c)
+
+    @staticmethod
+    def _func(
+        c,
+        out_order,
+        in_alpha,
+        out_alpha,
+        in_gamma,
+        out_gamma,
+        in_norm,
+        out_norm,
+        in_mul,
+        out_mul,
+        n_fft,
+    ):
+        seq = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
+            False,
+            c.size(-1) - 1,
+            out_order,
+            in_alpha,
+            out_alpha,
+            in_gamma,
+            out_gamma,
+            in_norm,
+            out_norm,
+            in_mul,
+            out_mul,
+            n_fft,
+        )
+        for func in seq:
+            c = func(c)
+        return c
+
+    @staticmethod
+    def _precompute(
+        module,
+        in_order,
+        out_order,
+        in_alpha,
+        out_alpha,
+        in_gamma,
+        out_gamma,
+        in_norm,
+        out_norm,
+        in_mul,
+        out_mul,
+        n_fft,
+    ):
+        def choice(use_module, module, module_params, common_params):
+            if use_module:
+                return module(*module_params, *common_params)
+            else:
+                return lambda c: module._func(c, *common_params)
+
+        assert not (0 == in_gamma and in_mul)
+
+        seq = []
+        if not in_norm and in_mul:
+            seq.append(choice(module, ZerothGammaDivision, [in_order], [in_gamma]))
+
+        alpha = (out_alpha - in_alpha) / (1 - in_alpha * out_alpha)
+        if 0 == alpha:
+            if in_order == out_order and in_gamma == out_gamma:
+                if not in_mul and out_mul:
+                    seq.append(
+                        choice(module, GammaMultiplication, [in_order], [in_gamma])
+                    )
+                if not in_norm and out_norm:
+                    seq.append(
+                        choice(module, GainNormalization, [in_order], [in_gamma])
+                    )
+                if in_norm and not out_norm:
+                    seq.append(
+                        choice(
+                            module, InverseGainNormalization, [out_order], [out_gamma]
+                        )
+                    )
+                if in_mul and not out_mul:
+                    seq.append(choice(module, GammaDivision, [out_order], [out_gamma]))
+            else:
+                if in_mul:
+                    seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
+                if not in_norm:
+                    seq.append(
+                        choice(module, GainNormalization, [in_order], [in_gamma])
+                    )
+                if True:
+                    seq.append(
+                        choice(
+                            module,
+                            GeneralizedCepstrumToGeneralizedCepstrum,
+                            [in_order],
+                            [out_order, in_gamma, out_gamma, n_fft],
+                        )
+                    )
+                if not out_norm:
+                    seq.append(
+                        choice(
+                            module, InverseGainNormalization, [out_order], [out_gamma]
+                        )
+                    )
+                if out_mul:
+                    seq.append(
+                        choice(module, GammaMultiplication, [out_order], [out_gamma])
+                    )
+        else:
+            if in_mul:
+                seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
+            if in_norm:
+                seq.append(
+                    choice(module, InverseGainNormalization, [in_order], [in_gamma])
+                )
+            if True:
+                seq.append(
+                    choice(module, FrequencyTransform, [in_order], [out_order, alpha])
+                )
+            if out_norm or in_gamma != out_gamma:
+                seq.append(choice(module, GainNormalization, [out_order], [in_gamma]))
+            if in_gamma != out_gamma:
+                seq.append(
+                    choice(
+                        module,
+                        GeneralizedCepstrumToGeneralizedCepstrum,
+                        [out_order],
+                        [out_order, in_gamma, out_gamma, n_fft],
+                    )
+                )
+            if not out_norm and in_gamma != out_gamma:
+                seq.append(
+                    choice(module, InverseGainNormalization, [out_order], [out_gamma])
+                )
+            if out_mul:
+                seq.append(
+                    choice(module, GammaMultiplication, [out_order], [out_gamma])
+                )
+
+        if not out_norm and out_mul:
+            seq.append(
+                choice(module, ZerothGammaMultiplication, [out_order], [out_gamma])
+            )
+
+        return seq

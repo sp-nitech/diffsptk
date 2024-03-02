@@ -1082,6 +1082,77 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
+def mgc2mgc(
+    c,
+    out_order,
+    in_alpha=0,
+    out_alpha=0,
+    in_gamma=0,
+    out_gamma=0,
+    in_norm=False,
+    out_norm=False,
+    in_mul=False,
+    out_mul=False,
+    n_fft=512,
+):
+    """Convert mel-generalized cepstrum to mel-generalized cepstrum.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M1+1)]
+        Input mel-cepstrum.
+
+    out_order : int >= 0
+        Order of output cepstrum, :math:`M_2`.
+
+    in_alpha : float in (-1, 1)
+        Input alpha, :math:`\\alpha_1`.
+
+    out_alpha : float in (-1, 1)
+        Output alpha, :math:`\\alpha_2`.
+
+    in_gamma : float in [-1, 1]
+        Input gamma, :math:`\\gamma_1`.
+
+    out_gamma : float in [-1, 1]
+        Output gamma, :math:`\\gamma_2`.
+
+    in_norm : bool
+        If True, assume normalized input.
+
+    out_norm : bool
+        If True, assume normalized output.
+
+    in_mul : bool
+        If True, assume gamma-multiplied input.
+
+    out_mul : bool
+        If True, assume gamma-multiplied output.
+
+    n_fft : int >> :math:`M_1, M_2`
+        Number of FFT bins. Accurate conversion requires the large value.
+
+    Returns
+    -------
+    Tensor [shape=(..., M2+1)]
+        Converted mel-cepstrum.
+
+    """
+    return nn.MelGeneralizedCepstrumToMelGeneralizedCepstrum._func(
+        c,
+        out_order=out_order,
+        in_alpha=in_alpha,
+        out_alpha=out_alpha,
+        in_gamma=in_gamma,
+        out_gamma=out_gamma,
+        in_norm=in_norm,
+        out_norm=out_norm,
+        in_mul=in_mul,
+        out_mul=out_mul,
+        n_fft=n_fft,
+    )
+
+
 def mlpg(u, seed=[[-0.5, 0, 0.5]]):
     """Perform MLPG to obtain smoothed static sequence.
 

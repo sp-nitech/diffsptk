@@ -87,7 +87,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
         return x
 
     @staticmethod
-    def _func(y, gamma, c):
+    def _func(y, gamma, c=None):
         gamma = GeneralizedCepstrumInverseGainNormalization._precompute(gamma, c)
         return GeneralizedCepstrumInverseGainNormalization._forward(y, gamma)
 
