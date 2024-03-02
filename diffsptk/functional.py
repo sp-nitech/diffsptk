@@ -1422,7 +1422,7 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
     return nn.Phase._func(b, a, fft_length=fft_length, unwrap=unwrap)
 
 
-def pol_root(x):
+def pol_root(x, real=False):
     """Compute polynomial coefficients from roots.
 
     Parameters
@@ -1430,13 +1430,16 @@ def pol_root(x):
     x : Tensor [shape=(..., M)]
         Complex roots.
 
+    real : bool
+        If True, return as real numbers.
+
     Returns
     -------
     Tensor [shape=(..., M+1)]
         Polynomial coefficients.
 
     """
-    return nn.RootsToPolynomial._func(x)
+    return nn.RootsToPolynomial._func(x, real=real)
 
 
 def poledf(x, a, frame_period=80, ignore_gain=False):

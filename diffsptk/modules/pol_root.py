@@ -36,13 +36,16 @@ class RootsToPolynomial(nn.Module):
 
         self.order = order
 
-    def forward(self, x):
+    def forward(self, x, real=False):
         """Convert roots to polynomial coefficients.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M)]
             Complex roots.
+
+        real : bool
+            If True, return as real numbers.
 
         Returns
         -------
@@ -59,15 +62,15 @@ class RootsToPolynomial(nn.Module):
 
         """
         check_size(x.size(-1), self.order, "number of roots")
-        return self._forward(x)
+        return self._forward(x, real)
 
     @staticmethod
-    def _forward(x):
+    def _forward(x, real):
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)
         for m in range(M):
             z = a.clone()
             a[..., 1:] = z[..., 1:] - x[..., m : m + 1] * z[..., :-1]
-        return a
+        return a.real if real else a
 
     _func = _forward
