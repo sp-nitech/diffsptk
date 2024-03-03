@@ -105,7 +105,7 @@ def remove_gain(a, return_gain=False):
 
 
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
-    """Compute frequency warping factor under given sample rate.
+    """Compute an appropriate frequency warping factor under given sample rate.
 
     Parameters
     ----------
@@ -124,7 +124,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 
     Returns
     -------
-    alpha : float in [0, 1]
+    out : float in [0, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     Examples
@@ -275,7 +275,8 @@ def read(filename, double=False, device=None, **kwargs):
         Device of returned tensor.
 
     **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.read`.
+        Additional arguments passed to `soundfile.read
+        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.read>`_.
 
     Returns
     -------
@@ -319,7 +320,8 @@ def write(filename, x, sr, **kwargs):
         Sample rate in Hz.
 
     **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.write`.
+        Additional arguments passed to `soundfile.write
+        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.write>`_.
 
     Examples
     --------

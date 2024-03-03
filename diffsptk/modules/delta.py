@@ -50,7 +50,7 @@ class Delta(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, T, DxH) or (T, DxH)]
+        out : Tensor [shape=(B, T, DxH) or (T, DxH)]
             Delta (and static) components.
 
         Examples
@@ -102,7 +102,7 @@ class Delta(nn.Module):
     @staticmethod
     def _precompute(seed, static_out, dtype=None, device=None):
         if not isinstance(seed, (tuple, list)):
-            raise ValueError("seed must be tuple or list")
+            raise ValueError("seed must be tuple or list.")
 
         if isinstance(seed[0], (tuple, list)):
             # Make window from delta coefficients.

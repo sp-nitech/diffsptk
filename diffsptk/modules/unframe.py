@@ -48,6 +48,7 @@ class Unframe(nn.Module):
         self,
         frame_length,
         frame_period,
+        *,
         center=True,
         window="rectangular",
         norm="none",
@@ -72,12 +73,12 @@ class Unframe(nn.Module):
         y : Tensor [shape=(..., T/P, L)]
             Framed waveform.
 
-        out_length : int [scalar]
+        out_length : int or None
             Length of original signal, `T`.
 
         Returns
         -------
-        Tensor [shape=(..., T)]
+        out : Tensor [shape=(..., T)]
             Waveform.
 
         Examples

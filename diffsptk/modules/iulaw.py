@@ -52,7 +52,7 @@ class MuLawExpansion(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,)]
+        out : Tensor [shape=(...,)]
             Waveform.
 
         Examples

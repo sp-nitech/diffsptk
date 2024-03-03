@@ -48,7 +48,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             All-zero or all-pole filter coefficients.
 
         Examples

@@ -57,15 +57,15 @@ class Spectrum(nn.Module):
 
         Parameters
         ----------
-        b : Tensor [shape=(..., M+1)]
+        b : Tensor [shape=(..., M+1)] or None
             Framed waveform or numerator coefficients.
 
-        a : Tensor [shape=(..., N+1)]
+        a : Tensor [shape=(..., N+1)] or None
             Denominator coefficients.
 
         Returns
         -------
-        Tensor [shape=(..., L/2+1)]
+        out : Tensor [shape=(..., L/2+1)]
             Spectrum.
 
         Examples

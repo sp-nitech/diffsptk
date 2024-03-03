@@ -33,7 +33,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
     ir_length : int >= 1
         Length of impulse response, :math:`N`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -59,7 +59,7 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Cepstral coefficients.
 
         Examples

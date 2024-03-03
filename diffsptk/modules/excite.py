@@ -61,7 +61,7 @@ class ExcitationGeneration(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., NxP)]
+        out : Tensor [shape=(..., NxP)]
             Excitation signal.
 
         Examples

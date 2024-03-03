@@ -58,7 +58,7 @@ class ConstantQTransform(nn.Module):
         Minimum center frequency in Hz.
 
     n_bin : int >= 1
-        Number of CQ-bins.
+        Number of CQ-bins, :math:`K`.
 
     n_bin_per_octave : int >= 1
         number of bins per octave, :math:`B`.
@@ -205,8 +205,8 @@ class ConstantQTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T/P, K)]
-            CQT complex output, where K is CQ-bin.
+        out : Tensor [shape=(..., T/P, K)]
+            CQT complex output.
 
         Examples
         --------

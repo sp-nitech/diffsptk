@@ -55,7 +55,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T, D)]
+        out : Tensor [shape=(..., T, D)]
             Static components.
 
         Examples

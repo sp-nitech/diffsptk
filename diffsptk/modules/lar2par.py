@@ -48,7 +48,7 @@ class LogAreaRatioToParcorCoefficients(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             PARCOR coefficients.
 
         Examples

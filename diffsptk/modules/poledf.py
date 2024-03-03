@@ -62,7 +62,7 @@ class AllPoleDigitalFilter(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T)]
+        out : Tensor [shape=(..., T)]
             Output signal.
 
         Examples

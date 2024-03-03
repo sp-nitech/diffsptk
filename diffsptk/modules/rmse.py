@@ -54,7 +54,7 @@ class RootMeanSquareError(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,) or scalar]
+        out : Tensor [shape=(...,) or scalar]
             RMSE.
 
         Examples

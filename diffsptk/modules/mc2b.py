@@ -62,7 +62,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(nn.Module):
 
         Returns
         -------
-        b : Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             MLSA filter coefficients.
 
         Examples

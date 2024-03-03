@@ -24,6 +24,8 @@ from ..misc.utils import check_size
 class RootsToPolynomial(nn.Module):
     """This is the opposite module to :func:`~diffsptk.PolynomialToRoots`.
 
+    Parameters
+    ----------
     order : int >= 1
         Order of polynomial.
 
@@ -49,7 +51,7 @@ class RootsToPolynomial(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Polynomial coefficients.
 
         Examples

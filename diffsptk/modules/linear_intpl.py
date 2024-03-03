@@ -50,7 +50,7 @@ class LinearInterpolation(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
+        out : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
             Upsampled filter coefficients.
 
         Examples

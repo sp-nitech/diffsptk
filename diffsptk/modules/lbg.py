@@ -28,6 +28,8 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lbg.html>`_
     for details. This module is not differentiable.
 
+    Parameters
+    ----------
     order : int >= 0
         Order of vector.
 

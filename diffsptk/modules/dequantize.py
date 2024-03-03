@@ -54,7 +54,7 @@ class InverseUniformQuantization(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,)]
+        out : Tensor [shape=(...,)]
             Dequantized input.
 
         Examples

@@ -50,7 +50,7 @@ class InverseDiscreteCosineTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L)]
+        out : Tensor [shape=(..., L)]
             Inverse DCT output.
 
         Examples

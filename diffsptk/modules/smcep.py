@@ -64,7 +64,7 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
     fft_length : int >= 2M
         Number of FFT bins, :math:`L`.
 
-    alpha : float in (-1, < 1)
+    alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     theta : float in [0, 1]
@@ -134,7 +134,7 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Mel-cepstrum.
 
         Examples

@@ -28,6 +28,8 @@ class GaussianMixtureModeling(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/gmm.html>`_
     for details. This module is not differentiable.
 
+    Parameters
+    ----------
     order : int >= 0
         Order of vector.
 
@@ -119,7 +121,7 @@ class GaussianMixtureModeling(nn.Module):
             elif var_type == "full":
                 mask[s1:e1, s1:e1] = 1
             else:
-                raise ValueError(f"var_type {var_type} is not supported")
+                raise ValueError(f"var_type {var_type} is not supported.")
         self.register_buffer("mask", mask)
 
         # Initialize model parameters.

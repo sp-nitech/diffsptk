@@ -61,7 +61,7 @@ class FrequencyTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M2+1)]
+        out : Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         Examples

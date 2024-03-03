@@ -60,7 +60,7 @@ class Frame(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T/P, L)]
+        out : Tensor [shape=(..., T/P, L)]
             Framed waveform.
 
         Examples

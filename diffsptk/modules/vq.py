@@ -28,10 +28,10 @@ class VectorQuantization(nn.Module):
 
     Parameters
     ----------
-    order : int >= 0 [scalar]
+    order : int >= 0
         Order of vector, :math:`M`.
 
-    codebook_size : int >= 1 [scalar]
+    codebook_size : int >= 1
         Codebook size, :math:`K`.
 
     **kwargs : additional keyword arguments

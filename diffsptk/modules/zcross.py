@@ -52,7 +52,7 @@ class ZeroCrossingAnalysis(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T/L)]
+        out : Tensor [shape=(..., T/L)]
             Zero-crossing rate.
 
         Examples

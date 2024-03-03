@@ -33,7 +33,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     ir_length : int >= 1
         Length of impulse response, :math:`N`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -59,7 +59,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., N)]
+        out : Tensor [shape=(..., N)]
             Truncated minimum phase impulse response.
 
         Examples

@@ -63,7 +63,7 @@ class CepstralAnalysis(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Cepstrum.
 
         Examples

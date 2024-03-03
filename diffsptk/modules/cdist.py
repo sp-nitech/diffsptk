@@ -60,7 +60,7 @@ class CepstralDistance(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,) or scalar]
+        out : Tensor [shape=(...,) or scalar]
             Cepstral distance.
 
         Examples

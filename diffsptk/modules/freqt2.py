@@ -38,7 +38,7 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
     theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> :math:`M_2`
+    n_fft : int >> M2
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -67,7 +67,7 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M2+1)]
+        out : Tensor [shape=(..., M2+1)]
             Warped sequence.
 
         Examples

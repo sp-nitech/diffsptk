@@ -62,6 +62,11 @@ class Pitch(nn.Module):
     model : ['tiny', 'full']
         Model size.
 
+    References
+    ----------
+    .. [1] J. W. Kim et al., "CREPE: A Convolutional Representation for Pitch
+           Estimation," *Proceedings of ICASSP*, pp. 161-165, 2018.
+
     """
 
     def __init__(
@@ -114,7 +119,7 @@ class Pitch(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
+        out : Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
             Pitch probability, embedding, or pitch, where N is the number of frames
             and C is the number of pitch classes or the dimension of embedding.
 
@@ -153,7 +158,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        Tensor [shape=(B, N, C)]
+        out : Tensor [shape=(B, N, C)]
             Probability, where C is the number of pitch classes.
 
         """
@@ -169,7 +174,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        Tensor [shape=(B, N, D)]
+        out : Tensor [shape=(B, N, D)]
             Embedding, where D is the dimension of embedding.
 
         """
@@ -185,7 +190,7 @@ class PitchExtractionInterface(metaclass=ABCMeta):
 
         Returns
         -------
-        Tensor [shape=(B, N)]
+        out : Tensor [shape=(B, N)]
             F0 sequence.
 
         """

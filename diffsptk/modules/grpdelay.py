@@ -64,7 +64,7 @@ class GroupDelay(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L/2+1)]
+        out : Tensor [shape=(..., L/2+1)]
             Group delay or modified group delay function.
 
         Examples
@@ -108,7 +108,7 @@ class GroupDelay(nn.Module):
 
         data_length = c.size(-1)
         if fft_length < data_length:
-            raise RuntimeError("Please increase FFT length")
+            raise RuntimeError("Please increase FFT length.")
 
         d = c * ramp[:data_length]
         C = torch.fft.rfft(c, n=fft_length)

@@ -38,7 +38,7 @@ class Yingram(nn.Module):
     lag_min : int >= 1
         Minimum lag in points.
 
-    lag_max : int <= :math:`L`
+    lag_max : int < L
         Maximum lag in points.
 
     n_bin : int >= 1
@@ -93,7 +93,7 @@ class Yingram(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M)]
+        out : Tensor [shape=(..., M)]
             Yingram.
 
         Examples

@@ -47,15 +47,15 @@ class Phase(nn.Module):
 
         Parameters
         ----------
-        b : Tensor [shape=(..., M+1)]
+        b : Tensor [shape=(..., M+1)] or None
             Numerator coefficients.
 
-        a : Tensor [shape=(..., N+1)]
+        a : Tensor [shape=(..., N+1)] or None
             Denominator coefficients.
 
         Returns
         -------
-        Tensor [shape=(..., L/2+1)]
+        out : Tensor [shape=(..., L/2+1)]
             Phase spectrum [:math:`\\pi` rad].
 
         Examples

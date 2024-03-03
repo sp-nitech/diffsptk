@@ -36,7 +36,7 @@ def acorr(x, acr_order, norm=False, estimator="none"):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Autocorrelation.
 
     """
@@ -61,7 +61,7 @@ def alaw(x, abs_max=1, a=87.6):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Compressed waveform.
 
     """
@@ -81,7 +81,7 @@ def b2mc(b, alpha=0):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Mel-cepstral coefficients.
 
     """
@@ -99,12 +99,12 @@ def c2acr(c, acr_order, n_fft=512):
     acr_order : int >= 0
         Order of autocorrelation, :math:`N`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., N+1)]
+    out : Tensor [shape=(..., N+1)]
         Autocorrelation.
 
     """
@@ -122,12 +122,12 @@ def c2mpir(c, ir_length, n_fft=512):
     ir_length : int >= 1
         Length of impulse response, :math:`N`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., N)]
+    out : Tensor [shape=(..., N)]
         Truncated minimum phase impulse response.
 
     """
@@ -149,7 +149,7 @@ def c2ndps(c, fft_length):
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         NDPS.
 
     """
@@ -180,7 +180,7 @@ def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
 
     Returns
     -------
-    Tensor [shape=(...,) or scalar]
+    out : Tensor [shape=(...,) or scalar]
         Cepstral distance.
 
     """
@@ -197,7 +197,7 @@ def dct(x):
 
     Returns
     -------
-    Tensor [shape=(..., L)]
+    out : Tensor [shape=(..., L)]
         DCT output.
 
     """
@@ -223,7 +223,7 @@ def decimate(x, period=1, start=0, dim=-1):
 
     Returns
     -------
-    Tensor [shape=(..., T/P-S, ...)]
+    out : Tensor [shape=(..., T/P-S, ...)]
         Decimated signal.
 
     """
@@ -249,7 +249,7 @@ def delay(x, start=0, keeplen=False, dim=-1):
 
     Returns
     -------
-    Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
+    out : Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
         Delayed signal.
 
     """
@@ -269,6 +269,11 @@ def delta(x, seed=[[-0.5, 0, 0.5]], static_out=True):
 
     static_out : bool
         If False, output only delta components.
+
+    Returns
+    -------
+    out : Tensor [shape=(B, T, DxH) or (T, DxH)]
+        Delta (and static) components.
 
     """
     return nn.Delta._func(x, seed, static_out=static_out)
@@ -293,7 +298,7 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Dequantized input.
 
     """
@@ -318,7 +323,7 @@ def dfs(x, b=None, a=None):
 
     Returns
     -------
-    Tensor [shape=(..., T)]
+    out : Tensor [shape=(..., T)]
         Filtered waveform.
 
     """
@@ -338,7 +343,7 @@ def entropy(p, out_format="nat"):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Entropy.
 
     """
@@ -364,7 +369,7 @@ def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
 
     Returns
     -------
-    Tensor [shape=(..., NxP)]
+    out : Tensor [shape=(..., NxP)]
         Excitation signal.
 
     """
@@ -443,7 +448,7 @@ def fftcep(x, cep_order, n_iter=0, accel=0):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Cepstrum.
 
     """
@@ -473,7 +478,7 @@ def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
 
     Returns
     -------
-    Tensor [shape=(..., T/P, L)]
+    out : Tensor [shape=(..., T/P, L)]
         Framed waveform.
 
     """
@@ -502,7 +507,7 @@ def freqt(c, out_order, alpha=0):
 
     Returns
     -------
-    Tensor [shape=(..., M2+1)]
+    out : Tensor [shape=(..., M2+1)]
         Warped cepstral coefficients.
 
     """
@@ -526,12 +531,12 @@ def freqt2(c, out_order, alpha=0, theta=0, n_fft=512):
     theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> :math:`M_2`
+    n_fft : int >> M2
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., M2+1)]
+    out : Tensor [shape=(..., M2+1)]
         Warped cepstral coefficients.
 
     """
@@ -556,7 +561,7 @@ def gnorm(x, gamma=0, c=None):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Normalized generalized cepstrum.
 
     """
@@ -585,7 +590,7 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         Group delay or modified group delay function.
 
     """
@@ -610,7 +615,7 @@ def ialaw(y, abs_max=1, a=87.6):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Waveform.
 
     """
@@ -627,7 +632,7 @@ def idct(y):
 
     Returns
     -------
-    Tensor [shape=(..., L)]
+    out : Tensor [shape=(..., L)]
         Inverse DCT output.
 
     """
@@ -651,12 +656,12 @@ def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
     theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> :math:`M_1`
+    n_fft : int >> M1
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., M2+1)]
+    out : Tensor [shape=(..., M2+1)]
         Warped cepstral coefficients.
 
     """
@@ -681,7 +686,7 @@ def ignorm(y, gamma=0, c=None):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Generalized cepstrum.
 
     """
@@ -707,7 +712,7 @@ def interpolate(x, period=1, start=0, dim=-1):
 
     Returns
     -------
-    Tensor [shape=(..., TxP+S, ...)]
+    out : Tensor [shape=(..., TxP+S, ...)]
         Interpolated signal.
 
     """
@@ -757,7 +762,7 @@ def istft(
 
     Returns
     -------
-    Tensor [shape=(..., T)]
+    out : Tensor [shape=(..., T)]
         Waveform.
 
     """
@@ -789,7 +794,7 @@ def iulaw(y, abs_max=1, mu=255):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Waveform.
 
     """
@@ -806,7 +811,7 @@ def lar2par(g):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         PARCOR coefficients.
 
     """
@@ -823,7 +828,7 @@ def levdur(r):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
@@ -863,7 +868,7 @@ def lpc(x, lpc_order):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
@@ -887,6 +892,11 @@ def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
     out_format : ['radian', 'cycle', 'khz', 'hz']
         Output format.
 
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        LSP frequencies.
+
     """
     return nn.LinearPredictiveCoefficientsToLineSpectralPairs._func(
         a, log_gain=log_gain, sample_rate=sample_rate, out_format=out_format
@@ -909,7 +919,7 @@ def lpc2par(a, gamma=1, c=None):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         PARCOR coefficients.
 
     """
@@ -934,7 +944,7 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Modified LPC coefficients.
 
     """
@@ -956,7 +966,7 @@ def lsp2lpc(w, log_gain=False):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         LPC coefficients.
 
     """
@@ -984,7 +994,7 @@ def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Modified LSP frequencies.
 
     """
@@ -1018,7 +1028,7 @@ def lsp2sp(w, fft_length, alpha=0, gamma=-1, log_gain=False, out_format="power")
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         Spectrum.
 
     """
@@ -1045,18 +1055,8 @@ def magic_intpl(x, magic_number=0):
 
     Returns
     -------
-    Tensor [shape=(B, N, D) or (N, D) or (N,)]
+    out : Tensor [shape=(B, N, D) or (N, D) or (N,)]
         Data after interpolation.
-
-    Examples
-    --------
-    >>> x = torch.tensor([0, 1, 2, 0, 4, 0]).float()
-    >>> x
-    tensor([0., 1., 2., 0., 4., 0.])
-    >>> magic_intpl = diffsptk.MagicNumberInterpolation(0)
-    >>> y = magic_intpl(x)
-    >>> y
-    tensor([1., 1., 2., 3., 4., 4.])
 
     """
     return nn.MagicNumberInterpolation._func(x, magic_number=magic_number)
@@ -1075,7 +1075,7 @@ def mc2b(mc, alpha=0):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         MLSA digital filter coefficients.
 
     """
@@ -1129,12 +1129,12 @@ def mgc2mgc(
     out_mul : bool
         If True, assume gamma-multiplied output.
 
-    n_fft : int >> :math:`M_1, M_2`
+    n_fft : int >> M1, M2
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., M2+1)]
+    out : Tensor [shape=(..., M2+1)]
         Converted mel-cepstrum.
 
     """
@@ -1185,7 +1185,7 @@ def mgc2sp(
     mul : bool
         If True, assume gamma-multiplied cepstrum.
 
-    n_fft : int >> :math:`L`
+    n_fft : int >> L
         Number of FFT bins. Accurate conversion requires the large value.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
@@ -1194,7 +1194,7 @@ def mgc2sp(
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         Spectrum.
 
     """
@@ -1223,7 +1223,7 @@ def mlpg(u, seed=[[-0.5, 0, 0.5]]):
 
     Returns
     -------
-    Tensor [shape=(..., T, D)]
+    out : Tensor [shape=(..., T, D)]
         Static components.
 
     """
@@ -1275,7 +1275,7 @@ def mlsacheck(
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Modified mel-cepstrum.
 
     """
@@ -1303,12 +1303,12 @@ def mpir2c(h, cep_order, n_fft=512):
     cep_order : int >= 0
         Order of cepstrum, :math:`M`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Cepstrum.
 
     """
@@ -1330,7 +1330,7 @@ def ndps2c(n, cep_order):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Cepstrum.
 
     """
@@ -1347,7 +1347,7 @@ def norm0(a):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         All-zero or all-pole filter coefficients.
 
     """
@@ -1364,7 +1364,7 @@ def par2lar(k):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Log area ratio.
 
     """
@@ -1387,7 +1387,7 @@ def par2lpc(k, gamma=1, c=None):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         LPC coefficients.
 
     """
@@ -1415,7 +1415,7 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         Phase spectrum [:math:`\\pi` rad].
 
     """
@@ -1435,7 +1435,7 @@ def pol_root(x, real=False):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Polynomial coefficients.
 
     """
@@ -1461,7 +1461,7 @@ def poledf(x, a, frame_period=80, ignore_gain=False):
 
     Returns
     -------
-    Tensor [shape=(..., T)]
+    out : Tensor [shape=(..., T)]
         Output signal.
 
     """
@@ -1489,7 +1489,7 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Quantized input.
 
     """
@@ -1508,7 +1508,7 @@ def rlevdur(a):
 
     Returns
     -------
-    Tensor [shape=(..., M+1)]
+    out : Tensor [shape=(..., M+1)]
         Autocorrelation.
 
     """
@@ -1534,7 +1534,7 @@ def rmse(x, y, reduction="mean", eps=1e-8):
 
     Returns
     -------
-    Tensor [shape=(...,) or scalar]
+    out : Tensor [shape=(...,) or scalar]
         RMSE.
 
     """
@@ -1554,7 +1554,7 @@ def root_pol(a, out_format="rectangular"):
 
     Returns
     -------
-    Tensor [shape=(..., M)]
+    out : Tensor [shape=(..., M)]
         Roots of polynomial.
 
     """
@@ -1586,7 +1586,7 @@ def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
 
     Returns
     -------
-    Tensor [shape=(...,) or scalar]
+    out : Tensor [shape=(...,) or scalar]
         Signal-to-noise ratio.
 
     """
@@ -1622,7 +1622,7 @@ def spec(
 
     Returns
     -------
-    Tensor [shape=(..., L/2+1)]
+    out : Tensor [shape=(..., L/2+1)]
         Spectrum.
 
     """
@@ -1692,7 +1692,7 @@ def stft(
 
     Returns
     -------
-    Tensor [shape=(..., T/P, N/2+1)]
+    out : Tensor [shape=(..., T/P, N/2+1)]
         Spectrum.
 
     """
@@ -1727,7 +1727,7 @@ def ulaw(x, abs_max=1, mu=255):
 
     Returns
     -------
-    Tensor [shape=(...,)]
+    out : Tensor [shape=(...,)]
         Compressed waveform.
 
     """
@@ -1773,7 +1773,7 @@ def unframe(
 
     Returns
     -------
-    Tensor [shape=(..., T)]
+    out : Tensor [shape=(..., T)]
         Waveform.
 
     """
@@ -1788,7 +1788,7 @@ def unframe(
     )
 
 
-def window(x, *, out_length=None, window="blackman", norm="power"):
+def window(x, out_length=None, *, window="blackman", norm="power"):
     """Apply window function.
 
     Parameters
@@ -1808,7 +1808,7 @@ def window(x, *, out_length=None, window="blackman", norm="power"):
 
     Returns
     -------
-    Tensor [shape=(..., L2)]
+    out : Tensor [shape=(..., L2)]
         Windowed waveform.
 
     """
@@ -1837,7 +1837,7 @@ def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
 
     Returns
     -------
-    Tensor [shape=(..., M)]
+    out : Tensor [shape=(..., M)]
         Yingram.
 
     """
@@ -1846,7 +1846,7 @@ def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
     )
 
 
-def zcross(x, frame_length=400, norm=False):
+def zcross(x, frame_length, norm=False):
     """Compute zero-crossing rate.
 
     Parameters
@@ -1862,7 +1862,7 @@ def zcross(x, frame_length=400, norm=False):
 
     Returns
     -------
-    Tensor [shape=(..., T/L)]
+    out : Tensor [shape=(..., T/L)]
         Zero-crossing rate.
 
     """
@@ -1888,7 +1888,7 @@ def zerodf(x, b, frame_period=80, ignore_gain=False):
 
     Returns
     -------
-    Tensor [shape=(..., T)]
+    out : Tensor [shape=(..., T)]
         Output signal.
 
     """

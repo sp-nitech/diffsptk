@@ -46,7 +46,7 @@ class Entropy(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,)]
+        out : Tensor [shape=(...,)]
             Entropy.
 
         Examples

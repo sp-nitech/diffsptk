@@ -24,6 +24,8 @@ class PolynomialToRoots(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/root_pol.html>`_
     for details.
 
+    Parameters
+    ----------
     order : int >= 1
         Order of polynomial.
 
@@ -51,7 +53,7 @@ class PolynomialToRoots(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M)]
+        out : Tensor [shape=(..., M)]
             Complex roots.
 
         Examples

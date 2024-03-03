@@ -179,7 +179,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     out_mul : bool
         If True, assume gamma-multiplied output.
 
-    n_fft : int >> :math:`M_1, M_2`
+    n_fft : int >> M1, M2
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -226,7 +226,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M2+1)]
+        out : Tensor [shape=(..., M2+1)]
             Converted mel-cepstrum.
 
         Examples

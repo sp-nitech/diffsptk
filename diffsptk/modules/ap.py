@@ -103,7 +103,7 @@ class Aperiodicity(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, N, L/2+1) or (N, L/2+1)]
+        out : Tensor [shape=(B, N, L/2+1) or (N, L/2+1)]
             Aperiodicity.
 
         Examples

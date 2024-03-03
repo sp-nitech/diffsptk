@@ -56,6 +56,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
+    References
+    ----------
+    .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
+
     """
 
     def __init__(

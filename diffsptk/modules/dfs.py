@@ -86,7 +86,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T)]
+        out : Tensor [shape=(..., T)]
             Filtered waveform.
 
         Examples

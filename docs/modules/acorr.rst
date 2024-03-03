@@ -3,7 +3,7 @@
 acorr
 -----
 
-.. autoclass:: diffsptk.AutocorrelationAnalysis
+.. autoclass:: diffsptk.Autocorrelation
    :members:
 
 .. autofunction:: diffsptk.functional.acorr

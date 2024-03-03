@@ -53,12 +53,12 @@ class Decimation(nn.Module):
         x : Tensor [shape=(..., T, ...)]
             Signal.
 
-        dim : int [scalar]
+        dim : int
             Dimension along which to decimate the tensors.
 
         Returns
         -------
-        Tensor [shape=(..., T/P-S, ...)]
+        out : Tensor [shape=(..., T/P-S, ...)]
             Decimated signal.
 
         Examples

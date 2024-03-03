@@ -64,7 +64,7 @@ class SignalToNoiseRatio(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,) or scalar]
+        out : Tensor [shape=(...,) or scalar]
             Signal-to-noise ratio.
 
         Examples

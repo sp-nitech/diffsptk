@@ -87,7 +87,7 @@ class LineSpectralPairsToSpectrum(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L/2+1)]
+        out : Tensor [shape=(..., L/2+1)]
             Spectrum.
 
         Examples

@@ -73,7 +73,7 @@ class MelCepstrumPostfiltering(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Postfiltered mel-cepstral coefficients.
 
         Examples

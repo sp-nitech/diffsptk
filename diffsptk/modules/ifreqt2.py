@@ -39,7 +39,7 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
     theta : float in [0, 1]
         Emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> math:`M_1`
+    n_fft : int >> M1
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -68,7 +68,7 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M2+1)]
+        out : Tensor [shape=(..., M2+1)]
             Output sequence.
 
         Examples

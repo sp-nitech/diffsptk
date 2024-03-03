@@ -52,7 +52,7 @@ class Delay(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
+        out : Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
             Delayed signal.
 
         Examples

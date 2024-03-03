@@ -59,7 +59,7 @@ class PrincipalComponentAnalysis(nn.Module):
         elif cov_type == 2 or cov_type == "correlation":
             self.cov = lambda x: torch.corrcoef(x)
         else:
-            raise ValueError(f"cov_type {cov_type} is not supported")
+            raise ValueError(f"cov_type {cov_type} is not supported.")
 
         self.register_buffer("v", torch.eye(self.order + 1, self.n_comp))
         self.register_buffer("m", torch.zeros(self.order + 1))
@@ -113,7 +113,7 @@ class PrincipalComponentAnalysis(nn.Module):
         return e, self.v, self.m
 
     def transform(self, x):
-        """Transform input vectors.
+        """Transform input vectors using estimated eigenvectors.
 
         Parameters
         ----------
@@ -122,7 +122,7 @@ class PrincipalComponentAnalysis(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., N)]
+        out : Tensor [shape=(..., N)]
             Transformed vectors.
 
         """

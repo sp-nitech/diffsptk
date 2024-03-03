@@ -68,8 +68,8 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
 
         Returns
         -------
-        w : Tensor [shape=(..., M+1)]
-            LSP coefficients.
+        out : Tensor [shape=(..., M+1)]
+            LSP frequencies.
 
         Examples
         --------

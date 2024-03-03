@@ -99,14 +99,14 @@ class PseudoMGLSADigitalFilter(nn.Module):
     n_fft : int >= 1
         Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
 
-    **stft_kwargs : additional keyword arguments
+    **kwargs : additional keyword arguments
         See :func:`~diffsptk.ShortTimeFourierTransform` (valid only if **mode** is
         'freq-domain').
 
     References
     ----------
     .. [1] T. Yoshimura et al., "Embedding a differentiable mel-cepstral synthesis
-           filter to a neural speech synthesis system," *arXiv:2211.11222*, 2022.
+           filter to a neural speech synthesis system," *Proceedings of ICASSP*, 2023.
 
     """
 
@@ -176,7 +176,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T)]
+        out : Tensor [shape=(..., T)]
             Output signal.
 
         Examples

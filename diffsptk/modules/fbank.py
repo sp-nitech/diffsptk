@@ -53,6 +53,10 @@ class MelFilterBankAnalysis(nn.Module):
         `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
+    References
+    ----------
+    .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
+
     """
 
     def __init__(

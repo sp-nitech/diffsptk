@@ -32,7 +32,7 @@ class CepstrumToAutocorrelation(nn.Module):
     acr_order : int >= 0
         Order of autocorrelation, :math:`N`.
 
-    n_fft : int >> :math:`N`
+    n_fft : int >> N
         Number of FFT bins. Accurate conversion requires the large value.
 
     """
@@ -58,7 +58,7 @@ class CepstrumToAutocorrelation(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., N+1)]
+        out : Tensor [shape=(..., N+1)]
             Autocorrelation.
 
         Examples

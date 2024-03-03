@@ -46,7 +46,7 @@ class MagicNumberInterpolation(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        out : Tensor [shape=(B, N, D) or (N, D) or (N,)]
             Data after interpolation.
 
         Examples

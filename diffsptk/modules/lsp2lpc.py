@@ -58,7 +58,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
 
         Returns
         -------
-        a : Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             LPC coefficients.
 
         Examples

@@ -205,7 +205,7 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, K, T)]
+        out : Tensor [shape=(B, K, T)]
             Subband waveforms.
 
         Examples

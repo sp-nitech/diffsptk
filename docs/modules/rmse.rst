@@ -5,7 +5,7 @@ rmse
 
 .. autoclass:: diffsptk.RMSE
 
-.. autoclass:: diffsptk.RootMeanSquaredError
+.. autoclass:: diffsptk.RootMeanSquareError
    :members:
 
 .. autofunction:: diffsptk.functional.rmse

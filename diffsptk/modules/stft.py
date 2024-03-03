@@ -104,7 +104,7 @@ class ShortTimeFourierTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., T/P, N/2+1)]
+        out : Tensor [shape=(..., T/P, N/2+1)]
             Spectrum.
 
         Examples

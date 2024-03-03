@@ -50,7 +50,7 @@ class DiscreteCosineTransform(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L)]
+        out : Tensor [shape=(..., L)]
             DCT output.
 
         Examples

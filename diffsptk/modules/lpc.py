@@ -52,7 +52,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Gain and LPC coefficients.
 
         Examples

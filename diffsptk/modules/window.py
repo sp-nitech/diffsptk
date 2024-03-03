@@ -62,7 +62,7 @@ class Window(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L2)]
+        out : Tensor [shape=(..., L2)]
             Windowed waveform.
 
         Examples

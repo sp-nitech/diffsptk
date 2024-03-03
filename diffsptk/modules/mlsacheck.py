@@ -97,7 +97,7 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Modified mel-cepstrum.
 
         Examples

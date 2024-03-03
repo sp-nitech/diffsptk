@@ -93,7 +93,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(B, 1, T) or (B, T)]
+        out : Tensor [shape=(B, 1, T) or (B, T)]
             Reconstructed waveform.
 
         Examples

@@ -44,10 +44,10 @@ class UniformQuantization(nn.Module):
 
     Parameters
     ----------
-    abs_max : float > 0 [scalar]
+    abs_max : float > 0
         Absolute maximum value of input.
 
-    n_bit : int >= 1 [scalar]
+    n_bit : int >= 1
         Number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
@@ -74,7 +74,7 @@ class UniformQuantization(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(...,)]
+        out : Tensor [shape=(...,)]
             Quantized input.
 
         Examples

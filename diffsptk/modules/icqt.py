@@ -58,7 +58,7 @@ class InverseConstantQTransform(nn.Module):
         Minimum center frequency in Hz.
 
     n_bin : int >= 1
-        Number of CQ-bins.
+        Number of CQ-bins, :math:`K`.
 
     n_bin_per_octave : int >= 1
         number of bins per octave, :math:`B`.
@@ -202,14 +202,14 @@ class InverseConstantQTransform(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., T/P, K)]
-            CQT complex output, where K is CQ-bin.
+            CQT complex output.
 
         out_length : int or None
             Length of output waveform.
 
         Returns
         -------
-        Tensor [shape=(..., T)]
+        out : Tensor [shape=(..., T)]
             Reconstructed waveform.
 
         Examples

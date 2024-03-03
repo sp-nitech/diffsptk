@@ -58,11 +58,15 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
     floor : float > 0
         Minimum mel-filter bank output in linear scale.
 
+    n_fft : int >> M
+        Number of FFT bins. Accurate conversion requires the large value.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
-    n_fft : int >> :math:`M`
-        Number of FFT bins. Accurate conversion requires the large value.
+    References
+    ----------
+    .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
 
     """
 
@@ -74,8 +78,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
         sample_rate,
         lifter=1,
         compression_factor=0.33,
-        out_format="y",
         n_fft=512,
+        out_format="y",
         **fbank_kwargs,
     ):
         super(PerceptualLinearPredictiveCoefficientsAnalysis, self).__init__()
@@ -128,10 +132,10 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
         y : Tensor [shape=(..., M)]
             PLP without C0.
 
-        E : Tensor [shape=(..., 1)]
+        E : Tensor [shape=(..., 1)] (optional)
             Energy.
 
-        c : Tensor [shape=(..., 1)]
+        c : Tensor [shape=(..., 1)] (optional)
             C0.
 
         Examples

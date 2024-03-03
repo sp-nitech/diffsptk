@@ -47,7 +47,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
     mul : bool
         If True, assume gamma-multiplied cepstrum.
 
-    n_fft : int >> :math:`L`
+    n_fft : int >> L
         Number of FFT bins. Accurate conversion requires the large value.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
@@ -93,7 +93,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., L/2+1)]
+        out : Tensor [shape=(..., L/2+1)]
             Spectrum.
 
         Examples

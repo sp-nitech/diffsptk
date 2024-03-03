@@ -33,7 +33,7 @@ def impulse(order, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(M+1,)]
+    out : Tensor [shape=(M+1,)]
         Impulse sequence.
 
     Examples
@@ -66,7 +66,7 @@ def step(order, value=1, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(M+1,)]
+    out : Tensor [shape=(M+1,)]
         Step sequence.
 
     Examples
@@ -106,7 +106,7 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(?,)]
+    out : Tensor [shape=(?,)]
         Ramp sequence.
 
     Examples
@@ -152,7 +152,7 @@ def sin(order, period=None, magnitude=1, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(M+1,)]
+    out : Tensor [shape=(M+1,)]
         Sinusoidal sequence.
 
     Examples
@@ -191,7 +191,7 @@ def train(order, frame_period, norm="power", **kwargs):
 
     Returns
     -------
-    Tensor [shape=(M+1,)]
+    out : Tensor [shape=(M+1,)]
         Pulse sequence.
 
     Examples
@@ -248,7 +248,7 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
 
     Returns
     -------
-    Tensor [shape=(M+1,)]
+    out : Tensor [shape=(M+1,)]
         Random value sequence.
 
     Examples

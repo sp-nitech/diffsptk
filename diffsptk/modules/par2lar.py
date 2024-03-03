@@ -48,7 +48,7 @@ class ParcorCoefficientsToLogAreaRatio(nn.Module):
 
         Returns
         -------
-        Tensor [shape=(..., M+1)]
+        out : Tensor [shape=(..., M+1)]
             Log area ratio.
 
         Examples
