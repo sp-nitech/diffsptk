@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=9, B=2):
-    par2lpc = diffsptk.ParcorCoefficientsToLinearPredictiveCoefficients(M)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=9, B=2):
+    par2lpc = U.choice(
+        module,
+        diffsptk.ParcorCoefficientsToLinearPredictiveCoefficients,
+        diffsptk.functional.par2lpc,
+        {"lpc_order": M},
+    )
 
     U.check_compatibility(
         device,
@@ -35,4 +41,4 @@ def test_compatibility(device, M=9, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, par2lpc, [B, M + 1])
+    U.check_differentiability(device, par2lpc, [B, M + 1])

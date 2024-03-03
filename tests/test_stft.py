@@ -14,17 +14,32 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import pytest
+
 import diffsptk
 import tests.utils as U
 
 
-def test_compatibility(T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
-    stft = diffsptk.STFT(
-        L1, P, L2, zmean=True, norm=n, window=w, eps=eps, out_format="power"
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(module, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
+    stft = U.choice(
+        module,
+        diffsptk.STFT,
+        diffsptk.functional.stft,
+        {},
+        {
+            "frame_length": L1,
+            "frame_period": P,
+            "fft_length": L2,
+            "window": w,
+            "norm": n,
+            "eps": eps,
+            "out_format": "power",
+        },
     )
 
     cmd = (
-        f"frame -l {L1} -p {P} -z | "
+        f"frame -l {L1} -p {P} | "
         f"window -l {L1} -L {L2} -n {n} -w {w} |"
         f"spec -l {L2} -e {eps} -o 3"
     )

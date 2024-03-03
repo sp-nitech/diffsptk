@@ -75,4 +75,4 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
 @pytest.mark.parametrize("out_format", ["prob", "embed"])
 def test_differentiable(device, out_format, P=80, sr=16000, B=2, T=1000):
     pitch = diffsptk.Pitch(P, sr, out_format=out_format, model="tiny")
-    U.check_differentiable(device, pitch, [B, T])
+    U.check_differentiability(device, pitch, [B, T])

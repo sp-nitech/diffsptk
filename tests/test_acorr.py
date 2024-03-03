@@ -21,28 +21,27 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("o", [0, 1, 2, 3])
-def test_compatibility(device, o, M=3, L=14, B=2):
-    if o == 0:
-        opt = {"norm": False}
-    elif o == 1:
-        opt = {"norm": True}
-    elif o == 2:
-        opt = {"acf": "biased"}
-    elif o == 3:
-        opt = {"acf": "unbiased"}
-
-    acorr = diffsptk.AutocorrelationAnalysis(M, L, **opt)
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("M", [12, 13])
+@pytest.mark.parametrize("out_format", [0, 1, 2, 3])
+def test_compatibility(device, module, M, out_format, L=14, B=2):
+    acorr = U.choice(
+        module,
+        diffsptk.Autocorrelation,
+        diffsptk.functional.acorr,
+        {"frame_length": L},
+        {"acr_order": M, "norm": out_format == 1, "estimator": out_format},
+    )
 
     U.check_compatibility(
         device,
         acorr,
         [],
         f"nrand -l {B*L}",
-        f"acorr -l {L} -m {M} -o {o}",
+        f"acorr -l {L} -m {M} -o {out_format}",
         [],
         dx=L,
         dy=M + 1,
     )
 
-    U.check_differentiable(device, acorr, [B, L])
+    U.check_differentiability(device, acorr, [B, L])

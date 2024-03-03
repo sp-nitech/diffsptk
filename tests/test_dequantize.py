@@ -21,9 +21,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("quantizer", [0, 1])
-def test_compatibility(device, quantizer, v=10, n_bit=3, L=10):
-    dequantize = diffsptk.InverseUniformQuantization(v, n_bit, quantizer)
+def test_compatibility(device, module, quantizer, v=10, n_bit=3, L=10):
+    dequantize = U.choice(
+        module,
+        diffsptk.InverseUniformQuantization,
+        diffsptk.functional.dequantize,
+        {},
+        {"abs_max": v, "n_bit": n_bit, "quantizer": quantizer},
+    )
 
     U.check_compatibility(
         device,
@@ -34,4 +41,4 @@ def test_compatibility(device, quantizer, v=10, n_bit=3, L=10):
         [],
     )
 
-    U.check_differentiable(device, dequantize, [L])
+    U.check_differentiability(device, dequantize, [L])

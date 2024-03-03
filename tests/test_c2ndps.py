@@ -21,8 +21,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=8, L=16, B=2):
-    c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(M, L)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=8, L=16, B=2):
+    c2ndps = U.choice(
+        module,
+        diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum,
+        diffsptk.functional.c2ndps,
+        {"cep_order": M},
+        {"fft_length": L},
+    )
 
     U.check_compatibility(
         device,
@@ -35,4 +42,4 @@ def test_compatibility(device, M=8, L=16, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiable(device, c2ndps, [B, M + 1])
+    U.check_differentiability(device, c2ndps, [B, M + 1])

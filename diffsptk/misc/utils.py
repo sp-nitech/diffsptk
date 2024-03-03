@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 import numpy as np
 import soundfile as sf
 import torch
@@ -23,7 +21,7 @@ import torch.nn.functional as F
 import torchaudio
 
 UNVOICED_SYMBOL = 0
-TWO_PI = 2 * torch.pi
+TWO_PI = 6.283185307179586
 
 
 class Lambda(torch.nn.Module):
@@ -46,31 +44,33 @@ def next_power_of_two(n):
 
 def default_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:  # pragma: no cover
+    if t == torch.float:  # pragma: no cover
         return np.float32
-    elif t == torch.float64:  # pragma: no cover
+    elif t == torch.double:  # pragma: no cover
         return np.float64
-    else:
-        raise RuntimeError("Unknown default dtype: {t}")
+    raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def default_complex_dtype():
     t = torch.get_default_dtype()
-    if t == torch.float32:  # pragma: no cover
+    if t == torch.float:  # pragma: no cover
         return np.complex64
-    elif t == torch.float64:  # pragma: no cover
+    elif t == torch.double:  # pragma: no cover
         return np.complex128
-    else:
-        raise RuntimeError("Unknown default dtype: {t}")
+    raise RuntimeError("Unknown default dtype: {t}.")
 
 
 def numpy_to_torch(x):
-    if isinstance(x, (list, tuple)):
-        x = np.array(x)
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
     else:
         return torch.from_numpy(x.astype(default_dtype()))
+
+
+def to(x, dtype=None):
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+    return x.to(dtype=dtype)
 
 
 def to_3d(x):
@@ -94,27 +94,37 @@ def replicate1(x, left=True, right=True):
     return y
 
 
+def remove_gain(a, return_gain=False):
+    K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
+    a = F.pad(a1, (1, 0), value=1)
+    if return_gain:
+        ret = (K, a)
+    else:
+        ret = a
+    return ret
+
+
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
-    """Compute frequency warping factor under given sample rate.
+    """Compute an appropriate frequency warping factor under given sample rate.
 
     Parameters
     ----------
-    sr : int >= 1 [scalar]
+    sr : int >= 1
         Sample rate in Hz.
 
     mode : ['hts', 'auto']
         'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
         alpha in L2 sense.
 
-    n_freq : int >= 2 [scalar]
+    n_freq : int >= 2
         Number of sample points in the frequency domain.
 
-    n_alpha : int >= 1 [scalar]
+    n_alpha : int >= 1
         Number of sample points to search alpha.
 
     Returns
     -------
-    alpha : float [0 <= alpha < 1]
+    out : float in [0, 1)
         Frequency warping factor, :math:`\\alpha`.
 
     Examples
@@ -139,7 +149,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
         }
         key = str(int(sr))
         if key not in sr_to_alpha:
-            raise ValueError(f"unsupported sample rate: {sr}")
+            raise ValueError(f"Unsupported sample rate: {sr}.")
         selected_alpha = sr_to_alpha[key]
         return selected_alpha
 
@@ -171,7 +181,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     elif mode == "auto":
         alpha = get_auto_alpha(sr, n_freq, n_alpha)
     else:
-        raise ValueError("only hts and auto are supported")
+        raise ValueError("Only hts and auto are supported.")
 
     return alpha
 
@@ -179,8 +189,6 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
-    if gamma != 0:
-        warnings.warn("gamma is given, but will be ignored")
     assert 1 <= c
     return -1 / c
 
@@ -207,26 +215,12 @@ def clog(x):
     return torch.log(x.abs())
 
 
-def iir(x, b, a):
-    """Apply IIR filter.
+def iir(x, b=None, a=None):
+    if b is None:
+        b = torch.ones(1, dtype=x.dtype, device=x.device)
+    if a is None:
+        a = torch.ones(1, dtype=x.dtype, device=x.device)
 
-    Parameters
-    ----------
-    x : Tensor [shape=(..., B, T) or (..., T)]
-        Input signal.
-
-    b : Tensor [shape=(B, M+1) or (M+1,)]
-        Numerator coefficients.
-
-    a : Tensor [shape=(B, N+1) or (N+1,)]
-        Denominator coefficients.
-
-    Returns
-    -------
-    y : Tensor [shape=(..., B, T) or (..., T)]
-        Output signal.
-
-    """
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
@@ -249,7 +243,7 @@ def deconv1d(x, weight):
 
     Returns
     -------
-    y : Tensor [shape=(..., T-M)]
+    out : Tensor [shape=(..., T-M)]
         Output signal.
 
     """
@@ -263,27 +257,34 @@ def deconv1d(x, weight):
 
 
 def check_size(x, y, cause):
-    assert x == y, f"Unexpected {cause} (input {x} vs target {y})"
+    assert x == y, f"Unexpected {cause} (input {x} vs target {y})."
 
 
-def read(filename, double=False, **kwargs):
+def read(filename, double=False, device=None, **kwargs):
     """Read waveform from file.
 
     Parameters
     ----------
-    filename : str [scalar]
+    filename : str
         Path of wav file.
 
-    double : bool [scalar]
+    double : bool
         If True, return double-type tensor.
 
+    device : torch.device or None
+        Device of returned tensor.
+
     **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.read`.
+        Additional arguments passed to `soundfile.read
+        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.read>`_.
 
     Returns
     -------
     x : Tensor
         Waveform.
+
+    sr : int
+        Sample rate in Hz.
 
     Examples
     --------
@@ -299,6 +300,8 @@ def read(filename, double=False, **kwargs):
         x = torch.DoubleTensor(x)
     else:
         x = torch.FloatTensor(x)
+    if device is not None:
+        x = x.to(device)
     return x, sr
 
 
@@ -307,17 +310,18 @@ def write(filename, x, sr, **kwargs):
 
     Parameters
     ----------
-    filename : str [scalar]
+    filename : str
         Path of wav file.
 
     x : Tensor
         Waveform.
 
-    sr : int [scalar]
+    sr : int
         Sample rate in Hz.
 
     **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.write`.
+        Additional arguments passed to `soundfile.write
+        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.write>`_.
 
     Examples
     --------
@@ -325,4 +329,5 @@ def write(filename, x, sr, **kwargs):
     >>> diffsptk.write("out.wav", x, sr)
 
     """
-    sf.write(filename, x.cpu().numpy(), sr, **kwargs)
+    x = x.cpu().numpy() if torch.is_tensor(x) else x
+    sf.write(filename, x, sr, **kwargs)

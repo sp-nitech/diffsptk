@@ -24,17 +24,27 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
 @pytest.mark.parametrize("unvoiced_region", ["gauss", "zeros"])
-def test_compatibility(device, voiced_region, unvoiced_region, P=80):
+def test_compatibility(device, module, voiced_region, unvoiced_region, P=80):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
-    excite = diffsptk.ExcitationGeneration(
-        P, voiced_region=voiced_region, unvoiced_region=unvoiced_region
-    ).to(device)
+
+    excite = U.choice(
+        module,
+        diffsptk.ExcitationGeneration,
+        diffsptk.functional.excite,
+        {},
+        {
+            "frame_period": P,
+            "voiced_region": voiced_region,
+            "unvoiced_region": unvoiced_region,
+        },
+    )
 
     # Compute pitch and excitation on C++ version.
     cmd = "x2x +sd tools/SPTK/asset/data.short | "

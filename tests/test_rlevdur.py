@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=30, L=52, B=2):
-    rlevdur = diffsptk.ReverseLevinsonDurbin(M)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=30, L=52, B=2):
+    rlevdur = U.choice(
+        module,
+        diffsptk.ReverseLevinsonDurbin,
+        diffsptk.functional.rlevdur,
+        {"lpc_order": M},
+    )
 
     U.check_compatibility(
         device,
@@ -35,5 +41,5 @@ def test_compatibility(device, M=30, L=52, B=2):
         dy=M + 1,
     )
 
-    lpc = diffsptk.LPC(M, L)
-    U.check_differentiable(device, [rlevdur, lpc], [B, L])
+    lpc = diffsptk.LPC(L, M)
+    U.check_differentiability(device, [rlevdur, lpc], [B, L])

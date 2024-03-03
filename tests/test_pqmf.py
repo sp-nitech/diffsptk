@@ -37,7 +37,7 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         dy=K,
     )
 
-    U.check_differentiable(device, pqmf, [T])
+    U.check_differentiability(device, pqmf, [T])
 
 
 def test_various_shape(K=4, M=10, T=20):

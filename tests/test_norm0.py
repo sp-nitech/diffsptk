@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, B=2, M=4):
-    norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(M)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, B=2, M=4):
+    norm0 = U.choice(
+        module,
+        diffsptk.AllPoleToAllZeroDigitalFilterCoefficients,
+        diffsptk.functional.norm0,
+        {"filter_order": M},
+    )
 
     U.check_compatibility(
         device,
@@ -35,4 +41,4 @@ def test_compatibility(device, B=2, M=4):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, norm0, [B, M + 1])
+    U.check_differentiability(device, norm0, [B, M + 1])

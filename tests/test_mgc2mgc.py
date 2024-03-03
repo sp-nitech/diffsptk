@@ -22,6 +22,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("in_norm", [False, True])
 @pytest.mark.parametrize("out_norm", [False, True])
 @pytest.mark.parametrize("in_mul", [False, True])
@@ -30,20 +31,38 @@ import tests.utils as U
     "M, A, G", [[4, 0, 0.1], [4, 0, 0.2], [2, 0.1, 0.1], [6, 0.1, 0.2]]
 )
 def test_compatibility(
-    device, in_norm, out_norm, in_mul, out_mul, M, A, G, m=4, a=0, g=0.1, L=256, B=2
+    device,
+    module,
+    in_norm,
+    out_norm,
+    in_mul,
+    out_mul,
+    M,
+    A,
+    G,
+    m=4,
+    a=0,
+    g=0.1,
+    L=256,
+    B=2,
 ):
-    mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-        in_order=m,
-        out_order=M,
-        in_alpha=a,
-        out_alpha=A,
-        in_gamma=g,
-        out_gamma=G,
-        in_norm=in_norm,
-        out_norm=out_norm,
-        in_mul=in_mul,
-        out_mul=out_mul,
-        n_fft=L,
+    mgc2mgc = U.choice(
+        module,
+        diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum,
+        diffsptk.functional.mgc2mgc,
+        {"in_order": m},
+        {
+            "out_order": M,
+            "in_alpha": a,
+            "out_alpha": A,
+            "in_gamma": g,
+            "out_gamma": G,
+            "in_norm": in_norm,
+            "out_norm": out_norm,
+            "in_mul": in_mul,
+            "out_mul": out_mul,
+            "n_fft": L,
+        },
     )
 
     opt1 = f"-m {m} -M {m} -a 0 -A {a} -g {0} -G {g} "
@@ -73,4 +92,4 @@ def test_compatibility(
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [mgc2mgc, torch.abs], [B, m + 1])
+    U.check_differentiability(device, [mgc2mgc, torch.abs], [B, m + 1])

@@ -60,4 +60,4 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
         eq=eq(out_format),
     )
 
-    U.check_differentiable(device, ap, [(B, sr), (B, sr // P)], checks=[True, False])
+    U.check_differentiability(device, ap, [(B, sr), (B, sr // P)], checks=[True, False])

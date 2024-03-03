@@ -27,15 +27,14 @@ init:
 
 dev:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
-	. ./venv/bin/activate; python -m pip install pip --upgrade; \
-	python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
+	. ./venv/bin/activate; python -m pip install pip --upgrade
+	. ./venv/bin/activate; python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
 		-f https://download.pytorch.org/whl/$(PLATFORM)/torch_stable.html; \
-	python -m pip install -e .[dev]
+	. ./venv/bin/activate; python -m pip install -e .[dev]
 
 dist:
-	. ./venv/bin/activate; \
-	python -m build --wheel; \
-	python -m twine check dist/*.whl
+	. ./venv/bin/activate; python -m build --wheel
+	. ./venv/bin/activate; python -m twine check dist/*.whl
 
 dist-clean:
 	rm -rf dist
@@ -49,16 +48,14 @@ doc-clean:
 	fi
 
 check:
-	. ./venv/bin/activate; \
-	python -m black --check $(PROJECT) tests; \
-	python -m isort --check $(PROJECT) tests --project $(PROJECT); \
-	python -m pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; python -m black --check $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests --project $(PROJECT)
+	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
 
 format:
-	. ./venv/bin/activate; \
-	python -m black $(PROJECT) tests; \
-	python -m isort $(PROJECT) tests --project $(PROJECT); \
-	python -m pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; python -m black $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort $(PROJECT) tests --project $(PROJECT)
+	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \

@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, L=8, B=2):
-    idct = diffsptk.IDCT(L)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, L=8, B=2):
+    idct = U.choice(
+        module,
+        diffsptk.IDCT,
+        diffsptk.functional.idct,
+        {"dct_length": L},
+    )
 
     U.check_compatibility(
         device,
@@ -35,4 +41,4 @@ def test_compatibility(device, L=8, B=2):
         dy=L,
     )
 
-    U.check_differentiable(device, idct, [B, L])
+    U.check_differentiability(device, idct, [B, L])

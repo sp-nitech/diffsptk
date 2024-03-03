@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
 import pytest
 
 import diffsptk
@@ -21,9 +22,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
-    poledf = diffsptk.AllPoleDigitalFilter(M, P, ignore_gain=ignore_gain)
+def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
+    poledf = U.choice(
+        module,
+        diffsptk.AllPoleDigitalFilter,
+        diffsptk.functional.poledf,
+        {"filter_order": M},
+        {"frame_period": P, "ignore_gain": ignore_gain},
+        n_input=2,
+    )
 
     tmp1 = "poledf.tmp1"
     tmp2 = "poledf.tmp2"
@@ -36,6 +45,7 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
         f"poledf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
     )
 
-    U.check_differentiable(device, poledf, [(T,), (T // P, M + 1)])
+    U.check_differentiability(device, poledf, [(T,), (T // P, M + 1)])

@@ -86,4 +86,4 @@ def test_differentiable(device, ignore_gain, phase, mode, B=4, T=20, P=2, M=4):
     mglsadf = diffsptk.MLSA(
         M, P, ignore_gain=ignore_gain, phase=phase, mode=mode, **params
     )
-    U.check_differentiable(device, mglsadf, [(B, T), (B, T // P, M + 1)])
+    U.check_differentiability(device, mglsadf, [(B, T), (B, T // P, M + 1)])

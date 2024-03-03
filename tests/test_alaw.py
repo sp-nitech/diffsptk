@@ -21,8 +21,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, v=10, a=80, L=10):
-    alaw = diffsptk.ALawCompression(v, a)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, v=10, a=80, L=10):
+    alaw = U.choice(
+        module,
+        diffsptk.ALawCompression,
+        diffsptk.functional.alaw,
+        {},
+        {"abs_max": v, "a": a},
+    )
 
     U.check_compatibility(
         device,
@@ -33,4 +40,4 @@ def test_compatibility(device, v=10, a=80, L=10):
         [],
     )
 
-    U.check_differentiable(device, alaw, [L])
+    U.check_differentiability(device, alaw, [L])

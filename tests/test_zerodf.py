@@ -21,9 +21,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
-    zerodf = diffsptk.AllZeroDigitalFilter(M, P, ignore_gain=ignore_gain)
+def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
+    zerodf = U.choice(
+        module,
+        diffsptk.AllZeroDigitalFilter,
+        diffsptk.functional.zerodf,
+        {"filter_order": M},
+        {"frame_period": P, "ignore_gain": ignore_gain},
+        n_input=2,
+    )
 
     tmp1 = "zerodf.tmp1"
     tmp2 = "zerodf.tmp2"
@@ -38,4 +46,4 @@ def test_compatibility(device, ignore_gain, M=3, T=100, P=10):
         dx=[None, M + 1],
     )
 
-    U.check_differentiable(device, zerodf, [(T,), (T // P, M + 1)])
+    U.check_differentiability(device, zerodf, [(T,), (T // P, M + 1)])

@@ -15,15 +15,17 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("mode", ["fir", "iir"])
-def test_compatibility(device, mode, b=[-0.42, 1], a=[1, -0.42], T=100):
-    dfs = diffsptk.IIR(b, a, ir_length=30, mode=mode)
+@pytest.mark.parametrize("b", [(1,), (-0.42, 1)])
+@pytest.mark.parametrize("a", [(1,), (1, -0.42)])
+def test_compatibility(device, b, a, T=100):
+    dfs = diffsptk.IIR(b, a, ir_length=30)
 
     bb = " ".join([str(x) for x in b])
     aa = " ".join([str(x) for x in a])
@@ -37,57 +39,21 @@ def test_compatibility(device, mode, b=[-0.42, 1], a=[1, -0.42], T=100):
         [],
     )
 
-    U.check_differentiable(device, dfs, [T])
+    U.check_differentiability(device, dfs, [T])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("mode", ["fir", "iir"])
-def test_compatibility_b(device, mode, b=[-0.42, 1], T=100):
-    dfs = diffsptk.IIR(b, None, mode=mode)
+def test_compatibility_func(b=[-0.42, 1], a=[1, -0.42], T=20):
+    x = diffsptk.nrand(T)
 
-    bb = " ".join([str(x) for x in b])
+    y1 = diffsptk.IIR(b=b)(x)
+    y2 = diffsptk.functional.dfs(x, b=torch.tensor(b))
+    assert U.allclose(y1, y2)
 
-    tmp1 = "dfs.tmp1"
-    tmp2 = "dfs.tmp2"
-    U.check_compatibility(
-        device,
-        dfs,
-        [f"nrand -l {T} > {tmp1}", f"echo {bb} | x2x +ad > {tmp2}"],
-        [f"cat {tmp1}", f"cat {tmp2}"],
-        f"dfs -z {tmp2} < {tmp1}",
-        [f"rm {tmp1} {tmp2}"],
-    )
-
-    U.check_differentiable(device, dfs, [(T,), (len(b),)])
+    y1 = diffsptk.IIR(a=a, ir_length=20)(x)
+    y2 = diffsptk.functional.dfs(x, a=torch.tensor(a))
+    assert U.allclose(y1, y2)
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("mode", ["iir"])
-def test_compatibility_b_a(device, mode, b=[-0.42, 1], a=[1, -0.42, 0], T=100):
-    dfs = diffsptk.IIR(None, None, mode=mode)
-
-    bb = " ".join([str(x) for x in b])
-    aa = " ".join([str(x) for x in a])
-
-    tmp1 = "dfs.tmp1"
-    tmp2 = "dfs.tmp2"
-    tmp3 = "dfs.tmp3"
-    U.check_compatibility(
-        device,
-        dfs,
-        [
-            f"nrand -l {T} > {tmp1}",
-            f"echo {bb} | x2x +ad > {tmp2}",
-            f"echo {aa} | x2x +ad > {tmp3}",
-        ],
-        [f"cat {tmp1}", f"cat {tmp2}", f"cat {tmp3}"],
-        f"dfs -z {tmp2} -p {tmp3} < {tmp1}",
-        [f"rm {tmp1} {tmp2} {tmp3}"],
-    )
-
-    U.check_differentiable(device, dfs, [(T,), (len(b),), (len(a),)])
-
-
-def test_various_shape(T=10):
-    pqmf = diffsptk.IIR()
-    U.check_various_shape(pqmf, [(T,), (1, T), (1, 1, T)])
+def test_learnable(b=[-0.42, 1], T=20):
+    dfs = diffsptk.IIR(b, learnable=True)
+    U.check_learnable(dfs, (T,))

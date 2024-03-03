@@ -21,8 +21,9 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("o", [0, 1, 2])
-def test_compatibility(device, o, B=2, T=100, L=20):
+def test_compatibility(device, module, o, B=2, T=100, L=20):
     if o == 0:
         frame_length = None
         reduction = "mean"
@@ -37,7 +38,14 @@ def test_compatibility(device, o, B=2, T=100, L=20):
         reduction = "none"
         dim = T // L
 
-    snr = diffsptk.SNR(frame_length, full=True, reduction=reduction)
+    snr = U.choice(
+        module,
+        diffsptk.SNR,
+        diffsptk.functional.snr,
+        {},
+        {"frame_length": frame_length, "full": True, "reduction": reduction},
+        n_input=2,
+    )
 
     tmp1 = "snr.tmp1"
     tmp2 = "snr.tmp2"
@@ -52,4 +60,4 @@ def test_compatibility(device, o, B=2, T=100, L=20):
         dy=dim,
     )
 
-    U.check_differentiable(device, snr, [(B, T), (B, T)])
+    U.check_differentiability(device, snr, [(B, T), (B, T)])

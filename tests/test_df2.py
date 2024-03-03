@@ -40,4 +40,4 @@ def test_compatibility(device, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
         [],
     )
 
-    U.check_differentiable(device, df2, [T])
+    U.check_differentiability(device, df2, [T])

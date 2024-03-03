@@ -21,9 +21,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "mean"])
-def test_compatibility(device, reduction, B=2, L=10):
-    rmse = diffsptk.RMSE(reduction=reduction)
+def test_compatibility(device, module, reduction, B=2, L=10):
+    rmse = U.choice(
+        module,
+        diffsptk.RMSE,
+        diffsptk.functional.rmse,
+        {},
+        {"reduction": reduction},
+        n_input=2,
+    )
 
     opt = "-f" if reduction == "none" else ""
     tmp1 = "rmse.tmp1"
@@ -38,4 +46,4 @@ def test_compatibility(device, reduction, B=2, L=10):
         dx=L,
     )
 
-    U.check_differentiable(device, rmse, [(B, L), (B, L)])
+    U.check_differentiability(device, rmse, [(B, L), (B, L)])

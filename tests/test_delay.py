@@ -21,10 +21,17 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("S", [-2, 0, 2])
 @pytest.mark.parametrize("keeplen", [False, True])
-def test_compatibility(device, S, keeplen, T=20, B=2):
-    delay = diffsptk.Delay(S, keeplen=keeplen)
+def test_compatibility(device, module, S, keeplen, T=20, B=2):
+    delay = U.choice(
+        module,
+        diffsptk.Delay,
+        diffsptk.functional.delay,
+        {},
+        {"start": S, "keeplen": keeplen},
+    )
 
     opt = "-k" if keeplen else ""
     U.check_compatibility(
@@ -34,7 +41,6 @@ def test_compatibility(device, S, keeplen, T=20, B=2):
         f"ramp -l {T}",
         f"delay -s {S} {opt}",
         [],
-        opt={"dim": 0},
     )
 
-    U.check_differentiable(device, delay, [B, T])
+    U.check_differentiability(device, delay, [B, T])

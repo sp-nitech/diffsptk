@@ -22,9 +22,16 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("gamma, c", [[0, None], [1, None], [0, 2]])
-def test_compatibility(device, gamma, c, M=4, B=2):
-    ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(M, gamma, c)
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("gamma, c", [(0, None), (1, None), (0, 2)])
+def test_compatibility(device, module, gamma, c, M=4, B=2):
+    ignorm = U.choice(
+        module,
+        diffsptk.GeneralizedCepstrumInverseGainNormalization,
+        diffsptk.functional.ignorm,
+        {"cep_order": M},
+        {"gamma": gamma, "c": c},
+    )
 
     opt = f"-g {gamma}" if c is None else f"-c {c}"
     U.check_compatibility(
@@ -32,10 +39,10 @@ def test_compatibility(device, gamma, c, M=4, B=2):
         ignorm,
         [],
         f"nrand -l {B*(M+1)} | sopr -ABS",
-        f"ignorm {opt} -m {M}",
+        f"ignorm -m {M} {opt}",
         [],
         dx=M + 1,
         dy=M + 1,
     )
 
-    U.check_differentiable(device, [ignorm, torch.abs], [B, M + 1])
+    U.check_differentiability(device, [ignorm, torch.abs], [B, M + 1])

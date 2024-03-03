@@ -21,8 +21,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=9, alpha=0.1, B=2):
-    b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(M, alpha)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=9, alpha=0.1, B=2):
+    b2mc = U.choice(
+        module,
+        diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum,
+        diffsptk.functional.b2mc,
+        {"cep_order": M},
+        {"alpha": alpha},
+    )
 
     U.check_compatibility(
         device,
@@ -35,4 +42,4 @@ def test_compatibility(device, M=9, alpha=0.1, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiable(device, b2mc, [B, M + 1])
+    U.check_differentiability(device, b2mc, [B, M + 1])

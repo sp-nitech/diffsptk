@@ -21,6 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize(
     "seed",
     [
@@ -29,8 +30,14 @@ import tests.utils as U
         [2, 3],
     ],
 )
-def test_compatibility(device, seed, T=100, D=2):
-    mlpg = diffsptk.MaximumLikelihoodParameterGeneration(T, seed=seed)
+def test_compatibility(device, module, seed, T=100, D=2):
+    mlpg = U.choice(
+        module,
+        diffsptk.MaximumLikelihoodParameterGeneration,
+        diffsptk.functional.mlpg,
+        {"size": T},
+        {"seed": seed},
+    )
 
     if U.is_array(seed[0]):
         opt = " ".join(["-d " + " ".join([str(w) for w in window]) for window in seed])
@@ -61,4 +68,4 @@ def test_compatibility(device, seed, T=100, D=2):
 def test_differentiable(device, B=2, T=20, D=2):
     delta = diffsptk.Delta()
     mlpg = diffsptk.MLPG(T)
-    U.check_differentiable(device, [mlpg, delta], [B, T, D])
+    U.check_differentiability(device, [mlpg, delta], [B, T, D])

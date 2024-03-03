@@ -35,8 +35,26 @@ def compose(*fs):
     return functools.reduce(compose2_outer_kwargs, fs)
 
 
+def choice(first, a, b, a_params, params={}, n_input=1):
+    if first:
+        return a(**a_params, **params)
+    elif n_input == 1:
+
+        def func(x, **kwargs):
+            return b(x, **params, **kwargs)
+
+        return func
+    elif n_input == 2:
+
+        def func(x, y, **kwargs):
+            return b(x, y, **params, **kwargs)
+
+        return func
+    raise ValueError("n_input must be 1 or 2.")
+
+
 def allclose(a, b, rtol=None, atol=None):
-    is_double = torch.get_default_dtype() == torch.float64
+    is_double = torch.get_default_dtype() == torch.double
     if rtol is None:
         rtol = 1e-5 if is_double else 1e-4
     if atol is None:
@@ -52,9 +70,9 @@ def call(cmd, get=True):
             text=True,
             stdout=subprocess.PIPE,
         )
-        is_double = torch.get_default_dtype() == torch.float64
+        is_double = torch.get_default_dtype() == torch.double
         data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.float64 if is_double else np.float32
+            res.stdout, sep="\n", dtype=np.double if is_double else np.float32
         )
         assert len(data) > 0, f"Failed to run command {cmd}"
         return data
@@ -78,6 +96,7 @@ def check_compatibility(
     dy=None,
     eq=None,
     opt={},
+    key=[],
     sr=None,
     verbose=False,
     **kwargs,
@@ -107,8 +126,6 @@ def check_compatibility(
                 x[-1] = x[-1].reshape(-1, *dx)
             else:
                 x[-1] = x[-1].reshape(-1, dx)
-        else:
-            pass
 
     if len(setup) == 0:
         y = call(f"{inputs[0]} | {target}")
@@ -121,7 +138,11 @@ def check_compatibility(
         call(cmd, get=False)
 
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
-    y_hat = module(*x, **opt).cpu().numpy()
+    if len(key) == 0:
+        y_hat = module(*x, **opt).cpu().numpy()
+    else:
+        x = {k: v for k, v in zip(key, x)}
+        y_hat = module(**x, **opt).cpu().numpy()
 
     if sr is not None:
         sf.write("output.wav", y_hat / 32768, sr)
@@ -137,7 +158,19 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
-def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1):
+def check_differentiability(
+    device,
+    modules,
+    shapes,
+    *,
+    dtype=None,
+    checks=None,
+    opt={},
+    load=1,
+    check_zero_grad=True,
+    check_nan_grad=True,
+    check_inf_grad=True,
+):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -150,7 +183,7 @@ def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1
 
     x = []
     for shape in shapes:
-        x.append(torch.randn(*shape, requires_grad=True, device=device))
+        x.append(torch.randn(*shape, requires_grad=True, device=device, dtype=dtype))
 
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
     optimizer = torch.optim.SGD(x, lr=0.01)
@@ -171,12 +204,12 @@ def check_differentiable(device, modules, shapes, *, checks=None, opt={}, load=1
         if not checks[i]:
             continue
         g = x[i].grad.cpu().numpy()
-        if not np.any(g):
-            warnings.warn(f"detect zero gradient at {i}-th input")
-        if np.any(np.isnan(g)):
-            warnings.warn(f"detect NaN-gradient at {i}-th input")
-        if np.any(np.isinf(g)):
-            warnings.warn(f"detect Inf-gradient at {i}-th input")
+        if check_zero_grad and not np.any(g):
+            warnings.warn(f"Detected zero gradient at {i}-th input")
+        if check_nan_grad and np.any(np.isnan(g)):
+            warnings.warn(f"Detected NaN-gradient at {i}-th input")
+        if check_inf_grad and np.any(np.isinf(g)):
+            warnings.warn(f"Detected Inf-gradient at {i}-th input")
 
 
 def check_various_shape(module, shapes, *, preprocess=None):
