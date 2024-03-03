@@ -43,7 +43,7 @@ def mirror(x, half=False):
 
     Returns
     -------
-    Tensor [shape=(..., 2L-1)]
+    out : Tensor [shape=(..., 2L-1)]
         Output tensor.
 
     """

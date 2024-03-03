@@ -1210,7 +1210,7 @@ def mgc2sp(
     )
 
 
-def mlpg(u, seed=[[-0.5, 0, 0.5]]):
+def mlpg(u, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
     """Perform MLPG to obtain smoothed static sequence.
 
     Parameters

@@ -243,7 +243,7 @@ def deconv1d(x, weight):
 
     Returns
     -------
-    Tensor [shape=(..., T-M)]
+    out : Tensor [shape=(..., T-M)]
         Output signal.
 
     """
