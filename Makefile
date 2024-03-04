@@ -17,7 +17,7 @@
 PROJECT := diffsptk
 MODULE  :=
 
-PYTHON_VERSION     := 3.8
+PYTHON_VERSION     := 3.9
 TORCH_VERSION      := 1.11.0
 TORCHAUDIO_VERSION := 0.11.0
 PLATFORM           := cu113

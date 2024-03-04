@@ -16,7 +16,7 @@ diffsptk
 
 Requirements
 ------------
-- Python 3.8+
+- Python 3.9+
 - PyTorch 1.11.0+
 
 

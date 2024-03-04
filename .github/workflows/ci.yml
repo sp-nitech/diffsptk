@@ -16,10 +16,10 @@ jobs:
       max-parallel: 4
       matrix:
         include:
-          - python: 3.8
+          - python: 3.9
             torch: 1.11.0
             torchaudio: 0.11.0
-          - python: 3.11
+          - python: 3.12
             torch: 2.2.1
             torchaudio: 2.2.1
 
