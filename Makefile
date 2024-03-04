@@ -48,14 +48,12 @@ doc-clean:
 	fi
 
 check:
-	. ./venv/bin/activate; python -m black --check $(PROJECT) tests
-	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests --project $(PROJECT)
-	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; python -m ruff check $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests
 
 format:
-	. ./venv/bin/activate; python -m black $(PROJECT) tests
-	. ./venv/bin/activate; python -m isort $(PROJECT) tests --project $(PROJECT)
-	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
+	. ./venv/bin/activate; python -m ruff format $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort $(PROJECT) tests
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
