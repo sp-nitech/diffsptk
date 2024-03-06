@@ -12,7 +12,7 @@
   ]
   description = "Speech signal processing modules for machine learning"
   readme = "README.md"
-  requires-python = ">=3.9"
+  requires-python = ">=3.8"
   keywords = [
     "dsp",
     "pytorch",
@@ -22,13 +22,17 @@
   license = {text = "Apache 2.0"}
   classifiers = [
     "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
   ]
   dependencies = [
     "librosa >= 0.9.1, <= 0.9.2",
+    "resampy >= 0.4.3",
     "soundfile >= 0.10.2",
     "torch >= 1.11.0",
     "torchaudio >= 0.11.0",
