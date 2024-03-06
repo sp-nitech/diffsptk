@@ -11,6 +11,7 @@ _build/
 
 # tools
 tools/SPTK/
+tools/taplo/
 tools/toml/
 
 # misc

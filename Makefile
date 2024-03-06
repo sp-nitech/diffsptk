@@ -48,12 +48,30 @@ doc-clean:
 	fi
 
 check:
+	@if [ ! -x ./tools/taplo/taplo ]; then \
+		echo ""; \
+		echo "Error: please install taplo-cli"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
 	. ./venv/bin/activate; python -m ruff check $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests
+	./tools/taplo/taplo format --check pyproject.toml
 
 format:
+	@if [ ! -x ./tools/taplo/taplo ]; then \
+		echo ""; \
+		echo "Error: please install taplo-cli"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
 	. ./venv/bin/activate; python -m ruff format $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort $(PROJECT) tests
+	./tools/taplo/taplo format pyproject.toml
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
@@ -79,7 +97,7 @@ tool-clean:
 	cd tools; make clean
 
 update:
-	@if [ ! -x tools/toml/toml ]; then \
+	@if [ ! -x ./tools/toml/toml ]; then \
 		echo ""; \
 		echo "Error: please install toml-cli"; \
 		echo ""; \
