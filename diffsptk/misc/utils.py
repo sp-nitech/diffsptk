@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from importlib import import_module
+
 import numpy as np
 import soundfile as sf
 import torch
@@ -32,6 +34,11 @@ class Lambda(torch.nn.Module):
 
     def forward(self, x):
         return self.func(x, **self.opt)
+
+
+def delayed_import(module_path, item_name):
+    module = import_module(module_path)
+    return getattr(module, item_name)
 
 
 def is_power_of_two(n):

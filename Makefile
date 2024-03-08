@@ -31,6 +31,7 @@ dev:
 	. ./venv/bin/activate; python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
 		-f https://download.pytorch.org/whl/$(PLATFORM)/torch_stable.html; \
 	. ./venv/bin/activate; python -m pip install -e .[dev]
+	. ./venv/bin/activate; python -m pip install icc-rt
 
 dist:
 	. ./venv/bin/activate; python -m build --wheel

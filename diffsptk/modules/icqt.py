@@ -30,14 +30,12 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
 # ------------------------------------------------------------------------ #
 
-import librosa
-from librosa.core.constantq import __et_relative_bw as et_relative_bw
-from librosa.core.constantq import __vqt_filter_fft as vqt_filter_fft
 import numpy as np
 import torch
 import torch.nn as nn
 import torchaudio
 
+from ..misc.utils import delayed_import
 from ..misc.utils import numpy_to_torch
 from .istft import InverseShortTimeFourierTransform as ISTFT
 
@@ -103,6 +101,11 @@ class InverseConstantQTransform(nn.Module):
         **kwargs,
     ):
         super(InverseConstantQTransform, self).__init__()
+
+        import librosa
+
+        et_relative_bw = delayed_import("librosa.core.constantq", "__et_relative_bw")
+        vqt_filter_fft = delayed_import("librosa.core.constantq", "__vqt_filter_fft")
 
         assert 1 <= frame_period
         assert 1 <= sample_rate
