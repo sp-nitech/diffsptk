@@ -98,17 +98,16 @@ tool-clean:
 	cd tools; make clean
 
 update:
-	@if [ ! -x ./tools/toml/toml ]; then \
+	@if [ ! -x ./tools/taplo/taplo ]; then \
 		echo ""; \
-		echo "Error: please install toml-cli"; \
+		echo "Error: please install taplo-cli"; \
 		echo ""; \
 		echo "  make tool"; \
 		echo ""; \
 		exit 1; \
 	fi
 	. ./venv/bin/activate; python -m pip install --upgrade pip
-	@for package in $$(./tools/toml/toml get pyproject.toml project.optional-dependencies.dev | \
-		sed 's/"//g' | tr -d '[]' | tr , ' '); do \
+	@for package in $$(./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev); do \
 		. ./venv/bin/activate; python -m pip install --upgrade $$package; \
 	done
 
