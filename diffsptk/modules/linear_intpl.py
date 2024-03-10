@@ -86,9 +86,7 @@ class LinearInterpolation(nn.Module):
             size=T * upsampling_factor + 1,
             mode="linear",
             align_corners=True,
-        )[
-            ..., :-1
-        ]  # Remove the padded value.
+        )[..., :-1]  # Remove the padded value.
         y = x.mT.reshape(B, -1, D)
 
         if d == 1:

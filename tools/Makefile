@@ -14,22 +14,23 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-all: SPTK toml
+all: SPTK taplo
 
 SPTK:
 	git clone https://github.com/sp-nitech/SPTK.git
 	cd SPTK; make
 
-toml:
-	mkdir -p toml
-	wget https://github.com/gnprice/toml-cli/releases/download/v0.2.3/toml-0.2.3-x86_64-linux.tar.gz -O toml.tar.gz
-	tar xzvf toml.tar.gz -C toml --strip-components 1
-	rm -rf toml.tar.gz
+taplo:
+	mkdir -p taplo
+	wget https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-linux-x86_64.gz -O taplo.gz
+	gunzip -c taplo.gz > taplo/taplo
+	chmod +x taplo/taplo
+	rm -rf taplo.gz
 
 update:
 	cd SPTK; git pull; make
 
 clean:
-	rm -rf SPTK toml
+	rm -rf SPTK taplo
 
 .PHONY: all update clean

@@ -25,7 +25,7 @@ import torch
 
 
 def is_array(x):
-    return type(x) is list or type(x) is tuple
+    return isinstance(x, (list, tuple))
 
 
 def compose(*fs):

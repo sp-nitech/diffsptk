@@ -17,7 +17,7 @@
 PROJECT := diffsptk
 MODULE  :=
 
-PYTHON_VERSION     := 3.8
+PYTHON_VERSION     := 3.9
 TORCH_VERSION      := 1.11.0
 TORCHAUDIO_VERSION := 0.11.0
 PLATFORM           := cu113
@@ -31,6 +31,7 @@ dev:
 	. ./venv/bin/activate; python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
 		-f https://download.pytorch.org/whl/$(PLATFORM)/torch_stable.html; \
 	. ./venv/bin/activate; python -m pip install -e .[dev]
+	. ./venv/bin/activate; python -m pip install icc-rt
 
 dist:
 	. ./venv/bin/activate; python -m build --wheel
@@ -48,14 +49,30 @@ doc-clean:
 	fi
 
 check:
-	. ./venv/bin/activate; python -m black --check $(PROJECT) tests
-	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests --project $(PROJECT)
-	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
+	@if [ ! -x ./tools/taplo/taplo ]; then \
+		echo ""; \
+		echo "Error: please install taplo-cli"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
+	. ./venv/bin/activate; python -m ruff check $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests
+	./tools/taplo/taplo format --check pyproject.toml
 
 format:
-	. ./venv/bin/activate; python -m black $(PROJECT) tests
-	. ./venv/bin/activate; python -m isort $(PROJECT) tests --project $(PROJECT)
-	. ./venv/bin/activate; python -m pflake8 $(PROJECT) tests
+	@if [ ! -x ./tools/taplo/taplo ]; then \
+		echo ""; \
+		echo "Error: please install taplo-cli"; \
+		echo ""; \
+		echo "  make tool"; \
+		echo ""; \
+		exit 1; \
+	fi
+	. ./venv/bin/activate; python -m ruff format $(PROJECT) tests
+	. ./venv/bin/activate; python -m isort $(PROJECT) tests
+	./tools/taplo/taplo format pyproject.toml
 
 test:
 	@if [ ! -d tools/SPTK/bin ]; then \
@@ -81,17 +98,16 @@ tool-clean:
 	cd tools; make clean
 
 update:
-	@if [ ! -x tools/toml/toml ]; then \
+	@if [ ! -x ./tools/taplo/taplo ]; then \
 		echo ""; \
-		echo "Error: please install toml-cli"; \
+		echo "Error: please install taplo-cli"; \
 		echo ""; \
 		echo "  make tool"; \
 		echo ""; \
 		exit 1; \
 	fi
 	. ./venv/bin/activate; python -m pip install --upgrade pip
-	@for package in $$(./tools/toml/toml get pyproject.toml project.optional-dependencies.dev | \
-		sed 's/"//g' | tr -d '[]' | tr , ' '); do \
+	@for package in $$(./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev); do \
 		. ./venv/bin/activate; python -m pip install --upgrade $$package; \
 	done
 

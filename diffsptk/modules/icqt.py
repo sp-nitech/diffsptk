@@ -30,17 +30,14 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
 # ------------------------------------------------------------------------ #
 
-import librosa
 import numpy as np
 import torch
 import torch.nn as nn
 import torchaudio
 
+from ..misc.utils import delayed_import
 from ..misc.utils import numpy_to_torch
 from .istft import InverseShortTimeFourierTransform as ISTFT
-
-_vqt_filter_fft = librosa.core.constantq.__vqt_filter_fft
-_bpo_to_alpha = librosa.core.constantq.__bpo_to_alpha
 
 
 class InverseConstantQTransform(nn.Module):
@@ -105,6 +102,11 @@ class InverseConstantQTransform(nn.Module):
     ):
         super(InverseConstantQTransform, self).__init__()
 
+        import librosa
+
+        et_relative_bw = delayed_import("librosa.core.constantq", "__et_relative_bw")
+        vqt_filter_fft = delayed_import("librosa.core.constantq", "__vqt_filter_fft")
+
         assert 1 <= frame_period
         assert 1 <= sample_rate
 
@@ -120,7 +122,10 @@ class InverseConstantQTransform(nn.Module):
             tuning=tuning,
         )
 
-        alpha = _bpo_to_alpha(n_bin_per_octave)
+        if K == 1:
+            alpha = et_relative_bw(B)
+        else:
+            alpha = librosa.filters._relative_bandwidth(freqs=freqs)
 
         lengths, _ = librosa.filters.wavelet_lengths(
             freqs=freqs,
@@ -132,7 +137,7 @@ class InverseConstantQTransform(nn.Module):
         if scale:
             cqt_scale = np.sqrt(lengths)
         else:
-            cqt_scale = np.ones(n_bin)
+            cqt_scale = np.ones(K)
         self.register_buffer("cqt_scale", numpy_to_torch(cqt_scale))
 
         fp = [frame_period]
@@ -156,14 +161,14 @@ class InverseConstantQTransform(nn.Module):
             sl = slice(B * i, B * i + n_filter)
             slices.append(sl)
 
-            fft_basis, fft_length, _ = _vqt_filter_fft(
+            fft_basis, fft_length, _ = vqt_filter_fft(
                 sr[i],
                 freqs[sl],
                 filter_scale,
                 norm,
                 sparsity,
                 window=window,
-                alpha=alpha,
+                alpha=alpha[sl],
             )
 
             fft_basis = np.asarray(fft_basis.conj().todense())

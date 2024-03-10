@@ -25,8 +25,9 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("fp", [127, 128])
+@pytest.mark.parametrize("K", [1, 252])
 @pytest.mark.parametrize("scale", [False, True])
-def test_compatibility(device, fp, scale, K=252, B=36, f_min=32.7, verbose=False):
+def test_compatibility(device, fp, K, scale, B=36, f_min=32.7, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return
 

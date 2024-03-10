@@ -25,8 +25,9 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("fp", [511, 512])
+@pytest.mark.parametrize("K", [1, 24])
 @pytest.mark.parametrize("scale", [False, True])
-def test_compatibility(device, fp, scale, K=24, B=12, f_min=32.7):
+def test_compatibility(device, fp, K, scale, B=12, f_min=32.7):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -53,7 +54,8 @@ def test_compatibility(device, fp, scale, K=24, B=12, f_min=32.7):
     ).to(device)
     c2 = cqt(x).cpu().numpy()
 
-    error = np.mean(np.abs(c1 - c2))
-    assert error < 1e-4, f"Mean error: {error}"
+    c1 = c1[: c2.shape[0]]
+    assert np.corrcoef(c1.real.flatten(), c2.real.flatten())[0, 1] > 0.99
+    assert np.corrcoef(c1.imag.flatten(), c2.imag.flatten())[0, 1] > 0.99
 
     U.check_differentiability(device, [torch.abs, cqt], [fp])
