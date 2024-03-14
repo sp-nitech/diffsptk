@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-all: SPTK taplo
+all: SPTK taplo yamlfmt
 
 SPTK:
 	git clone https://github.com/sp-nitech/SPTK.git
@@ -25,12 +25,15 @@ taplo:
 	wget https://github.com/tamasfe/taplo/releases/download/0.8.1/taplo-linux-x86_64.gz -O taplo.gz
 	gunzip -c taplo.gz > taplo/taplo
 	chmod +x taplo/taplo
-	rm -rf taplo.gz
+	rm -f taplo.gz
 
-update:
-	cd SPTK; git pull; make
+yamlfmt:
+	mkdir -p yamlfmt
+	wget https://github.com/google/yamlfmt/releases/download/v0.11.0/yamlfmt_0.11.0_Linux_x86_64.tar.gz -O yamlfmt.tar.gz
+	tar xzf yamlfmt.tar.gz -C yamlfmt
+	rm -f yamlfmt.tar.gz
 
 clean:
-	rm -rf SPTK taplo
+	rm -rf SPTK taplo yamlfmt
 
-.PHONY: all update clean
+.PHONY: all clean
