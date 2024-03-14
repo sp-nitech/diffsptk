@@ -40,7 +40,7 @@ jobs:
           sudo apt-get install -qq -y libsndfile1
 
       - name: Install
-        run: make PYTHON_VERSION=${{ matrix.python }} TORCH_VERSION=${{ matrix.torch }} TORCHAUDIO_VERSION=${{ matrix.torchaudio }} PLATFORM=cpu dev tool
+        run: make PYTHON_VERSION=${{ matrix.python }} TORCH_VERSION=${{ matrix.torch }} TORCHAUDIO_VERSION=${{ matrix.torchaudio }} PLATFORM=cpu venv tool
 
       - name: Check
         run: make check
