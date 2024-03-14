@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+
   pull_request:
     branches:
       - '**'
@@ -39,7 +40,7 @@ jobs:
           sudo apt-get install -qq -y libsndfile1
 
       - name: Install
-        run: make PYTHON_VERSION=${{ matrix.python }} TORCH_VERSION=${{ matrix.torch }} TORCHAUDIO_VERSION=${{ matrix.torchaudio }} PLATFORM=cpu dev tool
+        run: make PYTHON_VERSION=${{ matrix.python }} TORCH_VERSION=${{ matrix.torch }} TORCHAUDIO_VERSION=${{ matrix.torchaudio }} PLATFORM=cpu venv tool
 
       - name: Check
         run: make check
@@ -48,10 +49,11 @@ jobs:
         run: make test
 
       - name: Coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: true
-          files: ./coverage.xml
+          file: ./coverage.xml
           flags: unittests
           name: codecov-umbrella
+          token: ${{ secrets.CODECOV_TOKEN }}
           verbose: true

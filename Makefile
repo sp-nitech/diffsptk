@@ -22,10 +22,7 @@ TORCH_VERSION      := 1.11.0
 TORCHAUDIO_VERSION := 0.11.0
 PLATFORM           := cu113
 
-init:
-	pip install -e .
-
-dev:
+venv:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv; \
 	. ./venv/bin/activate; python -m pip install pip --upgrade
 	. ./venv/bin/activate; python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
@@ -48,41 +45,19 @@ doc-clean:
 		. ./venv/bin/activate; cd docs; make clean; \
 	fi
 
-check:
-	@if [ ! -x ./tools/taplo/taplo ]; then \
-		echo ""; \
-		echo "Error: please install taplo-cli"; \
-		echo ""; \
-		echo "  make tool"; \
-		echo ""; \
-		exit 1; \
-	fi
+check: tool
 	. ./venv/bin/activate; python -m ruff check $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests
-	./tools/taplo/taplo format --check pyproject.toml
+	./tools/taplo/taplo fmt --check pyproject.toml
+	./tools/yamlfmt/yamlfmt --lint *.yml .github/workflows/*.yml
 
-format:
-	@if [ ! -x ./tools/taplo/taplo ]; then \
-		echo ""; \
-		echo "Error: please install taplo-cli"; \
-		echo ""; \
-		echo "  make tool"; \
-		echo ""; \
-		exit 1; \
-	fi
+format: tool
 	. ./venv/bin/activate; python -m ruff format $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort $(PROJECT) tests
-	./tools/taplo/taplo format pyproject.toml
+	./tools/taplo/taplo fmt pyproject.toml
+	./tools/yamlfmt/yamlfmt *.yml .github/workflows/*.yml
 
-test:
-	@if [ ! -d tools/SPTK/bin ]; then \
-		echo ""; \
-		echo "Error: please install C++ version of SPTK"; \
-		echo ""; \
-		echo "  make tool"; \
-		echo ""; \
-		exit 1; \
-	fi
+test: tool
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
 	python -m pytest -s --cov=./ --cov-report=xml $$module
@@ -97,15 +72,7 @@ tool:
 tool-clean:
 	cd tools; make clean
 
-update:
-	@if [ ! -x ./tools/taplo/taplo ]; then \
-		echo ""; \
-		echo "Error: please install taplo-cli"; \
-		echo ""; \
-		echo "  make tool"; \
-		echo ""; \
-		exit 1; \
-	fi
+update: tool
 	. ./venv/bin/activate; python -m pip install --upgrade pip
 	@for package in $$(./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev); do \
 		. ./venv/bin/activate; python -m pip install --upgrade $$package; \
@@ -115,4 +82,4 @@ clean: dist-clean doc-clean test-clean tool-clean
 	rm -rf venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
-.PHONY: init dev dist dist-clean doc doc-clean check format test test-clean tool tool-clean update clean
+.PHONY: venv dist dist-clean doc doc-clean check format test test-clean tool tool-clean update clean

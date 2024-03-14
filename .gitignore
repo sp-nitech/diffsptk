@@ -10,8 +10,7 @@ coverage.xml
 _build/
 
 # tools
-tools/SPTK/
-tools/taplo/
+tools/**/
 
 # misc
 __pycache__/
