@@ -599,6 +599,46 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     )
 
 
+def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3):
+    """Compute histogram.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Input data.
+
+    n_bin : int >= 1
+        Number of bins, :math:`K`.
+
+    lower_bound : float < U
+        Lower bound of the histogram, :math:`L`.
+
+    upper_bound : float > L
+        Upper bound of the histogram, :math:`U`.
+
+    norm : bool
+        If True, normalize the histogram.
+
+    softness : float > 0
+        A smoothing parameter. The smaller value makes the output closer to the true
+        histogram, but the gradient vanishes.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., K)]
+        Histogram in [L, U].
+
+    """
+    return nn.Histogram._func(
+        x,
+        n_bin=n_bin,
+        lower_bound=lower_bound,
+        upper_bound=upper_bound,
+        norm=norm,
+        softness=softness,
+    )
+
+
 def ialaw(y, abs_max=1, a=87.6):
     """Expand waveform by A-law algorithm.
 
@@ -1846,7 +1886,7 @@ def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
     )
 
 
-def zcross(x, frame_length, norm=False):
+def zcross(x, frame_length, norm=False, softness=1e-3):
     """Compute zero-crossing rate.
 
     Parameters
@@ -1860,13 +1900,19 @@ def zcross(x, frame_length, norm=False):
     norm : bool
         If True, divide zero-crossing rate by frame length.
 
+    softness : float > 0
+        A smoothing parameter. The smaller value makes the output closer to the true
+        zero-crossing rate, but the gradient vanishes.
+
     Returns
     -------
     out : Tensor [shape=(..., T/L)]
         Zero-crossing rate.
 
     """
-    return nn.ZeroCrossingAnalysis._func(x, frame_length=frame_length, norm=norm)
+    return nn.ZeroCrossingAnalysis._func(
+        x, frame_length=frame_length, norm=norm, softness=softness
+    )
 
 
 def zerodf(x, b, frame_period=80, ignore_gain=False):

@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,27 +24,37 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("norm", [False, True])
-def test_compatibility(device, module, norm, L=10, T=50):
-    zcross = U.choice(
+def test_compatibility(
+    device, module, norm, K=4, lower_bound=-1, upper_bound=1, L=50, B=2
+):
+    histogram = U.choice(
         module,
-        diffsptk.ZeroCrossingAnalysis,
-        diffsptk.functional.zcross,
+        diffsptk.Histogram,
+        diffsptk.functional.histogram,
         {},
-        {"frame_length": L, "norm": norm, "softness": 1e-3},
+        {
+            "n_bin": K,
+            "lower_bound": lower_bound,
+            "upper_bound": upper_bound,
+            "norm": norm,
+            "softness": 1e-4,
+        },
     )
 
-    opt = "-o 1" if norm else ""
+    opt = "-n" if norm else ""
     U.check_compatibility(
         device,
-        zcross,
+        histogram,
         [],
-        f"nrand -l {T}",
-        f"zcross -l {L} {opt}",
+        [f"nrand -l {B*L}"],
+        f"histogram -t {L} -b {K} -l {lower_bound} -u {upper_bound} {opt}",
         [],
+        dx=L,
+        dy=K,
     )
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiability(device, L=10, T=50):
-    zcross = diffsptk.ZeroCrossingAnalysis(L, softness=1e-1)
-    U.check_differentiability(device, zcross, [T])
+def test_differentiability(device, K=4, L=50):
+    histogram = diffsptk.Histogram(K, lower_bound=-1, upper_bound=1, softness=1e-1)
+    U.check_differentiability(device, histogram, [L])
