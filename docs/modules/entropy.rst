@@ -7,3 +7,5 @@ entropy
    :members:
 
 .. autofunction:: diffsptk.functional.entropy
+
+.. seealso:: :ref:`histogram`

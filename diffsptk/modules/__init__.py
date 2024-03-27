@@ -20,6 +20,7 @@ from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
 from .entropy import Entropy
 from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
+from .fbank import MelFilterBankAnalysis as FBANK
 from .fftcep import CepstralAnalysis
 from .frame import Frame
 from .freqt import FrequencyTransform
@@ -28,6 +29,7 @@ from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
+from .histogram import Histogram
 from .ialaw import ALawExpansion
 from .icqt import InverseConstantQTransform
 from .icqt import InverseConstantQTransform as ICQT

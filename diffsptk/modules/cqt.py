@@ -96,7 +96,7 @@ class ConstantQTransform(nn.Module):
         tuning=0,
         filter_scale=1,
         norm=1,
-        sparsity=0.01,
+        sparsity=1e-2,
         window="hann",
         scale=True,
         **kwargs,
