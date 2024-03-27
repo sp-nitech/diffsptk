@@ -3,6 +3,8 @@
 fbank
 -----
 
+.. autoclass:: diffsptk.FBANK
+
 .. autoclass:: diffsptk.MelFilterBankAnalysis
    :members:
 
