@@ -52,8 +52,16 @@ Homepage = "https://sp-tk.sourceforge.net/"
 Documentation = "https://sp-nitech.github.io/diffsptk/latest/"
 Source = "https://github.com/sp-nitech/diffsptk"
 
-[tool.hatch.build]
-exclude = ["assets", "docs", "tests", "tools"]
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/.github",
+  "/assets",
+  "/docs",
+  "/tests",
+  "/tools",
+  "Makefile",
+  "*.yml",
+]
 
 [tool.hatch.metadata]
 allow-direct-references = true

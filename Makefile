@@ -31,7 +31,7 @@ venv:
 	. ./venv/bin/activate; python -m pip install icc-rt
 
 dist:
-	. ./venv/bin/activate; python -m build --wheel
+	. ./venv/bin/activate; python -m build
 	. ./venv/bin/activate; python -m twine check dist/*
 
 dist-clean:
