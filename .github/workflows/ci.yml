@@ -21,8 +21,8 @@ jobs:
             torch: 1.11.0
             torchaudio: 0.11.0
           - python: 3.11
-            torch: 2.2.1
-            torchaudio: 2.2.1
+            torch: 2.2.2
+            torchaudio: 2.2.2
 
     steps:
       - name: Clone
