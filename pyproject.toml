@@ -53,15 +53,7 @@ Documentation = "https://sp-nitech.github.io/diffsptk/latest/"
 Source = "https://github.com/sp-nitech/diffsptk"
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-  "/.github",
-  "/assets",
-  "/docs",
-  "/tests",
-  "/tools",
-  "Makefile",
-  "*.yml",
-]
+only-include = ["diffsptk", "CITATION.cff", "LICENCE"]
 
 [tool.hatch.metadata]
 allow-direct-references = true
