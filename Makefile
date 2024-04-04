@@ -31,8 +31,8 @@ venv:
 	. ./venv/bin/activate; python -m pip install icc-rt
 
 dist:
-	. ./venv/bin/activate; python -m build --wheel
-	. ./venv/bin/activate; python -m twine check dist/*.whl
+	. ./venv/bin/activate; python -m build
+	. ./venv/bin/activate; python -m twine check dist/*
 
 dist-clean:
 	rm -rf dist
@@ -47,11 +47,13 @@ doc-clean:
 
 check: tool
 	. ./venv/bin/activate; python -m ruff check $(PROJECT) tests
+	. ./venv/bin/activate; python -m ruff format --check $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort --check $(PROJECT) tests
 	./tools/taplo/taplo fmt --check pyproject.toml
 	./tools/yamlfmt/yamlfmt --lint *.yml .github/workflows/*.yml
 
 format: tool
+	. ./venv/bin/activate; python -m ruff check --fix $(PROJECT) tests
 	. ./venv/bin/activate; python -m ruff format $(PROJECT) tests
 	. ./venv/bin/activate; python -m isort $(PROJECT) tests
 	./tools/taplo/taplo fmt pyproject.toml

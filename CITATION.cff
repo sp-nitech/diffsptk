@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "SPTK Working Group"
+title: "diffsptk"
+url: "https://github.com/sp-nitech/diffsptk"
+preferred-citation:
+  type: conference-paper
+  title: "SPTK4: An open-source software toolkit for speech signal processing"
+  authors:
+    - family-names: "Yoshimura"
+      given-names: "Takenori"
+    - family-names: "Fujimoto"
+      given-names: "Takato"
+    - family-names: "Oura"
+      given-names: "Keiichiro"
+    - family-names: "Tokuda"
+      given-names: "Keiichi"
+  collection-title: "12th ISCA Speech Synthesis Workshop"
+  collection-type: proceedings
+  doi: 10.21437/SSW.2023-33
+  month: 8
+  start: 211
+  end: 217
+  year: 2023
+  url: "https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.pdf"
