@@ -127,7 +127,7 @@ class Unframe(nn.Module):
             return x
 
         w = window.repeat(1, 1, N)
-        x = y.mT
+        x = y.transpose(-2, -1)
 
         if d == 2:
             x = x.unsqueeze(0)

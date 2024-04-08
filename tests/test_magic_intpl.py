@@ -23,7 +23,16 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, N=10, L=2, magic_number=0):
+@pytest.mark.parametrize(
+    "data",
+    [
+        "0 9 0 0 0 0 2 1 0 0 4 5 0 0",
+        "1 9 0 0 0 0 2 1 0 0 4 5 0 7",
+        "1 2 3 4 5 6",
+    ],
+)
+@pytest.mark.parametrize("L", [1, 2])
+def test_compatibility(device, module, data, L, N=10, magic_number=0):
     magic_intpl = U.choice(
         module,
         diffsptk.MagicNumberInterpolation,
@@ -36,14 +45,13 @@ def test_compatibility(device, module, N=10, L=2, magic_number=0):
         device,
         magic_intpl,
         [],
-        "echo 0 9 0 0 0 0 2 1 0 0 4 5 0 0 | x2x +ad",
+        f"echo {data} | x2x +ad",
         f"magic_intpl -l {L} -magic {magic_number}",
         [],
         dx=L,
         dy=L,
     )
 
-    U.check_differentiability(device, magic_intpl, [N, L])
     U.check_differentiability(device, [magic_intpl, F.dropout], [N, L])
 
 

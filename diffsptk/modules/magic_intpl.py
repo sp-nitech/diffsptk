@@ -114,7 +114,7 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
                 if uniques[0]:
                     w[..., : counts[0]] = 0
                 w = torch.cumsum(w, dim=-1)
-                w = w - torch.cumsum(w * ~is_magic_number[i], dim=-1)
+                w = w - torch.cummax(w * ~is_magic_number[i], dim=-1)[0]
                 if uniques[0]:
                     w[..., : counts[0]] = 1
                 if uniques[-1]:
@@ -141,10 +141,10 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
             weights = torch.stack(weights)
             return starts, ends, weights
 
-        x = x.mT.reshape(B * D, T)
+        x = x.transpose(-2, -1).reshape(B * D, T)
         starts, ends, weights = compute_lerp_inputs(x, magic_number)
         y = torch.lerp(starts, ends, weights)
-        y = y.reshape(B, D, T).mT
+        y = y.reshape(B, D, T).transpose(-2, -1)
 
         if d == 1:
             y = y.view(-1)

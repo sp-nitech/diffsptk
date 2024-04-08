@@ -91,10 +91,10 @@ class ExcitationGeneration(nn.Module):
 
         # Interpolate pitch.
         if p.dim() != 1:
-            p = p.mT
+            p = p.transpose(-2, -1)
         p = LinearInterpolation._func(p, frame_period)
         if p.dim() != 1:
-            p = p.mT
+            p = p.transpose(-2, -1)
         p *= mask
 
         # Compute phase.

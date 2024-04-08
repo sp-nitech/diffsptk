@@ -91,7 +91,7 @@ class ReverseLevinsonDurbin(nn.Module):
         E = torch.stack(E[::-1], dim=-1)
 
         V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
-        r = torch.matmul(V[..., :1].mT * E, V).squeeze(-2)
+        r = torch.matmul(V[..., :1].transpose(-2, -1) * E, V).squeeze(-2)
         return r
 
     @staticmethod
