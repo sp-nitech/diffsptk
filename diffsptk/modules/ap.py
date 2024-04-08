@@ -246,7 +246,7 @@ class AperiodicityExtractionByTandem(nn.Module):
 
             H = torch.cat((H_alpha, H_beta), dim=-1)  # (B, N, J, 6)
             w = self.window[i, : self.segment_length[i]]  # (J,)
-            Hw = H.mT * w  # (B, N, 6, J)
+            Hw = H.transpose(-2, -1) * w  # (B, N, 6, J)
             R = torch.matmul(Hw, H)  # (B, N, 6, 6)
 
             index_gamma = origin.unsqueeze(-1) + j[..., 1:-1]  # (B, N, J)
