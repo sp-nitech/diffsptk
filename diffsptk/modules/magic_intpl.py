@@ -114,7 +114,7 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
                 if uniques[0]:
                     w[..., : counts[0]] = 0
                 w = torch.cumsum(w, dim=-1)
-                w = w - torch.cumsum(w * ~is_magic_number[i], dim=-1)
+                w = w - torch.cummax(w * ~is_magic_number[i], dim=-1)[0]
                 if uniques[0]:
                     w[..., : counts[0]] = 1
                 if uniques[-1]:
