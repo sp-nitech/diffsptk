@@ -7,5 +7,4 @@ coverage:
     patch: off
 
 ignore:
-  - "setup.py"
   - "tests/utils.py"
