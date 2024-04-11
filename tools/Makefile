@@ -18,7 +18,7 @@ all: SPTK taplo yamlfmt
 
 SPTK:
 	git clone https://github.com/sp-nitech/SPTK.git
-	cd SPTK; make
+	cd SPTK && make
 
 taplo:
 	mkdir -p taplo
