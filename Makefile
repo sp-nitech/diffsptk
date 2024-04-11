@@ -62,7 +62,7 @@ format: tool
 test: tool
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
 	. ./venv/bin/activate; export PATH=tools/SPTK/bin:$$PATH; \
-	python -m pytest -s --cov=./ --cov-report=xml $$module
+	python -m pytest $$module
 
 test-clean:
 	rm -rf tests/__pycache__

@@ -18,6 +18,14 @@ import pytest
 import torch
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--float", action="store_true", default=False, help="Use float data type."
+    )
+
+
 @pytest.fixture(scope="session", autouse=True)
-def scope_session():
-    torch.set_default_dtype(torch.double)
+def set_default_dtype(request):
+    torch.set_default_dtype(
+        torch.float if request.config.getoption("--float") else torch.double
+    )
