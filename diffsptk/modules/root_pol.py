@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -35,7 +35,7 @@ class PolynomialToRoots(nn.Module):
     """
 
     def __init__(self, order, out_format="rectangular"):
-        super(PolynomialToRoots, self).__init__()
+        super().__init__()
 
         assert 1 <= order
 
@@ -97,8 +97,8 @@ class PolynomialToRoots(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "rectangular":
+        if out_format in (0, "rectangular"):
             return lambda x: x
-        elif out_format == 1 or out_format == "polar":
+        elif out_format in (1, "polar"):
             return lambda x: torch.complex(x.abs(), x.angle())
         raise ValueError(f"out_format {out_format} is not supported.")

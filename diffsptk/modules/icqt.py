@@ -32,7 +32,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torchaudio
 
 from ..misc.utils import delayed_import
@@ -100,7 +100,7 @@ class InverseConstantQTransform(nn.Module):
         scale=True,
         **kwargs,
     ):
-        super(InverseConstantQTransform, self).__init__()
+        super().__init__()
 
         import librosa
 

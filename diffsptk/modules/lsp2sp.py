@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -59,7 +59,7 @@ class LineSpectralPairsToSpectrum(nn.Module):
         log_gain=False,
         out_format="power",
     ):
-        super(LineSpectralPairsToSpectrum, self).__init__()
+        super().__init__()
 
         assert 0 <= lsp_order
         assert 1 <= fft_length
@@ -174,13 +174,13 @@ class LineSpectralPairsToSpectrum(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "db":
+        if out_format in (0, "db"):
             c = 20 / np.log(10)
             return lambda x: x * c
-        elif out_format == 1 or out_format == "log-magnitude":
+        elif out_format in (1, "log-magnitude"):
             return lambda x: x
-        elif out_format == 2 or out_format == "magnitude":
+        elif out_format in (2, "magnitude"):
             return lambda x: torch.exp(x)
-        elif out_format == 3 or out_format == "power":
+        elif out_format in (3, "power"):
             return lambda x: torch.exp(2 * x)
         raise ValueError(f"out_format {out_format} is not supported.")

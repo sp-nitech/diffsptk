@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
@@ -39,7 +39,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
     """
 
     def __init__(self, lpc_order, gamma=1, c=None):
-        super(LinearPredictiveCoefficientsToParcorCoefficients, self).__init__()
+        super().__init__()
 
         assert 0 <= lpc_order
         assert abs(gamma) <= 1

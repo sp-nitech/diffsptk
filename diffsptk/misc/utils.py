@@ -19,6 +19,7 @@ from importlib import import_module
 import numpy as np
 import soundfile as sf
 import torch
+from torch import nn
 import torch.nn.functional as F
 import torchaudio
 
@@ -26,9 +27,9 @@ UNVOICED_SYMBOL = 0
 TWO_PI = 6.283185307179586
 
 
-class Lambda(torch.nn.Module):
+class Lambda(nn.Module):
     def __init__(self, func, **opt):
-        super(Lambda, self).__init__()
+        super().__init__()
         self.func = func
         self.opt = opt
 

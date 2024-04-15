@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -39,7 +39,7 @@ class FrequencyTransform(nn.Module):
     """
 
     def __init__(self, in_order, out_order, alpha=0):
-        super(FrequencyTransform, self).__init__()
+        super().__init__()
 
         assert 0 <= in_order
         assert 0 <= out_order

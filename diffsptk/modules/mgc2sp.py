@@ -17,7 +17,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
@@ -68,7 +68,7 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
         n_fft=512,
         out_format="power",
     ):
-        super(MelGeneralizedCepstrumToSpectrum, self).__init__()
+        super().__init__()
 
         self.cep_order = cep_order
 
@@ -141,20 +141,20 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "db":
+        if out_format in (0, "db"):
             c = 20 / math.log(10)
             return lambda x: x.real * c
-        elif out_format == 1 or out_format == "log-magnitude":
+        elif out_format in (1, "log-magnitude"):
             return lambda x: x.real
-        elif out_format == 2 or out_format == "magnitude":
+        elif out_format in (2, "magnitude"):
             return lambda x: torch.exp(x.real)
-        elif out_format == 3 or out_format == "power":
+        elif out_format in (3, "power"):
             return lambda x: torch.exp(2 * x.real)
-        elif out_format == 4 or out_format == "cycle":
+        elif out_format in (4, "cycle"):
             return lambda x: x.imag / torch.pi
-        elif out_format == 5 or out_format == "radian":
+        elif out_format in (5, "radian"):
             return lambda x: x.imag
-        elif out_format == 6 or out_format == "degree":
+        elif out_format in (6, "degree"):
             c = 180 / torch.pi
             return lambda x: x.imag * c
         elif out_format == "complex":

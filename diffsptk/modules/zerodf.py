@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -39,7 +39,7 @@ class AllZeroDigitalFilter(nn.Module):
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):
-        super(AllZeroDigitalFilter, self).__init__()
+        super().__init__()
 
         assert 0 <= filter_order
         assert 1 <= frame_period

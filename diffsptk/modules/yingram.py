@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -63,7 +63,7 @@ class Yingram(nn.Module):
         lag_max=None,
         n_bin=20,
     ):
-        super(Yingram, self).__init__()
+        super().__init__()
 
         if lag_max is None:
             lag_max = frame_length - 1

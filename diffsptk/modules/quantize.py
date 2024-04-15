@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Floor(torch.autograd.Function):
@@ -56,7 +56,7 @@ class UniformQuantization(nn.Module):
     """
 
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
-        super(UniformQuantization, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= n_bit
@@ -101,10 +101,10 @@ class UniformQuantization(nn.Module):
 
     @staticmethod
     def _precompute(n_bit, quantizer):
-        if quantizer == 0 or quantizer == "mid-rise":
+        if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
             return level, lambda x: Floor.apply(x + level // 2)
-        elif quantizer == 1 or quantizer == "mid-tread":
+        elif quantizer in (1, "mid-tread"):
             level = (1 << n_bit) - 1
             return level, lambda x: Round.apply(x + (level - 1) // 2)
         raise ValueError(f"quantizer {quantizer} is not supported.")

@@ -17,7 +17,7 @@
 import logging
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import is_power_of_two
@@ -63,7 +63,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         perturb_factor=1e-5,
         verbose=False,
     ):
-        super(LindeBuzoGrayAlgorithm, self).__init__()
+        super().__init__()
 
         assert 0 <= order
         assert is_power_of_two(codebook_size)

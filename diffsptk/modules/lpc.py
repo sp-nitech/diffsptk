@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 
 from .acorr import Autocorrelation
 from .levdur import LevinsonDurbin
@@ -35,7 +35,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
     """
 
     def __init__(self, frame_length, lpc_order):
-        super(LinearPredictiveCodingAnalysis, self).__init__()
+        super().__init__()
 
         self.lpc = nn.Sequential(
             Autocorrelation(frame_length, lpc_order),

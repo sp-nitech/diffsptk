@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import symmetric_toeplitz
@@ -33,7 +33,7 @@ class LevinsonDurbin(nn.Module):
     """
 
     def __init__(self, lpc_order):
-        super(LevinsonDurbin, self).__init__()
+        super().__init__()
 
         assert 0 <= lpc_order
 

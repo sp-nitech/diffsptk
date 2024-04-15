@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -33,7 +33,7 @@ class DiscreteCosineTransform(nn.Module):
     """
 
     def __init__(self, dct_length):
-        super(DiscreteCosineTransform, self).__init__()
+        super().__init__()
 
         assert 1 <= dct_length
 

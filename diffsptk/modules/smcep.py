@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
@@ -27,7 +27,7 @@ from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 
 class CoefficientsFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha, theta, n_fft=512):
-        super(CoefficientsFrequencyTransform, self).__init__()
+        super().__init__()
 
         theta *= torch.pi
 
@@ -81,7 +81,7 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
     def __init__(
         self, cep_order, fft_length, alpha=0, theta=0, n_iter=0, accuracy_factor=4
     ):
-        super(SecondOrderAllPassMelCepstralAnalysis, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order <= fft_length // 2
         assert 0 <= n_iter

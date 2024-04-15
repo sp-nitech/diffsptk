@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
@@ -39,7 +39,7 @@ class GeneralizedCepstrumInverseGainNormalization(nn.Module):
     """
 
     def __init__(self, cep_order, gamma=0, c=None):
-        super(GeneralizedCepstrumInverseGainNormalization, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order
         assert abs(gamma) <= 1

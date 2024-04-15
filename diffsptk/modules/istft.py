@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import Lambda
 from .unframe import Unframe
@@ -58,7 +58,7 @@ class InverseShortTimeFourierTransform(nn.Module):
         window="blackman",
         norm="power",
     ):
-        super(InverseShortTimeFourierTransform, self).__init__()
+        super().__init__()
 
         self.ifft = Lambda(
             lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]

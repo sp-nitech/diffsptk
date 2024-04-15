@@ -32,7 +32,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torchaudio
 
 from ..misc.utils import Lambda
@@ -101,7 +101,7 @@ class ConstantQTransform(nn.Module):
         scale=True,
         **kwargs,
     ):
-        super(ConstantQTransform, self).__init__()
+        super().__init__()
 
         import librosa
 

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import cexp
@@ -31,7 +31,7 @@ from .ignorm import (
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
     def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
-        super(GeneralizedCepstrumToGeneralizedCepstrum, self).__init__()
+        super().__init__()
 
         assert 0 <= in_order
         assert 0 <= out_order
@@ -81,7 +81,7 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 
 class GammaDivision(nn.Module):
     def __init__(self, cep_order, gamma):
-        super(GammaDivision, self).__init__()
+        super().__init__()
         g = torch.full((cep_order + 1,), 1 / gamma)
         g[0] = 1
         self.register_buffer("g", to(g))
@@ -97,7 +97,7 @@ class GammaDivision(nn.Module):
 
 class GammaMultiplication(nn.Module):
     def __init__(self, cep_order, gamma):
-        super(GammaMultiplication, self).__init__()
+        super().__init__()
         g = torch.full((cep_order + 1,), gamma)
         g[0] = 1
         self.register_buffer("g", to(g))
@@ -113,7 +113,7 @@ class GammaMultiplication(nn.Module):
 
 class ZerothGammaDivision(nn.Module):
     def __init__(self, cep_order, gamma):
-        super(ZerothGammaDivision, self).__init__()
+        super().__init__()
         self.cep_order = cep_order
         self.g = 1 / gamma
 
@@ -129,7 +129,7 @@ class ZerothGammaDivision(nn.Module):
 
 class ZerothGammaMultiplication(nn.Module):
     def __init__(self, cep_order, gamma):
-        super(ZerothGammaMultiplication, self).__init__()
+        super().__init__()
         self.cep_order = cep_order
         self.g = gamma
 
@@ -198,7 +198,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
         out_mul=False,
         n_fft=512,
     ):
-        super(MelGeneralizedCepstrumToMelGeneralizedCepstrum, self).__init__()
+        super().__init__()
 
         seq = self._precompute(
             True,

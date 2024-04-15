@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
@@ -31,7 +31,7 @@ from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 class CoefficientsFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha):
-        super(CoefficientsFrequencyTransform, self).__init__()
+        super().__init__()
 
         beta = 1 - alpha * alpha
         L1 = in_order + 1
@@ -57,7 +57,7 @@ class CoefficientsFrequencyTransform(nn.Module):
 
 class PTransform(nn.Module):
     def __init__(self, order, alpha):
-        super(PTransform, self).__init__()
+        super().__init__()
 
         # Make transform matrix.
         A = torch.eye(order + 1, dtype=torch.double)
@@ -76,7 +76,7 @@ class PTransform(nn.Module):
 
 class QTransform(nn.Module):
     def __init__(self, order, alpha):
-        super(QTransform, self).__init__()
+        super().__init__()
 
         # Make transform matrix.
         A = torch.eye(order + 1, dtype=torch.double)
@@ -117,7 +117,7 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
     """
 
     def __init__(self, cep_order, fft_length, alpha=0, gamma=0, n_iter=0):
-        super(MelGeneralizedCepstralAnalysis, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order <= fft_length // 2
         assert gamma <= 0

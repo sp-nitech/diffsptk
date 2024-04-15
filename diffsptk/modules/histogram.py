@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import to
 
@@ -53,7 +53,7 @@ class Histogram(nn.Module):
     def __init__(
         self, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3
     ):
-        super(Histogram, self).__init__()
+        super().__init__()
 
         assert 1 <= n_bin
         assert lower_bound < upper_bound

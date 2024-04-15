@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import TWO_PI
@@ -47,7 +47,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     def __init__(
         self, lpc_order, log_gain=False, sample_rate=None, out_format="radian"
     ):
-        super(LinearPredictiveCoefficientsToLineSpectralPairs, self).__init__()
+        super().__init__()
 
         assert 0 <= lpc_order
 
@@ -147,14 +147,14 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
 
     @staticmethod
     def _formatter(out_format, sample_rate):
-        if out_format == 0 or out_format == "radian":
+        if out_format in (0, "radian"):
             return lambda x: x
-        elif out_format == 1 or out_format == "cycle":
+        elif out_format in (1, "cycle"):
             return lambda x: x / TWO_PI
-        elif out_format == 2 or out_format == "khz":
+        elif out_format in (2, "khz"):
             assert sample_rate is not None and 0 < sample_rate
             return lambda x: x * (sample_rate / 1000 / TWO_PI)
-        elif out_format == 3 or out_format == "hz":
+        elif out_format in (3, "hz"):
             assert sample_rate is not None and 0 < sample_rate
             return lambda x: x * (sample_rate / TWO_PI)
         raise ValueError(f"out_format {out_format} is not supported.")

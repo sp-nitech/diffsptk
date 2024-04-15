@@ -18,7 +18,7 @@ import logging
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from .lbg import LindeBuzoGrayAlgorithm
@@ -79,7 +79,7 @@ class GaussianMixtureModeling(nn.Module):
         alpha=0,
         verbose=False,
     ):
-        super(GaussianMixtureModeling, self).__init__()
+        super().__init__()
 
         assert 0 <= order
         assert 1 <= n_mixture

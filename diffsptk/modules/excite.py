@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import TWO_PI
@@ -41,7 +41,7 @@ class ExcitationGeneration(nn.Module):
     """
 
     def __init__(self, frame_period, voiced_region="pulse", unvoiced_region="gauss"):
-        super(ExcitationGeneration, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_period
         assert voiced_region in ("pulse", "sinusoidal", "sawtooth")

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class InverseUniformQuantization(nn.Module):
@@ -36,7 +36,7 @@ class InverseUniformQuantization(nn.Module):
     """
 
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
-        super(InverseUniformQuantization, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= n_bit
@@ -85,10 +85,10 @@ class InverseUniformQuantization(nn.Module):
 
     @staticmethod
     def _precompute(n_bit, quantizer):
-        if quantizer == 0 or quantizer == "mid-rise":
+        if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
             return level, lambda y: y - (level // 2 - 0.5)
-        elif quantizer == 1 or quantizer == "mid-tread":
+        elif quantizer in (1, "mid-tread"):
             level = (1 << n_bit) - 1
             return level, lambda y: y - (level // 2)
         raise ValueError(f"quantizer {quantizer} is not supported.")

@@ -17,7 +17,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class MuLawCompression(nn.Module):
@@ -35,7 +35,7 @@ class MuLawCompression(nn.Module):
     """
 
     def __init__(self, abs_max=1, mu=255):
-        super(MuLawCompression, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= mu

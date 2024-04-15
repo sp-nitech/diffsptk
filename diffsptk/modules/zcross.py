@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import replicate1
 
@@ -39,7 +39,7 @@ class ZeroCrossingAnalysis(nn.Module):
     """
 
     def __init__(self, frame_length, norm=False, softness=1e-3):
-        super(ZeroCrossingAnalysis, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_length
         assert 0 < softness

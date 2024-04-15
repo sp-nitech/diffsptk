@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -37,7 +37,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
     """
 
     def __init__(self, size, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
-        super(MaximumLikelihoodParameterGeneration, self).__init__()
+        super().__init__()
 
         assert 1 <= size
 

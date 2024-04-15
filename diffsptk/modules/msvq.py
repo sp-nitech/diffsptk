@@ -16,7 +16,7 @@
 
 import warnings
 
-import torch.nn as nn
+from torch import nn
 
 warnings.simplefilter("ignore", UserWarning)
 from vector_quantize_pytorch import ResidualVQ  # noqa: E402
@@ -43,7 +43,7 @@ class MultiStageVectorQuantization(nn.Module):
     """
 
     def __init__(self, order, codebook_size, n_stage, **kwargs):
-        super(MultiStageVectorQuantization, self).__init__()
+        super().__init__()
 
         assert 0 <= order
         assert 1 <= codebook_size

@@ -16,7 +16,7 @@
 
 import math
 
-import torch.nn as nn
+from torch import nn
 
 from .dfs import InfiniteImpulseResponseDigitalFilter
 
@@ -56,7 +56,7 @@ class SecondOrderDigitalFilter(nn.Module):
         zero_bandwidth=None,
         **kwargs,
     ):
-        super(SecondOrderDigitalFilter, self).__init__()
+        super().__init__()
 
         def get_filter_coefficients(frequency, bandwidth, sample_rate):
             assert 0 < frequency

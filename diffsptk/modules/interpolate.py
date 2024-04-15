@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Interpolation(nn.Module):
@@ -36,7 +36,7 @@ class Interpolation(nn.Module):
     """
 
     def __init__(self, period, start=0, dim=-1):
-        super(Interpolation, self).__init__()
+        super().__init__()
 
         assert 1 <= period
         assert 0 <= start

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import Lambda
 from .frame import Frame
@@ -77,7 +77,7 @@ class ShortTimeFourierTransform(nn.Module):
         relative_floor=None,
         out_format="power",
     ):
-        super(ShortTimeFourierTransform, self).__init__()
+        super().__init__()
 
         self.stft = nn.Sequential(
             Frame(frame_length, frame_period, center=center, zmean=zmean),

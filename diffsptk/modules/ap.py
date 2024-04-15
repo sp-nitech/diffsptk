@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import UNVOICED_SYMBOL
@@ -67,7 +67,7 @@ class Aperiodicity(nn.Module):
         out_format="a",
         **kwargs,
     ):
-        super(Aperiodicity, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_period
         assert 1 <= sample_rate
@@ -79,13 +79,13 @@ class Aperiodicity(nn.Module):
         else:
             raise ValueError(f"algorithm {algorithm} is not supported.")
 
-        if out_format == 0 or out_format == "a":
+        if out_format in (0, "a"):
             self.convert = lambda x: x
-        elif out_format == 1 or out_format == "p":
+        elif out_format in (1, "p"):
             self.convert = lambda x: 1 - x
-        elif out_format == 2 or out_format == "a/p":
+        elif out_format in (2, "a/p"):
             self.convert = lambda x: x / (1 - x)
-        elif out_format == 3 or out_format == "p/a":
+        elif out_format in (3, "p/a"):
             self.convert = lambda x: (1 - x) / x
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
@@ -149,7 +149,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         window_length_ms=30,
         eps=1e-5,
     ):
-        super(AperiodicityExtractionByTandem, self).__init__()
+        super().__init__()
 
         assert fft_length % 2 == 0
         assert 0 <= lower_bound < upper_bound <= 1

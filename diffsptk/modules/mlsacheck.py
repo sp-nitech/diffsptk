@@ -17,7 +17,7 @@
 import warnings
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -71,7 +71,7 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
         warn_type="warn",
         mod_type="scale",
     ):
-        super(MLSADigitalFilterStabilityCheck, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order
         assert warn_type in ("ignore", "warn", "exit")

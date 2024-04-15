@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -38,7 +38,7 @@ class CepstrumToAutocorrelation(nn.Module):
     """
 
     def __init__(self, cep_order, acr_order, n_fft=512):
-        super(CepstrumToAutocorrelation, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order
         assert 0 <= acr_order

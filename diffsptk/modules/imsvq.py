@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class InverseMultiStageVectorQuantization(nn.Module):
@@ -25,7 +25,7 @@ class InverseMultiStageVectorQuantization(nn.Module):
     """
 
     def __init__(self):
-        super(InverseMultiStageVectorQuantization, self).__init__()
+        super().__init__()
 
     def forward(self, indices, codebooks):
         """Perform inverse residual vector quantization.

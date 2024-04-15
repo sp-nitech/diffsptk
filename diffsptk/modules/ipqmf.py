@@ -17,7 +17,7 @@
 import warnings
 
 import numpy as np
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import numpy_to_torch
@@ -48,7 +48,7 @@ class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
     """
 
     def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
-        super(InversePseudoQuadratureMirrorFilterBanks, self).__init__()
+        super().__init__()
 
         assert 1 <= n_band
         assert 2 <= filter_order

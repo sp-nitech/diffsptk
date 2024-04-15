@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import iir
@@ -44,7 +44,7 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
     """
 
     def __init__(self, b=None, a=None, ir_length=None, learnable=False):
-        super(InfiniteImpulseResponseDigitalFilter, self).__init__()
+        super().__init__()
 
         if b is None:
             b = [1]

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class MuLawExpansion(nn.Module):
@@ -33,7 +33,7 @@ class MuLawExpansion(nn.Module):
     """
 
     def __init__(self, abs_max=1, mu=255):
-        super(MuLawExpansion, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= mu

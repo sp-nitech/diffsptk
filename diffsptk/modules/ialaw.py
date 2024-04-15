@@ -17,7 +17,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class ALawExpansion(nn.Module):
@@ -35,7 +35,7 @@ class ALawExpansion(nn.Module):
     """
 
     def __init__(self, abs_max=1, a=87.6):
-        super(ALawExpansion, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= a

@@ -17,7 +17,7 @@
 import warnings
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -43,7 +43,7 @@ class LineSpectralPairsStabilityCheck(nn.Module):
     """
 
     def __init__(self, lsp_order, rate=0, n_iter=1, warn_type="warn"):
-        super(LineSpectralPairsStabilityCheck, self).__init__()
+        super().__init__()
 
         assert 0 <= lsp_order
         assert 0 <= rate <= 1

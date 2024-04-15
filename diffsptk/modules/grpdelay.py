@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import remove_gain
@@ -40,7 +40,7 @@ class GroupDelay(nn.Module):
     """
 
     def __init__(self, fft_length, alpha=1, gamma=1):
-        super(GroupDelay, self).__init__()
+        super().__init__()
 
         assert 2 <= fft_length
         assert 0 < alpha
