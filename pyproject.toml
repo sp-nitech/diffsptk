@@ -63,6 +63,8 @@ allow-direct-references = true
 path = "diffsptk/version.py"
 
 [tool.ruff.lint]
+preview = true
+extend-select = ["FURB"]
 exclude = ["__init__.py"]
 
 [tool.isort]

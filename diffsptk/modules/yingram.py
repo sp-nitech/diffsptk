@@ -81,7 +81,7 @@ class Yingram(nn.Module):
         self.register_buffer("lags", lags)
         self.register_buffer("lags_ceil", lags_ceil)
         self.register_buffer("lags_floor", lags_floor)
-        self.register_buffer("ramp", torch.arange(1, lag_max))
+        self.register_buffer("ramp", ramp)
 
     def forward(self, x):
         """Compute YIN derivatives.

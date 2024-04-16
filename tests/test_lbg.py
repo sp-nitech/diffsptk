@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from operator import itemgetter
+
 import pytest
 import torch
 
@@ -34,7 +36,7 @@ def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
     tmp5 = "lbg.tmp5"
     U.check_compatibility(
         device,
-        [lambda x: x[-1], lbg],
+        [itemgetter(2), lbg],
         [
             f"nrand -u +2 -l {B*(M+1)} -s 1 > {tmp1}",
             f"nrand -u -2 -l {B*(M+1)} -s 2 > {tmp2}",

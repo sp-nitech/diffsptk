@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 from importlib import import_module
+import math
 
 import numpy as np
 import soundfile as sf
@@ -24,7 +25,7 @@ import torch.nn.functional as F
 import torchaudio
 
 UNVOICED_SYMBOL = 0
-TWO_PI = 6.283185307179586
+TWO_PI = math.tau
 
 
 class Lambda(nn.Module):

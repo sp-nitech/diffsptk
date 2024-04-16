@@ -149,8 +149,8 @@ class InverseConstantQTransform(nn.Module):
             else:
                 fp.append(fp[i])
                 sr.append(sr[i])
-        fp = fp[::-1]
-        sr = sr[::-1]
+        fp.reverse()
+        sr.reverse()
 
         slices = []
         transforms = []

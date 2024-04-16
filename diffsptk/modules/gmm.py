@@ -183,7 +183,7 @@ class GaussianMixtureModeling(nn.Module):
         lbg = LindeBuzoGrayAlgorithm(self.order, self.n_mixture, **lbg_params).to(
             x.device
         )
-        codebook, indices, d = lbg(x)
+        codebook, indices, _ = lbg(x)
 
         count = torch.bincount(indices, minlength=self.n_mixture).to(x.dtype)
         w = count / len(indices)

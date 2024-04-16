@@ -78,6 +78,6 @@ class MuLawExpansion(nn.Module):
         const = MuLawExpansion._precompute(abs_max, mu)
         return MuLawExpansion._forward(y, abs_max, mu, const)
 
-    @staticmethod
+    @staticmethod  # noqa: FURB118
     def _precompute(abs_max, mu):
         return abs_max / mu

@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from abc import ABCMeta
+from abc import ABC
 from abc import abstractmethod
 import importlib
 
@@ -144,7 +144,7 @@ class Pitch(nn.Module):
         return y
 
 
-class PitchExtractionInterface(metaclass=ABCMeta):
+class PitchExtractionInterface(ABC):
     """Abstract class for pitch extraction."""
 
     @abstractmethod
