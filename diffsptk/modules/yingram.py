@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -63,7 +63,7 @@ class Yingram(nn.Module):
         lag_max=None,
         n_bin=20,
     ):
-        super(Yingram, self).__init__()
+        super().__init__()
 
         if lag_max is None:
             lag_max = frame_length - 1
@@ -81,7 +81,7 @@ class Yingram(nn.Module):
         self.register_buffer("lags", lags)
         self.register_buffer("lags_ceil", lags_ceil)
         self.register_buffer("lags_floor", lags_floor)
-        self.register_buffer("ramp", torch.arange(1, lag_max))
+        self.register_buffer("ramp", ramp)
 
     def forward(self, x):
         """Compute YIN derivatives.

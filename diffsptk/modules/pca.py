@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -41,7 +41,7 @@ class PrincipalComponentAnalysis(nn.Module):
     """
 
     def __init__(self, order, n_comp, cov_type="sample", sort="descending"):
-        super(PrincipalComponentAnalysis, self).__init__()
+        super().__init__()
 
         assert 0 <= order
         assert 1 <= n_comp <= order + 1
@@ -52,11 +52,11 @@ class PrincipalComponentAnalysis(nn.Module):
         self.cov_type = cov_type
         self.sort = sort
 
-        if cov_type == 0 or cov_type == "sample":
+        if cov_type in (0, "sample"):
             self.cov = lambda x: torch.cov(x, correction=0)
-        elif cov_type == 1 or cov_type == "unbiased":
+        elif cov_type in (1, "unbiased"):
             self.cov = lambda x: torch.cov(x, correction=1)
-        elif cov_type == 2 or cov_type == "correlation":
+        elif cov_type in (2, "correlation"):
             self.cov = lambda x: torch.corrcoef(x)
         else:
             raise ValueError(f"cov_type {cov_type} is not supported.")

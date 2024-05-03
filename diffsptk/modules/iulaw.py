@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class MuLawExpansion(nn.Module):
@@ -33,7 +33,7 @@ class MuLawExpansion(nn.Module):
     """
 
     def __init__(self, abs_max=1, mu=255):
-        super(MuLawExpansion, self).__init__()
+        super().__init__()
 
         assert 0 < abs_max
         assert 1 <= mu
@@ -78,6 +78,6 @@ class MuLawExpansion(nn.Module):
         const = MuLawExpansion._precompute(abs_max, mu)
         return MuLawExpansion._forward(y, abs_max, mu, const)
 
-    @staticmethod
+    @staticmethod  # noqa: FURB118
     def _precompute(abs_max, mu):
         return abs_max / mu

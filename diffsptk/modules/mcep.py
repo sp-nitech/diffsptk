@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import hankel
@@ -26,7 +26,7 @@ from .freqt import FrequencyTransform
 
 class CoefficientsFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha):
-        super(CoefficientsFrequencyTransform, self).__init__()
+        super().__init__()
 
         L1 = in_order + 1
         L2 = out_order + 1
@@ -68,7 +68,7 @@ class MelCepstralAnalysis(nn.Module):
     """
 
     def __init__(self, cep_order, fft_length, alpha=0, n_iter=0):
-        super(MelCepstralAnalysis, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order <= fft_length // 2
         assert 0 <= n_iter

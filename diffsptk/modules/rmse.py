@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class RootMeanSquareError(nn.Module):
@@ -33,7 +33,7 @@ class RootMeanSquareError(nn.Module):
     """
 
     def __init__(self, reduction="mean", eps=1e-8):
-        super(RootMeanSquareError, self).__init__()
+        super().__init__()
 
         assert reduction in ("none", "mean", "sum")
         assert 0 <= eps

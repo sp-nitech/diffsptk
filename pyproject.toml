@@ -20,6 +20,7 @@ classifiers = [
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
@@ -62,6 +63,8 @@ allow-direct-references = true
 path = "diffsptk/version.py"
 
 [tool.ruff.lint]
+preview = true
+extend-select = ["FURB"]
 exclude = ["__init__.py"]
 
 [tool.isort]
@@ -87,6 +90,7 @@ exclude_lines = [
 disable_warnings = ["couldnt-parse"]
 
 [tool.pytest.ini_options]
+addopts = "--cov=. --cov-report xml -s -x"
 filterwarnings = [
   "ignore:Casting complex values to real discards the imaginary part",
   "ignore:__floordiv__ is deprecated",

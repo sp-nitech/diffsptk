@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import to
@@ -36,7 +36,7 @@ class Delta(nn.Module):
     """
 
     def __init__(self, seed=[[-0.5, 0, 0.5], [1, -2, 1]], static_out=True):
-        super(Delta, self).__init__()
+        super().__init__()
 
         self.register_buffer("window", self._precompute(seed, static_out))
 

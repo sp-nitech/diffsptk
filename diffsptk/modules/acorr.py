@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -41,7 +41,7 @@ class Autocorrelation(nn.Module):
     """
 
     def __init__(self, frame_length, acr_order, norm=False, estimator="none"):
-        super(Autocorrelation, self).__init__()
+        super().__init__()
 
         assert 0 <= acr_order < frame_length
 
@@ -93,17 +93,17 @@ class Autocorrelation(nn.Module):
     @staticmethod
     def _func(x, acr_order, norm=False, estimator="none"):
         const = Autocorrelation._precompute(
-            x.size(-1), acr_order, estimator, dtype=x.dtype, device=x.device
+            x.size(-1), acr_order, estimator, device=x.device
         )
         return Autocorrelation._forward(x, acr_order, norm, const)
 
     @staticmethod
-    def _precompute(frame_length, acr_order, estimator, dtype=None, device=None):
-        if estimator == 0 or estimator == 1 or estimator == "none":
+    def _precompute(frame_length, acr_order, estimator, device=None):
+        if estimator in (0, 1, "none"):
             return 1
-        elif estimator == 2 or estimator == "biased":
+        elif estimator in (2, "biased"):
             return 1 / frame_length
-        elif estimator == 3 or estimator == "unbiased":
+        elif estimator in (3, "unbiased"):
             return torch.arange(
                 frame_length, frame_length - acr_order - 1, -1, device=device
             ).reciprocal()

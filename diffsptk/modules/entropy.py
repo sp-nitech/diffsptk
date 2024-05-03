@@ -17,7 +17,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Entropy(nn.Module):
@@ -32,7 +32,7 @@ class Entropy(nn.Module):
     """
 
     def __init__(self, out_format="nat"):
-        super(Entropy, self).__init__()
+        super().__init__()
 
         self.const = self._precompute(out_format)
 
@@ -74,10 +74,10 @@ class Entropy(nn.Module):
 
     @staticmethod
     def _precompute(out_format):
-        if out_format == 0 or out_format == "bit":
+        if out_format in (0, "bit"):
             return math.log2(math.e)
-        elif out_format == 1 or out_format == "nat":
+        elif out_format in (1, "nat"):
             return 1
-        elif out_format == 2 or out_format == "dit":
+        elif out_format in (2, "dit"):
             return math.log10(math.e)
         raise ValueError(f"out_format {out_format} is not supported.")

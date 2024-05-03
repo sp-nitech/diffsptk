@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 
@@ -40,7 +40,7 @@ class Frame(nn.Module):
     """
 
     def __init__(self, frame_length, frame_period, center=True, zmean=False):
-        super(Frame, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_length
         assert 1 <= frame_period

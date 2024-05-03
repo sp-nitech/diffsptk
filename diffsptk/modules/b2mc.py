@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -37,7 +37,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
     """
 
     def __init__(self, cep_order, alpha=0):
-        super(MLSADigitalFilterCoefficientsToMelCepstrum, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order
         assert abs(alpha) < 1

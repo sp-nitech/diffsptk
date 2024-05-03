@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 
 from .mglsadf import PseudoMGLSADigitalFilter
 
@@ -23,7 +23,7 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     """See :func:`~diffsptk.PseudoMGLSADigitalFilter` for details."""
 
     def __init__(self, filter_order, frame_period, **kwargs):
-        super(PseudoInverseMGLSADigitalFilter, self).__init__()
+        super().__init__()
 
         # Change the default value of the order of Taylor series.
         # This is because inverse filtering requires the large value.

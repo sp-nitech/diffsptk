@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import to
@@ -70,7 +70,7 @@ class MelFilterBankAnalysis(nn.Module):
         use_power=False,
         out_format="y",
     ):
-        super(MelFilterBankAnalysis, self).__init__()
+        super().__init__()
 
         assert 1 <= n_channel
         assert 2 <= fft_length
@@ -195,10 +195,10 @@ class MelFilterBankAnalysis(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "y":
+        if out_format in (0, "y"):
             return lambda y, E: y
-        elif out_format == 1 or out_format == "yE":
+        elif out_format in (1, "yE"):
             return lambda y, E: torch.cat((y, E), dim=-1)
-        elif out_format == 2 or out_format == "y,E":
+        elif out_format in (2, "y,E"):
             return lambda y, E: (y, E)
         raise ValueError(f"out_format {out_format} is not supported.")

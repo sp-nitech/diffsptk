@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -38,7 +38,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(nn.Module):
     """
 
     def __init__(self, lpc_order, log_gain=False):
-        super(LineSpectralPairsToLinearPredictiveCoefficients, self).__init__()
+        super().__init__()
 
         assert 0 <= lpc_order
 

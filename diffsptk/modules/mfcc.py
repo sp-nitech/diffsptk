@@ -16,7 +16,7 @@
 
 import numpy as np
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import numpy_to_torch
 from .dct import DiscreteCosineTransform
@@ -72,7 +72,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
         out_format="y",
         **fbank_kwargs,
     ):
-        super(MelFrequencyCepstralCoefficientsAnalysis, self).__init__()
+        super().__init__()
 
         assert 1 <= mfcc_order < n_channel
         assert 1 <= lifter
@@ -128,12 +128,12 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "y":
+        if out_format in (0, "y"):
             return lambda y, c, E: y
-        elif out_format == 1 or out_format == "yE":
+        elif out_format in (1, "yE"):
             return lambda y, c, E: torch.cat((y, E), dim=-1)
-        elif out_format == 2 or out_format == "yc":
+        elif out_format in (2, "yc"):
             return lambda y, c, E: torch.cat((y, c), dim=-1)
-        elif out_format == 3 or out_format == "ycE":
+        elif out_format in (3, "ycE"):
             return lambda y, c, E: torch.cat((y, c, E), dim=-1)
         raise ValueError(f"out_format {out_format} is not supported.")

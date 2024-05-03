@@ -69,6 +69,7 @@ def call(cmd, get=True):
             shell=True,
             text=True,
             stdout=subprocess.PIPE,
+            check=False,
         )
         is_double = torch.get_default_dtype() == torch.double
         data = np.fromstring(
@@ -81,6 +82,7 @@ def call(cmd, get=True):
             cmd,
             shell=True,
             stdout=subprocess.PIPE,
+            check=False,
         )
         return None
 

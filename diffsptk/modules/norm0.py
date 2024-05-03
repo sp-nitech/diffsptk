@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 
@@ -32,7 +32,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
     """
 
     def __init__(self, filter_order):
-        super(AllPoleToAllZeroDigitalFilterCoefficients, self).__init__()
+        super().__init__()
 
         assert 0 <= filter_order
 

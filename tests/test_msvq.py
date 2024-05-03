@@ -14,7 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from operator import itemgetter
+
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -29,7 +32,7 @@ def test_compatibility(device, m=9, K=4, Q=2, B=8):
     tmp3 = "msvq.tmp3"
     U.check_compatibility(
         device,
-        [lambda x: x[1], msvq],
+        [itemgetter(1), msvq],
         [
             f"nrand -s 123 -l {B*(m+1)} > {tmp1}",
             f"nrand -s 234 -l {K*(m+1)} > {tmp2}",
@@ -42,4 +45,4 @@ def test_compatibility(device, m=9, K=4, Q=2, B=8):
         dy=Q,
     )
 
-    U.check_differentiability(device, [lambda x: x[2].sum(), msvq], [m + 1])
+    U.check_differentiability(device, [torch.sum, itemgetter(2), msvq], [m + 1])

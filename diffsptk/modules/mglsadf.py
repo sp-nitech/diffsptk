@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import Lambda
 from ..misc.utils import check_size
@@ -123,7 +123,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         mode="multi-stage",
         **kwargs,
     ):
-        super(PseudoMGLSADigitalFilter, self).__init__()
+        super().__init__()
 
         self.filter_order = filter_order
         self.frame_period = frame_period
@@ -213,7 +213,7 @@ class MultiStageFIRFilter(nn.Module):
         taylor_order=20,
         cep_order=199,
     ):
-        super(MultiStageFIRFilter, self).__init__()
+        super().__init__()
 
         assert 0 <= taylor_order
 
@@ -276,7 +276,7 @@ class SingleStageFIRFilter(nn.Module):
         ir_length=2000,
         n_fft=4096,
     ):
-        super(SingleStageFIRFilter, self).__init__()
+        super().__init__()
 
         self.ignore_gain = ignore_gain
         self.phase = phase
@@ -367,7 +367,7 @@ class FrequencyDomainFIRFilter(nn.Module):
         n_fft=512,
         **stft_kwargs,
     ):
-        super(FrequencyDomainFIRFilter, self).__init__()
+        super().__init__()
 
         assert 2 * frame_period < frame_length
 

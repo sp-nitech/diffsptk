@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -42,7 +42,7 @@ class CepstralAnalysis(nn.Module):
     """
 
     def __init__(self, cep_order, fft_length, n_iter=0, accel=0):
-        super(CepstralAnalysis, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order <= fft_length // 2
         assert 0 <= n_iter

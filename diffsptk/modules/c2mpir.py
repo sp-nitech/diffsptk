@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import cexp
 from ..misc.utils import check_size
@@ -39,7 +39,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     """
 
     def __init__(self, cep_order, ir_length, n_fft=512):
-        super(CepstrumToMinimumPhaseImpulseResponse, self).__init__()
+        super().__init__()
 
         assert 0 <= cep_order
         assert 1 <= ir_length

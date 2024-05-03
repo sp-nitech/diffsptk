@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import UNVOICED_SYMBOL
 
@@ -32,7 +32,7 @@ class MagicNumberInterpolation(nn.Module):
     """
 
     def __init__(self, magic_number=UNVOICED_SYMBOL):
-        super(MagicNumberInterpolation, self).__init__()
+        super().__init__()
 
         self.register_buffer("magic_number", self._precompute(magic_number))
 

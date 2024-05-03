@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import replicate1
@@ -34,7 +34,7 @@ class LinearInterpolation(nn.Module):
     """
 
     def __init__(self, upsampling_factor):
-        super(LinearInterpolation, self).__init__()
+        super().__init__()
 
         assert 1 <= upsampling_factor
 

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class InverseVectorQuantization(nn.Module):
@@ -25,7 +25,7 @@ class InverseVectorQuantization(nn.Module):
     """
 
     def __init__(self):
-        super(InverseVectorQuantization, self).__init__()
+        super().__init__()
 
     def forward(self, indices, codebook):
         """Perform inverse vector quantization.

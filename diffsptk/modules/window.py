@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -44,7 +44,7 @@ class Window(nn.Module):
     """
 
     def __init__(self, in_length, out_length=None, *, window="blackman", norm="power"):
-        super(Window, self).__init__()
+        super().__init__()
 
         assert 1 <= in_length
 
@@ -96,28 +96,28 @@ class Window(nn.Module):
     def _precompute(length, window, norm, dtype=None, device=None):
         # Make window.
         params = {"dtype": dtype, "device": device}
-        if window == 0 or window == "blackman":
+        if window in (0, "blackman"):
             w = torch.blackman_window(length, periodic=False, **params)
-        elif window == 1 or window == "hamming":
+        elif window in (1, "hamming"):
             w = torch.hamming_window(length, periodic=False, **params)
-        elif window == 2 or window == "hanning":
+        elif window in (2, "hanning"):
             w = torch.hann_window(length, periodic=False, **params)
-        elif window == 3 or window == "bartlett":
+        elif window in (3, "bartlett"):
             w = torch.bartlett_window(length, periodic=False, **params)
-        elif window == 4 or window == "trapezoidal":
+        elif window in (4, "trapezoidal"):
             slope = torch.linspace(0, 4, length, **params)
             w = torch.minimum(torch.clip(slope, 0, 1), torch.flip(slope, [0]))
-        elif window == 5 or window == "rectangular":
+        elif window in (5, "rectangular"):
             w = torch.ones(length, **params)
         else:
             raise ValueError(f"window {window} is not supported.")
 
         # Normalize window.
-        if norm == 0 or norm == "none":
+        if norm in (0, "none"):
             pass
-        elif norm == 1 or norm == "power":
+        elif norm in (1, "power"):
             w /= torch.sqrt(torch.sum(w**2))
-        elif norm == 2 or norm == "magnitude":
+        elif norm in (2, "magnitude"):
             w /= torch.sum(w)
         else:
             raise ValueError(f"norm {norm} is not supported.")

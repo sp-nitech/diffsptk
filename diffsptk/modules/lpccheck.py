@@ -17,7 +17,7 @@
 import warnings
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import check_size
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
@@ -42,7 +42,7 @@ class LinearPredictiveCoefficientsStabilityCheck(nn.Module):
     """
 
     def __init__(self, lpc_order, margin=1e-16, warn_type="warn"):
-        super(LinearPredictiveCoefficientsStabilityCheck, self).__init__()
+        super().__init__()
 
         assert 0 < margin < 1
 

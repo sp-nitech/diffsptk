@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import remove_gain
 
@@ -35,7 +35,7 @@ class Phase(nn.Module):
     """
 
     def __init__(self, fft_length, unwrap=False):
-        super(Phase, self).__init__()
+        super().__init__()
 
         assert 2 <= fft_length
 

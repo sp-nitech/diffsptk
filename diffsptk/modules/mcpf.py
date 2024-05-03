@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
@@ -48,7 +48,7 @@ class MelCepstrumPostfiltering(nn.Module):
     """
 
     def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=128):
-        super(MelCepstrumPostfiltering, self).__init__()
+        super().__init__()
 
         assert 0 <= onset
 

@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import remove_gain
 
@@ -41,7 +41,7 @@ class Spectrum(nn.Module):
     """
 
     def __init__(self, fft_length, *, eps=0, relative_floor=None, out_format="power"):
-        super(Spectrum, self).__init__()
+        super().__init__()
 
         assert 2 <= fft_length
         assert 0 <= eps
@@ -122,12 +122,12 @@ class Spectrum(nn.Module):
 
     @staticmethod
     def _formatter(out_format):
-        if out_format == 0 or out_format == "db":
+        if out_format in (0, "db"):
             return lambda x: 10 * torch.log10(x)
-        elif out_format == 1 or out_format == "log-magnitude":
+        elif out_format in (1, "log-magnitude"):
             return lambda x: 0.5 * torch.log(x)
-        elif out_format == 2 or out_format == "magnitude":
+        elif out_format in (2, "magnitude"):
             return lambda x: torch.sqrt(x)
-        elif out_format == 3 or out_format == "power":
+        elif out_format in (3, "power"):
             return lambda x: x
         raise ValueError(f"out_format {out_format} is not supported.")

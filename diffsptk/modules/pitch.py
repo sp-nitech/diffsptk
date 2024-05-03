@@ -14,12 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from abc import ABCMeta
+from abc import ABC
 from abc import abstractmethod
 import importlib
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import numpy_to_torch
@@ -77,7 +77,7 @@ class Pitch(nn.Module):
         out_format="pitch",
         **kwargs,
     ):
-        super(Pitch, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_period
         assert 1 <= sample_rate
@@ -96,11 +96,11 @@ class Pitch(nn.Module):
                     y[~mask] = unvoiced_symbol
             return y
 
-        if out_format == 0 or out_format == "pitch":
+        if out_format in (0, "pitch"):
             self.convert = lambda x: calc_pitch(x, lambda y: sample_rate / y)
-        elif out_format == 1 or out_format == "f0":
+        elif out_format in (1, "f0"):
             self.convert = lambda x: calc_pitch(x, lambda y: y)
-        elif out_format == 2 or out_format == "log-f0":
+        elif out_format in (2, "log-f0"):
             self.convert = lambda x: calc_pitch(x, lambda y: torch.log(y), -1e10)
         elif out_format == "prob":
             self.convert = lambda x: self.extractor.calc_prob(x)
@@ -144,7 +144,7 @@ class Pitch(nn.Module):
         return y
 
 
-class PitchExtractionInterface(metaclass=ABCMeta):
+class PitchExtractionInterface(ABC):
     """Abstract class for pitch extraction."""
 
     @abstractmethod
@@ -210,7 +210,7 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         filter_length=3,
         model="full",
     ):
-        super(PitchExtractionByCrepe, self).__init__()
+        super().__init__()
 
         self.torchcrepe = importlib.import_module("torchcrepe")
 

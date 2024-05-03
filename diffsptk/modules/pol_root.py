@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
@@ -32,7 +32,7 @@ class RootsToPolynomial(nn.Module):
     """
 
     def __init__(self, order):
-        super(RootsToPolynomial, self).__init__()
+        super().__init__()
 
         assert 1 <= order
 

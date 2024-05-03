@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 from torchlpc import sample_wise_lpc
 
 from ..misc.utils import check_size
@@ -40,7 +40,7 @@ class AllPoleDigitalFilter(nn.Module):
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):
-        super(AllPoleDigitalFilter, self).__init__()
+        super().__init__()
 
         assert 0 <= filter_order
         assert 1 <= frame_period

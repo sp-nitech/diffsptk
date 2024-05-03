@@ -17,7 +17,7 @@
 import math
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class CepstralDistance(nn.Module):
@@ -38,7 +38,7 @@ class CepstralDistance(nn.Module):
     """
 
     def __init__(self, full=False, reduction="mean", eps=1e-8):
-        super(CepstralDistance, self).__init__()
+        super().__init__()
 
         assert reduction in ("none", "mean", "batchmean", "sum")
         assert 0 <= eps

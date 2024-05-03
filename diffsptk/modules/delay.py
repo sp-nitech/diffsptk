@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class Delay(nn.Module):
@@ -36,7 +36,7 @@ class Delay(nn.Module):
     """
 
     def __init__(self, start, keeplen=False, dim=-1):
-        super(Delay, self).__init__()
+        super().__init__()
 
         self.start = start
         self.keeplen = keeplen

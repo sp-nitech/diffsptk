@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-import torch.nn as nn
+from torch import nn
 
 
 class SignalToNoiseRatio(nn.Module):
@@ -39,7 +39,7 @@ class SignalToNoiseRatio(nn.Module):
     """
 
     def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
-        super(SignalToNoiseRatio, self).__init__()
+        super().__init__()
 
         if frame_length is not None:
             assert 1 <= frame_length

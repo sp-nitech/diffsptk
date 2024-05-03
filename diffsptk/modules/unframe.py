@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
 from .window import Window
@@ -53,7 +53,7 @@ class Unframe(nn.Module):
         window="rectangular",
         norm="none",
     ):
-        super(Unframe, self).__init__()
+        super().__init__()
 
         assert 1 <= frame_period <= frame_length
 
