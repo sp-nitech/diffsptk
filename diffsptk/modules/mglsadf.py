@@ -20,6 +20,7 @@ from torch import nn
 from ..misc.utils import Lambda
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
+from ..misc.utils import remove_gain
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .istft import InverseShortTimeFourierTransform
@@ -221,6 +222,9 @@ class MultiStageFIRFilter(nn.Module):
         self.phase = phase
         self.taylor_order = taylor_order
 
+        if alpha == 0 and gamma == 0:
+            cep_order = filter_order
+
         if self.phase == "minimum":
             self.pad = nn.ConstantPad1d((cep_order, 0), 0)
         elif self.phase == "maximum":
@@ -241,7 +245,7 @@ class MultiStageFIRFilter(nn.Module):
     def forward(self, x, mc):
         c = self.mgc2c(mc)
         if self.ignore_gain:
-            c[..., 0] = 0
+            c = remove_gain(c, value=0)
 
         if self.phase == "minimum":
             c = c.flip(-1)
@@ -320,7 +324,7 @@ class SingleStageFIRFilter(nn.Module):
             c = self.mgc2c(mc)
             c[..., 1:] *= 0.5
             if self.ignore_gain:
-                c[..., 0] = 0
+                c = remove_gain(c, value=0)
             h = self.c2ir(c)
         else:
             h = self.mgc2ir(mc)
