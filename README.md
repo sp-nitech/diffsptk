@@ -1,46 +1,46 @@
-diffsptk
-========
+# diffsptk
+
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
 [![Latest Manual](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
 [![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/2.0.1/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
-[![PyTorch Version](https://img.shields.io/badge/pytorch-1.11.0%20%7C%202.3.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
+[![PyTorch Version](https://img.shields.io/badge/pytorch-1.11.0%20%7C%202.3.1-orange.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![Codecov](https://codecov.io/gh/sp-nitech/diffsptk/branch/master/graph/badge.svg)](https://app.codecov.io/gh/sp-nitech/diffsptk)
 [![License](https://img.shields.io/github/license/sp-nitech/diffsptk.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
 [![GitHub Actions](https://github.com/sp-nitech/diffsptk/workflows/package/badge.svg)](https://github.com/sp-nitech/diffsptk/actions)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
+## Requirements
 
-Requirements
-------------
 - Python 3.8+
 - PyTorch 1.11.0+
 
+## Documentation
 
-Documentation
--------------
 - See [this page](https://sp-nitech.github.io/diffsptk/latest/) for a reference manual.
 - Our [paper](https://www.isca-speech.org/archive/ssw_2023/yoshimura23_ssw.html) is available on the ISCA Archive.
 
+## Installation
 
-Installation
-------------
 The latest stable release can be installed through PyPI by running
+
 ```sh
 pip install diffsptk
 ```
+
 The development release can be installed from the master branch:
+
 ```sh
 pip install git+https://github.com/sp-nitech/diffsptk.git@master
 ```
 
+## Examples
 
-Examples
---------
 ### Mel-cepstral analysis and synthesis
+
 ```python
 import diffsptk
 
@@ -91,6 +91,7 @@ diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
 ### Mel-spectrogram, MFCC, and PLP extraction
+
 ```python
 import diffsptk
 
@@ -138,6 +139,7 @@ print(Y.shape)
 ```
 
 ### Subband decomposition
+
 ```python
 import diffsptk
 
@@ -166,6 +168,7 @@ print(error)
 ```
 
 ### Constant-Q transform
+
 ```python
 import diffsptk
 import librosa  # This is to get sample audio.
@@ -194,6 +197,7 @@ print(error)
 ```
 
 ### Vector quantization
+
 ```python
 import diffsptk
 
@@ -212,14 +216,12 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
+## License
 
-License
--------
 This software is released under the Apache License 2.0.
 
+## Citation
 
-Citation
---------
 ```bibtex
 @InProceedings{sp-nitech2023sptk,
   author = {Takenori Yoshimura and Takato Fujimoto and Keiichiro Oura and Keiichi Tokuda},
