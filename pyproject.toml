@@ -39,6 +39,7 @@ dynamic = ["version"]
 dev = [
   "build",
   "isort",
+  "mdformat",
   "numpydoc",
   "pydata-sphinx-theme",
   "pytest",
