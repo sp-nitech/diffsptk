@@ -37,6 +37,11 @@ class AllPoleDigitalFilter(nn.Module):
     ignore_gain : bool
         If True, perform filtering without gain.
 
+    References
+    ----------
+    .. [1] C.-Y. Yu et al., "Differentiable all-pole filters for time-varying audio
+           systems," *Proceedings of DAFx*, 2024.
+
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):

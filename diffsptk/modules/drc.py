@@ -49,6 +49,14 @@ class DynamicRangeCompression(nn.Module):
     abs_max : float > 0
         Absolute maximum value of input.
 
+    learnable : bool
+        Whether to make the DRC parameters learnable.
+
+    References
+    ----------
+    .. [1] C.-Y. Yu et al., "Differentiable all-pole filters for time-varying audio
+           systems," *Proceedings of DAFx*, 2024.
+
     """
 
     def __init__(
@@ -60,6 +68,7 @@ class DynamicRangeCompression(nn.Module):
         sample_rate,
         makeup_gain=0,
         abs_max=1,
+        learnable=False,
     ):
         super().__init__()
 
@@ -75,7 +84,10 @@ class DynamicRangeCompression(nn.Module):
         params = self._precompute(
             threshold, ratio, attack_time, release_time, sample_rate, makeup_gain
         )
-        self.register_buffer("params", params)
+        if learnable:
+            self.params = nn.Parameter(params)
+        else:
+            self.register_buffer("params", params)
 
     def forward(self, x):
         """Perform dynamic range compression.
