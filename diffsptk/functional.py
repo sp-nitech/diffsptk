@@ -204,6 +204,23 @@ def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
     return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction, eps=eps)
 
 
+def csm2acr(c):
+    """Convert CSM coefficients to autocorrelation.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        CSM coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    """
+    return nn.CompositeSinusoidalModelCoefficientsToAutocorrelation._func(c)
+
+
 def dct(x):
     """Compute DCT.
 

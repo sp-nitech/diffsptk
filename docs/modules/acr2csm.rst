@@ -8,4 +8,4 @@ acr2csm
 
 .. autofunction:: diffsptk.functional.acr2csm
 
-.. seealso:: :ref:`acorr`
+.. seealso:: :ref:`acorr`  :ref:`csm2acr`

@@ -40,7 +40,7 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(nn.Module):
     def __init__(self, csm_order):
         super().__init__()
 
-        assert 1 <= csm_order
+        assert 0 <= csm_order <= 30  # This is due to computational accuracy.
         assert csm_order % 2 == 1
 
         self.csm_order = csm_order
@@ -87,8 +87,8 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(nn.Module):
 
         V = vander(x)
         m = torch.matmul(V.inverse(), u1.unsqueeze(-1)).squeeze(-1)
-        csm = torch.cat((w, m), dim=-1)
-        return csm
+        c = torch.cat((w, m), dim=-1)
+        return c
 
     @staticmethod
     def _func(r):
