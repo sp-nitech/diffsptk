@@ -211,8 +211,13 @@ def symmetric_toeplitz(x):
 
 def hankel(x):
     d = x.size(-1)
-    assert d % 2 == 1
-    X = x.unfold(-1, (d + 1) // 2, 1)
+    n = (d + 1) // 2
+    X = x.unfold(-1, n, 1)[..., :n, :]
+    return X
+
+
+def vander(x):
+    X = torch.linalg.vander(x).transpose(-2, -1)
     return X
 
 
