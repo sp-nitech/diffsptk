@@ -45,6 +45,23 @@ def acorr(x, acr_order, norm=False, estimator="none"):
     )
 
 
+def acr2csm(r):
+    """Convert autocorrelation to CSM coefficients.
+
+    Parameters
+    ----------
+    r : Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        CSM coefficients.
+
+    """
+    return nn.AutocorrelationToCompositeSinusoidalModelCoefficients._func(r)
+
+
 def alaw(x, abs_max=1, a=87.6):
     """Compress waveform by A-law algorithm.
 

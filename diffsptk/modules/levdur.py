@@ -55,6 +55,7 @@ class LevinsonDurbin(nn.Module):
         Examples
         --------
         >>> x = diffsptk.nrand(4)
+        >>> x
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
         >>> acorr = diffsptk.Autocorrelation(5, 2)
         >>> levdur = diffsptk.LevinsonDurbin(2)

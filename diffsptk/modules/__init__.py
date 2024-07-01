@@ -1,4 +1,5 @@
 from .acorr import Autocorrelation
+from .acr2csm import AutocorrelationToCompositeSinusoidalModelCoefficients
 from .alaw import ALawCompression
 from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
