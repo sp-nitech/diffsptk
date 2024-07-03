@@ -45,6 +45,23 @@ def acorr(x, acr_order, norm=False, estimator="none"):
     )
 
 
+def acr2csm(r):
+    """Convert autocorrelation to CSM coefficients.
+
+    Parameters
+    ----------
+    r : Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        CSM coefficients.
+
+    """
+    return nn.AutocorrelationToCompositeSinusoidalModelCoefficients._func(r)
+
+
 def alaw(x, abs_max=1, a=87.6):
     """Compress waveform by A-law algorithm.
 
@@ -185,6 +202,23 @@ def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
 
     """
     return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction, eps=eps)
+
+
+def csm2acr(c):
+    """Convert CSM coefficients to autocorrelation.
+
+    Parameters
+    ----------
+    c : Tensor [shape=(..., M+1)]
+        CSM coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        Autocorrelation.
+
+    """
+    return nn.CompositeSinusoidalModelCoefficientsToAutocorrelation._func(c)
 
 
 def dct(x):

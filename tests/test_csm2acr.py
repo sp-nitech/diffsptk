@@ -14,29 +14,33 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-TAPLO_VERSION   := 0.8.1
-YAMLFMT_VERSION := 0.13.0
+import pytest
 
-all: SPTK taplo yamlfmt
+import diffsptk
+import tests.utils as U
 
-SPTK:
-	git clone https://github.com/sp-nitech/SPTK.git
-	cd SPTK && make
 
-taplo:
-	mkdir -p taplo
-	wget https://github.com/tamasfe/taplo/releases/download/$(TAPLO_VERSION)/taplo-linux-x86_64.gz -O taplo.gz
-	gunzip -c taplo.gz > taplo/taplo
-	chmod +x taplo/taplo
-	rm -f taplo.gz
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=25, L=100, B=2):
+    csm2acr = U.choice(
+        module,
+        diffsptk.CompositeSinusoidalModelCoefficientsToAutocorrelation,
+        diffsptk.functional.csm2acr,
+        {"csm_order": M},
+    )
 
-yamlfmt:
-	mkdir -p yamlfmt
-	wget https://github.com/google/yamlfmt/releases/download/v$(YAMLFMT_VERSION)/yamlfmt_$(YAMLFMT_VERSION)_Linux_x86_64.tar.gz -O yamlfmt.tar.gz
-	tar xzf yamlfmt.tar.gz -C yamlfmt
-	rm -f yamlfmt.tar.gz
+    U.check_compatibility(
+        device,
+        csm2acr,
+        [],
+        f"nrand -l {B*L} | acorr -m {M} -l {L} | acr2csm -m {M}",
+        f"csm2acr -m {M}",
+        [],
+        dx=M + 1,
+        dy=M + 1,
+    )
 
-clean:
-	rm -rf SPTK taplo yamlfmt
-
-.PHONY: all clean
+    acorr = diffsptk.Autocorrelation(L, M)
+    acr2csm = diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients(M)
+    U.check_differentiability(device, [csm2acr, acr2csm, acorr], [B, L])

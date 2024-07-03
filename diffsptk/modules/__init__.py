@@ -1,4 +1,5 @@
 from .acorr import Autocorrelation
+from .acr2csm import AutocorrelationToCompositeSinusoidalModelCoefficients
 from .alaw import ALawCompression
 from .ap import Aperiodicity
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
@@ -8,6 +9,7 @@ from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
 from .cqt import ConstantQTransform
 from .cqt import ConstantQTransform as CQT
+from .csm2acr import CompositeSinusoidalModelCoefficientsToAutocorrelation
 from .dct import DiscreteCosineTransform
 from .dct import DiscreteCosineTransform as DCT
 from .decimate import Decimation
