@@ -37,6 +37,12 @@ class AllPoleDigitalFilter(nn.Module):
     ignore_gain : bool
         If True, perform filtering without gain.
 
+    References
+    ----------
+    .. [1] C.-Y. Yu et al., "Differentiable time-varying linear prediction in the
+           context of end-to-end analysis-by-synthesis," *Proceedings of Interspeech*,
+           2024.
+
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):

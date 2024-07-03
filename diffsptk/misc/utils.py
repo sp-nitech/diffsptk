@@ -82,6 +82,11 @@ def to(x, dtype=None):
     return x.to(dtype=dtype)
 
 
+def to_2d(x):
+    y = x.view(-1, x.size(-1))
+    return y
+
+
 def to_3d(x):
     y = x.view(-1, 1, x.size(-1))
     return y

@@ -364,6 +364,62 @@ def dfs(x, b=None, a=None):
     return nn.InfiniteImpulseResponseDigitalFilter._func(x, b=b, a=a)
 
 
+def drc(
+    x,
+    threshold,
+    ratio,
+    attack_time,
+    release_time,
+    sample_rate,
+    makeup_gain=0,
+    abs_max=1,
+):
+    """Apply dynamic range compression.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Input signal.
+
+    threshold : float <= 0
+        Threshold in dB.
+
+    ratio : float > 1
+        Input/output ratio.
+
+    attack_time : float > 0
+        Attack time in msec.
+
+    release_time : float > 0
+        Release time in msec.
+
+    sample_rate : int >= 1
+        Sample rate in Hz.
+
+    makeup_gain : float >= 0
+        Make-up gain in dB.
+
+    abs_max : float > 0
+        Absolute maximum value of input.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        Compressed signal.
+
+    """
+    return nn.DynamicRangeCompression._func(
+        x,
+        threshold=threshold,
+        ratio=ratio,
+        attack_time=attack_time,
+        release_time=release_time,
+        sample_rate=sample_rate,
+        makeup_gain=makeup_gain,
+        abs_max=abs_max,
+    )
+
+
 def entropy(p, out_format="nat"):
     """Calculate entropy.
 
