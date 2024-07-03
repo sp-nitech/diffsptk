@@ -152,12 +152,12 @@ x, sr = diffsptk.read("assets/data.wav")
 # Decompose x.
 pqmf = diffsptk.PQMF(K, M)
 decimate = diffsptk.Decimation(K)
-y = decimate(pqmf(x), dim=-1)
+y = decimate(pqmf(x))
 
 # Reconstruct x.
 interpolate = diffsptk.Interpolation(K)
 ipqmf = diffsptk.IPQMF(K, M)
-x_hat = ipqmf(interpolate(K * y, dim=-1)).reshape(-1)
+x_hat = ipqmf(interpolate(K * y)).reshape(-1)
 
 # Write reconstructed waveform.
 diffsptk.write("reconst.wav", x_hat, sr)
