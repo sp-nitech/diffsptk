@@ -39,8 +39,9 @@ class AllPoleDigitalFilter(nn.Module):
 
     References
     ----------
-    .. [1] C.-Y. Yu et al., "Differentiable all-pole filters for time-varying audio
-           systems," *Proceedings of DAFx*, 2024.
+    .. [1] C.-Y. Yu et al., "Differentiable time-varying linear prediction in the
+           context of end-to-end analysis-by-synthesis," *Proceedings of Interspeech*,
+           2024.
 
     """
 
