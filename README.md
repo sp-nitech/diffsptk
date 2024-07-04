@@ -109,7 +109,7 @@ stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
 # Extract mel-spectrogram.
-fbank = diffsptk.MelFilterBankAnalysis(
+fbank = diffsptk.FBANK(
     n_channel=n_channel,
     fft_length=n_fft,
     sample_rate=sr,
