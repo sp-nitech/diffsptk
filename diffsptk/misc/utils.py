@@ -108,7 +108,7 @@ def replicate1(x, left=True, right=True):
     return y
 
 
-def remove_gain(a, return_gain=False, value=1):
+def remove_gain(a, value=1, return_gain=False):
     K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
     a = F.pad(a1, (1, 0), value=value)
     if return_gain:
