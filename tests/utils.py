@@ -75,7 +75,7 @@ def call(cmd, get=True):
         data = np.fromstring(
             res.stdout, sep="\n", dtype=np.double if is_double else np.float32
         )
-        assert len(data) > 0, f"Failed to run command {cmd}"
+        assert 0 < len(data), f"Failed to run command {cmd}"
         return data
     else:
         res = subprocess.run(
@@ -190,16 +190,17 @@ def check_differentiability(
     module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
     optimizer = torch.optim.SGD(x, lr=0.01)
 
-    s = time.process_time()
-    for _ in range(load):
+    for i in range(load):
+        if i == 1:
+            s = time.process_time()
         y = module(*x, **opt)
         optimizer.zero_grad()
         loss = y.mean()
         loss.backward()
         optimizer.step()
-    e = time.process_time()
 
-    if load > 1:
+    if 1 < load:
+        e = time.process_time()
         print(f"time: {e - s}")
 
     for i in range(len(x)):
