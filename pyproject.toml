@@ -28,12 +28,12 @@ dependencies = [
   "scipy >= 1.0.0, < 1.14.0",
   "librosa >= 0.10.1",
   "soundfile >= 0.10.2",
-  "torch >= 1.11.0",
-  "torchaudio >= 0.11.0",
+  "torch >= 2.0.0",
+  "torchaudio >= 2.0.1",
   "torchcrepe >= 0.0.21",
-  "torchlpc >= 0.2.0, < 0.5.0",
-  "torchcomp >= 0.1.1",
-  "vector-quantize-pytorch >= 0.8.0, <= 1.12.12",
+  "torchlpc >= 0.2.0",
+  "torchcomp >= 0.1.0",
+  "vector-quantize-pytorch >= 1.14.9",
 ]
 dynamic = ["version"]
 
