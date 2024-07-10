@@ -28,7 +28,7 @@ def test_compatibility(
     device, ignore_gain, mode, c=0, alpha=0.42, M=24, P=80, L=400, fft_length=512
 ):
     if mode == "multi-stage":
-        params = {"cep_order": 100}
+        params = {"taylor_order": 20, "cep_order": 100}
     elif mode == "single-stage":
         params = {"ir_length": 400, "n_fft": 1024}
     elif mode == "freq-domain":

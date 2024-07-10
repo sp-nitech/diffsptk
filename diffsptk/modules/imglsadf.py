@@ -25,14 +25,6 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
     def __init__(self, filter_order, frame_period, **kwargs):
         super().__init__()
 
-        # Change the default value of the order of Taylor series.
-        # This is because inverse filtering requires the large value.
-        if (
-            kwargs.get("mode", "multi-stage") == "multi-stage"
-            and "taylor_order" not in kwargs
-        ):
-            kwargs["taylor_order"] = 40
-
         self.mglsadf = PseudoMGLSADigitalFilter(filter_order, frame_period, **kwargs)
 
     def forward(self, y, mc):

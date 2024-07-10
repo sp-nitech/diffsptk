@@ -244,8 +244,7 @@ class MultiStageFIRFilter(nn.Module):
 
     def forward(self, x, mc):
         c = self.mgc2c(mc)
-        if self.ignore_gain:
-            c = remove_gain(c, value=0)
+        c0, c = remove_gain(c, value=0, return_gain=True)
 
         if self.phase == "minimum":
             c = c.flip(-1)
@@ -264,6 +263,10 @@ class MultiStageFIRFilter(nn.Module):
             x = x.unfold(-1, c.size(-1), 1)
             x = (x * c).sum(-1) / a
             y += x
+
+        if not self.ignore_gain:
+            K = torch.exp(self.linear_intpl(c0))
+            y *= K.squeeze(-1)
         return y
 
 
