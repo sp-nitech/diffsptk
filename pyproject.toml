@@ -10,13 +10,12 @@ maintainers = [
 ]
 description = "Speech signal processing modules for machine learning"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 keywords = ["dsp", "pytorch", "signal processing", "sptk"]
 license = { text = "Apache 2.0" }
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.8",
   "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
@@ -28,12 +27,12 @@ dependencies = [
   "scipy >= 1.0.0, < 1.14.0",
   "librosa >= 0.10.1",
   "soundfile >= 0.10.2",
-  "torch >= 1.11.0",
-  "torchaudio >= 0.11.0",
+  "torch >= 2.0.0",
+  "torchaudio >= 2.0.1",
   "torchcrepe >= 0.0.21",
-  "torchlpc >= 0.2.0, < 0.5.0",
-  "torchcomp >= 0.1.1",
-  "vector-quantize-pytorch >= 0.8.0, <= 1.12.12",
+  "torchlpc >= 0.2.0",
+  "torchcomp >= 0.1.0",
+  "vector-quantize-pytorch >= 1.14.9",
 ]
 dynamic = ["version"]
 

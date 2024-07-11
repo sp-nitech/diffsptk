@@ -47,6 +47,9 @@ def test_sin(m=5, p=4, a=-1):
     y = diffsptk.sin(m, p, a)
     y_ = U.call(f"sin -m {m} -p {p} -a {a}")
     assert U.allclose(y, y_)
+    y = diffsptk.sin(m)
+    y_ = U.call(f"sin -m {m} -p {m + 1}")
+    assert U.allclose(y, y_)
 
 
 @pytest.mark.parametrize("n", [0, 1, 2])

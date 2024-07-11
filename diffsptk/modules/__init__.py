@@ -41,6 +41,8 @@ from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
+from .imdct import InverseModifiedDiscreteCosineTransform
+from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
 from .imglsadf import PseudoInverseMGLSADigitalFilter
 from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
 from .imsvq import InverseMultiStageVectorQuantization
@@ -67,6 +69,8 @@ from .lspcheck import LineSpectralPairsStabilityCheck
 from .magic_intpl import MagicNumberInterpolation
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 from .mcpf import MelCepstrumPostfiltering
+from .mdct import ModifiedDiscreteCosineTransform
+from .mdct import ModifiedDiscreteCosineTransform as MDCT
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum

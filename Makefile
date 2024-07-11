@@ -18,9 +18,9 @@ PROJECT := diffsptk
 MODULE  :=
 
 PYTHON_VERSION     := 3.9
-TORCH_VERSION      := 1.12.0
-TORCHAUDIO_VERSION := 0.12.0
-PLATFORM           := cu113
+TORCH_VERSION      := 2.0.0
+TORCHAUDIO_VERSION := 2.0.1
+PLATFORM           := cu118
 
 venv:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv

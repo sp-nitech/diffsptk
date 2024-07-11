@@ -50,8 +50,8 @@ def test_compatibility(
     U.call("rm -f tmp.py", get=False)
 
     x = diffsptk.nrand(B, sr).to(device)
-    y = target(x)
-    y_hat = yingram(frame(x))
+    y = target(x).cpu()
+    y_hat = yingram(frame(x)).cpu()
     assert U.allclose(y, y_hat)
 
     U.check_differentiability(device, yingram, [B, fl])

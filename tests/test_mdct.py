@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,39 +22,25 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("comp", [False, True])
-def test_compatibility(
-    device, module, comp, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
-):
-    stft = U.choice(
+@pytest.mark.parametrize("window", ["sine", "vorbis", "rectangular"])
+def test_compatibility(device, module, window, L=512):
+    mdct_params = {"frame_length": L, "window": window}
+    mdct = U.choice(
         module,
-        diffsptk.STFT,
-        diffsptk.functional.stft,
+        diffsptk.MDCT,
+        diffsptk.functional.mdct,
         {},
-        {
-            "frame_length": L1,
-            "frame_period": P,
-            "fft_length": L2,
-            "window": w,
-            "norm": n,
-            "eps": eps,
-            "out_format": "complex" if comp else "power",
-        },
+        mdct_params,
     )
+    imdct = diffsptk.IMDCT(**mdct_params)
 
-    cmd = f"frame -l {L1} -p {P} | " f"window -l {L1} -L {L2} -n {n} -w {w} | "
-    if comp:
-        cmd += f"fftr -l {L2} -H -o 3"
-    else:
-        cmd += f"spec -l {L2} -e {eps} -o 3"
     U.check_compatibility(
         device,
-        [torch.abs, stft] if comp else stft,
+        [imdct, mdct],
         [],
-        f"nrand -l {T}",
-        cmd,
+        f"nrand -l {L}",
+        "sopr",
         [],
-        dy=L2 // 2 + 1,
     )
 
-    U.check_differentiability(device, [torch.abs, stft], [T])
+    U.check_differentiability(device, mdct, [L])
