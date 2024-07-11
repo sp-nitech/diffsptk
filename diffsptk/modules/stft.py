@@ -136,7 +136,7 @@ class ShortTimeFourierTransform(nn.Module):
         out_format,
     ):
         y = Frame._func(x, frame_length, frame_period, center, zmean)
-        y = Window._func(y, None, window, norm)
+        y = Window._func(y, fft_length, window, norm)
         if out_format == "complex":
             y = torch.fft.rfft(y)
         else:

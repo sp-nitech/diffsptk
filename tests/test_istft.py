@@ -24,7 +24,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module):
+def test_compatibility(device, module, T=19200):
     stft_params = {
         "frame_length": 400,
         "frame_period": 80,
@@ -43,9 +43,11 @@ def test_compatibility(device, module):
 
     U.check_compatibility(
         device,
-        [itemgetter(slice(0, 19200)), istft, stft],
+        [itemgetter(slice(0, T)), istft, stft],
         [],
         "x2x +sd tools/SPTK/asset/data.short",
         "sopr",
         [],
     )
+
+    U.check_differentiability(device, [istft, stft], [T])
