@@ -44,7 +44,6 @@ class ShortTimeFourierTransform(nn.Module):
     zmean : bool
         If True, perform mean subtraction on each frame.
 
-
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
         'rectangular']
         Window type.

@@ -22,7 +22,7 @@ from .unframe import Unframe
 
 
 class InverseShortTimeFourierTransform(nn.Module):
-    """This is the opposite module to :func:`~diffsptk.ShortTimeFourierTransform`
+    """This is the opposite module to :func:`~diffsptk.ShortTimeFourierTransform`.
 
     Parameters
     ----------

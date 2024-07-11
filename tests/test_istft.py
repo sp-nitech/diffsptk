@@ -14,15 +14,17 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from operator import itemgetter
+
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(module):
+def test_compatibility(device, module):
     stft_params = {
         "frame_length": 400,
         "frame_period": 80,
@@ -39,6 +41,11 @@ def test_compatibility(module):
         stft_params,
     )
 
-    x = torch.from_numpy(U.call("x2x +sd tools/SPTK/asset/data.short"))
-    y = istft(stft(x), out_length=x.size(0)).round()
-    assert U.allclose(x, y)
+    U.check_compatibility(
+        device,
+        [itemgetter(slice(0, 19200)), istft, stft],
+        [],
+        "x2x +sd tools/SPTK/asset/data.short",
+        "sopr",
+        [],
+    )

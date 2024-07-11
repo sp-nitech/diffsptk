@@ -20,8 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
+@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(module, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
+def test_compatibility(device, module, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
     stft = U.choice(
         module,
         diffsptk.STFT,
@@ -44,7 +45,7 @@ def test_compatibility(module, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6):
         f"spec -l {L2} -e {eps} -o 3"
     )
     U.check_compatibility(
-        "cpu",
+        device,
         stft,
         [],
         f"nrand -l {T}",
