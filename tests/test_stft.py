@@ -58,4 +58,4 @@ def test_compatibility(
         dy=L2 // 2 + 1,
     )
 
-    U.check_differentiability(device, stft, [T])
+    U.check_differentiability(device, [torch.abs, stft], [T])
