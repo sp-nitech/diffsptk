@@ -109,6 +109,11 @@ class Window(nn.Module):
             w = torch.minimum(torch.clip(slope, 0, 1), torch.flip(slope, [0]))
         elif window in (5, "rectangular"):
             w = torch.ones(length, **params)
+        elif window == "sine":
+            w = torch.signal.windows.cosine(length, **params)
+        elif window == "vorbis":
+            seed = torch.signal.windows.cosine(length, **params)
+            w = torch.sin(torch.pi * 0.5 * seed**2)
         else:
             raise ValueError(f"window {window} is not supported.")
 

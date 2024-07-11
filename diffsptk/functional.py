@@ -823,6 +823,29 @@ def ignorm(y, gamma=0, c=None):
     return nn.GeneralizedCepstrumInverseGainNormalization._func(y, gamma=gamma, c=c)
 
 
+def imdct(y, out_length=None, frame_length=400, window="sine"):
+    """Compute inverse modified discrete cosine transform.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., 2T/L, L/2)]
+        Spectrum.
+
+    out_length : int or None
+        Length of output waveform.
+
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'rectangular']
+        Window type.
+
+    """
+    return nn.InverseModifiedDiscreteCosineTransform._func(
+        y, out_length=out_length, frame_length=frame_length, window=window
+    )
+
+
 def interpolate(x, period=1, start=0, dim=-1):
     """Interpolate signal.
 
@@ -1210,6 +1233,31 @@ def mc2b(mc, alpha=0):
 
     """
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
+
+
+def mdct(x, frame_length=400, window="sine"):
+    """Compute modified discrete cosine transform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Waveform.
+
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'rectangular']
+        Window type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., 2T/L, L/2)]
+        Spectrum.
+
+    """
+    return nn.ModifiedDiscreteCosineTransform._func(
+        x, frame_length=frame_length, window=window
+    )
 
 
 def mgc2mgc(
