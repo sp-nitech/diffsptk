@@ -21,27 +21,26 @@ from ..misc.utils import check_size
 from ..misc.utils import to
 
 
-class DiscreteCosineTransform(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/dct.html>`_
-    for details.
+class DiscreteSineTransform(nn.Module):
+    """Discrete sine transform module.
 
     Parameters
     ----------
-    dct_length : int >= 1
-        DCT length, :math:`L`.
+    dst_length : int >= 1
+        DST length, :math:`L`.
 
     """
 
-    def __init__(self, dct_length):
+    def __init__(self, dst_length):
         super().__init__()
 
-        assert 1 <= dct_length
+        assert 1 <= dst_length
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length))
+        self.dst_length = dst_length
+        self.register_buffer("W", self._precompute(self.dst_length))
 
     def forward(self, x):
-        """Apply DCT to input.
+        """Apply DST to input.
 
         Parameters
         ----------
@@ -51,18 +50,18 @@ class DiscreteCosineTransform(nn.Module):
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            DCT output.
+            DST output.
 
         Examples
         --------
         >>> x = diffsptk.ramp(3)
-        >>> dct = diffsptk.DCT(4)
-        >>> y = dct(x)
+        >>> dst = diffsptk.DST(4)
+        >>> y = dst(x)
         >>> y
-        tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
+        tensor([ 2.7716, -2.0000,  1.1481, -1.0000])
 
         """
-        check_size(x.size(-1), self.dct_length, "dimension of input")
+        check_size(x.size(-1), self.dst_length, "dimension of input")
         return self._forward(x, self.W)
 
     @staticmethod
@@ -71,16 +70,16 @@ class DiscreteCosineTransform(nn.Module):
 
     @staticmethod
     def _func(x):
-        W = DiscreteCosineTransform._precompute(
+        W = DiscreteSineTransform._precompute(
             x.size(-1), dtype=x.dtype, device=x.device
         )
-        return DiscreteCosineTransform._forward(x, W)
+        return DiscreteSineTransform._forward(x, W)
 
     @staticmethod
     def _precompute(length, dtype=None, device=None):
         L = length
-        k = torch.arange(L, dtype=torch.double, device=device)
-        n = (torch.pi / L) * (k + 0.5)
-        z = torch.sqrt(torch.clip(k + 1, min=1, max=2) / L)
-        W = z.unsqueeze(0) * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
+        k = torch.arange(L, dtype=torch.double, device=device) + 1
+        n = (torch.pi / L) * (k - 0.5)
+        z = torch.sqrt(torch.clip(k, min=1, max=2) / L).flip(0)
+        W = z.unsqueeze(0) * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
         return to(W, dtype=dtype)

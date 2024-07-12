@@ -18,69 +18,64 @@ import torch
 from torch import nn
 
 from ..misc.utils import check_size
-from ..misc.utils import to
+from .dst import DiscreteSineTransform as DST
 
 
-class DiscreteCosineTransform(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/dct.html>`_
-    for details.
+class InverseDiscreteSineTransform(nn.Module):
+    """This is the opposite module to :func:`~diffsptk.DiscreteSineTransform`.
 
     Parameters
     ----------
-    dct_length : int >= 1
-        DCT length, :math:`L`.
+    dst_length : int >= 1
+        DST length, :math:`L`.
 
     """
 
-    def __init__(self, dct_length):
+    def __init__(self, dst_length):
         super().__init__()
 
-        assert 1 <= dct_length
+        assert 1 <= dst_length
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length))
+        self.dst_length = dst_length
+        self.register_buffer("W", self._precompute(self.dst_length))
 
-    def forward(self, x):
-        """Apply DCT to input.
+    def forward(self, y):
+        """Apply inverse DST to input.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L)]
+        y : Tensor [shape=(..., L)]
             Input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            DCT output.
+            Inverse DST output.
 
         Examples
         --------
         >>> x = diffsptk.ramp(3)
-        >>> dct = diffsptk.DCT(4)
-        >>> y = dct(x)
-        >>> y
-        tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
+        >>> dst = diffsptk.DST(4)
+        >>> idst = diffsptk.IDST(4)
+        >>> x2 = idst(dst(x))
+        >>> x2
+        tensor([1.1921e-07, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        check_size(x.size(-1), self.dct_length, "dimension of input")
-        return self._forward(x, self.W)
+        check_size(y.size(-1), self.dst_length, "dimension of input")
+        return self._forward(y, self.W)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
+    def _forward(y, W):
+        return torch.matmul(y, W)
 
     @staticmethod
-    def _func(x):
-        W = DiscreteCosineTransform._precompute(
-            x.size(-1), dtype=x.dtype, device=x.device
+    def _func(y):
+        W = InverseDiscreteSineTransform._precompute(
+            y.size(-1), dtype=y.dtype, device=y.device
         )
-        return DiscreteCosineTransform._forward(x, W)
+        return InverseDiscreteSineTransform._forward(y, W)
 
     @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        L = length
-        k = torch.arange(L, dtype=torch.double, device=device)
-        n = (torch.pi / L) * (k + 0.5)
-        z = torch.sqrt(torch.clip(k + 1, min=1, max=2) / L)
-        W = z.unsqueeze(0) * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
-        return to(W, dtype=dtype)
+    def _precompute(dst_length, dtype=None, device=None):
+        return DST._precompute(dst_length, dtype=dtype, device=device).T

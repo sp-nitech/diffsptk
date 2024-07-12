@@ -420,6 +420,23 @@ def drc(
     )
 
 
+def dst(x):
+    """Compute DST.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Input signal.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        DST output.
+
+    """
+    return nn.DiscreteSineTransform._func(x)
+
+
 def entropy(p, out_format="nat"):
     """Calculate entropy.
 
@@ -767,6 +784,23 @@ def idct(y):
 
     """
     return nn.InverseDiscreteCosineTransform._func(y)
+
+
+def idst(y):
+    """Compute inverse DST.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., L)]
+        Input.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        Inverse DST output.
+
+    """
+    return nn.InverseDiscreteSineTransform._func(y)
 
 
 def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
