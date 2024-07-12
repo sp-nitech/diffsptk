@@ -21,6 +21,8 @@ from .dfs import InfiniteImpulseResponseDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
 from .drc import DynamicRangeCompression
 from .drc import DynamicRangeCompression as DRC
+from .dst import DiscreteSineTransform
+from .dst import DiscreteSineTransform as DST
 from .entropy import Entropy
 from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
@@ -39,6 +41,8 @@ from .icqt import InverseConstantQTransform
 from .icqt import InverseConstantQTransform as ICQT
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
+from .idst import InverseDiscreteSineTransform
+from .idst import InverseDiscreteSineTransform as IDST
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .imdct import InverseModifiedDiscreteCosineTransform
