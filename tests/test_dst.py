@@ -14,13 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 import pytest
+from scipy.fftpack import dst as scipy_dst
+import torch
 
 import diffsptk
 import tests.utils as U
-
-from scipy.fftpack import dst as scipy_dst
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
