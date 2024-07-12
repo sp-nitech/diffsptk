@@ -235,12 +235,12 @@ class AperiodicityExtractionByTandem(nn.Module):
             T1 = x.size(-1) - 1
 
             index_alpha = (origin - t0).unsqueeze(-1) + j  # (B, N, J + 2)
-            index_alpha = torch.clip(index_alpha, 0, T1)
+            index_alpha = torch.clip(index_alpha, min=0, max=T1)
             H_alpha = torch.gather(xx, -1, index_alpha)
             H_alpha = H_alpha.unfold(2, 3, 1)  # (B, N, J, 3)
 
             index_beta = (origin + t0).unsqueeze(-1) + j  # (B, N, J + 2)
-            index_beta = torch.clip(index_beta, 0, T1)
+            index_beta = torch.clip(index_beta, min=0, max=T1)
             H_beta = torch.gather(xx, -1, index_beta)
             H_beta = H_beta.unfold(2, 3, 1)  # (B, N, J, 3)
 
@@ -275,7 +275,7 @@ class AperiodicityExtractionByTandem(nn.Module):
 
         bap.append(bap[-1])
         bap = torch.stack(bap[::-1], dim=-1)  # (B, N, D)
-        bap = torch.clip(bap, self.lower_bound, self.upper_bound)
+        bap = torch.clip(bap, min=self.lower_bound, max=self.upper_bound)
 
         # Interpolate band aperiodicity.
         y = torch.log(bap)

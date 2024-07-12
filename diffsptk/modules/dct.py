@@ -80,7 +80,7 @@ class DiscreteCosineTransform(nn.Module):
     def _precompute(length, dtype=None, device=None):
         L = length
         k = torch.arange(L, dtype=torch.double, device=device)
-        n = (k + 0.5) * (torch.pi / L)
-        z = torch.sqrt(torch.clip(1 + k, 1, 2) / L)
+        n = (torch.pi / L) * (k + 0.5)
+        z = torch.sqrt(torch.clip(k + 1, min=1, max=2) / L)
         W = z.unsqueeze(0) * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
         return to(W, dtype=dtype)

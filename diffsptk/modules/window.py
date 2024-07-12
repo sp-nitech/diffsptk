@@ -106,7 +106,7 @@ class Window(nn.Module):
             w = torch.bartlett_window(length, periodic=False, **params)
         elif window in (4, "trapezoidal"):
             slope = torch.linspace(0, 4, length, **params)
-            w = torch.minimum(torch.clip(slope, 0, 1), torch.flip(slope, [0]))
+            w = torch.minimum(torch.clip(slope, min=0, max=1), slope.flip(0))
         elif window in (5, "rectangular"):
             w = torch.ones(length, **params)
         elif window == "sine":
