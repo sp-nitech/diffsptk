@@ -41,11 +41,11 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
 
         self.frame_period = frame_length // 2
 
-        self.imdct = InverseModifiedDiscreteCosineTransformCore(frame_length)
+        self.imdct = InverseModifiedDiscreteCosineTransformCore(
+            frame_length, window != "rectangular"
+        )
         self.window = Window(frame_length, window=window, norm="none")
         self.unframe = Unframe(frame_length, self.frame_period)
-
-        self.z = self._precompute(frame_length, window)
 
     def forward(self, y, out_length=None):
         """Compute inverse modified discrete cosine transform.
@@ -77,7 +77,7 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
 
         """
         x = self.imdct(y)
-        x = self.window(x) * self.z
+        x = self.window(x)
         x = self.unframe(x, out_length=out_length)
         if out_length is None:
             x = x[..., : -self.frame_period]
@@ -86,9 +86,8 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
     @staticmethod
     def _func(y, out_length, frame_length, window):
         frame_period = frame_length // 2
-        z = InverseModifiedDiscreteCosineTransform._precompute(frame_length, window)
-        x = InverseModifiedDiscreteCosineTransformCore._func(y)
-        x = Window._func(x, None, window=window, norm="none") * z
+        x = InverseModifiedDiscreteCosineTransformCore._func(y, window != "rectangular")
+        x = Window._func(x, None, window=window, norm="none")
         x = Unframe._func(
             x,
             out_length,
@@ -102,13 +101,6 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
             x = x[..., :-frame_period]
         return x
 
-    @staticmethod
-    def _precompute(frame_length, window):
-        z = 8 / frame_length
-        if window == "rectangular":
-            z *= 0.5
-        return z
-
 
 class InverseModifiedDiscreteCosineTransformCore(nn.Module):
     """Inverse modified discrete cosine transform module.
@@ -118,16 +110,19 @@ class InverseModifiedDiscreteCosineTransformCore(nn.Module):
     dct_length : int >= 2
         DCT length, :math:`L`.
 
+    windowed : bool
+        If True, assume that input is windowed.
+
     """
 
-    def __init__(self, dct_length):
+    def __init__(self, dct_length, windowed=False):
         super().__init__()
 
         assert 2 <= dct_length
         assert dct_length % 2 == 0
 
         self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length))
+        self.register_buffer("W", self._precompute(self.dct_length, windowed))
 
     def forward(self, y):
         """Apply inverse MDCT to input.
@@ -151,12 +146,12 @@ class InverseModifiedDiscreteCosineTransformCore(nn.Module):
         return torch.matmul(y, W)
 
     @staticmethod
-    def _func(y):
+    def _func(y, windowed):
         W = InverseModifiedDiscreteCosineTransformCore._precompute(
-            2 * y.size(-1), dtype=y.dtype, device=y.device
+            2 * y.size(-1), windowed, dtype=y.dtype, device=y.device
         )
         return InverseModifiedDiscreteCosineTransformCore._forward(y, W)
 
     @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        return MDCT._precompute(length, dtype=dtype, device=device).T
+    def _precompute(length, windowed, dtype=None, device=None):
+        return MDCT._precompute(length, windowed, dtype=dtype, device=device).T

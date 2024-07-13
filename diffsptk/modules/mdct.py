@@ -45,7 +45,7 @@ class ModifiedDiscreteCosineTransform(nn.Module):
         self.mdct = nn.Sequential(
             Frame(frame_length, self.frame_period),
             Window(frame_length, window=window, norm="none"),
-            ModifiedDiscreteCosineTransformCore(frame_length),
+            ModifiedDiscreteCosineTransformCore(frame_length, window != "rectangular"),
         )
 
     def forward(self, x):
@@ -79,16 +79,12 @@ class ModifiedDiscreteCosineTransform(nn.Module):
         return self.mdct(x)
 
     @staticmethod
-    def _func(
-        x,
-        frame_length,
-        window,
-    ):
+    def _func(x, frame_length, window):
         frame_period = frame_length // 2
         x = F.pad(x, (0, frame_period))
         y = Frame._func(x, frame_length, frame_period, True, False)
         y = Window._func(y, None, window, "none")
-        y = ModifiedDiscreteCosineTransformCore._func(y)
+        y = ModifiedDiscreteCosineTransformCore._func(y, window != "rectangular")
         return y
 
 
@@ -100,16 +96,19 @@ class ModifiedDiscreteCosineTransformCore(nn.Module):
     dct_length : int >= 2
         DCT length, :math:`L`.
 
+    windowed : bool
+        If True, assume that input is windowed.
+
     """
 
-    def __init__(self, dct_length):
+    def __init__(self, dct_length, windowed=False):
         super().__init__()
 
         assert 2 <= dct_length
         assert dct_length % 2 == 0
 
         self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length))
+        self.register_buffer("W", self._precompute(self.dct_length, windowed))
 
     def forward(self, x):
         """Apply MDCT to input.
@@ -133,18 +132,19 @@ class ModifiedDiscreteCosineTransformCore(nn.Module):
         return torch.matmul(x, W)
 
     @staticmethod
-    def _func(x):
+    def _func(x, windowed):
         W = ModifiedDiscreteCosineTransformCore._precompute(
-            x.size(-1), dtype=x.dtype, device=x.device
+            x.size(-1), windowed, dtype=x.dtype, device=x.device
         )
         return ModifiedDiscreteCosineTransformCore._forward(x, W)
 
     @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        N = length
-        n = torch.arange(N, dtype=torch.double, device=device) + 0.5
-        K = N // 2
-        k = (torch.pi / K) * n[:K]
-        n += K / 2
-        W = torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
+    def _precompute(length, windowed, dtype=None, device=None):
+        L2 = length
+        L = L2 // 2
+        n = torch.arange(L2, dtype=torch.double, device=device) + 0.5
+        k = (torch.pi / L) * n[:L]
+        n += L / 2
+        z = (4 / L) ** 0.5 if windowed else (2 / L) ** 0.5
+        W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
         return to(W, dtype=dtype)
