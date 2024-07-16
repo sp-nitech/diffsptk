@@ -33,7 +33,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         Order of LPC, :math:`M`.
 
     eps : float >= 0
-        A small value added to power spectrum.
+        A small value to improve numerical stability.
 
     """
 
@@ -41,8 +41,8 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         super().__init__()
 
         self.lpc = nn.Sequential(
-            Autocorrelation(frame_length, lpc_order, eps=eps),
-            LevinsonDurbin(lpc_order),
+            Autocorrelation(frame_length, lpc_order),
+            LevinsonDurbin(lpc_order, eps=eps),
         )
 
     def forward(self, x):
@@ -72,6 +72,6 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
     @staticmethod
     def _func(x, lpc_order, eps):
-        r = Autocorrelation._func(x, lpc_order, eps=eps)
-        a = LevinsonDurbin._func(r)
+        r = Autocorrelation._func(x, lpc_order)
+        a = LevinsonDurbin._func(r, eps)
         return a

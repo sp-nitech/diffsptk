@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order, norm=False, eps=0, estimator="none"):
+def acorr(x, acr_order, norm=False, estimator="none"):
     """Compute autocorrelation.
 
     Parameters
@@ -31,9 +31,6 @@ def acorr(x, acr_order, norm=False, eps=0, estimator="none"):
     norm : bool
         If True, normalize the autocorrelation.
 
-    eps : float >= 0
-        A small value added to power spectrum.
-
     estimator : ['none', 'biased', 'unbiased']
         Estimator of autocorrelation.
 
@@ -44,7 +41,7 @@ def acorr(x, acr_order, norm=False, eps=0, estimator="none"):
 
     """
     return nn.Autocorrelation._func(
-        x, acr_order=acr_order, norm=norm, eps=eps, estimator=estimator
+        x, acr_order=acr_order, norm=norm, estimator=estimator
     )
 
 
@@ -1008,7 +1005,7 @@ def lar2par(g):
     return nn.LogAreaRatioToParcorCoefficients._func(g)
 
 
-def levdur(r):
+def levdur(r, eps=1e-6):
     """Solve a Yule-Walker linear system.
 
     Parameters
@@ -1016,13 +1013,16 @@ def levdur(r):
     r : Tensor [shape=(..., M+1)]
         Autocorrelation.
 
+    eps : float >= 0
+        A small value to improve numerical stability.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
-    return nn.LevinsonDurbin._func(r)
+    return nn.LevinsonDurbin._func(r, eps=eps)
 
 
 def linear_intpl(x, upsampling_factor=80):
@@ -1057,7 +1057,7 @@ def lpc(x, lpc_order, eps=1e-6):
         Order of LPC, :math:`M`.
 
     eps : float >= 0
-        A small value to prevent NaN.
+        A small value to improve numerical stability.
 
     Returns
     -------

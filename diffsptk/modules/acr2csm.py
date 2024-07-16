@@ -76,6 +76,7 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(nn.Module):
 
     @staticmethod
     def _forward(r, C):
+        assert r.dtype == torch.double
         u = torch.matmul(r, C)
         u1, u2 = torch.tensor_split(u, 2, dim=-1)
 

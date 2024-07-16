@@ -95,10 +95,9 @@ diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```python
 import diffsptk
 
-fl = 400     # Frame length.
-fp = 80      # Frame period.
-n_fft = 512  # FFT length.
-M = 24       # LPC dimensions.
+fl = 400  # Frame length.
+fp = 80   # Frame period.
+M = 24    # LPC dimensions.
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")

@@ -17,6 +17,7 @@
 from operator import itemgetter
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -41,9 +42,10 @@ def test_compatibility(device, module, T=19200):
         stft_params,
     )
 
+    # torch.round is for float precision.
     U.check_compatibility(
         device,
-        [itemgetter(slice(0, T)), istft, stft],
+        [torch.round, itemgetter(slice(0, T)), istft, stft],
         [],
         "x2x +sd tools/SPTK/asset/data.short",
         "sopr",

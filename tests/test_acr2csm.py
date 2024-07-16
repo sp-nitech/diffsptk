@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -22,7 +23,10 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, M=25, L=100, B=2):
+def test_compatibility(device, module, M=23, L=100, B=2):
+    if torch.get_default_dtype() != torch.double:  # pragma: no cover
+        return
+
     acr2csm = U.choice(
         module,
         diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients,

@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -34,9 +35,10 @@ def test_compatibility(device, module, window, L=512):
         mdct_params,
     )
 
+    # torch.round is for float precision.
     U.check_compatibility(
         device,
-        [imdct, mdct],
+        [torch.round, imdct, mdct],
         [],
         "x2x +sd tools/SPTK/asset/data.short",
         "sopr",

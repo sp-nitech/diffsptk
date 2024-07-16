@@ -30,14 +30,18 @@ class LevinsonDurbin(nn.Module):
     lpc_order : int >= 0
         Order of LPC coefficients, :math:`M`.
 
+    eps : float >= 0
+        A small value to improve numerical stability.
+
     """
 
-    def __init__(self, lpc_order):
+    def __init__(self, lpc_order, eps=0):
         super().__init__()
 
         assert 0 <= lpc_order
 
         self.lpc_order = lpc_order
+        self.register_buffer("eye", self._precompute(self.lpc_order, eps))
 
     def forward(self, r):
         """Solve a Yule-Walker linear system.
@@ -65,14 +69,14 @@ class LevinsonDurbin(nn.Module):
 
         """
         check_size(r.size(-1), self.lpc_order + 1, "dimension of autocorrelation")
-        return self._forward(r)
+        return self._forward(r, self.eye)
 
     @staticmethod
-    def _forward(r):
+    def _forward(r, eye):
         r0, r1 = torch.split(r, [1, r.size(-1) - 1], dim=-1)
 
         # Make Toeplitz matrix.
-        R = symmetric_toeplitz(r[..., :-1])  # [..., M, M]
+        R = symmetric_toeplitz(r[..., :-1]) + eye  # [..., M, M]
 
         # Solve system.
         a = torch.matmul(R.inverse(), -r1.unsqueeze(-1)).squeeze(-1)
@@ -83,4 +87,13 @@ class LevinsonDurbin(nn.Module):
         a = torch.cat((K, a), dim=-1)
         return a
 
-    _func = _forward
+    @staticmethod
+    def _func(r, eps):
+        eye = LevinsonDurbin._precompute(
+            r.size(-1) - 1, eps, dtype=r.dtype, device=r.device
+        )
+        return LevinsonDurbin._forward(r, eye)
+
+    @staticmethod
+    def _precompute(order, eps, dtype=None, device=None):
+        return torch.eye(order, dtype=dtype, device=device) * eps
