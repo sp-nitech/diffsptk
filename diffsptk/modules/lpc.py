@@ -72,6 +72,6 @@ class LinearPredictiveCodingAnalysis(nn.Module):
 
     @staticmethod
     def _func(x, lpc_order, eps):
-        r = Autocorrelation._func(x, lpc_order, eps)
+        r = Autocorrelation._func(x, lpc_order, eps=eps)
         a = LevinsonDurbin._func(r)
         return a
