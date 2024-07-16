@@ -32,13 +32,16 @@ class LinearPredictiveCodingAnalysis(nn.Module):
     lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
+    eps : float >= 0
+        A small value added to power spectrum.
+
     """
 
-    def __init__(self, frame_length, lpc_order):
+    def __init__(self, frame_length, lpc_order, eps=1e-6):
         super().__init__()
 
         self.lpc = nn.Sequential(
-            Autocorrelation(frame_length, lpc_order),
+            Autocorrelation(frame_length, lpc_order, eps=eps),
             LevinsonDurbin(lpc_order),
         )
 
@@ -59,7 +62,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         --------
         >>> x = diffsptk.nrand(4)
         tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
-        >>> lpc = diffsptk.LPC(2, 5)
+        >>> lpc = diffsptk.LPC(5, 2)
         >>> a = lpc(x)
         >>> a
         tensor([0.8726, 0.1475, 0.5270])
@@ -68,7 +71,7 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         return self.lpc(x)
 
     @staticmethod
-    def _func(x, lpc_order):
-        r = Autocorrelation._func(x, lpc_order)
+    def _func(x, lpc_order, eps):
+        r = Autocorrelation._func(x, lpc_order, eps)
         a = LevinsonDurbin._func(r)
         return a

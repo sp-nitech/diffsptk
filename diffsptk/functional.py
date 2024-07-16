@@ -17,7 +17,7 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order, norm=False, estimator="none"):
+def acorr(x, acr_order, norm=False, eps=0, estimator="none"):
     """Compute autocorrelation.
 
     Parameters
@@ -31,6 +31,9 @@ def acorr(x, acr_order, norm=False, estimator="none"):
     norm : bool
         If True, normalize the autocorrelation.
 
+    eps : float >= 0
+        A small value added to power spectrum.
+
     estimator : ['none', 'biased', 'unbiased']
         Estimator of autocorrelation.
 
@@ -41,7 +44,7 @@ def acorr(x, acr_order, norm=False, estimator="none"):
 
     """
     return nn.Autocorrelation._func(
-        x, acr_order=acr_order, norm=norm, estimator=estimator
+        x, acr_order=acr_order, norm=norm, eps=eps, estimator=estimator
     )
 
 
@@ -175,7 +178,7 @@ def c2ndps(c, fft_length):
     )
 
 
-def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
+def cdist(c1, c2, full=False, reduction="mean", eps=1e-6):
     """Calculate cepstral distance between two inputs.
 
     Parameters
@@ -1042,7 +1045,7 @@ def linear_intpl(x, upsampling_factor=80):
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
-def lpc(x, lpc_order):
+def lpc(x, lpc_order, eps=1e-6):
     """Compute LPC coefficients.
 
     Parameters
@@ -1053,13 +1056,16 @@ def lpc(x, lpc_order):
     lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
+    eps : float >= 0
+        A small value to prevent NaN.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
-    return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order)
+    return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order, eps=eps)
 
 
 def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
@@ -1727,7 +1733,7 @@ def rlevdur(a):
     return nn.ReverseLevinsonDurbin._func(a)
 
 
-def rmse(x, y, reduction="mean", eps=1e-8):
+def rmse(x, y, reduction="mean", eps=1e-6):
     """Calculate RMSE.
 
     Parameters
@@ -1773,7 +1779,7 @@ def root_pol(a, out_format="rectangular"):
     return nn.PolynomialToRoots._func(a, out_format=out_format)
 
 
-def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
+def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-6):
     """Calculate SNR.
 
     Parameters
@@ -1858,7 +1864,7 @@ def stft(
     zmean=False,
     window="blackman",
     norm="power",
-    eps=1e-9,
+    eps=1e-6,
     relative_floor=None,
     out_format="power",
 ):

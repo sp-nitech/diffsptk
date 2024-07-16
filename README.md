@@ -90,6 +90,39 @@ diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
+### LPC analysis and synthesis
+
+```python
+import diffsptk
+
+fl = 400     # Frame length.
+fp = 80      # Frame period.
+n_fft = 512  # FFT length.
+M = 24       # LPC dimensions.
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Estimate LPC of x.
+frame = diffsptk.Frame(frame_length=fl, frame_period=fp)
+window = diffsptk.Window(in_length=fl)
+lpc = diffsptk.LPC(frame_length=fl, lpc_order=M, eps=1e-6)
+a = lpc(window(frame(x)))
+
+# Convert to inverse filter coefficients.
+norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(filter_order=M)
+b = norm0(a)
+
+# Reconstruct x.
+zerodf = diffsptk.AllZeroDigitalFilter(filter_order=M, frame_period=fp)
+poledf = diffsptk.AllPoleDigitalFilter(filter_order=M, frame_period=fp)
+x_hat = poledf(zerodf(x, b), a)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
 ### Mel-spectrogram, MFCC, and PLP extraction
 
 ```python
@@ -108,7 +141,7 @@ x, sr = diffsptk.read("assets/data.wav")
 stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
-# Extract mel-spectrogram.
+# Extract log mel-spectrogram.
 fbank = diffsptk.FBANK(
     n_channel=n_channel,
     fft_length=n_fft,
@@ -187,6 +220,32 @@ c = cqt(x)
 # Reconstruct x.
 icqt = diffsptk.ICQT(fp, sr, n_bin=K, n_bin_per_octave=B)
 x_hat = icqt(c, out_length=x.size(0))
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
+### Modified discrete cosine transform
+
+```python
+import diffsptk
+
+fl = 512  # Frame length.
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Transform x.
+mdct = diffsptk.MDCT(fl)
+c = mdct(x)
+
+# Reconstruct x.
+imdct = diffpstk.IMDCT(fl)
+x_hat = imdct(c, out_length=x.size(0))
 
 # Write reconstructed waveform.
 diffsptk.write("reconst.wav", x_hat, sr)

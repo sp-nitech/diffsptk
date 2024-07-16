@@ -72,7 +72,7 @@ class ShortTimeFourierTransform(nn.Module):
         zmean=False,
         window="blackman",
         norm="power",
-        eps=1e-9,
+        eps=1e-6,
         relative_floor=None,
         out_format="power",
     ):

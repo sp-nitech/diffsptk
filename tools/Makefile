@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-TAPLO_VERSION   := 0.8.1
+TAPLO_VERSION   := 0.9.2
 YAMLFMT_VERSION := 0.13.0
 
 all: SPTK taplo yamlfmt

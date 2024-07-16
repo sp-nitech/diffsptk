@@ -35,12 +35,17 @@ class Autocorrelation(nn.Module):
     norm : bool
         If True, normalize the autocorrelation.
 
+    eps : float >= 0
+        A small value added to power spectrum.
+
     estimator : ['none', 'biased', 'unbiased']
         Estimator of autocorrelation.
 
     """
 
-    def __init__(self, frame_length, acr_order, norm=False, estimator="none"):
+    def __init__(
+        self, frame_length, acr_order, *, norm=False, eps=0, estimator="none"
+    ):
         super().__init__()
 
         assert 0 <= acr_order < frame_length
@@ -48,6 +53,7 @@ class Autocorrelation(nn.Module):
         self.frame_length = frame_length
         self.acr_order = acr_order
         self.norm = norm
+        self.eps = eps
         const = self._precompute(frame_length, acr_order, estimator)
         if torch.is_tensor(const):
             self.register_buffer("const", const)
@@ -77,25 +83,26 @@ class Autocorrelation(nn.Module):
 
         """
         check_size(x.size(-1), self.frame_length, "length of waveform")
-        return self._forward(x, self.acr_order, self.norm, self.const)
+        return self._forward(x, self.acr_order, self.norm, self.eps, self.const)
 
     @staticmethod
-    def _forward(x, acr_order, norm, const):
+    def _forward(x, acr_order, norm, eps, const):
         fft_length = x.size(-1) + acr_order
         if fft_length % 2 == 1:
             fft_length += 1
-        X = torch.square(torch.fft.rfft(x, n=fft_length).abs())
+        X = torch.fft.rfft(x, n=fft_length).abs()
+        X = torch.square(X) + eps
         r = torch.fft.irfft(X)[..., : acr_order + 1] * const
         if norm:
             r = r / r[..., :1]
         return r
 
     @staticmethod
-    def _func(x, acr_order, norm=False, estimator="none"):
+    def _func(x, acr_order, norm=False, eps=0, estimator="none"):
         const = Autocorrelation._precompute(
             x.size(-1), acr_order, estimator, device=x.device
         )
-        return Autocorrelation._forward(x, acr_order, norm, const)
+        return Autocorrelation._forward(x, acr_order, norm, eps, const)
 
     @staticmethod
     def _precompute(frame_length, acr_order, estimator, device=None):

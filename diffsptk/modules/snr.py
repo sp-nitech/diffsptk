@@ -38,7 +38,7 @@ class SignalToNoiseRatio(nn.Module):
 
     """
 
-    def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
+    def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-6):
         super().__init__()
 
         if frame_length is not None:
