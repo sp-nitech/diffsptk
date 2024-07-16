@@ -37,7 +37,7 @@ class CepstralDistance(nn.Module):
 
     """
 
-    def __init__(self, full=False, reduction="mean", eps=1e-6):
+    def __init__(self, full=False, reduction="mean", eps=1e-8):
         super().__init__()
 
         assert reduction in ("none", "mean", "batchmean", "sum")

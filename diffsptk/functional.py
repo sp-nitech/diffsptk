@@ -175,7 +175,7 @@ def c2ndps(c, fft_length):
     )
 
 
-def cdist(c1, c2, full=False, reduction="mean", eps=1e-6):
+def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
     """Calculate cepstral distance between two inputs.
 
     Parameters
@@ -1733,7 +1733,7 @@ def rlevdur(a):
     return nn.ReverseLevinsonDurbin._func(a)
 
 
-def rmse(x, y, reduction="mean", eps=1e-6):
+def rmse(x, y, reduction="mean", eps=1e-8):
     """Calculate RMSE.
 
     Parameters
@@ -1779,7 +1779,7 @@ def root_pol(a, out_format="rectangular"):
     return nn.PolynomialToRoots._func(a, out_format=out_format)
 
 
-def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-6):
+def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
     """Calculate SNR.
 
     Parameters
@@ -1864,7 +1864,7 @@ def stft(
     zmean=False,
     window="blackman",
     norm="power",
-    eps=1e-6,
+    eps=1e-9,
     relative_floor=None,
     out_format="power",
 ):

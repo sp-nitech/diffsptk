@@ -32,7 +32,7 @@ class RootMeanSquareError(nn.Module):
 
     """
 
-    def __init__(self, reduction="mean", eps=1e-6):
+    def __init__(self, reduction="mean", eps=1e-8):
         super().__init__()
 
         assert reduction in ("none", "mean", "sum")

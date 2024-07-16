@@ -22,7 +22,7 @@ from .levdur import LevinsonDurbin
 
 class LinearPredictiveCodingAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc.html>`_
-    for details. This module is a simple cascade of acorr and levdur.
+    for details. Double precision is recommended.
 
     Parameters
     ----------
