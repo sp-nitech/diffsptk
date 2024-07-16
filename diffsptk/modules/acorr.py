@@ -43,9 +43,7 @@ class Autocorrelation(nn.Module):
 
     """
 
-    def __init__(
-        self, frame_length, acr_order, *, norm=False, eps=0, estimator="none"
-    ):
+    def __init__(self, frame_length, acr_order, *, norm=False, eps=0, estimator="none"):
         super().__init__()
 
         assert 0 <= acr_order < frame_length
