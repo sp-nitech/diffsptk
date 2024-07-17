@@ -117,6 +117,9 @@ zerodf = diffsptk.AllZeroDigitalFilter(filter_order=M, frame_period=fp)
 poledf = diffsptk.AllPoleDigitalFilter(filter_order=M, frame_period=fp)
 x_hat = poledf(zerodf(x, b), a)
 
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
 # Compute error.
 error = (x_hat - x).abs().sum()
 print(error)
