@@ -84,7 +84,7 @@ class Autocorrelation(nn.Module):
         fft_length = x.size(-1) + acr_order
         if fft_length % 2 == 1:
             fft_length += 1
-        X = torch.square(torch.fft.rfft(x, n=fft_length).abs())
+        X = torch.fft.rfft(x, n=fft_length).abs().square()
         r = torch.fft.irfft(X)[..., : acr_order + 1] * const
         if norm:
             r = r / r[..., :1]

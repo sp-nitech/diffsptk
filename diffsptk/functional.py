@@ -1005,7 +1005,7 @@ def lar2par(g):
     return nn.LogAreaRatioToParcorCoefficients._func(g)
 
 
-def levdur(r):
+def levdur(r, eps=1e-6):
     """Solve a Yule-Walker linear system.
 
     Parameters
@@ -1013,13 +1013,16 @@ def levdur(r):
     r : Tensor [shape=(..., M+1)]
         Autocorrelation.
 
+    eps : float >= 0
+        A small value to improve numerical stability.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
-    return nn.LevinsonDurbin._func(r)
+    return nn.LevinsonDurbin._func(r, eps=eps)
 
 
 def linear_intpl(x, upsampling_factor=80):
@@ -1042,7 +1045,7 @@ def linear_intpl(x, upsampling_factor=80):
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
-def lpc(x, lpc_order):
+def lpc(x, lpc_order, eps=1e-6):
     """Compute LPC coefficients.
 
     Parameters
@@ -1053,13 +1056,16 @@ def lpc(x, lpc_order):
     lpc_order : int >= 0
         Order of LPC, :math:`M`.
 
+    eps : float >= 0
+        A small value to improve numerical stability.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         Gain and LPC coefficients.
 
     """
-    return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order)
+    return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order, eps=eps)
 
 
 def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
