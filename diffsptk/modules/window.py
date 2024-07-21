@@ -114,6 +114,11 @@ class Window(nn.Module):
         elif window == "vorbis":
             seed = torch.signal.windows.cosine(length, **params)
             w = torch.sin(torch.pi * 0.5 * seed**2)
+        elif window == "kbd":
+            seed = torch.kaiser_window(length // 2 + 1, periodic=False, **params)
+            cumsum = torch.cumsum(seed, dim=0)
+            half = torch.sqrt(cumsum[:-1] / cumsum[-1])
+            w = torch.cat([half, half.flip(0)])
         else:
             raise ValueError(f"window {window} is not supported.")
 

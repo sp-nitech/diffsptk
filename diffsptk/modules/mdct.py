@@ -32,7 +32,7 @@ class ModifiedDiscreteCosineTransform(nn.Module):
     frame_length : int >= 2
         Frame length, :math:`L`.
 
-    window : ['sine', 'vorbis', 'rectangular']
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
         Window type.
 
     """

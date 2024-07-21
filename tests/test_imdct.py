@@ -23,7 +23,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("window", ["sine", "vorbis", "rectangular"])
+@pytest.mark.parametrize("window", ["sine", "vorbis", "kbd", "rectangular"])
 def test_compatibility(device, module, window, L=512):
     mdct_params = {"frame_length": L, "window": window}
     mdct = diffsptk.MDCT(**mdct_params)

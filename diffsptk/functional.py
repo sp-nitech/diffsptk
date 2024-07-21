@@ -871,7 +871,7 @@ def imdct(y, out_length=None, frame_length=400, window="sine"):
     frame_length : int >= 2
         Frame length, :math:`L`.
 
-    window : ['sine', 'vorbis', 'rectangular']
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
         Window type.
 
     """
@@ -1005,7 +1005,7 @@ def lar2par(g):
     return nn.LogAreaRatioToParcorCoefficients._func(g)
 
 
-def levdur(r, eps=1e-6):
+def levdur(r, eps=0):
     """Solve a Yule-Walker linear system.
 
     Parameters
@@ -1286,7 +1286,7 @@ def mdct(x, frame_length=400, window="sine"):
     frame_length : int >= 2
         Frame length, :math:`L`.
 
-    window : ['sine', 'vorbis', 'rectangular']
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
         Window type.
 
     Returns
