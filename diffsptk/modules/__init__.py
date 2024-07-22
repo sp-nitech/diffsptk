@@ -51,6 +51,7 @@ from .imglsadf import PseudoInverseMGLSADigitalFilter
 from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
 from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
+from .ipnorm import MelCepstrumInversePowerNormalization
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
 from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
 from .istft import InverseShortTimeFourierTransform
@@ -96,6 +97,7 @@ from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
+from .pnorm import MelCepstrumPowerNormalization
 from .plp import PerceptualLinearPredictiveCoefficientsAnalysis
 from .plp import PerceptualLinearPredictiveCoefficientsAnalysis as PLP
 from .pol_root import RootsToPolynomial
