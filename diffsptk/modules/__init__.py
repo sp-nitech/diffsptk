@@ -7,6 +7,7 @@ from .c2acr import CepstrumToAutocorrelation
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 from .cdist import CepstralDistance
+from .chroma import ChromaFilterBankAnalysis
 from .cqt import ConstantQTransform
 from .cqt import ConstantQTransform as CQT
 from .csm2acr import CompositeSinusoidalModelCoefficientsToAutocorrelation
