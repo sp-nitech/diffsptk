@@ -14,8 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import librosa
 import pytest
-from scipy.fft import dst as scipy_dst
 import torch
 
 import diffsptk
@@ -24,23 +24,35 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=8, B=2):
+def test_compatibility(device, module, C=12):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x = diffsptk.nrand(B, L - 1, device=device)
-
-    dst = U.choice(
-        module,
-        diffsptk.DST,
-        diffsptk.functional.dst,
-        {"dst_length": L},
+    x, sr = diffsptk.read(
+        "assets/data.wav",
+        double=torch.get_default_dtype() == torch.double,
+        device=device,
     )
-    if hasattr(dst, "to"):
-        dst.to(device)
 
-    y1 = scipy_dst(x.cpu().numpy(), norm="ortho")
-    y2 = dst(x).cpu().numpy()
-    U.allclose(y1, y2)
+    X = diffsptk.functional.stft(x)
 
-    U.check_differentiability(device, dst, [B, L])
+    c1 = librosa.feature.chroma_stft(
+        S=X.cpu().numpy().T,
+        sr=sr,
+        n_chroma=C,
+    ).T
+
+    chroma = U.choice(
+        module,
+        diffsptk.ChromaFilterBankAnalysis,
+        diffsptk.functional.chroma,
+        {"fft_length": 2 * (X.size(-1) - 1)},
+        {"n_channel": C, "sample_rate": sr},
+    )
+    if hasattr(chroma, "to"):
+        chroma.to(device)
+    c2 = chroma(X).cpu().numpy()
+
+    U.allclose(c1, c2)
+
+    U.check_differentiability(device, chroma, [X.size(-1)])

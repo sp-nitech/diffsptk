@@ -204,6 +204,38 @@ def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
     return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction, eps=eps)
 
 
+def chroma(x, n_channel, sample_rate, norm=float("inf")):
+    """Apply chroma-filter banks to STFT.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        Power spectrum.
+
+    n_channel : int >= 1
+        Number of mel-filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        Sample rate in Hz.
+
+    norm : float
+        Normalization factor.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., C)]
+        Chroma-filter bank output.
+
+    """
+    return nn.ChromaFilterBankAnalysis._func(
+        x,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        norm=norm,
+        use_power=True,
+    )
+
+
 def csm2acr(c):
     """Convert CSM coefficients to autocorrelation.
 

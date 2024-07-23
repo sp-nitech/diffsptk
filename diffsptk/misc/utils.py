@@ -76,10 +76,10 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
-def to(x, dtype=None):
+def to(x, dtype=None, device=None):
     if dtype is None:
         dtype = torch.get_default_dtype()
-    return x.to(dtype=dtype)
+    return x.to(dtype=dtype, device=device)
 
 
 def to_2d(x):
