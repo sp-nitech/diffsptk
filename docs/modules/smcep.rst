@@ -1,9 +1,11 @@
 .. _smcep:
 
 smcep
------
+=====
 
 .. autoclass:: diffsptk.SecondOrderAllPassMelCepstralAnalysis
-   :members:
+    :members:
 
-.. seealso:: :ref:`stft`  :ref:`mgcep`  :ref:`freqt2`  :ref:`ifreqt2`
+.. seealso::
+
+    :ref:`stft` :ref:`mgcep` :ref:`freqt2` :ref:`ifreqt2`

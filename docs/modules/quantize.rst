@@ -1,11 +1,13 @@
 .. _quantize:
 
 quantize
---------
+========
 
 .. autoclass:: diffsptk.UniformQuantization
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.quantize
 
-.. seealso:: :ref:`ulaw`  :ref:`dequantize`
+.. seealso::
+
+    :ref:`ulaw` :ref:`dequantize`

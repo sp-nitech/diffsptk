@@ -1,11 +1,13 @@
 .. _delta:
 
 delta
------
+=====
 
 .. autoclass:: diffsptk.Delta
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.delta
 
-.. seealso:: :ref:`mlpg`
+.. seealso::
+
+    :ref:`mlpg`

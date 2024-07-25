@@ -1,13 +1,15 @@
 .. _dfs:
 
 dfs
----
+===
 
 .. autoclass:: diffsptk.IIR
 
 .. autoclass:: diffsptk.InfiniteImpulseResponseDigitalFilter
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.dfs
 
-.. seealso:: :ref:`df2`
+.. seealso::
+
+    :ref:`df2`

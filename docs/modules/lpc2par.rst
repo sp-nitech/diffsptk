@@ -1,11 +1,13 @@
 .. _lpc2par:
 
 lpc2par
--------
+=======
 
 .. autoclass:: diffsptk.LinearPredictiveCoefficientsToParcorCoefficients
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.lpc2par
 
-.. seealso:: :ref:`lpc`  :ref:`par2lpc`
+.. seealso::
+
+    :ref:`lpc` :ref:`par2lpc`

@@ -1,9 +1,11 @@
 .. _vq:
 
 vq
---
+==
 
 .. autoclass:: diffsptk.VectorQuantization
-   :members:
+    :members:
 
-.. seealso:: :ref:`ivq`  :ref:`lbg`
+.. seealso::
+
+    :ref:`ivq` :ref:`lbg`

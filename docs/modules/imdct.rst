@@ -1,13 +1,15 @@
 .. _imdct:
 
 imdct
------
+=====
 
 .. autoclass:: diffsptk.IMDCT
 
 .. autoclass:: diffsptk.InverseModifiedDiscreteCosineTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.imdct
 
-.. seealso:: :ref:`unframe`  :ref:`window`  :ref:`mdct`
+.. seealso::
+
+    :ref:`unframe` :ref:`window` :ref:`mdct`

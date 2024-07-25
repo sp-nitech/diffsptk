@@ -1,13 +1,15 @@
 .. _idst:
 
 idst
-----
+====
 
 .. autoclass:: diffsptk.IDST
 
 .. autoclass:: diffsptk.InverseDiscreteSineTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.idst
 
-.. seealso:: :ref:`dst`
+.. seealso::
+
+    :ref:`dst`

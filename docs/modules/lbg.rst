@@ -1,11 +1,13 @@
 .. _lbg:
 
 lbg
----
+===
 
 .. autoclass:: diffsptk.LBG
 
 .. autoclass:: diffsptk.LindeBuzoGrayAlgorithm
-   :members:
+    :members:
 
-.. seealso:: :ref:`vq`  :ref:`ivq`  :ref:`gmm`
+.. seealso::
+
+    :ref:`vq` :ref:`ivq` :ref:`gmm`

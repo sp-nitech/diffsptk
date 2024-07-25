@@ -2,8 +2,8 @@ misc
 ====
 
 .. toctree::
-   :glob:
-   :maxdepth: 1
-   :hidden:
+    :glob:
+    :maxdepth: 1
+    :hidden:
 
-   ./*
+    ./*

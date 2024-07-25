@@ -39,6 +39,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
   "build",
+  "docstrfmt",
   "isort",
   "mdformat",
   "numpydoc",

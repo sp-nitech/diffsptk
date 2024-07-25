@@ -1,11 +1,13 @@
 .. _rlevdur:
 
 rlevdur
--------
+=======
 
 .. autoclass:: diffsptk.ReverseLevinsonDurbin
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.rlevdur
 
-.. seealso:: :ref:`acorr`  :ref:`levdur`
+.. seealso::
+
+    :ref:`acorr` :ref:`levdur`

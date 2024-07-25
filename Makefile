@@ -50,16 +50,18 @@ check: tool
 	. ./venv/bin/activate && python -m ruff check $(PROJECT) tests
 	. ./venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
 	. ./venv/bin/activate && python -m isort --check $(PROJECT) tests
-	. ./venv/bin/activate && python -m mdformat --check README.md
-	./tools/taplo/taplo fmt --check pyproject.toml
+	. ./venv/bin/activate && python -m mdformat --check *.md
+	. ./venv/bin/activate && python -m docstrfmt.main --check docs
+	./tools/taplo/taplo fmt --check *.toml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
 
 format: tool
 	. ./venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
 	. ./venv/bin/activate && python -m ruff format $(PROJECT) tests docs
 	. ./venv/bin/activate && python -m isort $(PROJECT) tests
-	. ./venv/bin/activate && python -m mdformat README.md
-	./tools/taplo/taplo fmt pyproject.toml
+	. ./venv/bin/activate && python -m mdformat *.md
+	. ./venv/bin/activate && python -m docstrfmt.main docs
+	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
 test: tool

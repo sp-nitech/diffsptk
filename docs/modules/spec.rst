@@ -1,11 +1,13 @@
 .. _spec:
 
 spec
-----
+====
 
 .. autoclass:: diffsptk.Spectrum
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.spec
 
-.. seealso:: :ref:`frame`  :ref:`window`  :ref:`stft`  :ref:`phase`
+.. seealso::
+
+    :ref:`frame` :ref:`window` :ref:`stft` :ref:`phase`

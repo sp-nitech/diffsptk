@@ -1,9 +1,9 @@
 .. _zcross:
 
 zcross
-------
+======
 
 .. autoclass:: diffsptk.ZeroCrossingAnalysis
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.zcross

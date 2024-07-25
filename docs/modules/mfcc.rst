@@ -1,11 +1,13 @@
 .. _mfcc:
 
 mfcc
-----
+====
 
 .. autoclass:: diffsptk.MFCC
 
 .. autoclass:: diffsptk.MelFrequencyCepstralCoefficientsAnalysis
-   :members:
+    :members:
 
-.. seealso:: :ref:`stft`  :ref:`fbank`  :ref:`plp`
+.. seealso::
+
+    :ref:`stft` :ref:`fbank` :ref:`plp`

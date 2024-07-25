@@ -1,11 +1,13 @@
 .. _lsp2sp:
 
 lsp2sp
-------
+======
 
 .. autoclass:: diffsptk.LineSpectralPairsToSpectrum
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.lsp2sp
 
-.. seealso:: :ref:`lpc2lsp`
+.. seealso::
+
+    :ref:`lpc2lsp`

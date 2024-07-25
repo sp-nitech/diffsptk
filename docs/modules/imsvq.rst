@@ -1,9 +1,11 @@
 .. _imsvq:
 
 imsvq
------
+=====
 
 .. autoclass:: diffsptk.InverseMultiStageVectorQuantization
-   :members:
+    :members:
 
-.. seealso:: :ref:`ivq`  :ref:`msvq`
+.. seealso::
+
+    :ref:`ivq` :ref:`msvq`

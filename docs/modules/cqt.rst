@@ -1,11 +1,13 @@
 .. _cqt:
 
 cqt
----
+===
 
 .. autoclass:: diffsptk.CQT
 
 .. autoclass:: diffsptk.ConstantQTransform
-   :members:
+    :members:
 
-.. seealso:: :ref:`icqt`  :ref:`stft`
+.. seealso::
+
+    :ref:`icqt` :ref:`stft`

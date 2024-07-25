@@ -1,11 +1,13 @@
 .. _gmm:
 
 gmm
----
+===
 
 .. autoclass:: diffsptk.GMM
 
 .. autoclass:: diffsptk.GaussianMixtureModeling
-   :members:
+    :members:
 
-.. seealso:: :ref:`lbg`
+.. seealso::
+
+    :ref:`lbg`

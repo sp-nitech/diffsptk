@@ -1,11 +1,13 @@
 .. _mgcep:
 
 mgcep
------
+=====
 
 .. autoclass:: diffsptk.MelCepstralAnalysis
 
 .. autoclass:: diffsptk.MelGeneralizedCepstralAnalysis
-   :members:
+    :members:
 
-.. seealso:: :ref:`stft`  :ref:`freqt`  :ref:`fftcep`  :ref:`smcep`  :ref:`mcpf`
+.. seealso::
+
+    :ref:`stft` :ref:`freqt` :ref:`fftcep` :ref:`smcep` :ref:`mcpf`

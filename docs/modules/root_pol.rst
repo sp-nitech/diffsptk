@@ -1,11 +1,13 @@
 .. _root_pol:
 
 root_pol
---------
+========
 
 .. autoclass:: diffsptk.PolynomialToRoots
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.root_pol
 
-.. seealso:: :ref:`pol_root`
+.. seealso::
+
+    :ref:`pol_root`
