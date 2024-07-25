@@ -52,7 +52,7 @@ class MelCepstrumPostfiltering(nn.Module):
 
         assert 0 <= onset
 
-        self.mc2en = nn.Sequential(
+        self.mc2pow = nn.Sequential(
             FrequencyTransform(cep_order, ir_length - 1, -alpha),
             CepstrumToAutocorrelation(ir_length - 1, 0, ir_length),
         )
@@ -92,10 +92,10 @@ class MelCepstrumPostfiltering(nn.Module):
 
         """
         mc1 = mc
-        e1 = self.mc2en(mc1)
+        e1 = self.mc2pow(mc1)
 
         mc2 = mc * self.weight
-        e2 = self.mc2en(mc2)
+        e2 = self.mc2pow(mc2)
 
         b2 = self.mc2b(mc2)
         b2[..., :1] += 0.5 * torch.log(e1 / e2)

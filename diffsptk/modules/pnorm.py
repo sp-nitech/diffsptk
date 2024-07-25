@@ -41,7 +41,7 @@ class MelCepstrumPowerNormalization(nn.Module):
     def __init__(self, cep_order, alpha=0, ir_length=128):
         super().__init__()
 
-        self.mc2en = nn.Sequential(
+        self.mc2pow = nn.Sequential(
             FrequencyTransform(cep_order, ir_length - 1, -alpha),
             CepstrumToAutocorrelation(ir_length - 1, 0, ir_length),
         )
@@ -68,20 +68,20 @@ class MelCepstrumPowerNormalization(nn.Module):
         tensor([ 8.2942, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
-        return self._forward(x, self.mc2en)
+        return self._forward(x, self.mc2pow)
 
     @staticmethod
-    def _forward(x, mc2en):
+    def _forward(x, mc2pow):
         x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
-        P = 0.5 * torch.log(mc2en(x))
-        y = torch.cat((P, x0 - P, x1), dim=-1)
+        P = torch.log(mc2pow(x))
+        y = torch.cat((P, x0 - 0.5 * P, x1), dim=-1)
         return y
 
     @staticmethod
     def _func(x, alpha, ir_length):
-        def mc2en(mc):
+        def mc2pow(mc):
             c = FrequencyTransform._func(mc, ir_length - 1, -alpha)
             r = CepstrumToAutocorrelation._func(c, 0, ir_length)
             return r
 
-        return MelCepstrumPowerNormalization._forward(x, mc2en)
+        return MelCepstrumPowerNormalization._forward(x, mc2pow)

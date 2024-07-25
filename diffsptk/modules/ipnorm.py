@@ -65,7 +65,7 @@ class MelCepstrumInversePowerNormalization(nn.Module):
     @staticmethod
     def _forward(y):
         P, y1, y2 = torch.split(y, [1, 1, y.size(-1) - 2], dim=-1)
-        x = torch.cat((P + y1, y2), dim=-1)
+        x = torch.cat((0.5 * P + y1, y2), dim=-1)
         return x
 
     _func = _forward
