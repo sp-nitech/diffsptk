@@ -1,11 +1,13 @@
 .. _c2mpir:
 
 c2mpir
-------
+======
 
 .. autoclass:: diffsptk.CepstrumToMinimumPhaseImpulseResponse
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.c2mpir
 
-.. seealso:: :ref:`mpir2c`  :ref:`mgc2mgc`
+.. seealso::
+
+    :ref:`mpir2c` :ref:`mgc2mgc`

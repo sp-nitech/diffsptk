@@ -1,11 +1,13 @@
 .. _linear_intpl:
 
 linear_intpl
-------------
+============
 
 .. autoclass:: diffsptk.LinearInterpolation
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.linear_intpl
 
-.. seealso:: :ref:`poledf`  :ref:`zerodf`
+.. seealso::
+
+    :ref:`poledf` :ref:`zerodf`

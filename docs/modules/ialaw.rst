@@ -1,11 +1,13 @@
 .. _ialaw:
 
 ialaw
------
+=====
 
 .. autoclass:: diffsptk.ALawExpansion
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.ialaw
 
-.. seealso:: :ref:`alaw`  :ref:`iulaw`
+.. seealso::
+
+    :ref:`alaw` :ref:`iulaw`

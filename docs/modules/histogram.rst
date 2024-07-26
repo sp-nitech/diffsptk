@@ -1,11 +1,13 @@
 .. _histogram:
 
 histogram
----------
+=========
 
 .. autoclass:: diffsptk.Histogram
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.histogram
 
-.. seealso:: :ref:`entropy`
+.. seealso::
+
+    :ref:`entropy`

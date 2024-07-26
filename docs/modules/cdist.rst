@@ -1,11 +1,13 @@
 .. _cdist:
 
 cdist
------
+=====
 
 .. autoclass:: diffsptk.CepstralDistance
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.cdist
 
-.. seealso:: :ref:`fftcep`
+.. seealso::
+
+    :ref:`fftcep`

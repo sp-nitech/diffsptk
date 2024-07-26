@@ -1,11 +1,11 @@
 .. _drc:
 
 drc
----
+===
 
 .. autoclass:: diffsptk.DRC
 
 .. autoclass:: diffsptk.DynamicRangeCompression
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.drc

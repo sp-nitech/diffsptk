@@ -213,7 +213,7 @@ def chroma(x, n_channel, sample_rate, norm=float("inf")):
         Power spectrum.
 
     n_channel : int >= 1
-        Number of mel-filter banks, :math:`C`.
+        Number of chroma-filter banks, :math:`C`.
 
     sample_rate : int >= 1
         Sample rate in Hz.

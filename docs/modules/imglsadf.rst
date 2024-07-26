@@ -1,11 +1,13 @@
 .. _imglsadf:
 
 imglsadf
---------
+========
 
 .. autoclass:: diffsptk.IMLSA
 
 .. autoclass:: diffsptk.PseudoInverseMGLSADigitalFilter
-   :members:
+    :members:
 
-.. seealso:: :ref:`mgcep`  :ref:`mglsadf`  :ref:`mlsacheck`
+.. seealso::
+
+    :ref:`mgcep` :ref:`mglsadf` :ref:`mlsacheck`

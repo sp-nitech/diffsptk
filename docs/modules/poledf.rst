@@ -1,11 +1,13 @@
 .. _poledf:
 
 poledf
-------
+======
 
 .. autoclass:: diffsptk.AllPoleDigitalFilter
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.poledf
 
-.. seealso:: :ref:`linear_intpl`  :ref:`lpc`
+.. seealso::
+
+    :ref:`linear_intpl` :ref:`lpc`

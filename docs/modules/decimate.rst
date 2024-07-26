@@ -1,11 +1,13 @@
 .. _decimate:
 
 decimate
---------
+========
 
 .. autoclass:: diffsptk.Decimation
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.decimate
 
-.. seealso:: :ref:`interpolate`
+.. seealso::
+
+    :ref:`interpolate`

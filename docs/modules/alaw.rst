@@ -1,11 +1,13 @@
 .. _alaw:
 
 alaw
-----
+====
 
 .. autoclass:: diffsptk.ALawCompression
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.alaw
 
-.. seealso:: :ref:`ialaw`  :ref:`ulaw`
+.. seealso::
+
+    :ref:`ialaw` :ref:`ulaw`

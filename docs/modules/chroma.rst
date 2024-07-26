@@ -1,11 +1,13 @@
 .. _chroma:
 
 chroma
-------
+======
 
 .. autoclass:: diffsptk.ChromaFilterBankAnalysis
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.chroma
 
-.. seealso:: :ref:`stft`  :ref:`fbank`
+.. seealso::
+
+    :ref:`stft` :ref:`fbank`

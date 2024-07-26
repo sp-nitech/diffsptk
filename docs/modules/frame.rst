@@ -1,11 +1,13 @@
 .. _frame:
 
 frame
------
+=====
 
 .. autoclass:: diffsptk.Frame
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.frame
 
-.. seealso:: :ref:`unframe`  :ref:`window`  :ref:`spec`
+.. seealso::
+
+    :ref:`unframe` :ref:`window` :ref:`spec`

@@ -1,9 +1,11 @@
 .. _ap:
 
 ap
---
+==
 
 .. autoclass:: diffsptk.Aperiodicity
-   :members:
+    :members:
 
-.. seealso:: :ref:`excite`
+.. seealso::
+
+    :ref:`excite`

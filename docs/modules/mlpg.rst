@@ -1,13 +1,15 @@
 .. _mlpg:
 
 mlpg
-----
+====
 
 .. autoclass:: diffsptk.MLPG
 
 .. autoclass:: diffsptk.MaximumLikelihoodParameterGeneration
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.mlpg
 
-.. seealso:: :ref:`delta`
+.. seealso::
+
+    :ref:`delta`
