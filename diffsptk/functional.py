@@ -938,6 +938,23 @@ def interpolate(x, period=1, start=0, dim=-1):
     return nn.Interpolation._func(x, period=period, start=start, dim=dim)
 
 
+def ipnorm(y):
+    """Perform cepstrum inverse power normalization.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., M+2)]
+        Power-normalized cepstrum.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        Output cepstrum.
+
+    """
+    return nn.MelCepstrumInversePowerNormalization._func(y)
+
+
 def istft(
     y,
     *,
@@ -1670,6 +1687,29 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
 
     """
     return nn.Phase._func(b, a, fft_length=fft_length, unwrap=unwrap)
+
+
+def pnorm(x, alpha=0, ir_length=128):
+    """Perform cepstrum power normalization.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., M+1)]
+        Input cepstrum.
+
+    alpha : float in (-1, 1)
+        Frequency warping factor, :math:`\\alpha`.
+
+    ir_length : int >= 1
+        Length of impulse response.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+2)]
+        Power-normalized cepstrum.
+
+    """
+    return nn.MelCepstrumPowerNormalization._func(x, alpha=alpha, ir_length=ir_length)
 
 
 def pol_root(x, real=False):

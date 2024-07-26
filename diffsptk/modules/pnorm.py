@@ -17,87 +17,71 @@
 import torch
 from torch import nn
 
-from ..misc.utils import to
-from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
-from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
 
 
-class MelCepstrumPostfiltering(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/mcpf.html>`_
+class MelCepstrumPowerNormalization(nn.Module):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/pnorm.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of mel-cepstrum, :math:`M`.
+        Order of cepstrum, :math:`M`.
 
     alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
-
-    beta : float
-        Intensity parameter, :math:`\\beta`.
-
-    onset : int >= 0
-        Onset index.
 
     ir_length : int >= 1
         Length of impulse response.
 
     """
 
-    def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=128):
+    def __init__(self, cep_order, alpha=0, ir_length=128):
         super().__init__()
-
-        assert 0 <= onset
 
         self.mc2pow = nn.Sequential(
             FrequencyTransform(cep_order, ir_length - 1, -alpha),
             CepstrumToAutocorrelation(ir_length - 1, 0, ir_length),
         )
-        self.mc2b = MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha)
-        self.b2mc = MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha)
 
-        weight = torch.full((cep_order + 1,), 1 + beta)
-        weight[:onset] = 1
-        self.register_buffer("weight", to(weight))
-
-    def forward(self, mc):
-        """Perform mel-cesptrum postfiltering.
+    def forward(self, x):
+        """Perform cepstrum power normalization.
 
         Parameters
         ----------
-        mc : Tensor [shape=(..., M+1)]
-            Mel-cepstral coefficients.
+        x : Tensor [shape=(..., M+1)]
+            Input cepstrum.
 
         Returns
         -------
-        out : Tensor [shape=(..., M+1)]
-            Postfiltered mel-cepstral coefficients.
+        out : Tensor [shape=(..., M+2)]
+            Power-normalized cepstrum.
 
         Examples
         --------
-        >>> X = diffsptk.nrand(4).square()
-        >>> X
-        tensor([0.2725, 2.5650, 0.3552, 0.3757, 0.1904])
-        >>> mcep = diffsptk.MelCepstralAnalysis(3, 8, 0.1)
-        >>> mcpf = diffsptk.MelCepstrumPostfiltering(3, 0.1, 0.2)
-        >>> mc1 = mcep(X)
-        >>> mc1
-        tensor([-0.2819,  0.3486, -0.2487, -0.3600])
-        >>> mc2 = mcpf(mc1)
-        >>> mc2
-        tensor([-0.3256,  0.3486, -0.2984, -0.4320])
+        >>> x = diffsptk.ramp(1, 4)
+        >>> pnorm = diffsptk.MelCepstrumPowerNormalization(3, alpha=0.1)
+        >>> y = pnorm(x)
+        >>> y
+        tensor([ 8.2942, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
-        mc1 = mc
-        e1 = self.mc2pow(mc1)
+        return self._forward(x, self.mc2pow)
 
-        mc2 = mc * self.weight
-        e2 = self.mc2pow(mc2)
+    @staticmethod
+    def _forward(x, mc2pow):
+        x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
+        P = torch.log(mc2pow(x))
+        y = torch.cat((P, x0 - 0.5 * P, x1), dim=-1)
+        return y
 
-        b2 = self.mc2b(mc2)
-        b2[..., :1] += 0.5 * torch.log(e1 / e2)
-        mc2 = self.b2mc(b2)
-        return mc2
+    @staticmethod
+    def _func(x, alpha, ir_length):
+        def mc2pow(mc):
+            c = FrequencyTransform._func(mc, ir_length - 1, -alpha)
+            r = CepstrumToAutocorrelation._func(c, 0, ir_length)
+            return r
+
+        return MelCepstrumPowerNormalization._forward(x, mc2pow)
