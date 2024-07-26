@@ -1,11 +1,13 @@
 .. _ipnorm:
 
 ipnorm
-------
+======
 
 .. autoclass:: diffsptk.MelCepstrumInversePowerNormalization
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.ipnorm
 
-.. seealso:: :ref:`pnorm`
+.. seealso::
+
+    :ref:`pnorm`
