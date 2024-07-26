@@ -1,9 +1,9 @@
 .. _delay:
 
 delay
------
+=====
 
 .. autoclass:: diffsptk.Delay
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.delay

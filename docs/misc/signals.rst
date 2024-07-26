@@ -1,5 +1,5 @@
 signals
--------
+=======
 
 .. autofunction:: diffsptk.impulse
 

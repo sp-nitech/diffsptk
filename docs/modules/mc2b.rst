@@ -1,11 +1,13 @@
 .. _mc2b:
 
 mc2b
-----
+====
 
 .. autoclass:: diffsptk.MelCepstrumToMLSADigitalFilterCoefficients
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.mc2b
 
-.. seealso:: :ref:`b2mc`
+.. seealso::
+
+    :ref:`b2mc`

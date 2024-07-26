@@ -1,9 +1,11 @@
 .. _ivq:
 
 ivq
----
+===
 
 .. autoclass:: diffsptk.InverseVectorQuantization
-   :members:
+    :members:
 
-.. seealso:: :ref:`vq`  :ref:`lbg`
+.. seealso::
+
+    :ref:`vq` :ref:`lbg`

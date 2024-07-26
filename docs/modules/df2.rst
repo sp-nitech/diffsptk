@@ -1,9 +1,11 @@
 .. _df2:
 
 df2
----
+===
 
 .. autoclass:: diffsptk.SecondOrderDigitalFilter
-   :members:
+    :members:
 
-.. seealso:: :ref:`dfs`
+.. seealso::
+
+    :ref:`dfs`

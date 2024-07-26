@@ -1,11 +1,13 @@
 .. _mgc2sp:
 
 mgc2sp
-------
+======
 
 .. autoclass:: diffsptk.MelGeneralizedCepstrumToSpectrum
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.mgc2sp
 
-.. seealso:: :ref:`mgc2mgc`
+.. seealso::
+
+    :ref:`mgc2mgc`

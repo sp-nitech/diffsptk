@@ -14,12 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import warnings
-
 from torch import nn
-
-warnings.simplefilter("ignore", UserWarning)
-from vector_quantize_pytorch import VectorQuantize  # noqa: E402
+from vector_quantize_pytorch import VectorQuantize
 
 
 class VectorQuantization(nn.Module):

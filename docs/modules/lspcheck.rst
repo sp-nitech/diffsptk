@@ -1,11 +1,13 @@
 .. _lspcheck:
 
 lspcheck
---------
+========
 
 .. autoclass:: diffsptk.LineSpectralPairsStabilityCheck
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.lspcheck
 
-.. seealso:: :ref:`lpc2lsp`
+.. seealso::
+
+    :ref:`lpc2lsp`

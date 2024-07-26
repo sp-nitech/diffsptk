@@ -1,13 +1,15 @@
 .. _dct:
 
 dct
----
+===
 
 .. autoclass:: diffsptk.DCT
 
 .. autoclass:: diffsptk.DiscreteCosineTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.dct
 
-.. seealso:: :ref:`idct`
+.. seealso::
+
+    :ref:`idct`

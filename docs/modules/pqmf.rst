@@ -1,11 +1,13 @@
 .. _pqmf:
 
 pqmf
-----
+====
 
 .. autoclass:: diffsptk.PQMF
 
 .. autoclass:: diffsptk.PseudoQuadratureMirrorFilterBanks
-   :members:
+    :members:
 
-.. seealso:: :ref:`ipqmf`  :ref:`decimate`
+.. seealso::
+
+    :ref:`ipqmf` :ref:`decimate`

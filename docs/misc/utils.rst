@@ -1,5 +1,5 @@
 utils
------
+=====
 
 .. autofunction:: diffsptk.get_alpha
 
@@ -9,4 +9,4 @@ utils
 
 .. data:: diffsptk.two_pi
 
-   The value of :math:`2\pi`.
+    The value of :math:`2\pi`.

@@ -1,9 +1,11 @@
 .. _mcpf:
 
 mcpf
-----
+====
 
 .. autoclass:: diffsptk.MelCepstrumPostfiltering
-   :members:
+    :members:
 
-.. seealso:: :ref:`mgcep`
+.. seealso::
+
+    :ref:`mgcep`

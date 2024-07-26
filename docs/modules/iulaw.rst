@@ -1,11 +1,13 @@
 .. _iulaw:
 
 iulaw
------
+=====
 
 .. autoclass:: diffsptk.MuLawExpansion
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.iulaw
 
-.. seealso:: :ref:`ulaw`
+.. seealso::
+
+    :ref:`ulaw`

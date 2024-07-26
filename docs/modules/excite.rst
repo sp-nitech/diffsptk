@@ -1,11 +1,13 @@
 .. _excite:
 
 excite
-------
+======
 
 .. autoclass:: diffsptk.ExcitationGeneration
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.excite
 
-.. seealso:: :ref:`pitch`
+.. seealso::
+
+    :ref:`pitch`

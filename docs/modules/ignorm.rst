@@ -1,11 +1,13 @@
 .. _ignorm:
 
 ignorm
-------
+======
 
 .. autoclass:: diffsptk.GeneralizedCepstrumInverseGainNormalization
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.ignorm
 
-.. seealso:: :ref:`gnorm`  :ref:`mgc2mgc`
+.. seealso::
+
+    :ref:`gnorm` :ref:`mgc2mgc`

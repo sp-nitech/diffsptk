@@ -1,13 +1,15 @@
 .. _fbank:
 
 fbank
------
+=====
 
 .. autoclass:: diffsptk.FBANK
 
 .. autoclass:: diffsptk.MelFilterBankAnalysis
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.fbank
 
-.. seealso:: :ref:`stft`  :ref:`mfcc`  :ref:`plp`
+.. seealso::
+
+    :ref:`stft` :ref:`mfcc` :ref:`plp`

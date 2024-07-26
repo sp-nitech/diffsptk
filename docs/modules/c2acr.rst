@@ -1,11 +1,13 @@
 .. _c2acr:
 
 c2acr
------
+=====
 
 .. autoclass:: diffsptk.CepstrumToAutocorrelation
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.c2acr
 
-.. seealso:: :ref:`acorr`
+.. seealso::
+
+    :ref:`acorr`

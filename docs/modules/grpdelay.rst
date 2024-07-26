@@ -1,11 +1,13 @@
 .. _grpdelay:
 
 grpdelay
---------
+========
 
 .. autoclass:: diffsptk.GroupDelay
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.grpdelay
 
-.. seealso:: :ref:`phase`  :ref:`spec`
+.. seealso::
+
+    :ref:`phase` :ref:`spec`

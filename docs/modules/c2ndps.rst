@@ -1,11 +1,13 @@
 .. _c2ndps:
 
 c2ndps
-------
+======
 
 .. autoclass:: diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.c2ndps
 
-.. seealso:: :ref:`ndps2c`
+.. seealso::
+
+    :ref:`ndps2c`

@@ -1,11 +1,13 @@
 .. _phase:
 
 phase
------
+=====
 
 .. autoclass:: diffsptk.Phase
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.phase
 
-.. seealso:: :ref:`spec`  :ref:`grpdelay`
+.. seealso::
+
+    :ref:`spec` :ref:`grpdelay`

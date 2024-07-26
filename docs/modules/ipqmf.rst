@@ -1,11 +1,13 @@
 .. _ipqmf:
 
 ipqmf
------
+=====
 
 .. autoclass:: diffsptk.IPQMF
 
 .. autoclass:: diffsptk.InversePseudoQuadratureMirrorFilterBanks
-   :members:
+    :members:
 
-.. seealso:: :ref:`pqmf`  :ref:`interpolate`
+.. seealso::
+
+    :ref:`pqmf` :ref:`interpolate`

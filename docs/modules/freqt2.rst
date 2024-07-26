@@ -1,11 +1,13 @@
 .. _freqt2:
 
 freqt2
-------
+======
 
 .. autoclass:: diffsptk.SecondOrderAllPassFrequencyTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.freqt2
 
-.. seealso:: :ref:`freqt`   :ref:`ifreqt2`  :ref:`smcep`
+.. seealso::
+
+    :ref:`freqt` :ref:`ifreqt2` :ref:`smcep`

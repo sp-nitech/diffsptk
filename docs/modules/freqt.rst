@@ -1,11 +1,13 @@
 .. _freqt:
 
 freqt
------
+=====
 
 .. autoclass:: diffsptk.FrequencyTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.freqt
 
-.. seealso:: :ref:`mgc2mgc`  :ref:`freqt2`
+.. seealso::
+
+    :ref:`mgc2mgc` :ref:`freqt2`

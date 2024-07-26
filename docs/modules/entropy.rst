@@ -1,11 +1,13 @@
 .. _entropy:
 
 entropy
--------
+=======
 
 .. autoclass:: diffsptk.Entropy
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.entropy
 
-.. seealso:: :ref:`histogram`
+.. seealso::
+
+    :ref:`histogram`

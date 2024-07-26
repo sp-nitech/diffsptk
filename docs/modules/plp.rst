@@ -1,11 +1,13 @@
 .. _plp:
 
 plp
----
+===
 
 .. autoclass:: diffsptk.PLP
 
 .. autoclass:: diffsptk.PerceptualLinearPredictiveCoefficientsAnalysis
-   :members:
+    :members:
 
-.. seealso:: :ref:`stft`  :ref:`fbank`  :ref:`mfcc`
+.. seealso::
+
+    :ref:`stft` :ref:`fbank` :ref:`mfcc`

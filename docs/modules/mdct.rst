@@ -1,13 +1,15 @@
 .. _mdct:
 
 mdct
-----
+====
 
 .. autoclass:: diffsptk.MDCT
 
 .. autoclass:: diffsptk.ModifiedDiscreteCosineTransform
-   :members:
+    :members:
 
 .. autofunction:: diffsptk.functional.mdct
 
-.. seealso:: :ref:`frame`  :ref:`window`  :ref:`imdct`
+.. seealso::
+
+    :ref:`frame` :ref:`window` :ref:`imdct`
