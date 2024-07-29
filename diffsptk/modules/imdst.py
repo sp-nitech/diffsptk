@@ -14,72 +14,60 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from .imdct import InverseModifiedDiscreteCosineTransform as IMDST
 
 
-class DiscreteSineTransform(nn.Module):
-    """Discrete sine transform module.
+class InverseModifiedDiscreteSineTransform(nn.Module):
+    """This is the opposite module to :func:`~diffsptk.ModifiedDiscreteSineTransform`.
 
     Parameters
     ----------
-    dst_length : int >= 1
-        DST length, :math:`L`.
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
+        Window type.
 
     """
 
-    def __init__(self, dst_length):
+    def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        assert 1 <= dst_length
+        self.imdst = IMDST(frame_length, window, transform="sine")
 
-        self.dst_length = dst_length
-        self.register_buffer("W", self._precompute(self.dst_length))
-
-    def forward(self, x):
-        """Apply DST to input.
+    def forward(self, y, out_length=None):
+        """Compute inverse modified discrete sine transform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L)]
-            Input.
+        y : Tensor [shape=(..., 2T/L, L/2)]
+            Spectrum.
+
+        out_length : int or None
+            Length of output waveform.
 
         Returns
         -------
-        out : Tensor [shape=(..., L)]
-            DST output.
+        out : Tensor [shape=(..., T)]
+            Reconstructed waveform.
 
         Examples
         --------
         >>> x = diffsptk.ramp(3)
-        >>> dst = diffsptk.DST(4)
-        >>> y = dst(x)
+        >>> x
+        tensor([0., 1., 2., 3.])
+        >>> mdst_params = {"frame_length": 4}
+        >>> mdst = diffsptk.MDST(**mdst_params)
+        >>> imdst = diffsptk.IMDST(**mdst_params)
+        >>> y = imdst(mdst(x))
         >>> y
-        tensor([ 2.7716, -2.0000,  1.1481, -1.0000])
+        tensor([-8.9407e-08, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        check_size(x.size(-1), self.dst_length, "dimension of input")
-        return self._forward(x, self.W)
+        return self.imdst(y, out_length=out_length)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x):
-        W = DiscreteSineTransform._precompute(
-            x.size(-1), dtype=x.dtype, device=x.device
-        )
-        return DiscreteSineTransform._forward(x, W)
-
-    @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        L = length
-        k = torch.arange(L, dtype=torch.double, device=device) + 1
-        n = (torch.pi / L) * (k - 0.5)
-        z = torch.sqrt(torch.clip(k, min=1, max=2) / L).flip(0)
-        W = z * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
-        return to(W, dtype=dtype)
+    def _func(y, out_length, frame_length, window):
+        return IMDST._func(y, out_length, frame_length, window, transform="sine")
