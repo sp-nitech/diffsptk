@@ -912,6 +912,29 @@ def imdct(y, out_length=None, frame_length=400, window="sine"):
     )
 
 
+def imdst(y, out_length=None, frame_length=400, window="sine"):
+    """Compute inverse modified discrete sine transform.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., 2T/L, L/2)]
+        Spectrum.
+
+    out_length : int or None
+        Length of output waveform.
+
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
+        Window type.
+
+    """
+    return nn.InverseModifiedDiscreteSineTransform._func(
+        y, out_length=out_length, frame_length=frame_length, window=window
+    )
+
+
 def interpolate(x, period=1, start=0, dim=-1):
     """Interpolate signal.
 
@@ -1345,6 +1368,31 @@ def mdct(x, frame_length=400, window="sine"):
 
     """
     return nn.ModifiedDiscreteCosineTransform._func(
+        x, frame_length=frame_length, window=window
+    )
+
+
+def mdst(x, frame_length=400, window="sine"):
+    """Compute modified discrete sine transform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        Waveform.
+
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
+        Window type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., 2T/L, L/2)]
+        Spectrum.
+
+    """
+    return nn.ModifiedDiscreteSineTransform._func(
         x, frame_length=frame_length, window=window
     )
 

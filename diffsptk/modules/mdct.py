@@ -37,7 +37,7 @@ class ModifiedDiscreteCosineTransform(nn.Module):
 
     """
 
-    def __init__(self, frame_length, window="sine"):
+    def __init__(self, frame_length, window="sine", **kwargs):
         super().__init__()
 
         self.frame_period = frame_length // 2
@@ -45,7 +45,7 @@ class ModifiedDiscreteCosineTransform(nn.Module):
         self.mdct = nn.Sequential(
             Frame(frame_length, self.frame_period),
             Window(frame_length, window=window, norm="none"),
-            ModifiedDiscreteCosineTransformCore(frame_length, window != "rectangular"),
+            ModifiedDiscreteTransform(frame_length, window, **kwargs),
         )
 
     def forward(self, x):
@@ -79,39 +79,42 @@ class ModifiedDiscreteCosineTransform(nn.Module):
         return self.mdct(x)
 
     @staticmethod
-    def _func(x, frame_length, window):
+    def _func(x, frame_length, window, **kwargs):
         frame_period = frame_length // 2
         x = F.pad(x, (0, frame_period))
         y = Frame._func(x, frame_length, frame_period, True, False)
         y = Window._func(y, None, window, "none")
-        y = ModifiedDiscreteCosineTransformCore._func(y, window != "rectangular")
+        y = ModifiedDiscreteTransform._func(y, window, **kwargs)
         return y
 
 
-class ModifiedDiscreteCosineTransformCore(nn.Module):
-    """Modified discrete cosine transform module.
+class ModifiedDiscreteTransform(nn.Module):
+    """Oddly stacked modified discrete cosine/sine transform module.
 
     Parameters
     ----------
-    dct_length : int >= 2
-        DCT length, :math:`L`.
+    length : int >= 2
+        Input length, :math:`L`.
 
-    windowed : bool
+    window : bool or str
         If True, assume that input is windowed.
+
+    transform : ['cosine', 'sine']
+        Transform type.
 
     """
 
-    def __init__(self, dct_length, windowed=False):
+    def __init__(self, length, window, transform="cosine"):
         super().__init__()
 
-        assert 2 <= dct_length
-        assert dct_length % 2 == 0
+        assert 2 <= length
+        assert length % 2 == 0
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length, windowed))
+        self.length = length
+        self.register_buffer("W", self._precompute(length, window, transform))
 
     def forward(self, x):
-        """Apply MDCT to input.
+        """Apply MDCT/MDST to input.
 
         Parameters
         ----------
@@ -121,10 +124,10 @@ class ModifiedDiscreteCosineTransformCore(nn.Module):
         Returns
         -------
         out : Tensor [shape=(..., L/2)]
-            MDCT output.
+            Output.
 
         """
-        check_size(x.size(-1), self.dct_length, "dimension of input")
+        check_size(x.size(-1), self.length, "dimension of input")
         return self._forward(x, self.W)
 
     @staticmethod
@@ -132,19 +135,29 @@ class ModifiedDiscreteCosineTransformCore(nn.Module):
         return torch.matmul(x, W)
 
     @staticmethod
-    def _func(x, windowed):
-        W = ModifiedDiscreteCosineTransformCore._precompute(
-            x.size(-1), windowed, dtype=x.dtype, device=x.device
+    def _func(x, window, **kwargs):
+        W = ModifiedDiscreteTransform._precompute(
+            x.size(-1), window, dtype=x.dtype, device=x.device, **kwargs
         )
-        return ModifiedDiscreteCosineTransformCore._forward(x, W)
+        return ModifiedDiscreteTransform._forward(x, W)
 
     @staticmethod
-    def _precompute(length, windowed, dtype=None, device=None):
+    def _precompute(length, window, transform="cosine", dtype=None, device=None):
         L2 = length
         L = L2 // 2
         n = torch.arange(L2, dtype=torch.double, device=device) + 0.5
         k = (torch.pi / L) * n[:L]
         n += L / 2
-        z = (4 / L) ** 0.5 if windowed else (2 / L) ** 0.5
-        W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
+
+        z = 2 / L
+        if window != "rectangular" or window is True:
+            z *= 2
+        z **= 0.5
+
+        if transform == "cosine":
+            W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
+        elif transform == "sine":
+            W = z * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
+        else:
+            raise ValueError("transform must be either 'cosine' or 'sine'.")
         return to(W, dtype=dtype)

@@ -14,73 +14,57 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from .mdct import ModifiedDiscreteCosineTransform as MDST
 
 
-class DiscreteCosineTransform(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/dct.html>`_
-    for details.
+class ModifiedDiscreteSineTransform(nn.Module):
+    """This module is a simple cascade of framing, windowing, and modified DST.
 
     Parameters
     ----------
-    dct_length : int >= 1
-        DCT length, :math:`L`.
+    frame_length : int >= 2
+        Frame length, :math:`L`.
+
+    window : ['sine', 'vorbis', 'kbd', 'rectangular']
+        Window type.
 
     """
 
-    def __init__(self, dct_length):
+    def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        assert 1 <= dct_length
-
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length))
+        self.mdst = MDST(frame_length, window, transform="sine")
 
     def forward(self, x):
-        """Apply DCT to input.
+        """Compute modified discrete sine transform.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L)]
-            Input.
+        x : Tensor [shape=(..., T)]
+            Waveform.
 
         Returns
         -------
-        out : Tensor [shape=(..., L)]
-            DCT output.
+        out : Tensor [shape=(..., 2T/L, L/2)]
+            Spectrum.
 
         Examples
         --------
         >>> x = diffsptk.ramp(3)
-        >>> dct = diffsptk.DCT(4)
-        >>> y = dct(x)
+        >>> x
+        tensor([0., 1., 2., 3.])
+        >>> mdst = diffsptk.MDST(frame_length=4)
+        >>> y = mdst(x)
         >>> y
-        tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
+        tensor([[-0.2071, -0.5000],
+                [ 1.5858,  0.4142],
+                [ 4.6213, -1.9142]])
 
         """
-        check_size(x.size(-1), self.dct_length, "dimension of input")
-        return self._forward(x, self.W)
+        return self.mdst(x)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x):
-        W = DiscreteCosineTransform._precompute(
-            x.size(-1), dtype=x.dtype, device=x.device
-        )
-        return DiscreteCosineTransform._forward(x, W)
-
-    @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        L = length
-        k = torch.arange(L, dtype=torch.double, device=device)
-        n = (torch.pi / L) * (k + 0.5)
-        z = torch.sqrt(torch.clip(k + 1, min=1, max=2) / L)
-        W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
-        return to(W, dtype=dtype)
+    def _func(x, frame_length, window):
+        return MDST._func(x, frame_length, window, transform="sine")

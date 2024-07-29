@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from ..misc.utils import check_size
-from .mdct import ModifiedDiscreteCosineTransformCore as MDCT
+from .mdct import ModifiedDiscreteTransform
 from .unframe import Unframe
 from .window import Window
 
@@ -36,14 +36,12 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
 
     """
 
-    def __init__(self, frame_length, window="sine"):
+    def __init__(self, frame_length, window="sine", **kwargs):
         super().__init__()
 
         self.frame_period = frame_length // 2
 
-        self.imdct = InverseModifiedDiscreteCosineTransformCore(
-            frame_length, window != "rectangular"
-        )
+        self.imdct = InverseModifiedDiscreteTransform(frame_length, window, **kwargs)
         self.window = Window(frame_length, window=window, norm="none")
         self.unframe = Unframe(frame_length, self.frame_period)
 
@@ -84,9 +82,9 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
         return x
 
     @staticmethod
-    def _func(y, out_length, frame_length, window):
+    def _func(y, out_length, frame_length, window, **kwargs):
         frame_period = frame_length // 2
-        x = InverseModifiedDiscreteCosineTransformCore._func(y, window != "rectangular")
+        x = InverseModifiedDiscreteTransform._func(y, window, **kwargs)
         x = Window._func(x, None, window=window, norm="none")
         x = Unframe._func(
             x,
@@ -102,30 +100,33 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
         return x
 
 
-class InverseModifiedDiscreteCosineTransformCore(nn.Module):
-    """Inverse modified discrete cosine transform module.
+class InverseModifiedDiscreteTransform(nn.Module):
+    """Inverse modified discrete cosine/sine transform module.
 
     Parameters
     ----------
-    dct_length : int >= 2
-        DCT length, :math:`L`.
+    length : int >= 2
+        Output length, :math:`L`.
 
-    windowed : bool
+    window : bool or str
         If True, assume that input is windowed.
+
+    transform : ['cosine', 'sine']
+        Transform type.
 
     """
 
-    def __init__(self, dct_length, windowed=False):
+    def __init__(self, length, window, transform="cosine"):
         super().__init__()
 
-        assert 2 <= dct_length
-        assert dct_length % 2 == 0
+        assert 2 <= length
+        assert length % 2 == 0
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(self.dct_length, windowed))
+        self.length = length
+        self.register_buffer("W", self._precompute(length, window, transform))
 
     def forward(self, y):
-        """Apply inverse MDCT to input.
+        """Apply inverse MDCT/MDST to input.
 
         Parameters
         ----------
@@ -135,10 +136,10 @@ class InverseModifiedDiscreteCosineTransformCore(nn.Module):
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            Inverse MDCT output.
+            Output.
 
         """
-        check_size(2 * y.size(-1), self.dct_length, "dimension of input")
+        check_size(2 * y.size(-1), self.length, "dimension of input")
         return self._forward(y, self.W)
 
     @staticmethod
@@ -146,12 +147,14 @@ class InverseModifiedDiscreteCosineTransformCore(nn.Module):
         return torch.matmul(y, W)
 
     @staticmethod
-    def _func(y, windowed):
-        W = InverseModifiedDiscreteCosineTransformCore._precompute(
-            2 * y.size(-1), windowed, dtype=y.dtype, device=y.device
+    def _func(y, window, **kwargs):
+        W = InverseModifiedDiscreteTransform._precompute(
+            2 * y.size(-1), window, dtype=y.dtype, device=y.device, **kwargs
         )
-        return InverseModifiedDiscreteCosineTransformCore._forward(y, W)
+        return InverseModifiedDiscreteTransform._forward(y, W)
 
     @staticmethod
-    def _precompute(length, windowed, dtype=None, device=None):
-        return MDCT._precompute(length, windowed, dtype=dtype, device=device).T
+    def _precompute(length, window, transform="cosine", dtype=None, device=None):
+        return ModifiedDiscreteTransform._precompute(
+            length, window, transform, dtype=dtype, device=device
+        ).T
