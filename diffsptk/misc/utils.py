@@ -92,6 +92,22 @@ def to_3d(x):
     return y
 
 
+def to_dataloader(x, batch_size=None):
+    if torch.is_tensor(x):
+        dataset = torch.utils.data.TensorDataset(x)
+        data_loader = torch.utils.data.DataLoader(
+            dataset,
+            batch_size=len(x) if batch_size is None else batch_size,
+            shuffle=False,
+            drop_last=False,
+        )
+        return data_loader
+    elif isinstance(x, torch.utils.data.DataLoader):
+        return x
+    else:
+        raise ValueError(f"Unsupported input type: {type(x)}.")
+
+
 def reflect(x):
     d = x.size(-1)
     y = x.view(-1, d)

@@ -24,14 +24,20 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("var_type", ["diag", "full"])
 @pytest.mark.parametrize("block_size", [None, (2, 2), (3, 1)])
+@pytest.mark.parametrize("batch_size", [None, 10])
 def test_compatibility(
-    device, var_type, block_size, M=3, K=4, B=32, n_iter=50, alpha=0.1
+    device, var_type, block_size, batch_size, M=3, K=4, B=32, n_iter=50, alpha=0.1
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     gmm = diffsptk.GMM(
-        M, K, n_iter=n_iter, var_type=var_type, block_size=block_size
+        M,
+        K,
+        n_iter=n_iter,
+        var_type=var_type,
+        block_size=block_size,
+        batch_size=batch_size,
     ).to(device)
 
     opt = ""
@@ -87,6 +93,7 @@ def test_compatibility(
         n_iter=n_iter,
         var_type=var_type,
         block_size=block_size,
+        batch_size=batch_size,
         alpha=alpha,
         ubm=ubm,
     ).to(device)
@@ -112,3 +119,10 @@ def test_compatibility(
         [f"rm {tmp1} {tmp2} {tmp3} {tmp4} {tmp5} {tmp6}"],
         dx=M + 1,
     )
+
+
+def test_posterior(M=3, K=4, B=32, n_iter=50):
+    x = torch.randn(B, M + 1)
+    gmm = diffsptk.GMM(M, K, n_iter=10)
+    _, posterior, _ = gmm(x, return_posterior=True)
+    assert posterior.sum().item() == pytest.approx(B)
