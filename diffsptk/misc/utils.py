@@ -102,7 +102,9 @@ def to_dataloader(x, batch_size=None):
             drop_last=False,
         )
         return data_loader
-    elif not isinstance(x, torch.utils.data.DataLoader):
+    elif isinstance(x, torch.utils.data.DataLoader):
+        return x
+    else:
         raise ValueError(f"Unsupported input type: {type(x)}.")
 
 
