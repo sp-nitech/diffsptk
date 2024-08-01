@@ -19,8 +19,8 @@ import logging
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
 from ..misc.utils import is_power_of_two
+from ..misc.utils import to_dataloader
 from .vq import VectorQuantization
 
 
@@ -48,6 +48,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     perturb_factor : float > 0
         Perturbation factor.
 
+    batch_size : int >= 1 or None
+        Batch size.
+
     verbose : bool
         If True, print progress.
 
@@ -61,6 +64,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         n_iter=100,
         eps=1e-5,
         perturb_factor=1e-5,
+        batch_size=None,
         verbose=False,
     ):
         super().__init__()
@@ -78,10 +82,10 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.n_iter = n_iter
         self.eps = eps
         self.perturb_factor = perturb_factor
+        self.batch_size = batch_size
         self.verbose = verbose
 
         self.vq = VectorQuantization(order, codebook_size).eval()
-        self.vq.codebook[:] = 1e10
 
         if self.verbose:
             self.logger = logging.getLogger("lbg")
@@ -94,20 +98,23 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-    def forward(self, x):
+    def forward(self, x, return_indices=False):
         """Design a codebook.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., M+1)]
-            Input vectors.
+        x : Tensor [shape=(T, M+1)] or DataLoader
+            Input vectors or dataloder yielding input vectors.
+
+        return_indices : bool
+            If True, return indices.
 
         Returns
         -------
         codebook : Tensor [shape=(K, M+1)]
             Codebook.
 
-        indices : Tensor [shape=(...,)]
+        indices : Tensor [shape=(T,)] (optional)
             Codebook indices.
 
         distance : Tensor [scalar]
@@ -117,7 +124,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         --------
         >>> x = diffsptk.nrand(10, 0)
         >>> lbg = diffsptk.LBG(0, 2)
-        >>> codebook, indices, distance = lbg(x)
+        >>> codebook, indices, distance = lbg(x, return_indices=True)
         >>> codebook
         tensor([[-0.5277],
                 [ 0.6747]])
@@ -127,12 +134,22 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         tensor(0.2331)
 
         """
-        check_size(x.size(-1), self.order + 1, "dimension of input")
+        x = to_dataloader(x, self.batch_size)
 
         # Initalize codebook.
-        x = x.view(-1, x.size(-1))
-        mean = x.mean(0)
+        first = True
+        for (batch_x,) in x:
+            assert batch_x.dim() == 2
+            if first:
+                s = batch_x.sum(0)
+                T = batch_x.size(0)
+                first = False
+            else:
+                s += batch_x.sum(0)
+                T += batch_x.size(0)
+        mean = s / T
         self.vq.codebook[0] = mean
+        self.vq.codebook[1:] = 1e10
         distance = torch.inf
 
         curr_codebook_size = 1
@@ -151,11 +168,20 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             prev_distance = distance  # Suppress flake8 warnings.
             for n in range(self.n_iter):
                 # E-step: evaluate model.
-                xq, indices, _ = self.vq(x)
-                distance = (x - xq).square().sum()
-                distance /= x.size(0)
-                if self.verbose:
-                    self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
+                def e_step():
+                    indices = []
+                    distance = 0
+                    for (batch_x,) in x:
+                        batch_xq, batch_indices, _ = self.vq(batch_x)
+                        indices.append(batch_indices)
+                        distance += (batch_x - batch_xq).square().sum()
+                    indices = torch.cat(indices)
+                    distance /= T
+                    if self.verbose:
+                        self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
+                    return indices, distance
+
+                indices, distance = e_step()
 
                 # Check convergence.
                 change = (prev_distance - distance).abs()
@@ -174,10 +200,16 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
                 # M-step: update centroids.
                 centroids = torch.zeros(
-                    (curr_codebook_size, self.order + 1), dtype=x.dtype, device=x.device
+                    (curr_codebook_size, self.order + 1),
+                    dtype=mean.dtype,
+                    device=mean.device,
                 )
                 idx = indices.unsqueeze(1).expand(-1, self.order + 1)
-                centroids.scatter_add_(0, idx, x)
+                b = 0
+                for (batch_x,) in x:
+                    e = b + batch_x.size(0)
+                    centroids.scatter_add_(0, idx[b:e], batch_x)
+                    b = e
                 centroids[mask] /= n_data[mask].unsqueeze(1)
 
                 if torch.any(~mask):
@@ -190,6 +222,11 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
                 self.vq.codebook[:curr_codebook_size] = centroids
 
-        _, indices, _ = self.vq(x)
+        ret = [self.vq.codebook]
 
-        return self.vq.codebook, indices, distance
+        if return_indices:
+            indices, _ = e_step()
+            ret.append(indices)
+
+        ret.append(distance)
+        return ret

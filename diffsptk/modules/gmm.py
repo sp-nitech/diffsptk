@@ -20,7 +20,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
+from ..misc.utils import to_dataloader
 from .lbg import LindeBuzoGrayAlgorithm
 
 
@@ -60,6 +60,9 @@ class GaussianMixtureModeling(nn.Module):
     alpha : float in [0, 1]
         Smoothing parameter.
 
+    batch_size : int >= 1 or None
+        Batch size.
+
     verbose : bool
         If True, print progress.
 
@@ -77,6 +80,7 @@ class GaussianMixtureModeling(nn.Module):
         block_size=None,
         ubm=None,
         alpha=0,
+        batch_size=None,
         verbose=False,
     ):
         super().__init__()
@@ -96,6 +100,7 @@ class GaussianMixtureModeling(nn.Module):
         self.weight_floor = weight_floor
         self.var_floor = var_floor
         self.alpha = alpha
+        self.batch_size = batch_size
         self.verbose = verbose
 
         if self.alpha != 0:
@@ -171,45 +176,55 @@ class GaussianMixtureModeling(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(..., M+1)]
+        x : Tensor [shape=(T, M+1)] or DataLoader
             Training data.
 
         lbg_params : additional keyword arguments
             Parameters for Linde-Buzo-Gray algorithm.
 
         """
-        x = x.view(-1, x.size(-1))
+        x = to_dataloader(x, batch_size=self.batch_size)
 
         lbg = LindeBuzoGrayAlgorithm(self.order, self.n_mixture, **lbg_params).to(
-            x.device
+            self.w.device
         )
-        codebook, indices, _ = lbg(x)
+        codebook, indices, _ = lbg(x, return_indices=True)
 
-        count = torch.bincount(indices, minlength=self.n_mixture).to(x.dtype)
+        count = torch.bincount(indices, minlength=self.n_mixture).to(self.w.dtype)
         w = count / len(indices)
         mu = codebook
 
-        xx = torch.matmul(x.unsqueeze(-1), x.unsqueeze(-2))  # [B, L, L]
-        mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # [K, L, L]
         idx = indices.view(-1, 1, 1).expand(-1, self.order + 1, self.order + 1)
-        kxx = torch.zeros_like(self.sigma)
-        kxx.scatter_add_(0, idx, xx)
+        kxx = torch.zeros_like(self.sigma)  # [K, L, L]
+        b = 0
+        for (batch_x,) in x:
+            e = b + batch_x.size(0)
+            xx = torch.matmul(batch_x.unsqueeze(-1), batch_x.unsqueeze(-2))
+            kxx.scatter_add_(0, idx[b:e], xx)
+            b = e
+        mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # [K, L, L]
         sigma = kxx / count.view(-1, 1, 1) - mm
         sigma = sigma * self.mask
         self.set_params((w, mu, sigma))
 
-    def forward(self, x):
+    def forward(self, x, return_posterior=False):
         """Train Gaussian mixture models.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., M+1)]
-            Input vectors.
+        x : Tensor [shape=(T, M+1)] or DataLoader
+            Input vectors or dataloder yielding input vectors.
+
+        return_posterior : bool
+            If True, return posterior probabilities.
 
         Returns
         -------
         params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
             GMM parameters.
+
+        posterior : Tensor [shape=(T, K)]
+            Posterior probabilities.
 
         log_likelihood : Tensor [scalar]
             Total log-likelihood.
@@ -234,48 +249,64 @@ class GaussianMixtureModeling(nn.Module):
         tensor(-19.5235)
 
         """
-        check_size(x.size(-1), self.order + 1, "dimension of input")
+        x = to_dataloader(x, batch_size=self.batch_size)
 
-        x = x.view(-1, x.size(-1))
-        B = x.size(0)
+        T = 0
+        for (batch_x,) in x:
+            assert batch_x.dim() == 2
+            T += batch_x.size(0)
 
         prev_log_likelihood = -torch.inf
         for n in range(self.n_iter):
             # Compute log probabilities.
-            log_pi = (self.order + 1) * np.log(2 * np.pi)
-            if self.is_diag:
-                log_det = torch.log(torch.diagonal(self.sigma, dim1=-2, dim2=-1)).sum(
-                    -1
-                )  # [K]
-                precision = torch.reciprocal(
-                    torch.diagonal(self.sigma, dim1=-2, dim2=-1)
-                )  # [K, L]
-                diff = x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                mahala = (diff**2 * precision).sum(-1)  # [B, K]
-            else:
-                col = torch.linalg.cholesky(self.sigma)
-                log_det = (
-                    torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
-                )  # [K]
-                precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
-                diff = x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                right = torch.matmul(precision, diff.unsqueeze(-1))  # [B, K, L, 1]
-                mahala = (
-                    torch.matmul(diff.unsqueeze(-2), right).squeeze(-1).squeeze(-1)
-                )  # [B, K]
-            numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # [B, K]
-            denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # [B, 1]
-            posterior = torch.exp(numer - denom)  # [B, K]
-            log_likelihood = torch.sum(denom)
+            def e_step():
+                log_pi = (self.order + 1) * np.log(2 * np.pi)
+                if self.is_diag:
+                    log_det = torch.log(
+                        torch.diagonal(self.sigma, dim1=-2, dim2=-1)
+                    ).sum(-1)  # [K]
+                    precision = torch.reciprocal(
+                        torch.diagonal(self.sigma, dim1=-2, dim2=-1)
+                    )  # [K, L]
+                    mahala = []
+                    for (batch_x,) in x:
+                        diff = batch_x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                        mahala.append((diff**2 * precision).sum(-1))  # [B, K]
+                    mahala = torch.cat(mahala)  # [T, K]
+                else:
+                    col = torch.linalg.cholesky(self.sigma)
+                    log_det = (
+                        torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
+                    )  # [K]
+                    precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
+                    mahala = []
+                    for (batch_x,) in x:
+                        diff = batch_x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                        right = torch.matmul(
+                            precision, diff.unsqueeze(-1)
+                        )  # [B, K, L, 1]
+                        mahala.append(
+                            torch.matmul(diff.unsqueeze(-2), right)
+                            .squeeze(-1)
+                            .squeeze(-1)
+                        )  # [B, K]
+                    mahala = torch.cat(mahala)  # [T, K]
+                numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # [T, K]
+                denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # [T, 1]
+                posterior = torch.exp(numer - denom)  # [T, K]
+                log_likelihood = torch.sum(denom)
+                return posterior, log_likelihood
+
+            posterior, log_likelihood = e_step()
 
             # Update mixture weights.
             if self.alpha == 0:
                 z = posterior.sum(dim=0)
-                self.w = z / B
+                self.w = z / T
             else:
                 xi = self.ubm_w * self.alpha
                 z = posterior.sum(dim=0) + xi
-                self.w = z / (B + self.alpha)
+                self.w = z / (T + self.alpha)
             z = 1 / z
             self.w = torch.clamp(self.w, min=self.weight_floor)
             sum_floor = self.weight_floor * self.n_mixture
@@ -284,7 +315,13 @@ class GaussianMixtureModeling(nn.Module):
             self.w = a * self.w + b
 
             # Update mean vectors.
-            px = torch.matmul(posterior.t(), x)
+            px = []
+            b = 0
+            for (batch_x,) in x:
+                e = b + batch_x.size(0)
+                px.append(torch.matmul(posterior[b:e].t(), batch_x))
+                b = e
+            px = sum(px)
             if self.alpha == 0:
                 self.mu = px * z.view(-1, 1)
             else:
@@ -292,9 +329,15 @@ class GaussianMixtureModeling(nn.Module):
 
             # Update covariance matrices.
             if self.is_diag:
-                xx = x**2
+                pxx = []
+                b = 0
+                for (batch_x,) in x:
+                    e = b + batch_x.size(0)
+                    xx = batch_x**2
+                    pxx.append(torch.matmul(posterior[b:e].t(), xx))
+                    b = e
+                pxx = sum(pxx)
                 mm = self.mu**2
-                pxx = torch.matmul(posterior.t(), xx)
                 if self.alpha == 0:
                     sigma = pxx * z.view(-1, 1) - mm
                 else:
@@ -309,9 +352,15 @@ class GaussianMixtureModeling(nn.Module):
                     sigma = (a + b + c) * z.view(-1, 1)
                 self.sigma.diagonal(dim1=-2, dim2=-1).copy_(sigma)
             else:
-                xx = torch.matmul(x.unsqueeze(-1), x.unsqueeze(-2))
+                pxx = []
+                b = 0
+                for (batch_x,) in x:
+                    e = b + batch_x.size(0)
+                    xx = torch.matmul(batch_x.unsqueeze(-1), batch_x.unsqueeze(-2))
+                    pxx.append(torch.einsum("bk,blm->klm", posterior[b:e], xx))
+                    b = e
+                pxx = sum(pxx)
                 mm = torch.matmul(self.mu.unsqueeze(-1), self.mu.unsqueeze(-2))
-                pxx = torch.einsum("bk,blm->klm", posterior, xx)
                 if self.alpha == 0:
                     sigma = pxx * z.view(-1, 1, 1) - mm
                 else:
@@ -331,10 +380,16 @@ class GaussianMixtureModeling(nn.Module):
             # Check convergence.
             change = log_likelihood - prev_log_likelihood
             if self.verbose:
-                self.logger.info(f"iter {n+1:5d}: average = {log_likelihood / B:g}")
+                self.logger.info(f"iter {n+1:5d}: average = {log_likelihood / T:g}")
             if n and change < self.eps:
                 break
             prev_log_likelihood = log_likelihood
 
-        params = [self.w, self.mu, self.sigma]
-        return params, log_likelihood
+        ret = [[self.w, self.mu, self.sigma]]
+
+        if return_posterior:
+            posterior, _ = e_step()
+            ret.append(posterior)
+
+        ret.append(log_likelihood)
+        return ret

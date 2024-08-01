@@ -24,10 +24,11 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
+@pytest.mark.parametrize("batch_size", [None, 5])
+def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
-    lbg = diffsptk.LindeBuzoGrayAlgorithm(M, K, n_iter=n_iter)
+    lbg = diffsptk.LBG(M, K, n_iter=n_iter, batch_size=batch_size)
 
     tmp1 = "lbg.tmp1"
     tmp2 = "lbg.tmp2"
@@ -36,7 +37,7 @@ def test_compatibility(device, M=1, K=4, B=10, n_iter=10):
     tmp5 = "lbg.tmp5"
     U.check_compatibility(
         device,
-        [itemgetter(2), lbg],
+        [itemgetter(1), lbg],
         [
             f"nrand -u +2 -l {B*(M+1)} -s 1 > {tmp1}",
             f"nrand -u -2 -l {B*(M+1)} -s 2 > {tmp2}",
