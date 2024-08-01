@@ -93,6 +93,7 @@ def test_compatibility(
         n_iter=n_iter,
         var_type=var_type,
         block_size=block_size,
+        batch_size=batch_size,
         alpha=alpha,
         ubm=ubm,
     ).to(device)

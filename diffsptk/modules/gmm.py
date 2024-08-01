@@ -223,7 +223,7 @@ class GaussianMixtureModeling(nn.Module):
         params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
             GMM parameters.
 
-        posterior : Tensor [shape=(T, K)]
+        posterior : Tensor [shape=(T, K)] (optional)
             Posterior probabilities.
 
         log_likelihood : Tensor [scalar]
