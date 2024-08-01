@@ -119,3 +119,10 @@ def test_compatibility(
         [f"rm {tmp1} {tmp2} {tmp3} {tmp4} {tmp5} {tmp6}"],
         dx=M + 1,
     )
+
+
+def test_posterior(M=3, K=4, B=32, n_iter=50):
+    x = torch.randn(B, M + 1)
+    gmm = diffsptk.GMM(M, K, n_iter=10)
+    _, posterior, _ = gmm(x, return_posterior=True)
+    assert posterior.sum().item() == pytest.approx(B)
