@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import math
-
 import torch
 from torch import nn
 
@@ -88,7 +86,7 @@ class CepstralDistance(nn.Module):
         elif reduction == "sum":
             distance = distance.sum()
         elif reduction == "mean":
-            distance = distance.mean() / math.sqrt(c1.size(-1) - 1)
+            distance = distance.mean() * (c1.size(-1) - 1) ** -0.5
         elif reduction == "batchmean":
             distance = distance.mean()
         else:

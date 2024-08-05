@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("reduction", ["none", "batchmean"])
+@pytest.mark.parametrize("reduction", ["none", "batchmean", "mean", "sum"])
 def test_compatibility(device, module, reduction, B=2, M=19):
     cdist = U.choice(
         module,
@@ -34,6 +34,14 @@ def test_compatibility(device, module, reduction, B=2, M=19):
     )
 
     opt = "-f" if reduction == "none" else ""
+    if reduction == "none" or reduction == "batchmean":
+        mul = 1
+    elif reduction == "mean":
+        mul = M**-0.5
+    elif reduction == "sum":
+        mul = B
+    else:
+        raise ValueError
     tmp1 = "cdist.tmp1"
     tmp2 = "cdist.tmp2"
     U.check_compatibility(
@@ -41,7 +49,7 @@ def test_compatibility(device, module, reduction, B=2, M=19):
         cdist,
         [f"nrand -s 1 -l {B*(M+1)} > {tmp1}", f"nrand -s 2 -l {B*(M+1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"cdist -m {M} {opt} {tmp1} {tmp2}",
+        f"cdist -m {M} {opt} {tmp1} {tmp2} | sopr -m {mul}",
         [f"rm {tmp1} {tmp2}"],
         dx=M + 1,
     )

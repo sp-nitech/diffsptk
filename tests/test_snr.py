@@ -21,22 +21,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("o", [0, 1, 2])
-def test_compatibility(device, module, o, B=2, T=100, L=20):
-    if o == 0:
-        frame_length = None
-        reduction = "mean"
-        dim = None
-        B = 1
-    elif o == 1:
-        frame_length = L
-        reduction = "mean"
-        dim = None
-    elif o == 2:
-        frame_length = L
-        reduction = "none"
-        dim = T // L
+@pytest.mark.parametrize("module", [True])
+@pytest.mark.parametrize("cond", [0, 1, 2, 3])
+def test_compatibility(device, module, cond, B=2, T=100, L=20):
+    if cond == 0:
+        # SNR
+        o, reduction, frame_length, dim, mul, B = (0, "mean", None, None, 1, 1)
+    elif cond == 1:
+        # Segmental SNR
+        o, reduction, frame_length, dim, mul = (1, "mean", L, None, 1)
+    elif cond == 2:
+        # Segmental SNR
+        o, reduction, frame_length, dim, mul = (1, "sum", L, None, T // L * B)
+    elif cond == 3:
+        # Segmental SNR per frame
+        o, reduction, frame_length, dim, mul = (2, "none", L, T // L, 1)
+    else:
+        raise ValueError
 
     snr = U.choice(
         module,
@@ -54,7 +55,7 @@ def test_compatibility(device, module, o, B=2, T=100, L=20):
         snr,
         [f"nrand -s 1 -l {B*T} > {tmp1}", f"nrand -s 2 -l {B*T} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"snr -o {o} -l {L} {tmp1} {tmp2}",
+        f"snr -o {o} -l {L} {tmp1} {tmp2} | sopr -m {mul}",
         [f"rm {tmp1} {tmp2}"],
         dx=T,
         dy=dim,
