@@ -23,8 +23,8 @@ classifiers = [
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  "numpy >= 1.20.3, < 2.0.0",
-  "scipy >= 1.0.0, < 1.14.0",
+  "numpy >= 1.20.3",
+  "scipy >= 1.5.4, < 1.14.0",
   "librosa >= 0.10.1",
   "soundfile >= 0.10.2",
   "torch >= 2.0.0",
@@ -38,9 +38,8 @@ dynamic = ["version"]
 
 [project.optional-dependencies]
 dev = [
-  "attrs",
   "build",
-  "docstrfmt >= 1.7.0",
+  "docstrfmt",
   "isort",
   "mdformat",
   "numpydoc",

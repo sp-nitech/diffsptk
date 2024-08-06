@@ -27,7 +27,7 @@ venv:
 	test -d venv || python$(PYTHON_VERSION) -m venv venv
 	. ./venv/bin/activate && python -m pip install pip --upgrade
 	. ./venv/bin/activate && python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
-		-f https://download.pytorch.org/whl/$(PLATFORM)/torch_stable.html
+		--index-url https://download.pytorch.org/whl/$(PLATFORM)
 	. ./venv/bin/activate && python -m pip install -e .[dev]
 	. ./venv/bin/activate && python -m pip install icc-rt
 
