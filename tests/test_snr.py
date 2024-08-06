@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [True])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("cond", [0, 1, 2, 3])
 def test_compatibility(device, module, cond, B=2, T=100, L=20):
     if cond == 0:
