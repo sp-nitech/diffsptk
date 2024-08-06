@@ -1858,10 +1858,10 @@ def rmse(x, y, reduction="mean", eps=1e-8):
 
     Parameters
     ----------
-    x : Tensor [shape=(...,)]
+    x : Tensor [shape=(..., T)]
         Input.
 
-    y : Tensor [shape=(...,)]
+    y : Tensor [shape=(..., T)]
         Target.
 
     reduction : ['none', 'mean', 'sum']
@@ -1904,10 +1904,10 @@ def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
 
     Parameters
     ----------
-    s : Tensor [shape=(...,)]
+    s : Tensor [shape=(..., T)]
         Signal.
 
-    sn : Tensor [shape=(...,)]
+    sn : Tensor [shape=(..., T)]
         Signal plus noise.
 
     frame_length : int >= 1 or None
