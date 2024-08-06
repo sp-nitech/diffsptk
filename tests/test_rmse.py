@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("reduction", ["none", "mean"])
+@pytest.mark.parametrize("reduction", ["none", "mean", "sum"])
 def test_compatibility(device, module, reduction, B=2, L=10):
     rmse = U.choice(
         module,
@@ -34,6 +34,7 @@ def test_compatibility(device, module, reduction, B=2, L=10):
     )
 
     opt = "-f" if reduction == "none" else ""
+    mul = B if reduction == "sum" else 1
     tmp1 = "rmse.tmp1"
     tmp2 = "rmse.tmp2"
     U.check_compatibility(
@@ -41,7 +42,7 @@ def test_compatibility(device, module, reduction, B=2, L=10):
         rmse,
         [f"nrand -s 1 -l {B*L} > {tmp1}", f"nrand -s 2 -l {B*L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"rmse -l {L} {opt} {tmp1} {tmp2}",
+        f"rmse -l {L} {opt} {tmp1} {tmp2} | sopr -m {mul}",
         [f"rm {tmp1} {tmp2}"],
         dx=L,
     )

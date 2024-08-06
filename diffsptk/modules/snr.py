@@ -56,10 +56,10 @@ class SignalToNoiseRatio(nn.Module):
 
         Parameters
         ----------
-        s : Tensor [shape=(...,)]
+        s : Tensor [shape=(..., T)]
             Signal.
 
-        sn : Tensor [shape=(...,)]
+        sn : Tensor [shape=(..., T)]
             Signal plus noise.
 
         Returns

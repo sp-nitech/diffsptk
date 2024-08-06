@@ -46,10 +46,10 @@ class RootMeanSquareError(nn.Module):
 
         Parameters
         ----------
-        x : Tensor [shape=(...,)]
+        x : Tensor [shape=(..., T)]
             Input.
 
-        y : Tensor [shape=(...,)]
+        y : Tensor [shape=(..., T)]
             Target.
 
         Returns
