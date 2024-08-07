@@ -18,6 +18,7 @@ import logging
 
 import torch
 from torch import nn
+from tqdm import tqdm
 
 from ..misc.utils import is_power_of_two
 from ..misc.utils import to_dataloader
@@ -31,10 +32,10 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     Parameters
     ----------
     order : int >= 0
-        Order of vector.
+        Order of vector, :math:`M`.
 
     codebook_size : int >= 1
-        Target codebook size, must be power of two.
+        Target codebook size, must be power of two, :math:`K`.
 
     min_data_per_cluster : int >= 1
         Minimum number of data points in a cluster.
@@ -48,10 +49,13 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     perturb_factor : float > 0
         Perturbation factor.
 
+    init : ['none', 'mean'] or torch.Tensor [shape=(1~K, M+1)]
+        Initialization type.
+
     batch_size : int >= 1 or None
         Batch size.
 
-    verbose : bool
+    verbose : bool or int
         If True, print progress.
 
     """
@@ -64,6 +68,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         n_iter=100,
         eps=1e-5,
         perturb_factor=1e-5,
+        init="mean",
         batch_size=None,
         verbose=False,
     ):
@@ -86,6 +91,14 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.verbose = verbose
 
         self.vq = VectorQuantization(order, codebook_size).eval()
+
+        if torch.is_tensor(init):
+            self.curr_codebook_size = init.size(0)
+            self.vq.codebook[: self.curr_codebook_size] = init
+            self.init = "none"
+        else:
+            self.curr_codebook_size = 1
+            self.init = init
 
         if self.verbose:
             self.logger = logging.getLogger("lbg")
@@ -135,35 +148,43 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
         """
         x = to_dataloader(x, self.batch_size)
+        device = self.vq.codebook.device
 
         # Initalize codebook.
-        first = True
-        for (batch_x,) in x:
-            assert batch_x.dim() == 2
-            if first:
-                s = batch_x.sum(0)
-                T = batch_x.size(0)
-                first = False
-            else:
-                s += batch_x.sum(0)
-                T += batch_x.size(0)
-        mean = s / T
-        self.vq.codebook[0] = mean
-        self.vq.codebook[1:] = 1e10
-        distance = torch.inf
+        if self.init == "none":
+            pass
+        elif self.init == "mean":
+            if self.verbose:
+                self.logger.info("K = 1")
+            first = True
+            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                assert batch_x.dim() == 2
+                if first:
+                    s = batch_x.sum(0)
+                    T = batch_x.size(0)
+                    first = False
+                else:
+                    s += batch_x.sum(0)
+                    T += batch_x.size(0)
+            self.vq.codebook[0] = s / T
+        else:
+            raise ValueError(f"Invalid initialization type: {self.init}")
+        self.vq.codebook[self.curr_codebook_size :] = 1e10
 
-        curr_codebook_size = 1
-        next_codebook_size = 2
+        distance = torch.inf
+        next_codebook_size = self.curr_codebook_size * 2
         while next_codebook_size <= self.codebook_size:
             # Double codebook.
-            codebook = self.vq.codebook[:curr_codebook_size]
+            codebook = self.vq.codebook[: self.curr_codebook_size]
             r = torch.randn_like(codebook) * self.perturb_factor
-            self.vq.codebook[curr_codebook_size:next_codebook_size] = codebook - r
-            self.vq.codebook[:curr_codebook_size] += r
-            curr_codebook_size = next_codebook_size
+            self.vq.codebook[self.curr_codebook_size : next_codebook_size] = (
+                codebook - r
+            )
+            self.vq.codebook[: self.curr_codebook_size] += r
+            self.curr_codebook_size = next_codebook_size
             next_codebook_size *= 2
             if self.verbose:
-                self.logger.info(f"K = {curr_codebook_size}")
+                self.logger.info(f"K = {self.curr_codebook_size}")
 
             prev_distance = distance  # Suppress flake8 warnings.
             for n in range(self.n_iter):
@@ -171,17 +192,18 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 def e_step():
                     indices = []
                     distance = 0
-                    for (batch_x,) in x:
-                        batch_xq, batch_indices, _ = self.vq(batch_x)
+                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                        batch_xp = batch_x.to(device)
+                        batch_xq, batch_indices, _ = self.vq(batch_xp)
                         indices.append(batch_indices)
-                        distance += (batch_x - batch_xq).square().sum()
+                        distance += (batch_xp - batch_xq).square().sum()
                     indices = torch.cat(indices)
-                    distance /= T
-                    if self.verbose:
-                        self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
+                    distance /= len(indices)
                     return indices, distance
 
                 indices, distance = e_step()
+                if self.verbose:
+                    self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
 
                 # Check convergence.
                 change = (prev_distance - distance).abs()
@@ -192,23 +214,23 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 # Get number of data points for each cluster.
                 n_data = torch.histc(
                     indices.float(),
-                    bins=curr_codebook_size,
+                    bins=self.curr_codebook_size,
                     min=0,
-                    max=curr_codebook_size - 1,
+                    max=self.curr_codebook_size - 1,
                 )
                 mask = self.min_data_per_cluster <= n_data
 
                 # M-step: update centroids.
                 centroids = torch.zeros(
-                    (curr_codebook_size, self.order + 1),
-                    dtype=mean.dtype,
-                    device=mean.device,
+                    (self.curr_codebook_size, self.order + 1),
+                    dtype=distance.dtype,
+                    device=device,
                 )
                 idx = indices.unsqueeze(1).expand(-1, self.order + 1)
                 b = 0
-                for (batch_x,) in x:
+                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
                     e = b + batch_x.size(0)
-                    centroids.scatter_add_(0, idx[b:e], batch_x)
+                    centroids.scatter_add_(0, idx[b:e], batch_x.to(device))
                     b = e
                 centroids[mask] /= n_data[mask].unsqueeze(1)
 
@@ -220,7 +242,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     centroids[~mask] = copied_centroids - r
                     centroids[m] += r.mean(0)
 
-                self.vq.codebook[:curr_codebook_size] = centroids
+                self.vq.codebook[: self.curr_codebook_size] = centroids
 
         ret = [self.vq.codebook]
 
@@ -230,3 +252,31 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
         ret.append(distance)
         return ret
+
+    def transform(self, x):
+        """Transform input vectors using the codebook.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(T, M+1)]
+            Input vectors.
+
+        Returns
+        -------
+        xq : Tensor [shape=(T, M+1)]
+            Quantized vectors.
+
+        indices : Tensor [shape=(T,)]
+            Codebook indices.
+
+        Examples
+        --------
+        >>> lbg = diffsptk.LBG(0, 2)
+        >>> torch.save(lbg.state_dict(), "lbg.pt")
+        >>> lbg.load_state_dict(torch.load("lbg.pt"))
+        >>> x = diffsptk.nrand(10, 0)
+        >>> xq, indices = lbg.transform(x)
+
+        """
+        xq, indices, _ = self.vq(x)
+        return xq, indices

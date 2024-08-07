@@ -31,10 +31,10 @@ class GaussianMixtureModeling(nn.Module):
     Parameters
     ----------
     order : int >= 0
-        Order of vector.
+        Order of vector, :math:`M`.
 
     n_mixture : int >= 1
-        Number of mixture components.
+        Number of mixture components, :math:`K`.
 
     n_iter : int >= 1
         Number of iterations.
@@ -251,11 +251,6 @@ class GaussianMixtureModeling(nn.Module):
         """
         x = to_dataloader(x, batch_size=self.batch_size)
 
-        T = 0
-        for (batch_x,) in x:
-            assert batch_x.dim() == 2
-            T += batch_x.size(0)
-
         prev_log_likelihood = -torch.inf
         for n in range(self.n_iter):
             # Compute log probabilities.
@@ -300,6 +295,7 @@ class GaussianMixtureModeling(nn.Module):
             posterior, log_likelihood = e_step()
 
             # Update mixture weights.
+            T = len(posterior)
             if self.alpha == 0:
                 z = posterior.sum(dim=0)
                 self.w = z / T
