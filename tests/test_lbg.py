@@ -37,7 +37,7 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
     tmp5 = "lbg.tmp5"
     U.check_compatibility(
         device,
-        [itemgetter(1), lbg],
+        [itemgetter(-1), lbg],
         [
             f"nrand -u +2 -l {B*(M+1)} -s 1 > {tmp1}",
             f"nrand -u -2 -l {B*(M+1)} -s 2 > {tmp2}",
@@ -56,8 +56,16 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
     )
 
 
-def test_min_data_per_cluster(M=1, K=4, B=10):
+def test_special_case(M=1, K=4, B=10, n_iter=10):
     torch.manual_seed(1234)
     x = torch.randn(B, M + 1)
-    lbg = diffsptk.LBG(M, K, n_iter=10, min_data_per_cluster=int(B * 0.9))
-    lbg(x)
+    lbg = diffsptk.LBG(
+        M, K, n_iter=n_iter, min_data_per_cluster=int(B * 0.9), init="none"
+    )
+    _, idx1, dist = lbg(x, return_indices=True)
+    _, idx2 = lbg.transform(x)
+    assert torch.all(idx1 == idx2)
+
+    extra_lbg = diffsptk.LBG(M, K * 2, n_iter=n_iter, init=lbg.vq.codebook)
+    _, extra_dist = extra_lbg(x)
+    assert extra_dist < dist
