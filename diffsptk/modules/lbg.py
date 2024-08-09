@@ -171,6 +171,18 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             raise ValueError(f"Invalid initialization type: {self.init}")
         self.vq.codebook[self.curr_codebook_size :] = 1e10
 
+        def e_step(x):
+            indices = []
+            distance = 0
+            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                batch_xp = batch_x.to(device)
+                batch_xq, batch_indices, _ = self.vq(batch_xp)
+                indices.append(batch_indices)
+                distance += (batch_xp - batch_xq).square().sum()
+            indices = torch.cat(indices)
+            distance /= len(indices)
+            return indices, distance
+
         distance = torch.inf
         next_codebook_size = self.curr_codebook_size * 2
         while next_codebook_size <= self.codebook_size:
@@ -189,19 +201,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             prev_distance = distance  # Suppress flake8 warnings.
             for n in range(self.n_iter):
                 # E-step: evaluate model.
-                def e_step():
-                    indices = []
-                    distance = 0
-                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
-                        batch_xp = batch_x.to(device)
-                        batch_xq, batch_indices, _ = self.vq(batch_xp)
-                        indices.append(batch_indices)
-                        distance += (batch_xp - batch_xq).square().sum()
-                    indices = torch.cat(indices)
-                    distance /= len(indices)
-                    return indices, distance
-
-                indices, distance = e_step()
+                indices, distance = e_step(x)
                 if self.verbose:
                     self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
 
@@ -247,7 +247,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         ret = [self.vq.codebook]
 
         if return_indices:
-            indices, _ = e_step()
+            indices, _ = e_step(x)
             ret.append(indices)
 
         ret.append(distance)

@@ -19,6 +19,7 @@ import logging
 import numpy as np
 import torch
 from torch import nn
+from tqdm import tqdm
 
 from ..misc.utils import to_dataloader
 from .lbg import LindeBuzoGrayAlgorithm
@@ -182,11 +183,17 @@ class GaussianMixtureModeling(nn.Module):
         lbg_params : additional keyword arguments
             Parameters for Linde-Buzo-Gray algorithm.
 
+        Returns
+        -------
+        out : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
+            GMM parameters.
+
         """
         x = to_dataloader(x, batch_size=self.batch_size)
+        device = self.w.device
 
         lbg = LindeBuzoGrayAlgorithm(self.order, self.n_mixture, **lbg_params).to(
-            self.w.device
+            device
         )
         codebook, indices, _ = lbg(x, return_indices=True)
 
@@ -197,15 +204,19 @@ class GaussianMixtureModeling(nn.Module):
         idx = indices.view(-1, 1, 1).expand(-1, self.order + 1, self.order + 1)
         kxx = torch.zeros_like(self.sigma)  # [K, L, L]
         b = 0
-        for (batch_x,) in x:
+        for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
             e = b + batch_x.size(0)
-            xx = torch.matmul(batch_x.unsqueeze(-1), batch_x.unsqueeze(-2))
+            xp = batch_x.to(device)
+            xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
             kxx.scatter_add_(0, idx[b:e], xx)
             b = e
         mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # [K, L, L]
         sigma = kxx / count.view(-1, 1, 1) - mm
         sigma = sigma * self.mask
-        self.set_params((w, mu, sigma))
+
+        params = (w, mu, sigma)
+        self.set_params(params)
+        return params
 
     def forward(self, x, return_posterior=False):
         """Train Gaussian mixture models.
@@ -250,6 +261,7 @@ class GaussianMixtureModeling(nn.Module):
 
         """
         x = to_dataloader(x, batch_size=self.batch_size)
+        device = self.w.device
 
         prev_log_likelihood = -torch.inf
         for n in range(self.n_iter):
@@ -264,8 +276,9 @@ class GaussianMixtureModeling(nn.Module):
                         torch.diagonal(self.sigma, dim1=-2, dim2=-1)
                     )  # [K, L]
                     mahala = []
-                    for (batch_x,) in x:
-                        diff = batch_x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                        xp = batch_x.to(device)
+                        diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
                         mahala.append((diff**2 * precision).sum(-1))  # [B, K]
                     mahala = torch.cat(mahala)  # [T, K]
                 else:
@@ -275,8 +288,9 @@ class GaussianMixtureModeling(nn.Module):
                     )  # [K]
                     precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
                     mahala = []
-                    for (batch_x,) in x:
-                        diff = batch_x.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                        xp = batch_x.to(device)
+                        diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
                         right = torch.matmul(
                             precision, diff.unsqueeze(-1)
                         )  # [B, K, L, 1]
@@ -313,9 +327,9 @@ class GaussianMixtureModeling(nn.Module):
             # Update mean vectors.
             px = []
             b = 0
-            for (batch_x,) in x:
+            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
                 e = b + batch_x.size(0)
-                px.append(torch.matmul(posterior[b:e].t(), batch_x))
+                px.append(torch.matmul(posterior[b:e].t(), batch_x.to(device)))
                 b = e
             px = sum(px)
             if self.alpha == 0:
@@ -327,9 +341,9 @@ class GaussianMixtureModeling(nn.Module):
             if self.is_diag:
                 pxx = []
                 b = 0
-                for (batch_x,) in x:
+                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
                     e = b + batch_x.size(0)
-                    xx = batch_x**2
+                    xx = batch_x.to(device) ** 2
                     pxx.append(torch.matmul(posterior[b:e].t(), xx))
                     b = e
                 pxx = sum(pxx)
@@ -350,9 +364,10 @@ class GaussianMixtureModeling(nn.Module):
             else:
                 pxx = []
                 b = 0
-                for (batch_x,) in x:
+                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
                     e = b + batch_x.size(0)
-                    xx = torch.matmul(batch_x.unsqueeze(-1), batch_x.unsqueeze(-2))
+                    xp = batch_x.to(device)
+                    xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
                     pxx.append(torch.einsum("bk,blm->klm", posterior[b:e], xx))
                     b = e
                 pxx = sum(pxx)
