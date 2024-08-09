@@ -97,5 +97,4 @@ disable_warnings = ["couldnt-parse"]
 addopts = "--cov=. --cov-report xml -s -x"
 filterwarnings = [
   "ignore:Casting complex values to real discards the imaginary part",
-  "ignore:__floordiv__ is deprecated",
 ]
