@@ -266,47 +266,7 @@ class GaussianMixtureModeling(nn.Module):
         prev_log_likelihood = -torch.inf
         for n in range(self.n_iter):
             # Compute log probabilities.
-            def e_step():
-                log_pi = (self.order + 1) * np.log(2 * np.pi)
-                if self.is_diag:
-                    log_det = torch.log(
-                        torch.diagonal(self.sigma, dim1=-2, dim2=-1)
-                    ).sum(-1)  # [K]
-                    precision = torch.reciprocal(
-                        torch.diagonal(self.sigma, dim1=-2, dim2=-1)
-                    )  # [K, L]
-                    mahala = []
-                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
-                        xp = batch_x.to(device)
-                        diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                        mahala.append((diff**2 * precision).sum(-1))  # [B, K]
-                    mahala = torch.cat(mahala)  # [T, K]
-                else:
-                    col = torch.linalg.cholesky(self.sigma)
-                    log_det = (
-                        torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
-                    )  # [K]
-                    precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
-                    mahala = []
-                    for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
-                        xp = batch_x.to(device)
-                        diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                        right = torch.matmul(
-                            precision, diff.unsqueeze(-1)
-                        )  # [B, K, L, 1]
-                        mahala.append(
-                            torch.matmul(diff.unsqueeze(-2), right)
-                            .squeeze(-1)
-                            .squeeze(-1)
-                        )  # [B, K]
-                    mahala = torch.cat(mahala)  # [T, K]
-                numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # [T, K]
-                denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # [T, 1]
-                posterior = torch.exp(numer - denom)  # [T, K]
-                log_likelihood = torch.sum(denom)
-                return posterior, log_likelihood
-
-            posterior, log_likelihood = e_step()
+            posterior, log_likelihood = self._e_step(x)
 
             # Update mixture weights.
             T = len(posterior)
@@ -353,12 +313,10 @@ class GaussianMixtureModeling(nn.Module):
                 else:
                     y = posterior.sum(dim=0)
                     nu = px / y.view(-1, 1)
-                    nn = nu**2
-                    a = pxx - y.view(-1, 1) * (2 * nn - mm)
+                    nm = nu * self.mu
+                    a = pxx - y.view(-1, 1) * (2 * nm - mm)
                     b = xi.view(-1, 1) * self.ubm_sigma.diagonal(dim1=-2, dim2=-1)
-                    diff = self.ubm_mu - self.mu
-                    dd = diff**2
-                    c = xi.view(-1, 1) * dd
+                    c = xi.view(-1, 1) * (self.ubm_mu - self.mu) ** 2
                     sigma = (a + b + c) * z.view(-1, 1)
                 self.sigma.diagonal(dim1=-2, dim2=-1).copy_(sigma)
             else:
@@ -399,8 +357,92 @@ class GaussianMixtureModeling(nn.Module):
         ret = [[self.w, self.mu, self.sigma]]
 
         if return_posterior:
-            posterior, _ = e_step()
+            posterior, _ = self._e_step(x)
             ret.append(posterior)
 
         ret.append(log_likelihood)
         return ret
+
+    def transform(self, x):
+        """Transform input vectors to mixture indices.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(T, M+1)]
+            Input vectors.
+
+        Returns
+        -------
+        indices : Tensor [shape=(T,)]
+            Mixture indices.
+
+        log_prob : Tensor [shape=(T,)]
+            Log probabilities.
+
+        """
+        posterior, log_prob = self._e_step(x, reduction="none")
+        indices = torch.argmax(posterior, dim=-1)
+        return indices, log_prob
+
+    def _e_step(self, x, reduction="sum"):
+        """Expectation step.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(T, M+1)]
+            Input vectors.
+
+        reduction : ['none', 'sum']
+            Reduction type.
+
+        Returns
+        -------
+        posterior : Tensor [shape=(T, K)]
+            Posterior probabilities.
+
+        log_prob : Tensor [shape=(T,) or scalar]
+            Log probabilities.
+
+        """
+        x = to_dataloader(x, self.batch_size)
+        device = self.w.device
+
+        log_pi = (self.order + 1) * np.log(2 * np.pi)
+        if self.is_diag:
+            log_det = torch.log(torch.diagonal(self.sigma, dim1=-2, dim2=-1)).sum(
+                -1
+            )  # [K]
+            precision = torch.reciprocal(
+                torch.diagonal(self.sigma, dim1=-2, dim2=-1)
+            )  # [K, L]
+            mahala = []
+            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                xp = batch_x.to(device)
+                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                mahala.append((diff**2 * precision).sum(-1))  # [B, K]
+            mahala = torch.cat(mahala)  # [T, K]
+        else:
+            col = torch.linalg.cholesky(self.sigma)
+            log_det = (
+                torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
+            )  # [K]
+            precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
+            mahala = []
+            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                xp = batch_x.to(device)
+                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
+                right = torch.matmul(precision, diff.unsqueeze(-1))  # [B, K, L, 1]
+                mahala.append(
+                    torch.matmul(diff.unsqueeze(-2), right).squeeze(-1).squeeze(-1)
+                )  # [B, K]
+            mahala = torch.cat(mahala)  # [T, K]
+        numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # [T, K]
+        denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # [T, 1]
+        posterior = torch.exp(numer - denom)  # [T, K]
+        if reduction == "none":
+            log_likelihood = denom.squeeze(-1)
+        elif reduction == "sum":
+            log_likelihood = torch.sum(denom)
+        else:
+            raise ValueError(f"reduction {reduction} is not supported.")
+        return posterior, log_likelihood
