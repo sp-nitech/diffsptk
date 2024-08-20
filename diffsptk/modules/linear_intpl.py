@@ -76,7 +76,7 @@ class LinearInterpolation(nn.Module):
             x = x.view(1, -1, 1)
         elif d == 2:
             x = x.unsqueeze(0)
-        assert x.dim() == 3, "Input must be 3D tensor"
+        assert x.dim() == 3, "Input must be 3D tensor."
         B, T, D = x.shape
 
         x = x.transpose(-2, -1).contiguous()  # (B, D, T)
