@@ -94,7 +94,7 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
             x = x.view(1, -1, 1)
         elif d == 2:
             x = x.unsqueeze(0)
-        assert x.dim() == 3, "Input must be 3D tensor"
+        assert x.dim() == 3, "Input must be 3D tensor."
         B, T, D = x.shape
 
         def compute_lerp_inputs(x, magic_number):

@@ -123,11 +123,11 @@ class Aperiodicity(nn.Module):
         d = x.dim()
         if d == 1:
             x = x.unsqueeze(0)
-        assert x.dim() == 2, "Input must be 2D tensor"
+        assert x.dim() == 2, "Input must be 2D tensor."
 
         if f0.dim() == 1:
             f0 = f0.unsqueeze(0)
-        assert f0.dim() == 2, "Input must be 2D tensor"
+        assert f0.dim() == 2, "Input must be 2D tensor."
 
         ap = self.convert(self.extractor(x, f0))
 
