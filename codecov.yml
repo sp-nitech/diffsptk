@@ -5,6 +5,3 @@ coverage:
         target: auto
         threshold: 1%
     patch: off
-
-ignore:
-  - "tests/utils.py"
