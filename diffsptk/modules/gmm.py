@@ -432,13 +432,13 @@ class GaussianMixtureModeling(nn.Module):
         device = self.w.device
 
         if in_order is None:
-            in_order = self.order
+            L = self.order + 1
             mu, sigma = self.mu, self.sigma
         else:
             L = in_order + 1
             mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
 
-        log_pi = (in_order + 1) * np.log(2 * np.pi)
+        log_pi = L * np.log(2 * np.pi)
         if self.is_diag:
             log_det = torch.log(torch.diagonal(sigma, dim1=-2, dim2=-1)).sum(-1)  # (K,)
             precision = torch.reciprocal(
@@ -454,7 +454,7 @@ class GaussianMixtureModeling(nn.Module):
             col = torch.linalg.cholesky(sigma)
             log_det = (
                 torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
-            )  # [K]
+            )  # (K,)
             precision = torch.cholesky_inverse(col).unsqueeze(0)  # (1, K, L, L)
             mahala = []
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
@@ -463,7 +463,7 @@ class GaussianMixtureModeling(nn.Module):
                 right = torch.matmul(precision, diff.unsqueeze(-1))  # (B, K, L, 1)
                 mahala.append(
                     torch.matmul(diff.unsqueeze(-2), right).squeeze(-1).squeeze(-1)
-                )  # [B, K]
+                )  # (B, K)
             mahala = torch.cat(mahala)  # (T, K)
         numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # (T, K)
         denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # (T, 1)
