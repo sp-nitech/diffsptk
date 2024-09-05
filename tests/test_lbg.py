@@ -60,12 +60,24 @@ def test_special_case(M=1, K=4, B=10, n_iter=10):
     torch.manual_seed(1234)
     x = torch.randn(B, M + 1)
     lbg = diffsptk.LBG(
-        M, K, n_iter=n_iter, min_data_per_cluster=int(B * 0.9), init="none"
+        M,
+        K,
+        n_iter=n_iter,
+        min_data_per_cluster=int(B * 0.9),
+        init="none",
+        metric="aic",
     )
     _, idx1, dist = lbg(x, return_indices=True)
     _, idx2 = lbg.transform(x)
     assert torch.all(idx1 == idx2)
 
-    extra_lbg = diffsptk.LBG(M, K * 2, n_iter=n_iter, init=lbg.vq.codebook)
+    extra_lbg = diffsptk.LBG(
+        M,
+        K * 2,
+        n_iter=n_iter,
+        min_data_per_cluster=1,
+        init=lbg.vq.codebook,
+        metric="bic",
+    )
     _, extra_dist = extra_lbg(x)
     assert extra_dist < dist
