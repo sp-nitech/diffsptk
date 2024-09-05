@@ -433,8 +433,10 @@ class GaussianMixtureModeling(nn.Module):
 
         if in_order is None:
             in_order = self.order
-        L = in_order + 1
-        mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
+            mu, sigma = self.mu, self.sigma
+        else:
+            L = in_order + 1
+            mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
 
         log_pi = (in_order + 1) * np.log(2 * np.pi)
         if self.is_diag:
