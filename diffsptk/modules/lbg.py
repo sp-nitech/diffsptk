@@ -119,7 +119,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        self.hide_progress_bar = self.verbose <= 2
+        self.hide_progress_bar = self.verbose <= 1
 
     def forward(self, x, return_indices=False):
         """Design a codebook.

@@ -155,7 +155,7 @@ class GaussianMixtureModeling(nn.Module):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
-        self.hide_progress_bar = self.verbose <= 2
+        self.hide_progress_bar = self.verbose <= 1
 
     def set_params(self, params):
         """Set model parameters.
@@ -378,7 +378,7 @@ class GaussianMixtureModeling(nn.Module):
         Returns
         -------
         y : Tensor [shape=(T, M-N)]
-            Input vectors.
+            Output vectors.
 
         indices : Tensor [shape=(T,)]
             Selected mixture indices.
