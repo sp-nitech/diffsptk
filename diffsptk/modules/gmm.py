@@ -22,7 +22,6 @@ from torch import nn
 from tqdm import tqdm
 
 from ..misc.utils import to_dataloader
-from .lbg import LindeBuzoGrayAlgorithm
 
 
 class GaussianMixtureModeling(nn.Module):
@@ -65,7 +64,7 @@ class GaussianMixtureModeling(nn.Module):
         Batch size.
 
     verbose : bool
-        If True, print progress.
+        If 1, show distance at each iteration; if 2, show progress bar.
 
     """
 
@@ -73,6 +72,7 @@ class GaussianMixtureModeling(nn.Module):
         self,
         order,
         n_mixture,
+        *,
         n_iter=100,
         eps=1e-5,
         weight_floor=1e-5,
@@ -155,6 +155,8 @@ class GaussianMixtureModeling(nn.Module):
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
 
+        self.hide_progress_bar = self.verbose <= 2
+
     def set_params(self, params):
         """Set model parameters.
 
@@ -192,6 +194,8 @@ class GaussianMixtureModeling(nn.Module):
         x = to_dataloader(x, batch_size=self.batch_size)
         device = self.w.device
 
+        from .lbg import LindeBuzoGrayAlgorithm
+
         lbg = LindeBuzoGrayAlgorithm(self.order, self.n_mixture, **lbg_params).to(
             device
         )
@@ -202,15 +206,15 @@ class GaussianMixtureModeling(nn.Module):
         mu = codebook
 
         idx = indices.view(-1, 1, 1).expand(-1, self.order + 1, self.order + 1)
-        kxx = torch.zeros_like(self.sigma)  # [K, L, L]
+        kxx = torch.zeros_like(self.sigma)  # (K, L, L)
         b = 0
-        for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+        for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             e = b + batch_x.size(0)
             xp = batch_x.to(device)
             xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
             kxx.scatter_add_(0, idx[b:e], xx)
             b = e
-        mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # [K, L, L]
+        mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # (K, L, L)
         sigma = kxx / count.view(-1, 1, 1) - mm
         sigma = sigma * self.mask
 
@@ -287,7 +291,7 @@ class GaussianMixtureModeling(nn.Module):
             # Update mean vectors.
             px = []
             b = 0
-            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+            for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 e = b + batch_x.size(0)
                 px.append(torch.matmul(posterior[b:e].t(), batch_x.to(device)))
                 b = e
@@ -301,7 +305,7 @@ class GaussianMixtureModeling(nn.Module):
             if self.is_diag:
                 pxx = []
                 b = 0
-                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                     e = b + batch_x.size(0)
                     xx = batch_x.to(device) ** 2
                     pxx.append(torch.matmul(posterior[b:e].t(), xx))
@@ -322,7 +326,7 @@ class GaussianMixtureModeling(nn.Module):
             else:
                 pxx = []
                 b = 0
-                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                     e = b + batch_x.size(0)
                     xp = batch_x.to(device)
                     xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
@@ -364,27 +368,44 @@ class GaussianMixtureModeling(nn.Module):
         return ret
 
     def transform(self, x):
-        """Transform input vectors to mixture indices.
+        """Transform input vectors based on a single mixture sequence.
 
         Parameters
         ----------
-        x : Tensor [shape=(T, M+1)]
+        x : Tensor [shape=(T, N+1)]
             Input vectors.
 
         Returns
         -------
+        y : Tensor [shape=(T, M-N)]
+            Input vectors.
+
         indices : Tensor [shape=(T,)]
-            Mixture indices.
+            Selected mixture indices.
 
         log_prob : Tensor [shape=(T,)]
             Log probabilities.
 
         """
-        posterior, log_prob = self._e_step(x, reduction="none")
+        N = x.size(-1) - 1
+        posterior, log_prob = self._e_step(x, reduction="none", in_order=N)
         indices = torch.argmax(posterior, dim=-1)
-        return indices, log_prob
 
-    def _e_step(self, x, reduction="sum"):
+        if self.order == N:
+            return None, indices, log_prob
+
+        L = N + 1
+        sigma_yx = self.sigma[:, L:, :L]
+        sigma_xx = self.sigma[:, :L, :L]
+        sigma_yx_xx = torch.matmul(sigma_yx, torch.inverse(sigma_xx))
+        mu_x = self.mu[indices, :L]
+        mu_y = self.mu[indices, L:]
+        diff = (x - mu_x).unsqueeze(-1)
+        E = mu_y + torch.matmul(sigma_yx_xx[indices], diff).squeeze(-1)
+        y = E
+        return y, indices, log_prob
+
+    def _e_step(self, x, reduction="sum", in_order=None):
         """Expectation step.
 
         Parameters
@@ -394,6 +415,9 @@ class GaussianMixtureModeling(nn.Module):
 
         reduction : ['none', 'sum']
             Reduction type.
+
+        in_order : int >= 0
+            Order of input vectors.
 
         Returns
         -------
@@ -407,38 +431,41 @@ class GaussianMixtureModeling(nn.Module):
         x = to_dataloader(x, self.batch_size)
         device = self.w.device
 
-        log_pi = (self.order + 1) * np.log(2 * np.pi)
+        if in_order is None:
+            in_order = self.order
+        L = in_order + 1
+        mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
+
+        log_pi = (in_order + 1) * np.log(2 * np.pi)
         if self.is_diag:
-            log_det = torch.log(torch.diagonal(self.sigma, dim1=-2, dim2=-1)).sum(
-                -1
-            )  # [K]
+            log_det = torch.log(torch.diagonal(sigma, dim1=-2, dim2=-1)).sum(-1)  # (K,)
             precision = torch.reciprocal(
-                torch.diagonal(self.sigma, dim1=-2, dim2=-1)
-            )  # [K, L]
+                torch.diagonal(sigma, dim1=-2, dim2=-1)
+            )  # (K, L)
             mahala = []
-            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+            for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 xp = batch_x.to(device)
-                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                mahala.append((diff**2 * precision).sum(-1))  # [B, K]
-            mahala = torch.cat(mahala)  # [T, K]
+                diff = xp.unsqueeze(1) - mu.unsqueeze(0)  # (B, K, L)
+                mahala.append((diff**2 * precision).sum(-1))  # (B, K)
+            mahala = torch.cat(mahala)  # (T, K)
         else:
-            col = torch.linalg.cholesky(self.sigma)
+            col = torch.linalg.cholesky(sigma)
             log_det = (
                 torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
             )  # [K]
-            precision = torch.cholesky_inverse(col).unsqueeze(0)  # [1, K, L, L]
+            precision = torch.cholesky_inverse(col).unsqueeze(0)  # (1, K, L, L)
             mahala = []
-            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+            for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 xp = batch_x.to(device)
-                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # [B, K, L]
-                right = torch.matmul(precision, diff.unsqueeze(-1))  # [B, K, L, 1]
+                diff = xp.unsqueeze(1) - mu.unsqueeze(0)  # (B, K, L)
+                right = torch.matmul(precision, diff.unsqueeze(-1))  # (B, K, L, 1)
                 mahala.append(
                     torch.matmul(diff.unsqueeze(-2), right).squeeze(-1).squeeze(-1)
                 )  # [B, K]
-            mahala = torch.cat(mahala)  # [T, K]
-        numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # [T, K]
-        denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # [T, 1]
-        posterior = torch.exp(numer - denom)  # [T, K]
+            mahala = torch.cat(mahala)  # (T, K)
+        numer = torch.log(self.w) - 0.5 * (log_pi + log_det + mahala)  # (T, K)
+        denom = torch.logsumexp(numer, dim=-1, keepdim=True)  # (T, 1)
+        posterior = torch.exp(numer - denom)  # (T, K)
         if reduction == "none":
             log_likelihood = denom.squeeze(-1)
         elif reduction == "sum":
