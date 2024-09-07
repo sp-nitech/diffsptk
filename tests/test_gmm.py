@@ -49,7 +49,7 @@ def test_compatibility(
         opt += f"-B {size} "
 
     def _gmm(x):
-        gmm.warmup(x)
+        gmm.warmup(x, seed=1234)
         return gmm(x)[-1]
 
     tmp1 = "gmm.tmp1"

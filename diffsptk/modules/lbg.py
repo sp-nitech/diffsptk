@@ -60,6 +60,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     batch_size : int >= 1 or None
         Batch size.
 
+    seed : int or None
+        Random seed.
+
     verbose : bool or int
         If 1, show distance at each iteration; if 2, show progress bar.
 
@@ -77,6 +80,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         init="mean",
         metric="none",
         batch_size=None,
+        seed=None,
         verbose=False,
     ):
         super().__init__()
@@ -96,9 +100,13 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.perturb_factor = perturb_factor
         self.metric = metric
         self.batch_size = batch_size
+        self.seed = seed
         self.verbose = verbose
 
         self.vq = VectorQuantization(order, codebook_size).eval()
+
+        if self.seed is not None:
+            torch.manual_seed(self.seed)
 
         if torch.is_tensor(init):
             self.curr_codebook_size = init.size(0)
@@ -157,6 +165,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         tensor(0.2331)
 
         """
+        if self.seed is not None:
+            torch.manual_seed(self.seed)
+
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
 

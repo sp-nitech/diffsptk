@@ -26,9 +26,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("batch_size", [None, 5])
 def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
-    torch.manual_seed(1234)
-    torch.cuda.manual_seed(1234)
-    lbg = diffsptk.LBG(M, K, n_iter=n_iter, batch_size=batch_size)
+    lbg = diffsptk.LBG(M, K, n_iter=n_iter, batch_size=batch_size, seed=1234)
 
     tmp1 = "lbg.tmp1"
     tmp2 = "lbg.tmp2"
@@ -57,7 +55,6 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
 
 
 def test_special_case(M=1, K=4, B=10, n_iter=10):
-    torch.manual_seed(1234)
     x = torch.randn(B, M + 1)
     lbg = diffsptk.LBG(
         M,
@@ -66,6 +63,7 @@ def test_special_case(M=1, K=4, B=10, n_iter=10):
         min_data_per_cluster=int(B * 0.9),
         init="none",
         metric="aic",
+        seed=1234,
     )
     _, idx1, dist = lbg(x, return_indices=True)
     _, idx2 = lbg.transform(x)
@@ -78,6 +76,7 @@ def test_special_case(M=1, K=4, B=10, n_iter=10):
         min_data_per_cluster=1,
         init=lbg.vq.codebook,
         metric="bic",
+        seed=1234,
     )
     _, extra_dist = extra_lbg(x)
     assert extra_dist < dist
