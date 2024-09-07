@@ -103,10 +103,10 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.seed = seed
         self.verbose = verbose
 
-        self.vq = VectorQuantization(order, codebook_size).eval()
-
         if self.seed is not None:
             torch.manual_seed(self.seed)
+
+        self.vq = VectorQuantization(order, codebook_size).eval()
 
         if torch.is_tensor(init):
             self.curr_codebook_size = init.size(0)
