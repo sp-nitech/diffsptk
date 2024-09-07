@@ -137,7 +137,6 @@ def test_compatibility(
         dx=M + 1,
     )
 
-    """
     def _vc(x):
         return gmm.transform(x)[0]
 
@@ -152,7 +151,6 @@ def test_compatibility(
         dx=N + 1,
         dy=N + 1,
     )
-    """
 
 
 def test_posterior(M=3, K=4, B=32, n_iter=50):
