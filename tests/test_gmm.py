@@ -49,7 +49,7 @@ def test_compatibility(
         opt += f"-B {size} "
 
     def _gmm(x):
-        gmm.warmup(x)
+        gmm.warmup(x, seed=1234)
         return gmm(x)[-1]
 
     tmp1 = "gmm.tmp1"
@@ -133,8 +133,23 @@ def test_compatibility(
         [],
         f"nrand -l {B*(M+1)} -s 9",
         f"gmmp -m {M} -k {K} {optp} {tmp7}",
-        [f"rm {tmp7}"],
+        [],
         dx=M + 1,
+    )
+
+    def _vc(x):
+        return gmm.transform(x)[0]
+
+    N = M // 2
+    U.check_compatibility(
+        device,
+        _vc,
+        [],
+        f"nrand -l {B*(N+1)} -s 10 -d 10",
+        f"vc -m {N} -M {N} -k {K} {optp} {tmp7}",
+        [f"rm {tmp7}"],
+        dx=N + 1,
+        dy=N + 1,
     )
 
 

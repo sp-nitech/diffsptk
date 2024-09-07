@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import logging
+import math
 
 import torch
 from torch import nn
@@ -22,6 +23,7 @@ from tqdm import tqdm
 
 from ..misc.utils import is_power_of_two
 from ..misc.utils import to_dataloader
+from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
 
 
@@ -52,11 +54,17 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     init : ['none', 'mean'] or torch.Tensor [shape=(1~K, M+1)]
         Initialization type.
 
+    metric : ['none, 'aic', 'bic']
+        Metric used as a reference for model selection.
+
     batch_size : int >= 1 or None
         Batch size.
 
+    seed : int or None
+        Random seed.
+
     verbose : bool or int
-        If True, print progress.
+        If 1, show distance at each iteration; if 2, show progress bar.
 
     """
 
@@ -64,12 +72,15 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self,
         order,
         codebook_size,
+        *,
         min_data_per_cluster=1,
         n_iter=100,
         eps=1e-5,
         perturb_factor=1e-5,
         init="mean",
+        metric="none",
         batch_size=None,
+        seed=None,
         verbose=False,
     ):
         super().__init__()
@@ -87,8 +98,13 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.n_iter = n_iter
         self.eps = eps
         self.perturb_factor = perturb_factor
+        self.metric = metric
         self.batch_size = batch_size
+        self.seed = seed
         self.verbose = verbose
+
+        if self.seed is not None:
+            torch.manual_seed(self.seed)
 
         self.vq = VectorQuantization(order, codebook_size).eval()
 
@@ -110,6 +126,8 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             handler = logging.StreamHandler()
             handler.setFormatter(formatter)
             self.logger.addHandler(handler)
+
+        self.hide_progress_bar = self.verbose <= 1
 
     def forward(self, x, return_indices=False):
         """Design a codebook.
@@ -147,6 +165,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         tensor(0.2331)
 
         """
+        if self.seed is not None:
+            torch.manual_seed(self.seed)
+
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
 
@@ -157,7 +178,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             if self.verbose:
                 self.logger.info("K = 1")
             first = True
-            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+            for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 assert batch_x.dim() == 2
                 if first:
                     s = batch_x.sum(0)
@@ -168,13 +189,13 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     T += batch_x.size(0)
             self.vq.codebook[0] = s / T
         else:
-            raise ValueError(f"Invalid initialization type: {self.init}")
+            raise ValueError(f"init {self.init} is not supported.")
         self.vq.codebook[self.curr_codebook_size :] = 1e10
 
         def e_step(x):
             indices = []
             distance = 0
-            for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+            for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 batch_xp = batch_x.to(device)
                 batch_xq, batch_indices, _ = self.vq(batch_xp)
                 indices.append(batch_indices)
@@ -203,7 +224,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 # E-step: evaluate model.
                 indices, distance = e_step(x)
                 if self.verbose:
-                    self.logger.info(f"iter {n+1:5d}: distance = {distance:g}")
+                    self.logger.info(f"  iter {n+1:5d}: distance = {distance:g}")
 
                 # Check convergence.
                 change = (prev_distance - distance).abs()
@@ -228,7 +249,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 )
                 idx = indices.unsqueeze(1).expand(-1, self.order + 1)
                 b = 0
-                for (batch_x,) in tqdm(x, disable=self.verbose <= 1):
+                for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                     e = b + batch_x.size(0)
                     centroids.scatter_add_(0, idx[b:e], batch_x.to(device))
                     b = e
@@ -243,6 +264,20 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     centroids[m] += r.mean(0)
 
                 self.vq.codebook[: self.curr_codebook_size] = centroids
+
+            if self.metric != "none":
+                gmm = GaussianMixtureModeling(self.order, self.curr_codebook_size)
+                gmm.set_params((None, centroids, None))
+                _, log_likelihood = gmm._e_step(x)
+                n_param = self.curr_codebook_size * (self.order + 1)
+                if self.metric == "aic":
+                    metric = -2 * log_likelihood + n_param * 2
+                elif self.metric == "bic":
+                    metric = -2 * log_likelihood + n_param * math.log(len(indices))
+                else:
+                    raise ValueError(f"metric {self.metric} is not supported.")
+                if self.verbose:
+                    self.logger.info(f"  {self.metric.upper()} = {metric:g}")
 
         ret = [self.vq.codebook]
 
