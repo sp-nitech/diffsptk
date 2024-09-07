@@ -433,25 +433,27 @@ class GaussianMixtureModeling(nn.Module):
 
         if in_order is None:
             L = self.order + 1
-            mu, sigma = self.mu, self.sigma
+            # mu, sigma = self.mu, self.sigma
         else:
             L = in_order + 1
-            mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
+            # mu, sigma = self.mu[:, :L], self.sigma[:, :L, :L]
 
         log_pi = L * np.log(2 * np.pi)
         if self.is_diag:
-            log_det = torch.log(torch.diagonal(sigma, dim1=-2, dim2=-1)).sum(-1)  # (K,)
+            log_det = torch.log(torch.diagonal(self.sigma, dim1=-2, dim2=-1)).sum(
+                -1
+            )  # (K,)
             precision = torch.reciprocal(
-                torch.diagonal(sigma, dim1=-2, dim2=-1)
+                torch.diagonal(self.sigma, dim1=-2, dim2=-1)
             )  # (K, L)
             mahala = []
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 xp = batch_x.to(device)
-                diff = xp.unsqueeze(1) - mu.unsqueeze(0)  # (B, K, L)
+                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # (B, K, L)
                 mahala.append((diff**2 * precision).sum(-1))  # (B, K)
             mahala = torch.cat(mahala)  # (T, K)
         else:
-            col = torch.linalg.cholesky(sigma)
+            col = torch.linalg.cholesky(self.sigma)
             log_det = (
                 torch.log(torch.diagonal(col, dim1=-2, dim2=-1)).sum(-1) * 2
             )  # (K,)
@@ -459,7 +461,7 @@ class GaussianMixtureModeling(nn.Module):
             mahala = []
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 xp = batch_x.to(device)
-                diff = xp.unsqueeze(1) - mu.unsqueeze(0)  # (B, K, L)
+                diff = xp.unsqueeze(1) - self.mu.unsqueeze(0)  # (B, K, L)
                 right = torch.matmul(precision, diff.unsqueeze(-1))  # (B, K, L, 1)
                 mahala.append(
                     torch.matmul(diff.unsqueeze(-2), right).squeeze(-1).squeeze(-1)
