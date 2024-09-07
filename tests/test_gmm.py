@@ -32,6 +32,8 @@ def test_compatibility(
     if device == "cuda" and not torch.cuda.is_available():
         return
 
+    torch.manual_seed(1234)
+    torch.cuda.manual_seed(1234)
     gmm = diffsptk.GMM(
         M,
         K,
