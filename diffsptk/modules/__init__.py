@@ -118,6 +118,8 @@ from .smcep import SecondOrderAllPassMelCepstralAnalysis
 from .snr import SignalToNoiseRatio
 from .snr import SignalToNoiseRatio as SNR
 from .spec import Spectrum
+from .ssim import StructuralSimilarityIndex
+from .ssim import StructuralSimilarityIndex as SSIM
 from .stft import ShortTimeFourierTransform
 from .stft import ShortTimeFourierTransform as STFT
 from .ulaw import MuLawCompression
