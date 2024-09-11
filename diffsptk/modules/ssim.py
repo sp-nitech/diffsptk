@@ -57,7 +57,7 @@ class StructuralSimilarityIndex(nn.Module):
         Padding type.
 
     dynamic_range : float > 0 or None
-        Dynamic range of input.
+        Dynamic range of input. If None, input is automatically normalized.
 
     References
     ----------

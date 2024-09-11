@@ -2031,7 +2031,7 @@ def ssim(
         Padding type.
 
     dynamic_range : float > 0 or None
-        Dynamic range of input.
+        Dynamic range of input. If None, input is automatically normalized.
 
     Returns
     -------
