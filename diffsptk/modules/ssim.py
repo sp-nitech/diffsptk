@@ -61,9 +61,9 @@ class StructuralSimilarityIndex(nn.Module):
 
     References
     ----------
-    [1] Z. Wang et al., "Image quality assessment: From error visibility to structural
-        similarity," *IEEE Transactions on Image Processing*, vol. 13, no. 4, pp.
-        600-612, 2004.
+    .. [1] Z. Wang et al., "Image quality assessment: From error visibility to
+           structural similarity," *IEEE Transactions on Image Processing*, vol. 13,
+           no. 4, pp. 600-612, 2004.
 
     """
 
