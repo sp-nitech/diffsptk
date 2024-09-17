@@ -257,7 +257,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
                 if torch.any(~mask):
                     # Get index of largest cluster.
-                    _, m = n_data.max(0)
+                    m = torch.argmax(n_data, 0)
                     copied_centroids = centroids[m : m + 1].expand((~mask).sum(), -1)
                     r = torch.randn_like(copied_centroids) * self.perturb_factor
                     centroids[~mask] = copied_centroids - r

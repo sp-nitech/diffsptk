@@ -103,7 +103,7 @@ class Spectrum(nn.Module):
 
         s = torch.square(X) + eps
         if relative_floor is not None:
-            m, _ = torch.max(s, dim=-1, keepdim=True)
+            m = torch.amax(s, dim=-1, keepdim=True)
             s = torch.maximum(s, m * relative_floor)
         s = formatter(s)
         return s

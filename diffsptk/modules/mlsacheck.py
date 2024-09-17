@@ -132,7 +132,7 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
             c1 = torch.cat((c[..., :1] - gain, c[..., 1:]), dim=-1)
             C1 = torch.fft.rfft(c1, n=n_fft)
             C1_amplitude = C1.abs()
-            max_amplitude, _ = C1_amplitude.max(-1, keepdim=True)
+            max_amplitude = torch.amax(C1_amplitude, dim=-1, keepdim=True)
         max_amplitude = torch.clip(max_amplitude, min=1e-16)
 
         if torch.any(threshold < max_amplitude):
