@@ -151,7 +151,7 @@ class StructuralSimilarityIndex(nn.Module):
             y_min = torch.amin(y, dim=(-2, -1), keepdim=True)
             xy_max = torch.maximum(x_max, y_max)
             xy_min = torch.minimum(x_min, y_min)
-            d = xy_max - xy_min
+            d = xy_max - xy_min + eps
             x = (x - xy_min) / d
             y = (y - xy_min) / d
             dynamic_range = 1
@@ -176,21 +176,21 @@ class StructuralSimilarityIndex(nn.Module):
         # Calculate luminance.
         mu_x = F.conv2d(x, kernel, padding=0)
         mu_y = F.conv2d(y, kernel, padding=0)
-        mu2_x = mu_x**2
-        mu2_y = mu_y**2
-        luminance = (2 * mu_x * mu_y + C1) / (mu2_x + mu2_y + C1)
+        mu_x2 = mu_x**2
+        mu_y2 = mu_y**2
+        luminance = (2 * mu_x * mu_y + C1) / (mu_x2 + mu_y2 + C1)
 
         # Calculate contrast.
-        sigma2_x = F.conv2d(x**2, kernel, padding=0) - mu2_x
-        sigma2_y = F.conv2d(y**2, kernel, padding=0) - mu2_y
-        sigma_x = torch.sqrt(sigma2_x + eps)
-        sigma_y = torch.sqrt(sigma2_y + eps)
-        contrast = (2 * sigma_x * sigma_y + C2) / (sigma2_x + sigma2_y + C2)
+        sigma_x2 = torch.clip(F.conv2d(x**2, kernel, padding=0) - mu_x2, min=eps)
+        sigma_y2 = torch.clip(F.conv2d(y**2, kernel, padding=0) - mu_y2, min=eps)
+        sigma_x = torch.sqrt(sigma_x2)
+        sigma_y = torch.sqrt(sigma_y2)
+        contrast = (2 * sigma_x * sigma_y + C2) / (sigma_x2 + sigma_y2 + C2)
 
         # Calculate structure.
         mu_xy = mu_x * mu_y
-        sigma2_xy = F.conv2d(x * y, kernel, padding=0) - mu_xy
-        structure = (sigma2_xy + C3) / (sigma_x * sigma_y + C3)
+        sigma_xy = F.conv2d(x * y, kernel, padding=0) - mu_xy
+        structure = (sigma_xy + C3) / (sigma_x * sigma_y + C3)
 
         # Calculate SSIM.
         alpha, beta, gamma = weights
