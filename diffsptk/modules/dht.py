@@ -23,7 +23,7 @@ from ..misc.utils import to
 
 
 class DiscreteHartleyTransform(nn.Module):
-    """Discrete Hartley Transform module.
+    """Discrete Hartley transform module.
 
     Parameters
     ----------
