@@ -253,7 +253,7 @@ def csm2acr(c):
     return nn.CompositeSinusoidalModelCoefficientsToAutocorrelation._func(c)
 
 
-def dct(x):
+def dct(x, dct_type=2):
     """Compute DCT.
 
     Parameters
@@ -261,13 +261,16 @@ def dct(x):
     x : Tensor [shape=(..., L)]
         Input signal.
 
+    dct_type : int in [1, 4]
+        DCT type.
+
     Returns
     -------
     out : Tensor [shape=(..., L)]
         DCT output.
 
     """
-    return nn.DiscreteCosineTransform._func(x)
+    return nn.DiscreteCosineTransform._func(x, dct_type=dct_type)
 
 
 def decimate(x, period=1, start=0, dim=-1):
@@ -396,6 +399,26 @@ def dfs(x, b=None, a=None):
     return nn.InfiniteImpulseResponseDigitalFilter._func(x, b=b, a=a)
 
 
+def dht(x, dht_type=2):
+    """Compute DHT.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Input signal.
+
+    dht_type : int in [1, 4]
+        DHT type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        DHT output.
+
+    """
+    return nn.DiscreteHartleyTransform._func(x, dht_type=dht_type)
+
+
 def drc(
     x,
     threshold,
@@ -452,7 +475,7 @@ def drc(
     )
 
 
-def dst(x):
+def dst(x, dst_type=2):
     """Compute DST.
 
     Parameters
@@ -460,13 +483,16 @@ def dst(x):
     x : Tensor [shape=(..., L)]
         Input signal.
 
+    dst_type : int in [1, 4]
+        DST type.
+
     Returns
     -------
     out : Tensor [shape=(..., L)]
         DST output.
 
     """
-    return nn.DiscreteSineTransform._func(x)
+    return nn.DiscreteSineTransform._func(x, dst_type=dst_type)
 
 
 def entropy(p, out_format="nat"):
@@ -801,7 +827,7 @@ def ialaw(y, abs_max=1, a=87.6):
     return nn.ALawExpansion._func(y, abs_max=abs_max, a=a)
 
 
-def idct(y):
+def idct(y, dct_type=2):
     """Compute inverse DCT.
 
     Parameters
@@ -809,16 +835,39 @@ def idct(y):
     y : Tensor [shape=(..., L)]
         Input.
 
+    dct_type : int in [1, 4]
+        DCT type.
+
     Returns
     -------
     out : Tensor [shape=(..., L)]
         Inverse DCT output.
 
     """
-    return nn.InverseDiscreteCosineTransform._func(y)
+    return nn.InverseDiscreteCosineTransform._func(y, dct_type=dct_type)
 
 
-def idst(y):
+def idht(y, dht_type=2):
+    """Compute inverse DHT.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., L)]
+        Input.
+
+    dht_type : int in [1, 4]
+        DHT type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        Inverse DHT output.
+
+    """
+    return nn.InverseDiscreteHartleyTransform._func(y, dht_type=dht_type)
+
+
+def idst(y, dst_type=2):
     """Compute inverse DST.
 
     Parameters
@@ -826,13 +875,16 @@ def idst(y):
     y : Tensor [shape=(..., L)]
         Input.
 
+    dst_type : int in [1, 4]
+        DST type.
+
     Returns
     -------
     out : Tensor [shape=(..., L)]
         Inverse DST output.
 
     """
-    return nn.InverseDiscreteSineTransform._func(y)
+    return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
 
 
 def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):

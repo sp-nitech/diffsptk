@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+from scipy.fft import dct as scipy_dct
 
 import diffsptk
 import tests.utils as U
@@ -22,23 +23,36 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=8, B=2):
+@pytest.mark.parametrize("dct_type", [1, 2, 3, 4])
+def test_compatibility(device, module, dct_type, L=8, B=2):
     dct = U.choice(
         module,
         diffsptk.DCT,
         diffsptk.functional.dct,
         {"dct_length": L},
+        {"dct_type": dct_type},
     )
 
-    U.check_compatibility(
+    if dct_type == 2:
+        U.check_compatibility(
+            device,
+            dct,
+            [],
+            f"nrand -l {B*L}",
+            f"dct -l {L}",
+            [],
+            dx=L,
+            dy=L,
+        )
+
+    def func(x):
+        return scipy_dct(x, type=dct_type, norm="ortho")
+
+    U.check_confidence(
         device,
         dct,
-        [],
-        f"nrand -l {B*L}",
-        f"dct -l {L}",
-        [],
-        dx=L,
-        dy=L,
+        func,
+        [B, L],
     )
 
     U.check_differentiability(device, dct, [B, L])

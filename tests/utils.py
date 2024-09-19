@@ -160,6 +160,24 @@ def check_compatibility(
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
+def check_confidence(
+    device,
+    module,
+    func,
+    size,
+):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
+
+    x = torch.randn(*size, device=device)
+    if hasattr(module, "to"):
+        module = module.to(device)
+    y = func(x.cpu().numpy())
+    y_hat = module(x).cpu().numpy()
+
+    assert allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
+
+
 def check_differentiability(
     device,
     modules,

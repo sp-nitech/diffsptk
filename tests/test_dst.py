@@ -16,7 +16,6 @@
 
 import pytest
 from scipy.fft import dst as scipy_dst
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,23 +23,24 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=8, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x = diffsptk.nrand(B, L - 1, device=device)
-
+@pytest.mark.parametrize("dst_type", [1, 2, 3, 4])
+def test_compatibility(device, module, dst_type, L=8, B=2):
     dst = U.choice(
         module,
         diffsptk.DST,
         diffsptk.functional.dst,
         {"dst_length": L},
+        {"dst_type": dst_type},
     )
-    if hasattr(dst, "to"):
-        dst.to(device)
 
-    y1 = scipy_dst(x.cpu().numpy(), norm="ortho")
-    y2 = dst(x).cpu().numpy()
-    U.allclose(y1, y2)
+    def func(x):
+        return scipy_dst(x, type=dst_type, norm="ortho")
+
+    U.check_confidence(
+        device,
+        dst,
+        func,
+        [B, L],
+    )
 
     U.check_differentiability(device, dst, [B, L])

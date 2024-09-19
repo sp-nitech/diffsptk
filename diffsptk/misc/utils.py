@@ -242,6 +242,10 @@ def vander(x):
     return X
 
 
+def cas(x):
+    return (2**0.5) * torch.cos(x - 0.25 * torch.pi)  # cos(x) + sin(x)
+
+
 def cexp(x):
     return torch.polar(torch.exp(x.real), x.imag)
 
@@ -263,6 +267,14 @@ def iir(x, b=None, a=None):
         b = F.pad(b, (0, -diff))
     y = torchaudio.functional.lfilter(x, a, b, clamp=False, batching=True)
     return y
+
+
+def plateau(length, first, middle, last=None, dtype=None, device=None):
+    x = torch.full((length,), middle, dtype=dtype, device=device)
+    x[0] = first
+    if last is not None:
+        x[-1] = last
+    return x
 
 
 def deconv1d(x, weight):
