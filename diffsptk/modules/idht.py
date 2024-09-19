@@ -18,34 +18,33 @@ import torch
 from torch import nn
 
 from ..misc.utils import check_size
-from .dct import DiscreteCosineTransform as DCT
+from .dht import DiscreteHartleyTransform as DHT
 
 
-class InverseDiscreteCosineTransform(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/idct.html>`_
-    for details.
+class InverseDiscreteHartleyTransform(nn.Module):
+    """This is the opposite module to :func:`~diffsptk.DiscreteHartleyTransform`.
 
     Parameters
     ----------
-    dct_length : int >= 1
-        DCT length, :math:`L`.
+    dht_length : int >= 1
+        DHT length, :math:`L`.
 
-    dct_type : int in [1, 4]
-        DCT type.
+    dht_type : int in [1, 4]
+        DHT type.
 
     """
 
-    def __init__(self, dct_length, dct_type=2):
+    def __init__(self, dht_length, dht_type=2):
         super().__init__()
 
-        assert 1 <= dct_length
-        assert 1 <= dct_type <= 4
+        assert 1 <= dht_length
+        assert 1 <= dht_type <= 4
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(dct_length, dct_type))
+        self.dht_length = dht_length
+        self.register_buffer("W", self._precompute(dht_length, dht_type))
 
     def forward(self, y):
-        """Apply inverse DCT to input.
+        """Apply inverse DHT to input.
 
         Parameters
         ----------
@@ -55,19 +54,19 @@ class InverseDiscreteCosineTransform(nn.Module):
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            Inverse DCT output.
+            Inverse DHT output.
 
         Examples
         --------
         >>> x = diffsptk.ramp(3)
-        >>> dct = diffsptk.DCT(4)
-        >>> idct = diffsptk.IDCT(4)
-        >>> x2 = idct(dct(x))
+        >>> dht = diffsptk.DHT(4)
+        >>> idht = diffsptk.IDHT(4)
+        >>> x2 = idht(dht(x))
         >>> x2
-        tensor([-4.4703e-08,  1.0000e+00,  2.0000e+00,  3.0000e+00])
+        tensor([5.9605e-08, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        check_size(y.size(-1), self.dct_length, "dimension of input")
+        check_size(y.size(-1), self.dht_length, "dimension of input")
         return self._forward(y, self.W)
 
     @staticmethod
@@ -75,15 +74,15 @@ class InverseDiscreteCosineTransform(nn.Module):
         return torch.matmul(y, W)
 
     @staticmethod
-    def _func(y, dct_type):
-        W = InverseDiscreteCosineTransform._precompute(
-            y.size(-1), dct_type, dtype=y.dtype, device=y.device
+    def _func(y, dht_type):
+        W = InverseDiscreteHartleyTransform._precompute(
+            y.size(-1), dht_type, dtype=y.dtype, device=y.device
         )
-        return InverseDiscreteCosineTransform._forward(y, W)
+        return InverseDiscreteHartleyTransform._forward(y, W)
 
     @staticmethod
-    def _precompute(dct_length, dct_type, dtype=None, device=None):
+    def _precompute(dht_length, dht_type, dtype=None, device=None):
         type2type = {1: 1, 2: 3, 3: 2, 4: 4}
-        return DCT._precompute(
-            dct_length, type2type[dct_type], dtype=dtype, device=device
+        return DHT._precompute(
+            dht_length, type2type[dht_type], dtype=dtype, device=device
         )

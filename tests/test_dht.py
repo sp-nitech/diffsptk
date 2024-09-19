@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-from scipy.fft import idst as scipy_idst
+from scipy.fft import fft as scipy_fft
 
 import diffsptk
 import tests.utils as U
@@ -23,36 +23,27 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("dst_type", [1, 2, 3, 4])
-def test_compatibility(device, module, dst_type, L=8, B=2):
-    dst = diffsptk.DST(L, dst_type)
-    idst = U.choice(
+@pytest.mark.parametrize("dht_type", [1, 2, 3, 4])
+def test_convolution(device, module, dht_type, L=8, B=2):
+    dht = U.choice(
         module,
-        diffsptk.IDST,
-        diffsptk.functional.idst,
-        {"dst_length": L},
-        {"dst_type": dst_type},
+        diffsptk.DHT,
+        diffsptk.functional.dht,
+        {"dht_length": L},
+        {"dht_type": dht_type},
     )
 
-    U.check_compatibility(
-        device,
-        [idst, dst],
-        [],
-        f"nrand -l {B*L}",
-        "sopr",
-        [],
-        dx=L,
-        dy=L,
-    )
+    if dht_type == 1:
 
-    def func(x):
-        return scipy_idst(x, type=dst_type, norm="ortho")
+        def func(x):
+            X = scipy_fft(x, norm="ortho")
+            return X.real - X.imag
 
-    U.check_confidence(
-        device,
-        idst,
-        func,
-        [B, L],
-    )
+        U.check_confidence(
+            device,
+            dht,
+            func,
+            [B, L],
+        )
 
-    U.check_differentiability(device, idst, [B, L])
+    U.check_differentiability(device, dht, [B, L])

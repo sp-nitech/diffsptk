@@ -29,15 +29,19 @@ class InverseDiscreteSineTransform(nn.Module):
     dst_length : int >= 1
         DST length, :math:`L`.
 
+    dst_type : int in [1, 4]
+        DST type.
+
     """
 
-    def __init__(self, dst_length):
+    def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
         assert 1 <= dst_length
+        assert 1 <= dst_type <= 4
 
         self.dst_length = dst_length
-        self.register_buffer("W", self._precompute(self.dst_length))
+        self.register_buffer("W", self._precompute(dst_length, dst_type))
 
     def forward(self, y):
         """Apply inverse DST to input.
@@ -70,12 +74,15 @@ class InverseDiscreteSineTransform(nn.Module):
         return torch.matmul(y, W)
 
     @staticmethod
-    def _func(y):
+    def _func(y, dst_type):
         W = InverseDiscreteSineTransform._precompute(
-            y.size(-1), dtype=y.dtype, device=y.device
+            y.size(-1), dst_type, dtype=y.dtype, device=y.device
         )
         return InverseDiscreteSineTransform._forward(y, W)
 
     @staticmethod
-    def _precompute(dst_length, dtype=None, device=None):
-        return DST._precompute(dst_length, dtype=dtype, device=device).T
+    def _precompute(dst_length, dst_type, dtype=None, device=None):
+        type2type = {1: 1, 2: 3, 3: 2, 4: 4}
+        return DST._precompute(
+            dst_length, type2type[dst_type], dtype=dtype, device=device
+        )

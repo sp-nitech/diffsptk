@@ -18,6 +18,7 @@ import torch
 from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import plateau
 from ..misc.utils import to
 
 
@@ -29,15 +30,19 @@ class DiscreteSineTransform(nn.Module):
     dst_length : int >= 1
         DST length, :math:`L`.
 
+    dst_type : int in [1, 4]
+        DST type.
+
     """
 
-    def __init__(self, dst_length):
+    def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
         assert 1 <= dst_length
+        assert 1 <= dst_type <= 4
 
         self.dst_length = dst_length
-        self.register_buffer("W", self._precompute(self.dst_length))
+        self.register_buffer("W", self._precompute(dst_length, dst_type))
 
     def forward(self, x):
         """Apply DST to input.
@@ -69,17 +74,34 @@ class DiscreteSineTransform(nn.Module):
         return torch.matmul(x, W)
 
     @staticmethod
-    def _func(x):
+    def _func(x, dst_type):
         W = DiscreteSineTransform._precompute(
-            x.size(-1), dtype=x.dtype, device=x.device
+            x.size(-1), dst_type, dtype=x.dtype, device=x.device
         )
         return DiscreteSineTransform._forward(x, W)
 
     @staticmethod
-    def _precompute(length, dtype=None, device=None):
+    def _precompute(length, dst_type, dtype=None, device=None):
         L = length
-        k = torch.arange(L, dtype=torch.double, device=device) + 1
-        n = (torch.pi / L) * (k - 0.5)
-        z = torch.sqrt(torch.clip(k, min=1, max=2) / L).flip(0)
+        n = torch.arange(1, L + 1, dtype=torch.double, device=device)
+        k = torch.arange(1, L + 1, dtype=torch.double, device=device)
+        if dst_type == 2 or dst_type == 4:
+            n -= 0.5
+        if dst_type == 3 or dst_type == 4:
+            k -= 0.5
+        n *= torch.pi / ((L + 1) if dst_type == 1 else L)
+
+        if dst_type == 1:
+            z = (2 / (L + 1)) ** 0.5
+        elif dst_type == 2:
+            z = plateau(L, 2, 2, 1, dtype=torch.double, device=device)
+            z = torch.sqrt(z / L).unsqueeze(0)
+        elif dst_type == 3:
+            z = plateau(L, 2, 2, 1, dtype=torch.double, device=device)
+            z = torch.sqrt(z / L).unsqueeze(1)
+        elif dst_type == 4:
+            z = (2 / L) ** 0.5
+        else:
+            raise ValueError
         W = z * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
         return to(W, dtype=dtype)

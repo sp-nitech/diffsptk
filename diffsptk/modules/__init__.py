@@ -20,6 +20,8 @@ from .dequantize import InverseUniformQuantization
 from .df2 import SecondOrderDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter
 from .dfs import InfiniteImpulseResponseDigitalFilter as IIR
+from .dht import DiscreteHartleyTransform
+from .dht import DiscreteHartleyTransform as DHT
 from .drc import DynamicRangeCompression
 from .drc import DynamicRangeCompression as DRC
 from .dst import DiscreteSineTransform
@@ -42,6 +44,8 @@ from .icqt import InverseConstantQTransform
 from .icqt import InverseConstantQTransform as ICQT
 from .idct import InverseDiscreteCosineTransform
 from .idct import InverseDiscreteCosineTransform as IDCT
+from .idht import InverseDiscreteHartleyTransform
+from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
