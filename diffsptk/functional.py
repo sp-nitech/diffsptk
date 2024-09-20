@@ -764,6 +764,30 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     )
 
 
+def hilbert(x, fft_length=None, dim=-1):
+    """Compute analytic signal using the Hilbert transform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T, ...)]
+        Input signal.
+
+    fft_length : int >= 2 or None
+        Number of FFT bins. If None, set to :math:`T`.
+
+    dim : int
+        Dimension along which to take the Hilbert transform.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T, ...)]
+        Analytic signal, where real part is the input signal and imaginary part is
+        the Hilbert transform of the input signal.
+
+    """
+    return nn.HilbertTransform._func(x, fft_length=fft_length, dim=dim)
+
+
 def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3):
     """Compute histogram.
 
