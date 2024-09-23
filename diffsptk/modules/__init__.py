@@ -39,6 +39,7 @@ from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .grpdelay import GroupDelay
 from .hilbert import HilbertTransform
+from .hilbert2 import TwoDimensionalHilbertTransform
 from .histogram import Histogram
 from .ialaw import ALawExpansion
 from .icqt import InverseConstantQTransform

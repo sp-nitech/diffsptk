@@ -772,7 +772,7 @@ def hilbert(x, fft_length=None, dim=-1):
     x : Tensor [shape=(..., T, ...)]
         Input signal.
 
-    fft_length : int >= 2 or None
+    fft_length : int >= 1 or None
         Number of FFT bins. If None, set to :math:`T`.
 
     dim : int
@@ -786,6 +786,30 @@ def hilbert(x, fft_length=None, dim=-1):
 
     """
     return nn.HilbertTransform._func(x, fft_length=fft_length, dim=dim)
+
+
+def hilbert2(x, fft_length=None, dim=(-2, -1)):
+    """Compute analytic signal using the Hilbert transform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T1, T2, ...)]
+        Input signal.
+
+    fft_length : int, list[int], or None
+        Number of FFT bins. If None, set to (:math:`T1`, :math:`T2`).
+
+    dim : list[int]
+        Dimensions along which to take the Hilbert transform.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T1, T2, ...)]
+        Analytic signal, where real part is the input signal and imaginary part is
+        the Hilbert transform of the input signal.
+
+    """
+    return nn.TwoDimensionalHilbertTransform._func(x, fft_length=fft_length, dim=dim)
 
 
 def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3):
