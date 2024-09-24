@@ -48,4 +48,4 @@ def test_compatibility(device, module, L, B=2):
         [B, L],
     )
 
-    U.check_differentiability(device, hilbert, [B, L])
+    U.check_differentiability(device, [lambda x: x.real, hilbert], [B, L])
