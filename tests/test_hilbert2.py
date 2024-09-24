@@ -23,7 +23,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("L", [(16, 8), None])
+@pytest.mark.parametrize("L", [(16, 8), 8, None])
 def test_compatibility(device, module, L):
     if module and L is None:
         return
@@ -38,7 +38,9 @@ def test_compatibility(device, module, L):
     def func(x):
         return scipy_hilbert2(x, N=L)
 
-    if L is None:
+    if isinstance(L, int):
+        L = (L, L)
+    elif L is None:
         L = (16, 8)
 
     U.check_confidence(
