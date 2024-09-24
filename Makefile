@@ -66,7 +66,7 @@ format: tool
 
 test: tool
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
-	. ./venv/bin/activate && export PATH=tools/SPTK/bin:$$PATH NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
+	. ./venv/bin/activate && export PATH=./tools/SPTK/bin:$$PATH CUDA_HOME=/usr/local/cuda-11.8 NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
 	python -m pytest $$module $(OPT)
 
 test-clean:
