@@ -29,7 +29,7 @@ from .vq import VectorQuantization
 
 class LindeBuzoGrayAlgorithm(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lbg.html>`_
-    for details. This module is not differentiable.
+    for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------

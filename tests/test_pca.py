@@ -24,7 +24,8 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("cov_type", [0, 1, 2])
-def test_compatibility(device, cov_type, B=10, M=4, N=3):
+@pytest.mark.parametrize("batch_size", [None, 5])
+def test_compatibility(device, cov_type, batch_size, B=10, M=4, N=3):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -42,7 +43,7 @@ def test_compatibility(device, cov_type, B=10, M=4, N=3):
     U.call(f"rm {tmp1} {tmp2}", get=False)
 
     # Python
-    pca = diffsptk.PCA(M, N, cov_type=cov_type).to(device)
+    pca = diffsptk.PCA(M, N, cov_type=cov_type, batch_size=batch_size).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}")).reshape(B, M + 1).to(device)
     e, v, m = pca(x)
     e2 = e.cpu().numpy()

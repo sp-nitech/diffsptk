@@ -254,6 +254,12 @@ def clog(x):
     return torch.log(x.abs())
 
 
+def outer(x, y=None):
+    return torch.matmul(
+        x.unsqueeze(-1), x.unsqueeze(-2) if y is None else y.unsqueeze(-2)
+    )
+
+
 def iir(x, b=None, a=None):
     if b is None:
         b = torch.ones(1, dtype=x.dtype, device=x.device)
