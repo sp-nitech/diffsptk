@@ -175,7 +175,7 @@ def c2ndps(c, fft_length):
     )
 
 
-def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
+def cdist(c1, c2, full=False, reduction="mean"):
     """Calculate cepstral distance between two inputs.
 
     Parameters
@@ -192,16 +192,13 @@ def cdist(c1, c2, full=False, reduction="mean", eps=1e-8):
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
 
-    eps : float >= 0
-        A small value to prevent NaN.
-
     Returns
     -------
     out : Tensor [shape=(...,) or scalar]
         Cepstral distance.
 
     """
-    return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction, eps=eps)
+    return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction)
 
 
 def chroma(x, n_channel, sample_rate, norm=float("inf")):
@@ -1953,7 +1950,7 @@ def rlevdur(a):
     return nn.ReverseLevinsonDurbin._func(a)
 
 
-def rmse(x, y, reduction="mean", eps=1e-8):
+def rmse(x, y, reduction="mean"):
     """Calculate RMSE.
 
     Parameters
@@ -1967,16 +1964,13 @@ def rmse(x, y, reduction="mean", eps=1e-8):
     reduction : ['none', 'mean', 'sum']
         Reduction type.
 
-    eps : float >= 0
-        A small value to prevent NaN.
-
     Returns
     -------
     out : Tensor [shape=(...,) or scalar]
         RMSE.
 
     """
-    return nn.RootMeanSquareError._func(x, y, reduction=reduction, eps=eps)
+    return nn.RootMeanSquareError._func(x, y, reduction=reduction)
 
 
 def root_pol(a, out_format="rectangular"):
@@ -2071,88 +2065,6 @@ def spec(
         eps=eps,
         relative_floor=relative_floor,
         out_format=out_format,
-    )
-
-
-def ssim(
-    x,
-    y,
-    reduction="mean",
-    *,
-    alpha=1,
-    beta=1,
-    gamma=1,
-    kernel_size=11,
-    sigma=1.5,
-    k1=0.01,
-    k2=0.03,
-    eps=1e-8,
-    padding="same",
-    dynamic_range=None,
-):
-    """Calculate SSIM.
-
-    Parameters
-    ----------
-    x : Tensor [shape=(..., N, D)]
-        Input.
-
-    y : Tensor [shape=(..., N, D)]
-        Target.
-
-    reduction : ['none', 'mean', 'sum']
-        Reduction type.
-
-    alpha : float > 0
-        Relative importance of luminance component.
-
-    beta : float > 0
-        Relative importance of contrast component.
-
-    gamma : float > 0
-        Relative importance of structure component.
-
-    kernel_size : int >= 1
-        Kernel size of Gaussian filter.
-
-    sigma : float > 0
-        Standard deviation of Gaussian filter.
-
-    k1 : float > 0
-        A small constant.
-
-    k2 : float > 0
-        A small constant.
-
-    eps : float >= 0
-        A small value to prevent NaN.
-
-    padding : ['valid', 'same']
-        Padding type.
-
-    dynamic_range : float > 0 or None
-        Dynamic range of input. If None, input is automatically normalized.
-
-    Returns
-    -------
-    out : Tensor [shape=(..., N, D) or scalar]
-        SSIM or mean SSIM.
-
-    """
-    return nn.StructuralSimilarityIndex._func(
-        x,
-        y,
-        reduction=reduction,
-        alpha=alpha,
-        beta=beta,
-        gamma=gamma,
-        kernel_size=kernel_size,
-        sigma=sigma,
-        k1=k1,
-        k2=k2,
-        eps=eps,
-        padding=padding,
-        dynamic_range=dynamic_range,
     )
 
 

@@ -30,20 +30,15 @@ class CepstralDistance(nn.Module):
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
 
-    eps : float >= 0
-        A small value to prevent NaN.
-
     """
 
-    def __init__(self, full=False, reduction="mean", eps=1e-8):
+    def __init__(self, full=False, reduction="mean"):
         super().__init__()
 
         assert reduction in ("none", "mean", "batchmean", "sum")
-        assert 0 <= eps
 
         self.full = full
         self.reduction = reduction
-        self.eps = eps
 
     def forward(self, c1, c2):
         """Calculate cepstral distance between two inputs.
@@ -75,11 +70,11 @@ class CepstralDistance(nn.Module):
         tensor(1.6551)
 
         """
-        return self._forward(c1, c2, self.full, self.reduction, self.eps)
+        return self._forward(c1, c2, self.full, self.reduction)
 
     @staticmethod
-    def _forward(c1, c2, full, reduction, eps):
-        distance = torch.sqrt((c1[..., 1:] - c2[..., 1:]).square().sum(-1) + eps)
+    def _forward(c1, c2, full, reduction):
+        distance = torch.linalg.vector_norm(c1[..., 1:] - c2[..., 1:], ord=2, dim=-1)
 
         if reduction == "none":
             pass

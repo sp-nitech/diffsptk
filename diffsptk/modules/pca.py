@@ -16,13 +16,15 @@
 
 import torch
 from torch import nn
+from tqdm import tqdm
 
-from ..misc.utils import check_size
+from ..misc.utils import outer
+from ..misc.utils import to_dataloader
 
 
 class PrincipalComponentAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pca.html>`_
-    for details.
+    for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------
@@ -38,39 +40,66 @@ class PrincipalComponentAnalysis(nn.Module):
     sort : ['ascending', 'descending']
         Order of eigenvalues and eigenvectors.
 
+    batch_size : int >= 1 or None
+        Batch size.
+
+    verbose : bool
+        If True, show progress bar.
+
     """
 
-    def __init__(self, order, n_comp, cov_type="sample", sort="descending"):
+    def __init__(
+        self,
+        order,
+        n_comp,
+        cov_type="sample",
+        sort="descending",
+        batch_size=None,
+        verbose=False,
+    ):
         super().__init__()
 
         assert 0 <= order
         assert 1 <= n_comp <= order + 1
         assert sort in ["ascending", "descending"]
 
-        self.order = order
         self.n_comp = n_comp
-        self.cov_type = cov_type
         self.sort = sort
+        self.batch_size = batch_size
+        self.hide_progress_bar = not verbose
+
+        def sample_cov(x0, x1, x2):
+            return x2 / x0 - torch.outer(x1, x1) / (x0 * x0)
 
         if cov_type in (0, "sample"):
-            self.cov = lambda x: torch.cov(x, correction=0)
+
+            def cov(x0, x1, x2):
+                return sample_cov(x0, x1, x2)
         elif cov_type in (1, "unbiased"):
-            self.cov = lambda x: torch.cov(x, correction=1)
+
+            def cov(x0, x1, x2):
+                c = sample_cov(x0, x1, x2)
+                return c * (x0 / (x0 - 1))
         elif cov_type in (2, "correlation"):
-            self.cov = lambda x: torch.corrcoef(x)
+
+            def cov(x0, x1, x2):
+                c = sample_cov(x0, x1, x2)
+                v = c.diag().sqrt()
+                return c / torch.outer(v, v)
         else:
             raise ValueError(f"cov_type {cov_type} is not supported.")
+        self.cov = cov
 
-        self.register_buffer("v", torch.eye(self.order + 1, self.n_comp))
-        self.register_buffer("m", torch.zeros(self.order + 1))
+        self.register_buffer("v", torch.eye(order + 1, n_comp))
+        self.register_buffer("m", torch.zeros(order + 1))
 
     def forward(self, x):
         """Perform PCA.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., M+1)]
-            Input vectors.
+        x : Tensor [shape=(T, M+1)] or DataLoader
+            Input vectors or dataloader yielding input vectors.
 
         Returns
         -------
@@ -97,19 +126,40 @@ class PrincipalComponentAnalysis(nn.Module):
         torch.Size([10, 3])
 
         """
-        check_size(x.size(-1), self.order + 1, "dimension of input")
+        x = to_dataloader(x, self.batch_size)
+        device = self.m.device
 
-        x = x.reshape(-1, x.size(-1)).T
-        assert self.n_comp + 1 <= x.size(1), "Number of data samples is too small"
+        # Compute statistics.
+        first = True
+        for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
+            assert batch_x.dim() == 2
+            xp = batch_x.to(device)
+            if first:
+                x0 = xp.size(0)
+                x1 = xp.sum(0)
+                x2 = outer(xp).sum(0)
+                first = False
+            else:
+                x0 += xp.size(0)
+                x1 += xp.sum(0)
+                x2 += outer(xp).sum(0)
 
-        e, v = torch.linalg.eigh(self.cov(x))
+        if x0 <= self.n_comp:
+            raise RuntimeError("Number of data samples is too small.")
+
+        # Compute mean and covariance matrix.
+        m = x1 / x0
+        c = self.cov(x0, x1, x2)
+
+        # Compute eigenvalues and eigenvectors.
+        e, v = torch.linalg.eigh(c)
         e = e[-self.n_comp :]
         v = v[:, -self.n_comp :]
         if self.sort == "descending":
             e = e.flip(-1)
             v = v.flip(-1)
         self.v[:] = v
-        self.m[:] = x.mean(1)
+        self.m[:] = m
         return e, self.v, self.m
 
     def transform(self, x):

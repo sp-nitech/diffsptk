@@ -21,12 +21,13 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import outer
 from ..misc.utils import to_dataloader
 
 
 class GaussianMixtureModeling(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/gmm.html>`_
-    for details. This module is not differentiable.
+    for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------
@@ -210,11 +211,10 @@ class GaussianMixtureModeling(nn.Module):
         b = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             e = b + batch_x.size(0)
-            xp = batch_x.to(device)
-            xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
+            xx = outer(batch_x.to(device))
             kxx.scatter_add_(0, idx[b:e], xx)
             b = e
-        mm = torch.matmul(mu.unsqueeze(-1), mu.unsqueeze(-2))  # (K, L, L)
+        mm = outer(mu)  # (K, L, L)
         sigma = kxx / count.view(-1, 1, 1) - mm
         sigma = sigma * self.mask
 
@@ -328,24 +328,21 @@ class GaussianMixtureModeling(nn.Module):
                 b = 0
                 for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                     e = b + batch_x.size(0)
-                    xp = batch_x.to(device)
-                    xx = torch.matmul(xp.unsqueeze(-1), xp.unsqueeze(-2))
+                    xx = outer(batch_x.to(device))
                     pxx.append(torch.einsum("bk,blm->klm", posterior[b:e], xx))
                     b = e
                 pxx = sum(pxx)
-                mm = torch.matmul(self.mu.unsqueeze(-1), self.mu.unsqueeze(-2))
+                mm = outer(self.mu)
                 if self.alpha == 0:
                     sigma = pxx * z.view(-1, 1, 1) - mm
                 else:
                     y = posterior.sum(dim=0)
                     nu = px / y.view(-1, 1)
-                    nm = torch.matmul(nu.unsqueeze(-1), self.mu.unsqueeze(-2))
+                    nm = outer(nu, self.mu)
                     mn = nm.transpose(-2, -1)
                     a = pxx - y.view(-1, 1, 1) * (nm + mn - mm)
                     b = xi.view(-1, 1, 1) * self.ubm_sigma
-                    diff = self.ubm_mu - self.mu
-                    dd = torch.matmul(diff.unsqueeze(-1), diff.unsqueeze(-2))
-                    c = xi.view(-1, 1, 1) * dd
+                    c = xi.view(-1, 1, 1) * outer(self.ubm_mu - self.mu)
                     sigma = (a + b + c) * z.view(-1, 1, 1)
                 self.sigma = sigma * self.mask
             self.sigma.diagonal(dim1=-2, dim2=-1).clamp_(min=self.var_floor)
