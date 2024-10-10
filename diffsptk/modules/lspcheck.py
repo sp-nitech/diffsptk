@@ -84,7 +84,7 @@ class LineSpectralPairsStabilityCheck(nn.Module):
     def _forward(w, min_distance, n_iter, warn_type):
         K, w1 = torch.split(w, [1, w.size(-1) - 1], dim=-1)
 
-        distance = w1[..., 1:] - w1[..., :-1]
+        distance = torch.diff(w1, dim=-1)
         if torch.any(distance <= 0) or torch.any(w <= 0) or torch.any(torch.pi <= w):
             if warn_type == "ignore":
                 pass
@@ -104,7 +104,7 @@ class LineSpectralPairsStabilityCheck(nn.Module):
                 w1[..., m] -= step_size
                 w1[..., n] += step_size
             w1 = torch.clip(w1, min=min_distance, max=torch.pi - min_distance)
-            distance = w1[..., 1:] - w1[..., :-1]
+            distance = torch.diff(w1, dim=-1)
             if torch.all(min_distance - 1e-16 <= distance):
                 break
 

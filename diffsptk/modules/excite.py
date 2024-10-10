@@ -86,7 +86,7 @@ class ExcitationGeneration(nn.Module):
 
         # Extend right side for interpolation.
         tmp_mask = F.pad(base_mask, (1, 0))
-        tmp_mask = torch.eq(tmp_mask[..., 1:] - tmp_mask[..., :-1], -1)
+        tmp_mask = torch.eq(torch.diff(tmp_mask), -1)
         p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.
@@ -105,10 +105,11 @@ class ExcitationGeneration(nn.Module):
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
 
+        # Generate excitation signal using phase.
         if voiced_region == "pulse":
             r = torch.ceil(phase)
             r = F.pad(r, (1, 0))
-            pulse_pos = torch.ge(r[..., 1:] - r[..., :-1], 1)
+            pulse_pos = torch.ge(torch.diff(r), 1)
             e = torch.zeros_like(p)
             e[pulse_pos] = torch.sqrt(p[pulse_pos])
         elif voiced_region == "sinusoidal":
@@ -124,7 +125,6 @@ class ExcitationGeneration(nn.Module):
             pass
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
-
         return e
 
     _func = _forward

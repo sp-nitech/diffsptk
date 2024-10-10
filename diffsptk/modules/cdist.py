@@ -81,7 +81,7 @@ class CepstralDistance(nn.Module):
         elif reduction == "sum":
             distance = distance.sum()
         elif reduction == "mean":
-            distance = distance.mean() * (c1.size(-1) - 1) ** -0.5
+            distance = distance.mean() / (c1.size(-1) - 1) ** 0.5
         elif reduction == "batchmean":
             distance = distance.mean()
         else:

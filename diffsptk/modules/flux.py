@@ -18,68 +18,81 @@ import torch
 from torch import nn
 
 
-class RootMeanSquareError(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
-    for details.
+class Flux(nn.Module):
+    """Flux calculation module.
 
     Parameters
     ----------
-    reduction : ['none', 'mean', 'sum']
+    reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
+
+    norm : int or float
+        Order of norm.
 
     """
 
-    def __init__(self, reduction="mean"):
+    def __init__(self, reduction="mean", norm=2):
         super().__init__()
 
-        assert reduction in ("none", "mean", "sum")
+        assert reduction in ("none", "mean", "batchmean", "sum")
 
         self.reduction = reduction
+        self.norm = norm
 
-    def forward(self, x, y):
-        """Calculate RMSE.
+    def forward(self, x, y=None):
+        """Calculate flux, which is the distance between adjacent frames.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., D)]
+        x : Tensor [shape=(..., N, D)]
             Input.
 
-        y : Tensor [shape=(..., D)]
-            Target.
+        y : Tensor [shape=(..., N, D)] or None
+            Target (optional).
 
         Returns
         -------
-        out : Tensor [shape=(...,) or scalar]
-            RMSE.
+        out : Tensor [shape=(..., N-1) or scalar]
+            Flux.
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
+        >>> x = diffsptk.ramp(5).view(3, 2)
         >>> x
-        tensor([-0.5945, -0.2401,  0.8633, -0.6464,  0.4515])
-        >>> y = diffsptk.nrand(4)
-        >>> y
-        tensor([-0.4025,  0.9367,  1.1299,  3.1986, -0.2832])
-        >>> rmse = diffsptk.RootMeanSquaredError()
-        >>> e = rmse(x, y)
-        >>> e
-        tensor(1.8340)
+        tensor([[0., 1.],
+                [2., 3.],
+                [4., 5.]])
+        >>> flux = diffsptk.Flux(reduction="none", norm=1)
+        >>> f = flux(x)
+        >>> f
+        tensor([4., 4.])
 
         """
-        return self._forward(x, y, self.reduction)
+        return self._forward(x, y, self.reduction, self.norm)
 
     @staticmethod
-    def _forward(x, y, reduction):
-        error = torch.linalg.vector_norm(x - y, ord=2, dim=-1) / x.size(-1) ** 0.5
+    def _forward(x, y, reduction, norm):
+        if y is None:
+            y = x
+
+        if x.dim() == 1:
+            x = x.unsqueeze(-1)  # (N,) -> (N, 1)
+            y = y.unsqueeze(-1)
+
+        flux = torch.linalg.vector_norm(
+            x[..., 1:, :] - y[..., :-1, :], ord=norm, dim=-1
+        )
 
         if reduction == "none":
             pass
         elif reduction == "sum":
-            error = error.sum()
+            flux = flux.sum()
         elif reduction == "mean":
-            error = error.mean()
+            flux = flux.mean() / x.size(-1) ** (1 / norm)
+        elif reduction == "batchmean":
+            flux = flux.mean()
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
-        return error
+        return flux
 
     _func = _forward

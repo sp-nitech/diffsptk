@@ -17,7 +17,6 @@
 from operator import itemgetter
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -55,7 +54,7 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
 
 
 def test_special_case(M=1, K=4, B=10, n_iter=10):
-    x = torch.randn(B, M + 1)
+    x = diffsptk.nrand(B, M)
     lbg = diffsptk.LBG(
         M,
         K,
@@ -67,7 +66,7 @@ def test_special_case(M=1, K=4, B=10, n_iter=10):
     )
     _, idx1, dist = lbg(x, return_indices=True)
     _, idx2 = lbg.transform(x)
-    assert torch.all(idx1 == idx2)
+    assert (idx1 == idx2).all()
 
     extra_lbg = diffsptk.LBG(
         M,
