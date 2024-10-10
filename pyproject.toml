@@ -48,7 +48,6 @@ dev = [
   "pytest",
   "pytest-cov",
   "ruff",
-  "scikit-image",
   "sphinx",
   "twine",
 ]
