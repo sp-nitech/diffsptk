@@ -60,7 +60,7 @@ format: tool
 	. ./venv/bin/activate && python -m ruff format $(PROJECT) tests docs
 	. ./venv/bin/activate && python -m isort $(PROJECT) tests
 	. ./venv/bin/activate && python -m mdformat *.md
-	. ./venv/bin/activate && cd docs && python -m docstrfmt --check .
+	. ./venv/bin/activate && cd docs && python -m docstrfmt .
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
