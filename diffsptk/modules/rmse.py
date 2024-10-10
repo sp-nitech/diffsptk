@@ -27,29 +27,24 @@ class RootMeanSquareError(nn.Module):
     reduction : ['none', 'mean', 'sum']
         Reduction type.
 
-    eps : float >= 0
-        A small value to prevent NaN.
-
     """
 
-    def __init__(self, reduction="mean", eps=1e-8):
+    def __init__(self, reduction="mean"):
         super().__init__()
 
         assert reduction in ("none", "mean", "sum")
-        assert 0 <= eps
 
         self.reduction = reduction
-        self.eps = eps
 
     def forward(self, x, y):
         """Calculate RMSE.
 
         Parameters
         ----------
-        x : Tensor [shape=(..., T)]
+        x : Tensor [shape=(..., D)]
             Input.
 
-        y : Tensor [shape=(..., T)]
+        y : Tensor [shape=(..., D)]
             Target.
 
         Returns
@@ -71,11 +66,11 @@ class RootMeanSquareError(nn.Module):
         tensor(1.8340)
 
         """
-        return self._forward(x, y, self.reduction, self.eps)
+        return self._forward(x, y, self.reduction)
 
     @staticmethod
-    def _forward(x, y, reduction, eps):
-        error = torch.sqrt(torch.square(x - y).mean(-1) + eps)
+    def _forward(x, y, reduction):
+        error = torch.linalg.vector_norm(x - y, ord=2, dim=-1) / x.size(-1) ** 0.5
         if reduction == "none":
             pass
         elif reduction == "sum":
