@@ -51,7 +51,7 @@ check: tool
 	. ./venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
 	. ./venv/bin/activate && python -m isort --check $(PROJECT) tests
 	. ./venv/bin/activate && python -m mdformat --check *.md
-	. ./venv/bin/activate && python -m docstrfmt --check docs
+	. ./venv/bin/activate && cd docs && python -m docstrfmt --check .
 	./tools/taplo/taplo fmt --check *.toml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
 
@@ -60,7 +60,7 @@ format: tool
 	. ./venv/bin/activate && python -m ruff format $(PROJECT) tests docs
 	. ./venv/bin/activate && python -m isort $(PROJECT) tests
 	. ./venv/bin/activate && python -m mdformat *.md
-	. ./venv/bin/activate && python -m docstrfmt docs
+	. ./venv/bin/activate && cd docs && python -m docstrfmt --check .
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
