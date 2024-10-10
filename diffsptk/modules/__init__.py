@@ -31,6 +31,7 @@ from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
 from .fbank import MelFilterBankAnalysis as FBANK
 from .fftcep import CepstralAnalysis
+from .flux import Flux
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .freqt2 import SecondOrderAllPassFrequencyTransform

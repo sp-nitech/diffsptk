@@ -617,6 +617,32 @@ def fftcep(x, cep_order, n_iter=0, accel=0):
     return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
 
 
+def flux(x, y=None, reduction="mean", norm=2):
+    """Calculate flux.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., N, D)]
+        Input.
+
+    y : Tensor [shape=(..., N, D)] or None
+        Target (optional).
+
+    reduction : ['none', 'mean', 'batchmean', 'sum']
+        Reduction type.
+
+    norm : int or float
+        Order of norm.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., N-1) or scalar]
+        Flux.
+
+    """
+    return nn.Flux._func(x, y, reduction=reduction, norm=norm)
+
+
 def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
     """Perform framing.
 
@@ -1955,10 +1981,10 @@ def rmse(x, y, reduction="mean"):
 
     Parameters
     ----------
-    x : Tensor [shape=(..., T)]
+    x : Tensor [shape=(..., D)]
         Input.
 
-    y : Tensor [shape=(..., T)]
+    y : Tensor [shape=(..., D)]
         Target.
 
     reduction : ['none', 'mean', 'sum']

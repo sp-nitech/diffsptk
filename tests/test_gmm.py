@@ -154,7 +154,7 @@ def test_compatibility(
 
 
 def test_posterior(M=3, K=4, B=32, n_iter=50):
-    x = torch.randn(B, M + 1)
+    x = diffsptk.nrand(B, M)
     gmm = diffsptk.GMM(M, K, n_iter=10)
     _, posterior, _ = gmm(x, return_posterior=True)
     assert posterior.sum().item() == pytest.approx(B)

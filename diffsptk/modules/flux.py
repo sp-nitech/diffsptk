@@ -18,78 +18,81 @@ import torch
 from torch import nn
 
 
-class CepstralDistance(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
-    for details.
+class Flux(nn.Module):
+    """Flux calculation module.
 
     Parameters
     ----------
-    full : bool
-        If True, include the constant term in the distance calculation.
-
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
 
+    norm : int or float
+        Order of norm.
+
     """
 
-    def __init__(self, full=False, reduction="mean"):
+    def __init__(self, reduction="mean", norm=2):
         super().__init__()
 
         assert reduction in ("none", "mean", "batchmean", "sum")
 
-        self.full = full
         self.reduction = reduction
+        self.norm = norm
 
-    def forward(self, c1, c2):
-        """Calculate cepstral distance between two inputs.
+    def forward(self, x, y=None):
+        """Calculate flux, which is the distance between adjacent frames.
 
         Parameters
         ----------
-        c1 : Tensor [shape=(..., M+1)]
-            Input cepstral coefficients.
+        x : Tensor [shape=(..., N, D)]
+            Input.
 
-        c2 : Tensor [shape=(..., M+1)]
-            Target cepstral coefficients.
+        y : Tensor [shape=(..., N, D)] or None
+            Target (optional).
 
         Returns
         -------
-        out : Tensor [shape=(...,) or scalar]
-            Cepstral distance.
+        out : Tensor [shape=(..., N-1) or scalar]
+            Flux.
 
         Examples
         --------
-        >>> c1 = diffsptk.nrand(2, 2)
-        tensor([[ 0.4296,  1.6517, -0.6022],
-                [-1.0464, -0.6088, -0.9274]])
-        >>> c2 = diffsptk.nrand(2, 2)
-        tensor([[ 1.6441, -0.6962, -0.2524],
-                [ 0.9344,  0.3965,  1.1494]])
-        >>> cdist = diffsptk.CepstralDistance()
-        >>> distance = cdist(c1, c2)
-        >>> distance
-        tensor(1.6551)
+        >>> x = diffsptk.ramp(5).view(3, 2)
+        >>> x
+        tensor([[0., 1.],
+                [2., 3.],
+                [4., 5.]])
+        >>> flux = diffsptk.Flux(reduction="none", norm=1)
+        >>> f = flux(x)
+        >>> f
+        tensor([4., 4.])
 
         """
-        return self._forward(c1, c2, self.full, self.reduction)
+        return self._forward(x, y, self.reduction, self.norm)
 
     @staticmethod
-    def _forward(c1, c2, full, reduction):
-        distance = torch.linalg.vector_norm(c1[..., 1:] - c2[..., 1:], ord=2, dim=-1)
+    def _forward(x, y, reduction, norm):
+        if y is None:
+            y = x
+
+        if x.dim() == 1:
+            x = x.unsqueeze(-1)  # (N,) -> (N, 1)
+            y = y.unsqueeze(-1)
+
+        flux = torch.linalg.vector_norm(
+            x[..., 1:, :] - y[..., :-1, :], ord=norm, dim=-1
+        )
 
         if reduction == "none":
             pass
         elif reduction == "sum":
-            distance = distance.sum()
+            flux = flux.sum()
         elif reduction == "mean":
-            distance = distance.mean() / (c1.size(-1) - 1) ** 0.5
+            flux = flux.mean() / x.size(-1) ** (1 / norm)
         elif reduction == "batchmean":
-            distance = distance.mean()
+            flux = flux.mean()
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
-
-        if full:
-            # Multiply by 10 * math.sqrt(2) / math.log(10)
-            distance = distance * 6.141851463713754
-        return distance
+        return flux
 
     _func = _forward
