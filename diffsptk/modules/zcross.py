@@ -79,7 +79,7 @@ class ZeroCrossingAnalysis(nn.Module):
         x = torch.tanh(x / softness)
         x = replicate1(x, right=False)
         x = x.unfold(-1, frame_length + 1, frame_length)
-        z = 0.5 * (x[..., 1:] - x[..., :-1]).abs().sum(-1)
+        z = 0.5 * torch.diff(x, dim=-1).abs().sum(-1)
         if norm:
             z /= frame_length
         return z

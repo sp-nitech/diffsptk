@@ -216,7 +216,7 @@ def train(order, frame_period, norm="power", **kwargs):
     v = torch.full((order + 2,), frequency)
     v[0] *= -1
     v = torch.floor(torch.cumsum(v, dim=0))
-    index = torch.ge(v[..., 1:] - v[..., :-1], 1)
+    index = torch.ge(torch.diff(v), 1)
 
     x = torch.zeros(order + 1, **kwargs)
     x[index] = pulse

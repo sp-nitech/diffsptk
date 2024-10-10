@@ -71,6 +71,7 @@ class RootMeanSquareError(nn.Module):
     @staticmethod
     def _forward(x, y, reduction):
         error = torch.linalg.vector_norm(x - y, ord=2, dim=-1) / x.size(-1) ** 0.5
+
         if reduction == "none":
             pass
         elif reduction == "sum":
