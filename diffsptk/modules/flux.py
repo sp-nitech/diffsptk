@@ -23,21 +23,26 @@ class Flux(nn.Module):
 
     Parameters
     ----------
-    reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+    lag : int != 0
+        Lag of the distance calculation, :math:`L`.
 
     norm : int or float
         Order of norm.
 
+    reduction : ['none', 'mean', 'batchmean', 'sum']
+        Reduction type.
+
     """
 
-    def __init__(self, reduction="mean", norm=2):
+    def __init__(self, lag=1, norm=2, reduction="mean"):
         super().__init__()
 
+        assert lag != 0
         assert reduction in ("none", "mean", "batchmean", "sum")
 
-        self.reduction = reduction
+        self.lag = lag
         self.norm = norm
+        self.reduction = reduction
 
     def forward(self, x, y=None):
         """Calculate flux, which is the distance between adjacent frames.
@@ -52,7 +57,7 @@ class Flux(nn.Module):
 
         Returns
         -------
-        out : Tensor [shape=(..., N-1) or scalar]
+        out : Tensor [shape=(..., N-|L|) or scalar]
             Flux.
 
         Examples
@@ -68,10 +73,10 @@ class Flux(nn.Module):
         tensor([4., 4.])
 
         """
-        return self._forward(x, y, self.reduction, self.norm)
+        return self._forward(x, y, self.lag, self.norm, self.reduction)
 
     @staticmethod
-    def _forward(x, y, reduction, norm):
+    def _forward(x, y, lag, norm, reduction):
         if y is None:
             y = x
 
@@ -79,9 +84,11 @@ class Flux(nn.Module):
             x = x.unsqueeze(-1)  # (N,) -> (N, 1)
             y = y.unsqueeze(-1)
 
-        flux = torch.linalg.vector_norm(
-            x[..., 1:, :] - y[..., :-1, :], ord=norm, dim=-1
-        )
+        if 0 < lag:
+            diff = x[..., lag:, :] - y[..., :-lag, :]
+        else:
+            diff = y[..., -lag:, :] - x[..., :lag, :]
+        flux = torch.linalg.vector_norm(diff, ord=norm, dim=-1)
 
         if reduction == "none":
             pass

@@ -617,7 +617,7 @@ def fftcep(x, cep_order, n_iter=0, accel=0):
     return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
 
 
-def flux(x, y=None, reduction="mean", norm=2):
+def flux(x, y=None, lag=1, norm=2, reduction="mean"):
     """Calculate flux.
 
     Parameters
@@ -628,19 +628,22 @@ def flux(x, y=None, reduction="mean", norm=2):
     y : Tensor [shape=(..., N, D)] or None
         Target (optional).
 
-    reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+    lag : int != 0
+        Lag of the distance calculation, :math:`L`.
 
     norm : int or float
         Order of norm.
 
+    reduction : ['none', 'mean', 'batchmean', 'sum']
+        Reduction type.
+
     Returns
     -------
-    out : Tensor [shape=(..., N-1) or scalar]
+    out : Tensor [shape=(..., N-|L|) or scalar]
         Flux.
 
     """
-    return nn.Flux._func(x, y, reduction=reduction, norm=norm)
+    return nn.Flux._func(x, y, lag=lag, norm=norm, reduction=reduction)
 
 
 def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
