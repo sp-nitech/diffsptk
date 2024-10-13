@@ -23,7 +23,7 @@ class Flux(nn.Module):
 
     Parameters
     ----------
-    lag : int != 0
+    lag : int
         Lag of the distance calculation, :math:`L`.
 
     norm : int or float
@@ -37,7 +37,6 @@ class Flux(nn.Module):
     def __init__(self, lag=1, norm=2, reduction="mean"):
         super().__init__()
 
-        assert lag != 0
         assert reduction in ("none", "mean", "batchmean", "sum")
 
         self.lag = lag
@@ -86,8 +85,10 @@ class Flux(nn.Module):
 
         if 0 < lag:
             diff = x[..., lag:, :] - y[..., :-lag, :]
-        else:
+        elif lag < 0:
             diff = y[..., -lag:, :] - x[..., :lag, :]
+        else:
+            diff = x - y
         flux = torch.linalg.vector_norm(diff, ord=norm, dim=-1)
 
         if reduction == "none":

@@ -23,7 +23,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "batchmean", "mean", "sum"])
-@pytest.mark.parametrize("lag", [1, -1])
+@pytest.mark.parametrize("lag", [1, 0, -1])
 def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
     flux = U.choice(
         module,
@@ -46,15 +46,14 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
         raise ValueError
     tmp1 = "flux.tmp1"
     tmp2 = "flux.tmp2"
-    tmp3 = "flux.tmp1" if 0 < lag else "flux.tmp2"
-    tmp4 = "flux.tmp2" if 0 < lag else "flux.tmp1"
     U.check_compatibility(
         device,
         flux,
         [f"nrand -s 1 -l {T*L} > {tmp1}", f"nrand -s 2 -l {T*L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
         (
-            f"delay -l {L} -s -1 {tmp3} | vopr -l {L} -s {tmp4} | "
+            f"delay -l {L} -s -{abs(lag)} {tmp1 if 0 < lag else tmp2} | "
+            f"vopr -l {L} -s {tmp2 if 0 < lag else tmp1} | "
             f"sopr -p {norm} | vsum -l 1 -t {L} | sopr -p {1/norm} | "
             f"{reduce_cmd}"
         ),

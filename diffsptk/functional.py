@@ -628,7 +628,7 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
     y : Tensor [shape=(..., N, D)] or None
         Target (optional).
 
-    lag : int != 0
+    lag : int
         Lag of the distance calculation, :math:`L`.
 
     norm : int or float
