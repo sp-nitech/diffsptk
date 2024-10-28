@@ -88,6 +88,10 @@ class PseudoMGLSADigitalFilter(nn.Module):
         the impulse response converted from input mel-cepstral coefficients using FFT.
         'freq-domain' performs filtering in the frequency domain rather than time one.
 
+    n_fft : int >= 1
+        Number of FFT bins used for conversion. Higher values result in increased
+        conversion accuracy.
+
     taylor_order : int >= 0
         Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
 
@@ -96,9 +100,6 @@ class PseudoMGLSADigitalFilter(nn.Module):
 
     ir_length : int >= 1
         Length of impulse response (valid only if **mode** is 'single-stage').
-
-    n_fft : int >= 1
-        Number of FFT bins for conversion (valid only if **mode** is 'single-stage').
 
     **kwargs : additional keyword arguments
         See :func:`~diffsptk.ShortTimeFourierTransform` (valid only if **mode** is
@@ -213,6 +214,7 @@ class MultiStageFIRFilter(nn.Module):
         phase="minimum",
         taylor_order=20,
         cep_order=199,
+        n_fft=512,
     ):
         super().__init__()
 
@@ -239,6 +241,7 @@ class MultiStageFIRFilter(nn.Module):
             cep_order,
             in_alpha=alpha,
             in_gamma=gamma,
+            n_fft=n_fft,
         )
         self.linear_intpl = LinearInterpolation(frame_period)
 
