@@ -203,7 +203,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 
         # Select an appropriate alpha in terms of L2 distance.
         distance = np.square(mel_freq - warped_omega).sum(axis=1)
-        selected_alpha = np.squeeze(alpha[np.argmin(distance)])
+        selected_alpha = float(np.squeeze(alpha[np.argmin(distance)]))
         return selected_alpha
 
     if mode == "hts":
