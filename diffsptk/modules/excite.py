@@ -32,24 +32,43 @@ class ExcitationGeneration(nn.Module):
     frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', 'triangle',
+                     'square']
         Value on voiced region.
 
     unvoiced_region : ['gauss', 'zeros']
         Value on unvoiced region.
 
+    polarity : ['auto', 'unipolar', 'bipolar']
+        Polarity.
+
     """
 
-    def __init__(self, frame_period, voiced_region="pulse", unvoiced_region="gauss"):
+    def __init__(
+        self,
+        frame_period,
+        voiced_region="pulse",
+        unvoiced_region="gauss",
+        polarity="auto",
+    ):
         super().__init__()
 
         assert 1 <= frame_period
-        assert voiced_region in ("pulse", "sinusoidal", "sawtooth")
+        assert voiced_region in (
+            "pulse",
+            "sinusoidal",
+            "sawtooth",
+            "inverted-sawtooth",
+            "triangle",
+            "square",
+        )
         assert unvoiced_region in ("gauss", "zeros")
+        assert polarity in ("auto", "unipolar", "bipolar")
 
         self.frame_period = frame_period
         self.voiced_region = voiced_region
         self.unvoiced_region = unvoiced_region
+        self.polarity = polarity
 
     def forward(self, p):
         """Generate a simple excitation signal.
@@ -74,11 +93,15 @@ class ExcitationGeneration(nn.Module):
 
         """
         return self._forward(
-            p, self.frame_period, self.voiced_region, self.unvoiced_region
+            p,
+            self.frame_period,
+            self.voiced_region,
+            self.unvoiced_region,
+            self.polarity,
         )
 
     @staticmethod
-    def _forward(p, frame_period, voiced_region, unvoiced_region):
+    def _forward(p, frame_period, voiced_region, unvoiced_region, polarity):
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
         mask = torch.ne(base_mask, UNVOICED_SYMBOL)
@@ -106,16 +129,44 @@ class ExcitationGeneration(nn.Module):
         phase = (s - bias).to(p.dtype)
 
         # Generate excitation signal using phase.
+        if polarity == "auto":
+            unipolar = voiced_region == "pulse"
+        else:
+            unipolar = polarity == "unipolar"
+        e = torch.zeros_like(p)
         if voiced_region == "pulse":
             r = torch.ceil(phase)
             r = F.pad(r, (1, 0))
             pulse_pos = torch.ge(torch.diff(r), 1)
-            e = torch.zeros_like(p)
-            e[pulse_pos] = torch.sqrt(p[pulse_pos])
+            if unipolar:
+                e[pulse_pos] = torch.sqrt(p[pulse_pos])
+            else:
+                raise RuntimeError
         elif voiced_region == "sinusoidal":
-            e = torch.sin(TWO_PI * phase)
+            if unipolar:
+                e[mask] = 0.5 * (1 - torch.cos(TWO_PI * phase[mask]))
+            else:
+                e[mask] = torch.sin(TWO_PI * phase[mask])
         elif voiced_region == "sawtooth":
-            e = torch.fmod(phase, 2) - 1
+            if unipolar:
+                e[mask] = torch.fmod(phase[mask], 1)
+            else:
+                e[mask] = 2 * torch.fmod(phase[mask], 1) - 1
+        elif voiced_region == "inverted-sawtooth":
+            if unipolar:
+                e[mask] = 1 - torch.fmod(phase[mask], 1)
+            else:
+                e[mask] = 1 - 2 * torch.fmod(phase[mask], 1)
+        elif voiced_region == "triangle":
+            if unipolar:
+                e[mask] = torch.abs(2 * torch.fmod(phase[mask] + 0.5, 1) - 1)
+            else:
+                e[mask] = 2 * torch.abs(2 * torch.fmod(phase[mask] + 1.75, 1) - 1) - 1
+        elif voiced_region == "square":
+            if unipolar:
+                e[mask] = torch.le(torch.fmod(phase[mask], 1), 0.5).to(e.dtype)
+            else:
+                e[mask] = 2 * torch.le(torch.fmod(phase[mask], 1), 0.5).to(e.dtype) - 1
         else:
             raise ValueError(f"voiced_region {voiced_region} is not supported.")
 
