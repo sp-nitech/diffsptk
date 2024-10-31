@@ -512,7 +512,13 @@ def entropy(p, out_format="nat"):
     return nn.Entropy._func(p, out_format=out_format)
 
 
-def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
+def excite(
+    p,
+    frame_period=80,
+    voiced_region="pulse",
+    unvoiced_region="gauss",
+    polarity="auto",
+):
     """Generate a simple excitation signal.
 
     Parameters
@@ -523,11 +529,15 @@ def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
     frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', 'triangle',
+                     'square']
         Value on voiced region.
 
     unvoiced_region : ['gauss', 'zeros']
         Value on unvoiced region.
+
+    polarity : ['auto', 'unipolar', 'bipolar']
+        Polarity.
 
     Returns
     -------
@@ -540,6 +550,7 @@ def excite(p, frame_period=80, voiced_region="pulse", unvoiced_region="gauss"):
         frame_period=frame_period,
         voiced_region=voiced_region,
         unvoiced_region=unvoiced_region,
+        polarity=polarity,
     )
 
 
