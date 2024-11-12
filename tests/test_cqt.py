@@ -27,7 +27,8 @@ import tests.utils as U
 @pytest.mark.parametrize("fp", [511, 512])
 @pytest.mark.parametrize("K", [1, 24])
 @pytest.mark.parametrize("scale", [False, True])
-def test_compatibility(device, fp, K, scale, B=12, f_min=32.7):
+@pytest.mark.parametrize("res_type", ["kaiser_best", "kaiser_fast"])
+def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -45,12 +46,12 @@ def test_compatibility(device, fp, K, scale, B=12, f_min=32.7):
         bins_per_octave=B,
         hop_length=fp,
         scale=scale,
-        res_type="kaiser_best",
+        res_type=res_type,
         dtype=None,
     ).T
 
     cqt = diffsptk.CQT(
-        fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale
+        fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale, res_type=res_type
     ).to(device)
     c2 = cqt(x).cpu().numpy()
 
