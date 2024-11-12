@@ -36,6 +36,7 @@ from torch import nn
 import torchaudio
 
 from ..misc.utils import delayed_import
+from ..misc.utils import get_resample_params
 from ..misc.utils import numpy_to_torch
 from .istft import InverseShortTimeFourierTransform as ISTFT
 
@@ -78,6 +79,9 @@ class InverseConstantQTransform(nn.Module):
     scale : bool
         If True, scale the CQT responce by the length of filter.
 
+    res_type : ['kaiser_best', 'kaiser_fast'] or None
+        Resampling type.
+
     **kwargs : additional keyword arguments
         See `torchaudio.transforms.Resample
         <https://pytorch.org/audio/main/generated/torchaudio.transforms.Resample.html>`_.
@@ -98,6 +102,7 @@ class InverseConstantQTransform(nn.Module):
         sparsity=1e-2,
         window="hann",
         scale=True,
+        res_type="kaiser_best",
         **kwargs,
     ):
         super().__init__()
@@ -155,6 +160,9 @@ class InverseConstantQTransform(nn.Module):
         slices = []
         transforms = []
         resamplers = []
+
+        if res_type is not None:
+            kwargs.update(get_resample_params(res_type))
 
         for i in range(n_octave):
             n_filter = min(B, K - B * i)

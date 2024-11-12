@@ -37,6 +37,7 @@ import torchaudio
 
 from ..misc.utils import Lambda
 from ..misc.utils import delayed_import
+from ..misc.utils import get_resample_params
 from ..misc.utils import numpy_to_torch
 from .stft import ShortTimeFourierTransform as STFT
 
@@ -79,6 +80,9 @@ class ConstantQTransform(nn.Module):
     scale : bool
         If True, scale the CQT responce by the length of filter.
 
+    res_type : ['kaiser_best', 'kaiser_fast'] or None
+        Resampling type.
+
     **kwargs : additional keyword arguments
         See `torchaudio.transforms.Resample
         <https://pytorch.org/audio/main/generated/torchaudio.transforms.Resample.html>`_.
@@ -99,6 +103,7 @@ class ConstantQTransform(nn.Module):
         sparsity=1e-2,
         window="hann",
         scale=True,
+        res_type="kaiser_best",
         **kwargs,
     ):
         super().__init__()
@@ -144,6 +149,8 @@ class ConstantQTransform(nn.Module):
         downsample_count = early_downsample_count(
             sample_rate * 0.5, filter_cutoff, frame_period, n_octave
         )
+        if res_type is not None:
+            kwargs.update(get_resample_params(res_type))
         if 0 < downsample_count:
             downsample_factor = 2**downsample_count
             early_downsample.append(

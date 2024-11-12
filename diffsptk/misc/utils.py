@@ -134,6 +134,27 @@ def remove_gain(a, value=1, return_gain=False):
     return ret
 
 
+def get_resample_params(mode="kaiser_best"):
+    # From https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html
+    if mode == "kaiser_best":
+        params = {
+            "lowpass_filter_width": 64,
+            "rolloff": 0.9475937167399596,
+            "resampling_method": "sinc_interp_kaiser",
+            "beta": 14.769656459379492,
+        }
+    elif mode == "kaiser_fast":
+        params = {
+            "lowpass_filter_width": 16,
+            "rolloff": 0.85,
+            "resampling_method": "sinc_interp_kaiser",
+            "beta": 8.555504641634386,
+        }
+    else:
+        raise ValueError("Only kaiser_best and kaiser_fast are supported.")
+    return params
+
+
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     """Compute an appropriate frequency warping factor under given sample rate.
 

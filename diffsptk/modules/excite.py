@@ -135,13 +135,20 @@ class ExcitationGeneration(nn.Module):
             unipolar = polarity == "unipolar"
         e = torch.zeros_like(p)
         if voiced_region == "pulse":
-            r = torch.ceil(phase)
-            r = F.pad(r, (1, 0))
-            pulse_pos = torch.ge(torch.diff(r), 1)
+
+            def get_pulse_pos(p):
+                r = torch.ceil(p)
+                r = F.pad(r, (1, 0))
+                return torch.ge(torch.diff(r), 1)
+
             if unipolar:
+                pulse_pos = get_pulse_pos(phase)
                 e[pulse_pos] = torch.sqrt(p[pulse_pos])
             else:
-                raise RuntimeError
+                pulse_pos1 = get_pulse_pos(phase)
+                pulse_pos2 = get_pulse_pos(0.5 * phase)
+                e[pulse_pos1] = torch.sqrt(p[pulse_pos1])
+                e[pulse_pos1 & ~pulse_pos2] *= -1
         elif voiced_region == "sinusoidal":
             if unipolar:
                 e[mask] = 0.5 * (1 - torch.cos(TWO_PI * phase[mask]))
