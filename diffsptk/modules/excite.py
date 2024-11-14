@@ -36,20 +36,25 @@ class ExcitationGeneration(nn.Module):
                      'square']
         Value on voiced region.
 
-    unvoiced_region : ['gauss', 'zeros']
+    unvoiced_region : ['zeros', 'gauss']
         Value on unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
         Polarity.
+
+    init_phase : ['zeros', 'random']
+        Initial phase.
 
     """
 
     def __init__(
         self,
         frame_period,
+        *,
         voiced_region="pulse",
         unvoiced_region="gauss",
         polarity="auto",
+        init_phase="zeros",
     ):
         super().__init__()
 
@@ -62,13 +67,15 @@ class ExcitationGeneration(nn.Module):
             "triangle",
             "square",
         )
-        assert unvoiced_region in ("gauss", "zeros")
+        assert unvoiced_region in ("zeros", "gauss")
         assert polarity in ("auto", "unipolar", "bipolar")
+        assert init_phase in ("zeros", "random")
 
         self.frame_period = frame_period
         self.voiced_region = voiced_region
         self.unvoiced_region = unvoiced_region
         self.polarity = polarity
+        self.init_phase = init_phase
 
     def forward(self, p):
         """Generate a simple excitation signal.
@@ -98,10 +105,11 @@ class ExcitationGeneration(nn.Module):
             self.voiced_region,
             self.unvoiced_region,
             self.polarity,
+            self.init_phase,
         )
 
     @staticmethod
-    def _forward(p, frame_period, voiced_region, unvoiced_region, polarity):
+    def _forward(p, frame_period, voiced_region, unvoiced_region, polarity, init_phase):
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
         mask = torch.ne(base_mask, UNVOICED_SYMBOL)
@@ -127,6 +135,12 @@ class ExcitationGeneration(nn.Module):
         s = torch.cumsum(q.double(), dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
+        if init_phase == "zeros":
+            pass
+        elif init_phase == "random":
+            phase += torch.rand_like(p[..., :1])
+        else:
+            raise ValueError(f"init_phase {init_phase} is not supported.")
 
         # Generate excitation signal using phase.
         if polarity == "auto":
@@ -168,7 +182,7 @@ class ExcitationGeneration(nn.Module):
             if unipolar:
                 e[mask] = torch.abs(2 * torch.fmod(phase[mask] + 0.5, 1) - 1)
             else:
-                e[mask] = 2 * torch.abs(2 * torch.fmod(phase[mask] + 1.75, 1) - 1) - 1
+                e[mask] = 2 * torch.abs(2 * torch.fmod(phase[mask] + 0.75, 1) - 1) - 1
         elif voiced_region == "square":
             if unipolar:
                 e[mask] = torch.le(torch.fmod(phase[mask], 1), 0.5).to(e.dtype)
@@ -177,10 +191,10 @@ class ExcitationGeneration(nn.Module):
         else:
             raise ValueError(f"voiced_region {voiced_region} is not supported.")
 
-        if unvoiced_region == "gauss":
-            e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
-        elif unvoiced_region == "zeros":
+        if unvoiced_region == "zeros":
             pass
+        elif unvoiced_region == "gauss":
+            e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
         return e

@@ -90,9 +90,14 @@ def test_compatibility(device, module, voiced_region, unvoiced_region, P=80):
     ["pulse", "sinusoidal", "sawtooth", "inverted-sawtooth", "triangle", "square"],
 )
 @pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
-def test_waveform(voiced_region, polarity, P=80, verbose=False):
+@pytest.mark.parametrize("init_phase", ["zeros", "random"])
+def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=False):
     excite = diffsptk.ExcitationGeneration(
-        P, voiced_region=voiced_region, unvoiced_region="zeros", polarity=polarity
+        P,
+        voiced_region=voiced_region,
+        unvoiced_region="zeros",
+        polarity=polarity,
+        init_phase=init_phase,
     )
     pitch = torch.from_numpy(
         U.call(f"x2x +sd tools/SPTK/asset/data.short | pitch -s 16 -p {P} -o 0 -a 2")
@@ -101,4 +106,4 @@ def test_waveform(voiced_region, polarity, P=80, verbose=False):
     if voiced_region == "pulse":
         e = e / e.abs().max()
     if verbose:
-        sf.write(f"excite_{voiced_region}_{polarity}.wav", e, 16000)
+        sf.write(f"excite_{voiced_region}_{polarity}_{init_phase}.wav", e, 16000)

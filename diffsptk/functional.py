@@ -515,9 +515,11 @@ def entropy(p, out_format="nat"):
 def excite(
     p,
     frame_period=80,
+    *,
     voiced_region="pulse",
     unvoiced_region="gauss",
     polarity="auto",
+    init_phase="zeros",
 ):
     """Generate a simple excitation signal.
 
@@ -539,6 +541,9 @@ def excite(
     polarity : ['auto', 'unipolar', 'bipolar']
         Polarity.
 
+    init_phase : ['zeros', 'random']
+        Initial phase.
+
     Returns
     -------
     out : Tensor [shape=(..., NxP)]
@@ -551,6 +556,7 @@ def excite(
         voiced_region=voiced_region,
         unvoiced_region=unvoiced_region,
         polarity=polarity,
+        init_phase=init_phase,
     )
 
 
