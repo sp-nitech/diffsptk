@@ -62,8 +62,8 @@ from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
 from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
 from .ipnorm import MelCepstrumInversePowerNormalization
-from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
-from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
+from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis
+from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis as IPQMF
 from .istft import InverseShortTimeFourierTransform
 from .istft import InverseShortTimeFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
@@ -114,8 +114,8 @@ from .plp import PerceptualLinearPredictiveCoefficientsAnalysis as PLP
 from .pnorm import MelCepstrumPowerNormalization
 from .pol_root import RootsToPolynomial
 from .poledf import AllPoleDigitalFilter
-from .pqmf import PseudoQuadratureMirrorFilterBanks
-from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
+from .pqmf import PseudoQuadratureMirrorFilterBankAnalysis
+from .pqmf import PseudoQuadratureMirrorFilterBankAnalysis as PQMF
 from .quantize import UniformQuantization
 from .rlevdur import ReverseLevinsonDurbin
 from .rmse import RootMeanSquareError

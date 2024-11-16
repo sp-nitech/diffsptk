@@ -5,7 +5,7 @@ pqmf
 
 .. autoclass:: diffsptk.PQMF
 
-.. autoclass:: diffsptk.PseudoQuadratureMirrorFilterBanks
+.. autoclass:: diffsptk.PseudoQuadratureMirrorFilterBankAnalysis
     :members:
 
 .. seealso::

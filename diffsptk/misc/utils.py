@@ -69,6 +69,15 @@ def default_complex_dtype():
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
+def torch_default_complex_dtype():
+    t = torch.get_default_dtype()
+    if t == torch.float:  # pragma: no cover
+        return torch.complex64
+    elif t == torch.double:  # pragma: no cover
+        return torch.complex128
+    raise RuntimeError("Unknown default dtype: {t}.")
+
+
 def numpy_to_torch(x):
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
@@ -78,7 +87,10 @@ def numpy_to_torch(x):
 
 def to(x, dtype=None, device=None):
     if dtype is None:
-        dtype = torch.get_default_dtype()
+        if torch.is_complex(x):
+            dtype = torch_default_complex_dtype()
+        else:
+            dtype = torch.get_default_dtype()
     return x.to(dtype=dtype, device=device)
 
 
@@ -207,7 +219,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     def get_auto_alpha(sr, n_freq, n_alpha):
         # Compute target mel-frequencies.
         freq = np.arange(n_freq) * (0.5 * sr / (n_freq - 1))
-        mel_freq = np.log(1 + freq / 1000)
+        mel_freq = np.log1p(freq / 1000)
         mel_freq = mel_freq * (np.pi / mel_freq[-1])
         mel_freq = np.expand_dims(mel_freq, 0)
 
