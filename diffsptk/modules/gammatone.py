@@ -22,6 +22,7 @@ from torch import nn
 
 from ..misc.utils import TWO_PI
 from .poledf import AllPoleDigitalFilter
+from .zerodf import AllZeroDigitalFilter
 
 
 class GammatoneFilterBankAnalysis(nn.Module):
@@ -50,6 +51,9 @@ class GammatoneFilterBankAnalysis(nn.Module):
     density : float > 0
         Density of frequencies on the ERB scale.
 
+    exact : bool
+        If False, use all-pole approximation.
+
     References
     ----------
     .. [1] V. Hohmann, "Frequency analysis and synthesis using a Gammatone filterbank,"
@@ -67,6 +71,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
         filter_order=4,
         bandwidth_factor=1.0,
         density=1.0,
+        exact=False,
     ):
         super().__init__()
 
@@ -74,6 +79,8 @@ class GammatoneFilterBankAnalysis(nn.Module):
         assert 1 <= filter_order
         assert 0 < bandwidth_factor
         assert 0 < density
+
+        self.exact = exact
 
         erb_l = 24.7
         erb_q = 9.265
@@ -104,17 +111,41 @@ class GammatoneFilterBankAnalysis(nn.Module):
         b = erb_audiological / a_gamma
         lambda_ = np.exp(-TWO_PI * b / sample_rate)
         beta = TWO_PI * center_frequencies_in_hz / sample_rate
-        a_tilde = lambda_ * np.exp(1j * beta)
-        K = 2 * (1 - np.abs(a_tilde)) ** gamma
-        K[(beta == 0) | (beta == np.pi)] *= 0.5
+        z = np.exp(1j * beta)
+        a_tilde = lambda_ * z
 
-        # Compute filter coefficients of Gammatone filters.
+        # Compute denominator filter coefficients of Gammatone filters.
         a = np.zeros((len(a_tilde), filter_order + 1), dtype=np.complex128)
-        a[:, 0] = K
         for i in range(1, filter_order + 1):
             a[:, i] = math.comb(gamma, i) * (-a_tilde) ** i
 
-        self.register_buffer("a", torch.from_numpy(a))  # This should not be float32.
+        # Compute numerator filter coefficients of Gammatone filters.
+        b = np.zeros((len(a_tilde), filter_order), dtype=np.complex128)
+        if exact and 2 <= filter_order:
+            ramp = np.arange(1, filter_order + 1)
+            c = np.zeros(filter_order)
+            c[0] = 1
+            for i in range(2, filter_order):
+                term1 = c * ramp
+                term2 = -np.roll(term1, 1)
+                term3 = i * np.roll(c, 1)
+                c = term1 + term2 + term3
+            b[:, 1:] = c[:-1] * a_tilde.reshape(-1, 1) ** ramp[:-1]
+        else:
+            b[:, 0] = 1
+
+        # These coefficients should not be complex64 due to numerical errors.
+        self.register_buffer("a", torch.from_numpy(a))
+        self.register_buffer("b", torch.from_numpy(b))
+
+        # Compute normalization factors to have 0 dB at center frequencies.
+        if self.exact:
+            K = 2 / self._H(torch.from_numpy(z), ignore_gain=True).diag().abs()
+        else:
+            K = 2 * (1 - torch.from_numpy(a_tilde).abs()) ** gamma
+        K[(beta == 0) | (beta == np.pi)] *= 0.5
+        self.a[:, 0] = K
+
         self.center_frequencies = center_frequencies_in_hz  # For synthesis.
 
     def forward(self, x):
@@ -149,16 +180,41 @@ class GammatoneFilterBankAnalysis(nn.Module):
         K, _ = self.a.shape
 
         expanded_x = x.repeat(K, 1)
-        expanded_a = self.a.repeat(B, 1).unsqueeze(1).expand(-1, T, -1)
-        y = AllPoleDigitalFilter._forward(expanded_x, expanded_a, frame_period=1)
+        if True:
+            expanded_a = self.a.repeat(B, 1).unsqueeze(1).expand(-1, T, -1)
+            y = AllPoleDigitalFilter._forward(expanded_x, expanded_a, frame_period=1)
+        if self.exact:
+            expanded_b = self.b.repeat(B, 1).unsqueeze(1).expand(-1, T, -1)
+            y = AllZeroDigitalFilter._forward(y, expanded_b, frame_period=1)
         y = y.reshape(K, B, T).transpose(0, 1)
 
         if x.dtype == torch.float:
             y = y.to(torch.complex64)
         return y
 
-    def _H(self, z):
+    def _H(self, z, ignore_gain=False):
+        """Return the frequency response of the filter.
+
+        Parameters
+        ----------
+        z : Tensor [shape=(L,)]
+            Complex frequency.
+
+        ignore_gain : bool
+            If True, the gain is ignored.
+
+        Returns
+        -------
+        out : Tensor [shape=(L, K)]
+            Frequency response at z for each filter.
+
+        """
         gamma = self.a.size(-1) - 1
-        K = self.a[..., 0]
-        a = self.a[..., 1] / math.comb(gamma, 1)
-        return K * (1 + a.unsqueeze(0) / z.unsqueeze(1)) ** -gamma
+        K, a = torch.split(self.a, [1, gamma], dim=-1)
+        if ignore_gain:
+            K = 1
+        ramp = torch.arange(gamma + 1, device=z.device)
+        zs = z.unsqueeze(1) ** -ramp  # (L, M+1)
+        numer = torch.matmul(zs[..., :-1], self.b.T)
+        denom = 1 + torch.matmul(zs[..., 1:], a.T)
+        return K * numer / denom

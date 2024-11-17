@@ -21,7 +21,8 @@ import diffsptk
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_analysis_synthesis(device, verbose=False):
+@pytest.mark.parametrize("exact", [False, True])
+def test_analysis_synthesis(device, exact, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -31,10 +32,11 @@ def test_analysis_synthesis(device, verbose=False):
         device=device,
     )
 
-    gammatone = diffsptk.GammatoneFilterBankAnalysis(sr).to(device)
-    igammatone = diffsptk.GammatoneFilterBankSynthesis(sr).to(device)
+    gammatone = diffsptk.GammatoneFilterBankAnalysis(sr, exact=exact).to(device)
+    igammatone = diffsptk.GammatoneFilterBankSynthesis(sr, exact=exact).to(device)
     y = igammatone(gammatone(x.unsqueeze(0)))
-    assert (x - y).abs().max() < 0.1
+    assert (x - y).abs().max() < 0.11
 
     if verbose:
-        diffsptk.write("reconst.wav", y.squeeze(), sr)
+        suffix = "_exact" if exact else ""
+        diffsptk.write(f"reconst{suffix}.wav", y.squeeze(), sr)

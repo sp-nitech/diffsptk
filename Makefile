@@ -71,7 +71,7 @@ test: tool
 
 test-clean:
 	rm -rf tests/__pycache__
-	rm -rf *.wav
+	rm -rf *.png *.wav
 
 tool:
 	cd tools && make

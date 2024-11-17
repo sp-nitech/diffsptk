@@ -54,6 +54,9 @@ class GammatoneFilterBankSynthesis(nn.Module):
     density : float > 0
         Density of frequencies on the ERB scale.
 
+    exact : bool
+        If False, use all-pole approximation.
+
     n_iter : int >= 1
         Number of iterations for gain computation.
 
@@ -71,13 +74,14 @@ class GammatoneFilterBankSynthesis(nn.Module):
         self,
         sample_rate,
         *,
-        desired_delay=4,
+        desired_delay=8,
         f_min=70,
         f_base=1000,
         f_max=6700,
         filter_order=4,
         bandwidth_factor=1.0,
         density=1.0,
+        exact=False,
         n_iter=100,
         eps=1e-8,
     ):
@@ -97,6 +101,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
             filter_order=filter_order,
             bandwidth_factor=bandwidth_factor,
             density=density,
+            exact=exact,
         )
         impulse_signal = impulse(self.delay + 1, dtype=torch.double)
         impulse_response = analyzer(impulse_signal).squeeze(0)

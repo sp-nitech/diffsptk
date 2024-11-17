@@ -25,12 +25,13 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_impulse_response(device, L=8192, sr=16000, verbose=False):
+@pytest.mark.parametrize("exact", [False, True])
+def test_impulse_response(device, exact, L=8192, sr=16000, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     impulse = diffsptk.impulse(L - 1, device=device).view(1, 1, -1)
-    gammatone = diffsptk.GammatoneFilterBankAnalysis(sr)
+    gammatone = diffsptk.GammatoneFilterBankAnalysis(sr, exact=exact).to(device)
     impulse_resonse = gammatone(impulse).squeeze(0)
     frequency_response = torch.fft.rfft(impulse_resonse.real, dim=-1)
     amplitude = 20 * torch.log10(torch.abs(frequency_response) + 1e-6)
@@ -44,11 +45,12 @@ def test_impulse_response(device, L=8192, sr=16000, verbose=False):
     assert torch.all(min_amplitude < -60)
 
     if verbose:
+        suffix = "_exact" if exact else ""
         tmp = "filter.dat"
         amplitude.cpu().numpy().astype(np.float64).tofile(tmp)
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "
-            f"filter.png -n {L//2+1} -g -F 2 "
+            f"filter{suffix}.png -n {L//2+1} -g -F 2 "
             f"-xname 'Frequency [Hz]' -xscale {sr/2} "
             "-yname 'Log amplitude [dB]' "
         )
