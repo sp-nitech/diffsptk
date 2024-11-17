@@ -35,6 +35,7 @@ from .flux import Flux
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .freqt2 import SecondOrderAllPassFrequencyTransform
+from .gammatone import GammatoneFilterBankAnalysis
 from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
@@ -52,6 +53,7 @@ from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
+from .igammatone import GammatoneFilterBankSynthesis
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .imdct import InverseModifiedDiscreteCosineTransform
 from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
