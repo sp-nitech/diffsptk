@@ -26,12 +26,14 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("exact", [False, True])
-def test_impulse_response(device, exact, L=8192, sr=16000, verbose=False):
+def test_analysis(device, exact, M=4, L=8192, sr=16000, verbose=True):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
     impulse = diffsptk.impulse(L - 1, device=device).view(1, 1, -1)
-    gammatone = diffsptk.GammatoneFilterBankAnalysis(sr, exact=exact).to(device)
+    gammatone = diffsptk.GammatoneFilterBankAnalysis(
+        sr, filter_order=M, exact=exact
+    ).to(device)
     impulse_resonse = gammatone(impulse).squeeze(0)
     frequency_response = torch.fft.rfft(impulse_resonse.real, dim=-1)
     amplitude = 20 * torch.log10(torch.abs(frequency_response) + 1e-6)
@@ -46,7 +48,7 @@ def test_impulse_response(device, exact, L=8192, sr=16000, verbose=False):
 
     if verbose:
         suffix = "_exact" if exact else ""
-        tmp = "filter.dat"
+        tmp = "tmp.dat"
         amplitude.cpu().numpy().astype(np.float64).tofile(tmp)
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "

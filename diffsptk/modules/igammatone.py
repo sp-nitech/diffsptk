@@ -68,13 +68,17 @@ class GammatoneFilterBankSynthesis(nn.Module):
     .. [1] V. Hohmann, "Frequency analysis and synthesis using a Gammatone filterbank,"
            *Acta Acustica united with Acustica*, vol. 88, no. 3, pp. 433-442, 2002.
 
+    .. [2] T. Herzke, "Improved numerical methods for Gammatone filterbank analysis and
+           synthesis," *Acta Acustica united with Acustica*, vol. 93, no. 3,
+           pp. 498-500, 2007.
+
     """
 
     def __init__(
         self,
         sample_rate,
         *,
-        desired_delay=8,
+        desired_delay=4,
         f_min=70,
         f_base=1000,
         f_max=6700,
@@ -140,7 +144,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
 
         self.register_buffer("gains", to(gains.real).unsqueeze(-1))  # (K, 1)
 
-    def forward(self, y, keepdim=True):
+    def forward(self, y, keepdim=True, compensate_delay=True):
         """Reconstruct waveform from filter bank signals.
 
         Parameters
@@ -150,6 +154,9 @@ class GammatoneFilterBankSynthesis(nn.Module):
 
         keepdim : bool
             If True, the output shape is (B, 1, T) instead (B, T).
+
+        compensate_delay : bool
+            If True, compensate the delay.
 
         Returns
         -------
@@ -190,5 +197,6 @@ class GammatoneFilterBankSynthesis(nn.Module):
         x = torch.sum(delayed_y * self.gains, dim=1, keepdim=keepdim)
 
         # Compensate delay.
-        x = F.pad(x[..., self.delay :], (0, self.delay))
+        if compensate_delay:
+            x = F.pad(x[..., self.delay :], (0, self.delay))
         return x

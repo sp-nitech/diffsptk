@@ -83,7 +83,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
         self.exact = exact
 
         erb_l = 24.7
-        erb_q = 9.265
+        erb_q = 9.265  # 1000 / (24.7 * 4.37)
 
         def hz_to_erb(hz):
             return erb_q * np.log1p(hz / (erb_l * erb_q))
@@ -197,7 +197,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
 
         Parameters
         ----------
-        z : Tensor [shape=(L,)]
+        z : Tensor [shape=(C,)]
             Complex frequency.
 
         ignore_gain : bool
@@ -205,16 +205,21 @@ class GammatoneFilterBankAnalysis(nn.Module):
 
         Returns
         -------
-        out : Tensor [shape=(L, K)]
+        out : Tensor [shape=(C, K)]
             Frequency response at z for each filter.
 
         """
         gamma = self.a.size(-1) - 1
         K, a = torch.split(self.a, [1, gamma], dim=-1)
-        if ignore_gain:
-            K = 1
-        ramp = torch.arange(gamma + 1, device=z.device)
-        zs = z.unsqueeze(1) ** -ramp  # (L, M+1)
-        numer = torch.matmul(zs[..., :-1], self.b.T)
-        denom = 1 + torch.matmul(zs[..., 1:], a.T)
-        return K * numer / denom
+        if self.exact:
+            ramp = torch.arange(gamma + 1, device=z.device)
+            zs = z.unsqueeze(1) ** -ramp  # (C, M+1)
+            numer = torch.matmul(zs[..., :-1], self.b.T)
+            denom = 1 + torch.matmul(zs[..., 1:], a.T)
+            F = numer / denom
+        else:
+            a = a[..., 0] / math.comb(gamma, 1)
+            F = (1 + a.unsqueeze(0) / z.unsqueeze(1)) ** -gamma
+        if not ignore_gain:
+            F = K.T * F
+        return F
