@@ -76,6 +76,12 @@ class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
     accuracy_factor : int >= 1
         Accuracy factor multiplied by FFT length.
 
+    References
+    ----------
+    .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
+           spectrum by arbitrary basis functions," *IEICE Trans*, vol. J82-D-II, no. 12,
+           pp. 2203-2211, 1999 (in Japanese).
+
     """
 
     def __init__(

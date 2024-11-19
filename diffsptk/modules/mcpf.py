@@ -45,6 +45,12 @@ class MelCepstrumPostfiltering(nn.Module):
     ir_length : int >= 1
         Length of impulse response.
 
+    References
+    ----------
+    .. [1] T. Yoshimura et al., "Incorporating a mixed excitation model and postfilter
+           into HMM-based text-to-speech synthesis," *Systems and Computers in Japan*,
+           vol. 36, no. 12, pp. 43-50, 2005.
+
     """
 
     def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=128):

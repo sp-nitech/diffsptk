@@ -160,6 +160,15 @@ class PseudoQuadratureMirrorFilterBanks(nn.Module):
     **kwargs : additional keyword arguments
         Parameters to find optimal filter-bank coefficients.
 
+    References
+    ----------
+    .. [1] T. Q. Nguyen, "Near-perfect-reconstruction pseudo-QMF banks," *IEEE
+           Transactions on Signal Processing*, vol. 42, no. 1, pp. 65-76, 1994.
+
+    .. [2] F. Cruz-Roldan et al., "An efficient and simple method for designing
+           prototype filters for cosine-modulated filter banks," *IEEE Signal
+           Processing Letters*, vol. 9, no. 1, pp. 29-31, 2002.
+
     """
 
     def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):

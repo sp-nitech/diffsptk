@@ -33,6 +33,11 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):
     fft_length : int >= 2
         Number of FFT bins, :math:`L`.
 
+    References
+    ----------
+    .. [1] B. Yegnanarayana, "Pole-zero decomposition of speech spectra," *Signal
+           Processing*, vol. 3, no. 1, pp. 5-17, 1981.
+
     """
 
     def __init__(self, cep_order, fft_length):

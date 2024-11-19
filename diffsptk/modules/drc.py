@@ -55,7 +55,7 @@ class DynamicRangeCompression(nn.Module):
     References
     ----------
     .. [1] C.-Y. Yu et al., "Differentiable all-pole filters for time-varying audio
-           systems," *Proceedings of DAFx*, 2024.
+           systems," *Proceedings of DAFx*, pp. 345-352, 2024.
 
     """
 

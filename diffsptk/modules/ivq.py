@@ -22,6 +22,11 @@ class InverseVectorQuantization(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/imsvq.html>`_
     for details.
 
+    References
+    ----------
+    .. [1] A. v. d. Oord et al., "Neural discrete representation learning," *Advances in
+           Neural Information Processing Systems*, pp. 6309-6318, 2017.
+
     """
 
     def __init__(self):

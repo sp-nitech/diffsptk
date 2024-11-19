@@ -30,6 +30,12 @@ class CepstralDistance(nn.Module):
     reduction : ['none', 'mean', 'batchmean', 'sum']
         Reduction type.
 
+    References
+    ----------
+    .. [1] R. F. Kubichek, "Mel-cepstral distance measure for objective speech quality
+           assessment," *Proceedings of IEEE Pacific Rim Conference on Communications
+           Computers and Signal Processing*, vol. 1, pp. 125-128, 1993.
+
     """
 
     def __init__(self, full=False, reduction="mean"):

@@ -67,6 +67,12 @@ class GaussianMixtureModeling(nn.Module):
     verbose : bool
         If 1, show distance at each iteration; if 2, show progress bar.
 
+    References
+    ----------
+    .. [1] J-L. Gauvain et al., "Maximum a posteriori estimation for multivariate
+           Gaussian mixture observations of Markov chains," *IEEE Transactions on Speech
+           and Audio Processing*, vol. 2, no. 2, pp. 291-298, 1994.
+
     """
 
     def __init__(

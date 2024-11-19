@@ -42,6 +42,12 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     out_format : ['radian', 'cycle', 'khz', 'hz']
         Output format.
 
+    References
+    ----------
+    .. [1] P. Kabal et al., "The computation of line spectral frequencies using
+           Chebyshev polynomials," *IEEE Transactions on Acoustics, Speech, and Signal
+           Processing*, vol. 34, no. 6, pp. 1419-1426, 1986.
+
     """
 
     def __init__(

@@ -41,6 +41,12 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
     n_fft : int >> M2
         Number of FFT bins. Accurate conversion requires the large value.
 
+    References
+    ----------
+    .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
+           spectrum by arbitrary basis functions," *IEICE Trans*, vol. J82-D-II, no. 12,
+           pp. 2203-2211, 1999 (in Japanese).
+
     """
 
     def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):

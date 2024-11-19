@@ -36,6 +36,11 @@ class FrequencyTransform(nn.Module):
     alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
+    References
+    ----------
+    .. [1] A. V. Oppenheim et al, "Discrete representation of signals," *Proceedings of
+           the IEEE*, vol. 60, no. 6, pp. 681-691, 1972.
+
     """
 
     def __init__(self, in_order, out_order, alpha=0):

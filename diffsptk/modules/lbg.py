@@ -66,6 +66,11 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     verbose : bool or int
         If 1, show distance at each iteration; if 2, show progress bar.
 
+    References
+    ----------
+    .. [1] Y. Linde et al., "An algorithm for vector quantizer design," *IEEE
+           Transactions on Communications*, vol. 28, no. 1, pp. 84-95, 1980.
+
     """
 
     def __init__(

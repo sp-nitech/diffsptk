@@ -33,6 +33,11 @@ class VectorQuantization(nn.Module):
     **kwargs : additional keyword arguments
         See `this page`_ for details.
 
+    References
+    ----------
+    .. [1] A. v. d. Oord et al., "Neural discrete representation learning," *Advances in
+           Neural Information Processing Systems*, pp. 6309-6318, 2017.
+
     """
 
     def __init__(self, order, codebook_size, **kwargs):

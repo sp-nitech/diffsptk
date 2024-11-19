@@ -39,6 +39,11 @@ class CepstralAnalysis(nn.Module):
     accel : float >= 0
         Acceleration factor.
 
+    References
+    ----------
+    .. [1] S. Imai et al., "Spectral envelope extraction by improved cepstral method,"
+           *IEICE trans*, vol. J62-A, no. 4, pp. 217-223, 1979 (in Japanese).
+
     """
 
     def __init__(self, cep_order, fft_length, n_iter=0, accel=0):

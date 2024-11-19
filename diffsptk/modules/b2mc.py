@@ -34,6 +34,12 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
     alpha : float in (-1, 1)
         Frequency warping factor, :math:`\\alpha`.
 
+    References
+    ----------
+    .. [1] K. Tokuda et al., "Spectral estimation of speech by mel-generalized cepstral
+           analysis," *Electronics and Communications in Japan, part 3*, vol. 76, no. 2,
+           pp. 30-43, 1993.
+
     """
 
     def __init__(self, cep_order, alpha=0):

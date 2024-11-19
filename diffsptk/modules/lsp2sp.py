@@ -48,6 +48,14 @@ class LineSpectralPairsToSpectrum(nn.Module):
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
 
+    References
+    ----------
+    .. [1] A. V. Oppenheim et al., "Discrete representation of signals," *Proceedings of
+           the IEEE*, vol. 60, no. 6, pp. 681-691, 1972.
+
+    .. [2] N. Sugamura et al., "Speech data compression by LSP speech analysis-synthesis
+           technique," *IEICE trans*, vol. J64-A, no. 8, pp. 599-606, 1981.
+
     """
 
     def __init__(

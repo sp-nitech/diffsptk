@@ -36,6 +36,12 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
     c : int >= 1 or None
         Number of stages.
 
+    References
+    ----------
+    .. [1] T. Kobayashi et al., "Spectral analysis using generalized cepstrum," *IEEE
+           Transactions on Acoustics, Speech, and Signal Processing*, vol. 32, no. 5,
+           pp. 1087-1089, 1984.
+
     """
 
     def __init__(self, cep_order, gamma=0, c=None):

@@ -182,6 +182,11 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
     n_fft : int >> M1, M2
         Number of FFT bins. Accurate conversion requires the large value.
 
+    References
+    ----------
+    .. [1] K. Tokuda et al., "Mel-generalized cepstral analysis - A unified approach to
+           speech spectral estimation", *Proceedings of ICSLP*, pp. 1043-1046, 1996.
+
     """
 
     def __init__(

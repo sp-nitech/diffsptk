@@ -35,6 +35,11 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(nn.Module):
     csm_order : int >= 0
         Order of CSM coefficients, :math:`M`.
 
+    References
+    ----------
+    .. [1] S. Sagayama et al., "Duality theory of composite sinusoidal modeling and
+           linear prediction," *Proceedings of ICASSP*, pp. 1261-1264, 1986.
+
     """
 
     def __init__(self, csm_order):

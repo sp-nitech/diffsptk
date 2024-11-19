@@ -56,6 +56,12 @@ class MLSADigitalFilterStabilityCheck(nn.Module):
     mod_type : ['clip', 'scale']
         Modification type.
 
+    References
+    ----------
+    .. [1] S. Imai et al., "Mel log spectrum approximation (MLSA) filter for speech
+           synthesis," *Electronics and Communications in Japan*, vol. 66, no. 2,
+           pp. 11-18, 1983.
+
     """
 
     def __init__(

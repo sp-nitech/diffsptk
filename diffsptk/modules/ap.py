@@ -56,6 +56,12 @@ class Aperiodicity(nn.Module):
     eps : float > 0
         A number used to stabilize colesky decomposition.
 
+    References
+    ----------
+    .. [1] H. Kawahara et al., "Simplification and extension of non-periodic excitation
+           source representations for high-quality speech manipulation systems,"
+           *Proceedings of Interspeech*, pp. 38-41, 2010.
+
     """
 
     def __init__(
