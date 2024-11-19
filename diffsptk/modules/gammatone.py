@@ -36,7 +36,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
     f_min : float >= 0
         Minimum frequency in Hz.
 
-    f_base : float > 0
+    f_base : float >= 0
         Base frequency in Hz.
 
     f_max : float <= sample_rate // 2
@@ -75,7 +75,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= f_min <= f_base <= f_max < sample_rate / 2
+        assert 0 <= f_min <= f_base <= f_max <= sample_rate / 2
         assert 1 <= filter_order
         assert 0 < bandwidth_factor
         assert 0 < density

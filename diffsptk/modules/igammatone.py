@@ -39,7 +39,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
     f_min : float >= 0
         Minimum frequency in Hz.
 
-    f_base : float > 0
+    f_base : float >= 0
         Base frequency in Hz.
 
     f_max : float <= sample_rate // 2
@@ -168,6 +168,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
         >>> x = diffsptk.impulse(15999)
         >>> x[:5]
         tensor([1., 0., 0., 0., 0.])
+        >>> f = diffsptk.GammatoneFilterBankAnalysis(16000)
         >>> g = diffsptk.GammatoneFilterBankSynthesis(16000)
         >>> y = g(f(x)).squeeze()
         >>> y[:5]
