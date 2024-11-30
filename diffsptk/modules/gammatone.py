@@ -182,10 +182,10 @@ class GammatoneFilterBankAnalysis(nn.Module):
         expanded_x = x.repeat(K, 1)
         if True:
             expanded_a = self.a.repeat(B, 1).unsqueeze(1).expand(-1, T, -1)
-            y = AllPoleDigitalFilter._forward(expanded_x, expanded_a, frame_period=1)
+            y = AllPoleDigitalFilter._func(expanded_x, expanded_a, frame_period=1)
         if self.exact:
             expanded_b = self.b.repeat(B, 1).unsqueeze(1).expand(-1, T, -1)
-            y = AllZeroDigitalFilter._forward(y, expanded_b, frame_period=1)
+            y = AllZeroDigitalFilter._func(y, expanded_b, frame_period=1)
         y = y.reshape(K, B, T).transpose(0, 1)
 
         if x.dtype == torch.float:
