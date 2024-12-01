@@ -531,8 +531,8 @@ def excite(
     frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', 'triangle',
-                     'square']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
+                     'triangle', 'square']
         Value on voiced region.
 
     unvoiced_region : ['gauss', 'zeros']
@@ -656,7 +656,7 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
 
     Returns
     -------
-    out : Tensor [shape=(..., N-|L|) or scalar]
+    out : Tensor [shape=(..., N-\\|L\\|) or scalar]
         Flux.
 
     """

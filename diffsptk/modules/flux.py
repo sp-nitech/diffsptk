@@ -56,7 +56,7 @@ class Flux(nn.Module):
 
         Returns
         -------
-        out : Tensor [shape=(..., N-|L|) or scalar]
+        out : Tensor [shape=(..., N-\\|L\\|) or scalar]
             Flux.
 
         Examples

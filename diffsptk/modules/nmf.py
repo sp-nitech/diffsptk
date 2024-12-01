@@ -28,17 +28,17 @@ class NonnegativeMatrixFactorization(nn.Module):
     Parameters
     ----------
     n_data : int >= 1
-        Number of vectors.
+        Number of vectors, :math:`T`.
 
     order : int >= 0
-        Order of vector.
+        Order of vector, :math:`M`.
 
     n_comp : int >= 1
         Number of basis vectors, :math:`K`.
 
     beta : float >= 0
-        A control parameter of beta-divergence. 0: Itakura-Saito divergence,
-        1: generalized Kullback-Leibler divergence, 2: Euclidean distance.
+        A control parameter of beta-divergence, :math:`\\beta`. 0: Itakura-Saito
+        divergence, 1: generalized Kullback-Leibler divergence, 2: Euclidean distance.
 
     n_iter : int >= 1
         Number of iterations.

@@ -32,8 +32,8 @@ class ExcitationGeneration(nn.Module):
     frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', 'triangle',
-                     'square']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
+                     'triangle', 'square']
         Value on voiced region.
 
     unvoiced_region : ['zeros', 'gauss']
