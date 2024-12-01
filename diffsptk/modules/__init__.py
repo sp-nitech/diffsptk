@@ -102,6 +102,8 @@ from .mlsacheck import MLSADigitalFilterStabilityCheck
 from .mpir2c import MinimumPhaseImpulseResponseToCepstrum
 from .msvq import MultiStageVectorQuantization
 from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
+from .nmf import NonnegativeMatrixFactorization
+from .nmf import NonnegativeMatrixFactorization as NMF
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
 from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
