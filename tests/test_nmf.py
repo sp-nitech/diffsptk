@@ -23,7 +23,7 @@ import diffsptk
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("beta", [0, 1, 2])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_convergence(device, beta, batch_size, M=5, T=100, K=5, n_iter=10):
+def test_convergence(device, beta, batch_size, M=5, T=100, K=5):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -33,7 +33,7 @@ def test_convergence(device, beta, batch_size, M=5, T=100, K=5, n_iter=10):
         M,
         K,
         beta=beta,
-        n_iter=n_iter,
+        eps=0.01,
         batch_size=batch_size,
         seed=1234,
     ).to(device)
