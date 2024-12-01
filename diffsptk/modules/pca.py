@@ -32,7 +32,7 @@ class PrincipalComponentAnalysis(nn.Module):
         Order of vector.
 
     n_comp : int >= 1
-        Number of principal components, :math:`N`.
+        Number of principal components, :math:`K`.
 
     cov_type : ['sample', 'unbiased', 'correlation']
         Type of covariance.
@@ -90,7 +90,7 @@ class PrincipalComponentAnalysis(nn.Module):
             raise ValueError(f"cov_type {cov_type} is not supported.")
         self.cov = cov
 
-        self.register_buffer("v", torch.eye(order + 1, n_comp))
+        self.register_buffer("v", torch.eye(n_comp, order + 1))
         self.register_buffer("m", torch.zeros(order + 1))
 
     def forward(self, x):
@@ -103,10 +103,10 @@ class PrincipalComponentAnalysis(nn.Module):
 
         Returns
         -------
-        e : Tensor [shape=(N,)]
+        e : Tensor [shape=(K,)]
             Eigenvalues.
 
-        v : Tensor [shape=(M+1, N)]
+        v : Tensor [shape=(K, M+1)]
             Eigenvectors.
 
         m : Tensor [shape=(M+1,)]
@@ -158,7 +158,7 @@ class PrincipalComponentAnalysis(nn.Module):
         if self.sort == "descending":
             e = e.flip(-1)
             v = v.flip(-1)
-        self.v[:] = v
+        self.v[:] = v.T
         self.m[:] = m
         return e, self.v, self.m
 
@@ -172,9 +172,10 @@ class PrincipalComponentAnalysis(nn.Module):
 
         Returns
         -------
-        out : Tensor [shape=(..., N)]
+        out : Tensor [shape=(..., K)]
             Transformed vectors.
 
         """
-        v = self.v.flip(-1) if self.sort == "ascending" else self.v
+        v = self.v.T
+        v = self.v.flip(-1) if self.sort == "ascending" else v
         return torch.matmul(x - self.m, v)

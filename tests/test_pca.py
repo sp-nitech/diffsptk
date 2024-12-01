@@ -25,7 +25,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("cov_type", [0, 1, 2])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_compatibility(device, cov_type, batch_size, B=10, M=4, N=3):
+def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
@@ -34,20 +34,20 @@ def test_compatibility(device, cov_type, batch_size, B=10, M=4, N=3):
     tmp2 = "pca.tmp2"
     cmd = (
         f"nrand -l {B*(M+1)} | "
-        f"pca -m {M} -n {N} -u {cov_type} -v {tmp1} -d 1e-8 > {tmp2}"
+        f"pca -m {M} -n {K} -u {cov_type} -v {tmp1} -d 1e-8 > {tmp2}"
     )
     U.call(cmd, get=False)
-    e1 = U.call(f"bcut -e {N-1} {tmp1}")
-    v1 = U.call(f"cat {tmp2}").reshape(N + 1, M + 1)
-    y1 = U.call(f"nrand -l {B*(M+1)} | pcas -m {M} -n {N} {tmp2}").reshape(-1, N)
+    e1 = U.call(f"bcut -e {K-1} {tmp1}")
+    v1 = U.call(f"cat {tmp2}").reshape(K + 1, M + 1)
+    y1 = U.call(f"nrand -l {B*(M+1)} | pcas -m {M} -n {K} {tmp2}").reshape(-1, K)
     U.call(f"rm {tmp1} {tmp2}", get=False)
 
     # Python
-    pca = diffsptk.PCA(M, N, cov_type=cov_type, batch_size=batch_size).to(device)
+    pca = diffsptk.PCA(M, K, cov_type=cov_type, batch_size=batch_size).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}")).reshape(B, M + 1).to(device)
     e, v, m = pca(x)
     e2 = e.cpu().numpy()
-    v2 = torch.cat([m.unsqueeze(1), v], dim=1).T.cpu().numpy()
+    v2 = torch.cat([m.unsqueeze(0), v], dim=0).cpu().numpy()
     y2 = pca.transform(x).cpu().numpy()
 
     assert U.allclose(e1, e2)
