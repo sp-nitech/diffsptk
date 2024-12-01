@@ -14,42 +14,31 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import pytest
 import torch
 
 import diffsptk
-import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("cov_type", [0, 1, 2])
+@pytest.mark.parametrize("beta", [0, 1, 2])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
+def test_convergence(device, beta, batch_size, M=5, T=100, K=5):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    # C++
-    tmp1 = "pca.tmp1"
-    tmp2 = "pca.tmp2"
-    cmd = (
-        f"nrand -l {B*(M+1)} | "
-        f"pca -m {M} -n {K} -u {cov_type} -v {tmp1} -d 1e-8 > {tmp2}"
-    )
-    U.call(cmd, get=False)
-    e1 = U.call(f"bcut -e {K-1} {tmp1}")
-    v1 = U.call(f"cat {tmp2}").reshape(K + 1, M + 1)
-    y1 = U.call(f"nrand -l {B*(M+1)} | pcas -m {M} -n {K} {tmp2}").reshape(-1, K)
-    U.call(f"rm {tmp1} {tmp2}", get=False)
-
-    # Python
-    pca = diffsptk.PCA(M, K, cov_type=cov_type, batch_size=batch_size).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}")).reshape(B, M + 1).to(device)
-    e, v, m = pca(x)
-    e2 = e.cpu().numpy()
-    v2 = torch.cat([m.unsqueeze(0), v], dim=0).cpu().numpy()
-    y2 = pca.transform(x).cpu().numpy()
-
-    assert U.allclose(e1, e2)
-    assert U.allclose(np.abs(v1), np.abs(v2))
-    assert U.allclose(np.abs(y1), np.abs(y2))
+    x = diffsptk.nrand(T, M, device=device) ** 2
+    nmf = diffsptk.NMF(
+        T,
+        M,
+        K,
+        beta=beta,
+        eps=0.01,
+        batch_size=batch_size,
+        seed=1234,
+    ).to(device)
+    nmf.warmup(x)
+    (U, H), _ = nmf.forward(x)
+    y = torch.matmul(U, H)
+    error = (x - y).abs().mean()
+    assert error < 1

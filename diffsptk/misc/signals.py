@@ -266,7 +266,10 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
         stdv = var**0.5
     assert 0 <= stdv
 
-    order = list(order)
+    if any(isinstance(item, (list, tuple)) for item in order):
+        order = list(*order)
+    else:
+        order = list(order)
     order[-1] += 1
     x = torch.randn(*order, **kwargs)
     x = x * stdv + mean

@@ -59,8 +59,10 @@ def test_train(n, m=9, p=2.3):
     assert U.allclose(y, y_)
 
 
-def test_nrand(m=10000, u=3, v=4):
-    y = torch.var_mean(diffsptk.nrand(m, mean=u, var=v), unbiased=False)
+@pytest.mark.parametrize("tuple_input", [False, True])
+def test_nrand(tuple_input, m=10000, u=3, v=4):
+    x = diffsptk.nrand((m,) if tuple_input else m, mean=u, var=v)
+    y = torch.var_mean(x, unbiased=False)
     y_ = U.call(f"nrand -m {m} -u {u} -v {v} | vstat")
     assert U.allclose(y[1], y_[0], rtol=0.1)
     assert U.allclose(y[0], y_[1], rtol=0.1)

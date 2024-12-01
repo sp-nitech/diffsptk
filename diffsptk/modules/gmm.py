@@ -192,11 +192,6 @@ class GaussianMixtureModeling(nn.Module):
         lbg_params : additional keyword arguments
             Parameters for Linde-Buzo-Gray algorithm.
 
-        Returns
-        -------
-        out : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
-            GMM parameters.
-
         """
         x = to_dataloader(x, batch_size=self.batch_size)
         device = self.w.device
@@ -226,7 +221,6 @@ class GaussianMixtureModeling(nn.Module):
 
         params = (w, mu, sigma)
         self.set_params(params)
-        return params
 
     def forward(self, x, return_posterior=False):
         """Train Gaussian mixture models.
@@ -354,9 +348,9 @@ class GaussianMixtureModeling(nn.Module):
             self.sigma.diagonal(dim1=-2, dim2=-1).clamp_(min=self.var_floor)
 
             # Check convergence.
-            change = log_likelihood - prev_log_likelihood
             if self.verbose:
                 self.logger.info(f"iter {n+1:5d}: average = {log_likelihood / T:g}")
+            change = log_likelihood - prev_log_likelihood
             if n and change < self.eps:
                 break
             prev_log_likelihood = log_likelihood
