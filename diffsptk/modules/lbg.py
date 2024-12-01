@@ -21,7 +21,6 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import is_power_of_two
 from ..misc.utils import to_dataloader
 from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
@@ -125,7 +124,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 )
             self.curr_codebook_size = given_codebook_size
             self.init = "none"
-            self.vq.codebook[: given_codebook_size] = init
+            self.vq.codebook[:given_codebook_size] = init
         else:
             c = codebook_size
             while c % 2 == 0:
