@@ -37,7 +37,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         Order of vector, :math:`M`.
 
     codebook_size : int >= 1
-        Target codebook size, must be power of two, :math:`K`.
+        Target codebook size, :math:`K`.
 
     min_data_per_cluster : int >= 1
         Minimum number of data points in a cluster.
@@ -91,7 +91,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         super().__init__()
 
         assert 0 <= order
-        assert is_power_of_two(codebook_size)
+        assert 1 <= codebook_size
         assert 1 <= min_data_per_cluster
         assert 1 <= n_iter
         assert 0 <= eps
@@ -114,11 +114,23 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.vq = VectorQuantization(order, codebook_size).eval()
 
         if torch.is_tensor(init):
-            self.curr_codebook_size = init.size(0)
-            self.vq.codebook[: self.curr_codebook_size] = init
+            given_codebook_size = init.size(0)
+            c = codebook_size
+            while c % 2 == 0 and c != given_codebook_size:
+                c //= 2
+            if c != given_codebook_size:
+                raise ValueError(
+                    "Codebook size must be a power-of-two muptiple of "
+                    "the initial codebook size."
+                )
+            self.curr_codebook_size = given_codebook_size
             self.init = "none"
+            self.vq.codebook[: given_codebook_size] = init
         else:
-            self.curr_codebook_size = 1
+            c = codebook_size
+            while c % 2 == 0:
+                c //= 2
+            self.curr_codebook_size = c
             self.init = init
 
         if self.verbose:
@@ -182,16 +194,12 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         elif self.init == "mean":
             if self.verbose:
                 self.logger.info("K = 1")
-            first = True
+            s = 0
+            T = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 assert batch_x.dim() == 2
-                if first:
-                    s = batch_x.sum(0)
-                    T = batch_x.size(0)
-                    first = False
-                else:
-                    s += batch_x.sum(0)
-                    T += batch_x.size(0)
+                s += batch_x.sum(0)
+                T += batch_x.size(0)
             self.vq.codebook[0] = s / T
         else:
             raise ValueError(f"init {self.init} is not supported.")
@@ -210,17 +218,19 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             return indices, distance
 
         distance = torch.inf
-        next_codebook_size = self.curr_codebook_size * 2
-        while next_codebook_size <= self.codebook_size:
-            # Double codebook.
-            codebook = self.vq.codebook[: self.curr_codebook_size]
-            r = torch.randn_like(codebook) * self.perturb_factor
-            self.vq.codebook[self.curr_codebook_size : next_codebook_size] = (
-                codebook - r
-            )
-            self.vq.codebook[: self.curr_codebook_size] += r
-            self.curr_codebook_size = next_codebook_size
-            next_codebook_size *= 2
+        while True:
+            next_codebook_size = self.curr_codebook_size * 2
+            if next_codebook_size <= self.codebook_size:
+                # Double codebook.
+                codebook = self.vq.codebook[: self.curr_codebook_size]
+                r = torch.randn_like(codebook) * self.perturb_factor
+                self.vq.codebook[self.curr_codebook_size : next_codebook_size] = (
+                    codebook - r
+                )
+                self.vq.codebook[: self.curr_codebook_size] += r
+                self.curr_codebook_size = next_codebook_size
+                next_codebook_size *= 2
+
             if self.verbose:
                 self.logger.info(f"K = {self.curr_codebook_size}")
 
@@ -283,6 +293,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     raise ValueError(f"metric {self.metric} is not supported.")
                 if self.verbose:
                     self.logger.info(f"  {self.metric.upper()} = {metric:g}")
+
+            if self.curr_codebook_size == self.codebook_size:
+                break
 
         ret = [self.vq.codebook]
 
