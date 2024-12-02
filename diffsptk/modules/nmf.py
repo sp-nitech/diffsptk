@@ -36,7 +36,7 @@ class NonnegativeMatrixFactorization(nn.Module):
     n_comp : int >= 1
         Number of basis vectors, :math:`K`.
 
-    beta : float >= 0
+    beta : float
         A control parameter of beta-divergence, :math:`\\beta`. 0: Itakura-Saito
         divergence, 1: generalized Kullback-Leibler divergence, 2: Euclidean distance.
 
@@ -74,7 +74,7 @@ class NonnegativeMatrixFactorization(nn.Module):
         beta=0,
         n_iter=100,
         eps=1e-5,
-        act_norm=True,
+        act_norm=False,
         batch_size=None,
         seed=None,
         verbose=False,
@@ -196,8 +196,13 @@ class NonnegativeMatrixFactorization(nn.Module):
                 if self.act_norm:
                     self.U[t1:t2] /= self.U[t1:t2].sum(dim=1, keepdim=True)
 
+                # Accumulate statistics using the updated coefficient matrix.
+                y = torch.matmul(self.U[t1:t2], self.H)  # (T, M+1)
+                y2 = z * y ** (self.beta - 2)
+                y1 = y ** (self.beta - 1)
                 H_numer += torch.matmul(self.U[t1:t2].T, y2)  # (K, M+1)
                 H_denom += torch.matmul(self.U[t1:t2].T, y1)  # (K, M+1)
+
                 t1 = t2
 
             # Update dictionary matrix.
