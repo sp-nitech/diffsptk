@@ -22,11 +22,15 @@ import diffsptk
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("beta", [0, 1, 2])
+@pytest.mark.parametrize("act_norm", [False, True])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_convergence(device, beta, batch_size, M=5, T=100, K=5):
+def test_convergence(
+    device, beta, act_norm, batch_size, M=5, T=100, K=3, verbose=False
+):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
+    torch.manual_seed(1234)
     x = diffsptk.nrand(T, M, device=device) ** 2
     nmf = diffsptk.NMF(
         T,
@@ -34,8 +38,9 @@ def test_convergence(device, beta, batch_size, M=5, T=100, K=5):
         K,
         beta=beta,
         eps=0.01,
+        act_norm=act_norm,
         batch_size=batch_size,
-        seed=1234,
+        verbose=verbose,
     ).to(device)
     nmf.warmup(x)
     (U, H), _ = nmf.forward(x)
