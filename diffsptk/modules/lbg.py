@@ -197,8 +197,9 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             T = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 assert batch_x.dim() == 2
-                s += batch_x.sum(0)
-                T += batch_x.size(0)
+                batch_xp = batch_x.to(device)
+                s += batch_xp.sum(0)
+                T += batch_xp.size(0)
             self.vq.codebook[0] = s / T
         else:
             raise ValueError(f"init {self.init} is not supported.")
