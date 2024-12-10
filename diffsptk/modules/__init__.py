@@ -35,6 +35,7 @@ from .flux import Flux
 from .frame import Frame
 from .freqt import FrequencyTransform
 from .freqt2 import SecondOrderAllPassFrequencyTransform
+from .gammatone import GammatoneFilterBankAnalysis
 from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
@@ -52,6 +53,7 @@ from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
+from .igammatone import GammatoneFilterBankSynthesis
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .imdct import InverseModifiedDiscreteCosineTransform
 from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
@@ -62,8 +64,8 @@ from .imglsadf import PseudoInverseMGLSADigitalFilter as IMLSA
 from .imsvq import InverseMultiStageVectorQuantization
 from .interpolate import Interpolation
 from .ipnorm import MelCepstrumInversePowerNormalization
-from .ipqmf import InversePseudoQuadratureMirrorFilterBanks
-from .ipqmf import InversePseudoQuadratureMirrorFilterBanks as IPQMF
+from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis
+from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis as IPQMF
 from .istft import InverseShortTimeFourierTransform
 from .istft import InverseShortTimeFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
@@ -116,8 +118,8 @@ from .plp import PerceptualLinearPredictiveCoefficientsAnalysis as PLP
 from .pnorm import MelCepstrumPowerNormalization
 from .pol_root import RootsToPolynomial
 from .poledf import AllPoleDigitalFilter
-from .pqmf import PseudoQuadratureMirrorFilterBanks
-from .pqmf import PseudoQuadratureMirrorFilterBanks as PQMF
+from .pqmf import PseudoQuadratureMirrorFilterBankAnalysis
+from .pqmf import PseudoQuadratureMirrorFilterBankAnalysis as PQMF
 from .quantize import UniformQuantization
 from .rlevdur import ReverseLevinsonDurbin
 from .rmse import RootMeanSquareError

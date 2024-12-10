@@ -202,6 +202,30 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
+### Gammatone filter bank analysis and synthesis
+
+```python
+import diffsptk
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Decompose x.
+gammatone = diffsptk.GammatoneFilterBankAnalysis(sr)
+y = gammatone(x)
+
+# Reconstruct x.
+igammatone = diffsptk.GammatoneFilterBankSynthesis(sr)
+x_hat = igammatone(y).reshape(-1)
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
 ### Constant-Q transform
 
 ```python

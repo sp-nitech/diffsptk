@@ -86,7 +86,7 @@ class AllPoleDigitalFilter(nn.Module):
         return self._forward(x, a, self.frame_period, self.ignore_gain)
 
     @staticmethod
-    def _forward(x, a, frame_period, ignore_gain):
+    def _forward(x, a, frame_period, ignore_gain=False):
         d = x.dim()
         if d == 1:
             a = a.unsqueeze(0)

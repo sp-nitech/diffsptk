@@ -5,7 +5,7 @@ ipqmf
 
 .. autoclass:: diffsptk.IPQMF
 
-.. autoclass:: diffsptk.InversePseudoQuadratureMirrorFilterBanks
+.. autoclass:: diffsptk.PseudoQuadratureMirrorFilterBankSynthesis
     :members:
 
 .. seealso::

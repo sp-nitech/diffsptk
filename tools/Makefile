@@ -15,7 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 TAPLO_VERSION   := 0.9.3
-YAMLFMT_VERSION := 0.13.0
+YAMLFMT_VERSION := 0.14.0
 
 all: SPTK taplo yamlfmt
 

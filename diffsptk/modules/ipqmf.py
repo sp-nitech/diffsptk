@@ -24,7 +24,7 @@ from ..misc.utils import numpy_to_torch
 from .pqmf import make_filter_banks
 
 
-class InversePseudoQuadratureMirrorFilterBanks(nn.Module):
+class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/ipqmf.html>`_
     for details.
 

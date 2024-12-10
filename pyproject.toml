@@ -88,6 +88,8 @@ exclude_lines = [
   "verbose",
   "warn_type",
   "warnings",
+  "torch.float",
+  "torch.double",
 ]
 
 [tool.coverage.run]

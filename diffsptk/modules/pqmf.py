@@ -139,7 +139,7 @@ def make_filter_banks(
     return filters, is_converged
 
 
-class PseudoQuadratureMirrorFilterBanks(nn.Module):
+class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pqmf.html>`_
     for details.
 

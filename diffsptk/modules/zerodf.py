@@ -79,7 +79,7 @@ class AllZeroDigitalFilter(nn.Module):
         return self._forward(x, b, self.frame_period, self.ignore_gain)
 
     @staticmethod
-    def _forward(x, b, frame_period, ignore_gain):
+    def _forward(x, b, frame_period, ignore_gain=False):
         M = b.size(-1) - 1
         x = F.pad(x, (M, 0))
         x = x.unfold(-1, M + 1, 1)
