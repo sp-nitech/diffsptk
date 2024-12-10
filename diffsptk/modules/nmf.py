@@ -71,6 +71,7 @@ class NonnegativeMatrixFactorization(nn.Module):
         n_data,
         order,
         n_comp,
+        *,
         beta=0,
         n_iter=100,
         eps=1e-5,

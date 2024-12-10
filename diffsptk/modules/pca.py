@@ -52,6 +52,7 @@ class PrincipalComponentAnalysis(nn.Module):
         self,
         order,
         n_comp,
+        *,
         cov_type="sample",
         sort="descending",
         batch_size=None,
@@ -90,7 +91,8 @@ class PrincipalComponentAnalysis(nn.Module):
             raise ValueError(f"cov_type {cov_type} is not supported.")
         self.cov = cov
 
-        self.register_buffer("v", torch.eye(n_comp, order + 1))
+        self.register_buffer("s", torch.zeros(n_comp))
+        self.register_buffer("V", torch.eye(n_comp, order + 1))
         self.register_buffer("m", torch.zeros(order + 1))
 
     def forward(self, x):
@@ -103,10 +105,10 @@ class PrincipalComponentAnalysis(nn.Module):
 
         Returns
         -------
-        e : Tensor [shape=(K,)]
+        s : Tensor [shape=(K,)]
             Eigenvalues.
 
-        v : Tensor [shape=(K, M+1)]
+        V : Tensor [shape=(K, M+1)]
             Eigenvectors.
 
         m : Tensor [shape=(M+1,)]
@@ -118,8 +120,8 @@ class PrincipalComponentAnalysis(nn.Module):
         >>> x.size()
         torch.Size([10, 4])
         >>> pca = diffsptk.PCA(3, 3)
-        >>> e, _, _ = pca(x)
-        >>> e
+        >>> s, _, _ = pca(x)
+        >>> s
         tensor([1.3465, 0.7497, 0.4447])
         >>> y = pca.transform(x)
         >>> y.size()
@@ -130,19 +132,13 @@ class PrincipalComponentAnalysis(nn.Module):
         device = self.m.device
 
         # Compute statistics.
-        first = True
+        x0 = x1 = x2 = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             assert batch_x.dim() == 2
             xp = batch_x.to(device)
-            if first:
-                x0 = xp.size(0)
-                x1 = xp.sum(0)
-                x2 = outer(xp).sum(0)
-                first = False
-            else:
-                x0 += xp.size(0)
-                x1 += xp.sum(0)
-                x2 += outer(xp).sum(0)
+            x0 += xp.size(0)
+            x1 += xp.sum(0)
+            x2 += outer(xp).sum(0)
 
         if x0 <= self.n_comp:
             raise RuntimeError("Number of data samples is too small.")
@@ -152,15 +148,16 @@ class PrincipalComponentAnalysis(nn.Module):
         c = self.cov(x0, x1, x2)
 
         # Compute eigenvalues and eigenvectors.
-        e, v = torch.linalg.eigh(c)
-        e = e[-self.n_comp :]
-        v = v[:, -self.n_comp :]
+        val, vec = torch.linalg.eigh(c)
+        val = val[-self.n_comp :]
+        vec = vec[:, -self.n_comp :]
         if self.sort == "descending":
-            e = e.flip(-1)
-            v = v.flip(-1)
-        self.v[:] = v.T
+            val = val.flip(-1)
+            vec = vec.flip(-1)
+        self.s[:] = val
+        self.V[:] = vec.T
         self.m[:] = m
-        return e, self.v, self.m
+        return self.s, self.V, self.m
 
     def transform(self, x):
         """Transform input vectors using estimated eigenvectors.
@@ -176,6 +173,40 @@ class PrincipalComponentAnalysis(nn.Module):
             Transformed vectors.
 
         """
-        v = self.v.T
-        v = self.v.flip(-1) if self.sort == "ascending" else v
-        return torch.matmul(x - self.m, v)
+        V = self.V.T.flip(-1) if self.sort == "ascending" else self.V.T
+        return torch.matmul(self.center(x), V)
+
+    def center(self, x):
+        """Center input vectors using estimated mean.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(..., M+1)]
+            Input vectors.
+
+        Returns
+        -------
+        out : Tensor [shape=(..., M+1)]
+            Centered vectors.
+
+        """
+        return x - self.m
+
+    def whiten(self, x):
+        """Whiten input vectors using estimated parameters.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(..., M+1)]
+            Input vectors.
+
+        Returns
+        -------
+        out : Tensor [shape=(..., K)]
+            Whitened vectors.
+
+        """
+        V = self.V.T.flip(-1) if self.sort == "ascending" else self.V.T
+        s = self.s.flip(-1) if self.sort == "ascending" else self.s
+        d = torch.sqrt(torch.clip(s, min=1e-10))
+        return torch.matmul(x, V / d)
