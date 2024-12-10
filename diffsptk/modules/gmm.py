@@ -282,7 +282,7 @@ class GaussianMixtureModeling(nn.Module):
                 z = posterior.sum(dim=0) + xi
                 self.w = z / (T + self.alpha)
             z = 1 / z
-            self.w = torch.clamp(self.w, min=self.weight_floor)
+            self.w = torch.clip(self.w, min=self.weight_floor)
             sum_floor = self.weight_floor * self.n_mixture
             a = (1 - sum_floor) / (self.w.sum() - sum_floor)
             b = self.weight_floor * (1 - a)
@@ -345,7 +345,7 @@ class GaussianMixtureModeling(nn.Module):
                     c = xi.view(-1, 1, 1) * outer(self.ubm_mu - self.mu)
                     sigma = (a + b + c) * z.view(-1, 1, 1)
                 self.sigma = sigma * self.mask
-            self.sigma.diagonal(dim1=-2, dim2=-1).clamp_(min=self.var_floor)
+            self.sigma.diagonal(dim1=-2, dim2=-1).clip_(min=self.var_floor)
 
             # Check convergence.
             if self.verbose:

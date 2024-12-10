@@ -37,7 +37,7 @@ def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
         f"pca -m {M} -n {K} -u {cov_type} -v {tmp1} -d 1e-8 > {tmp2}"
     )
     U.call(cmd, get=False)
-    e1 = U.call(f"bcut -e {K-1} {tmp1}")
+    s1 = U.call(f"bcut -e {K-1} {tmp1}")
     v1 = U.call(f"cat {tmp2}").reshape(K + 1, M + 1)
     y1 = U.call(f"nrand -l {B*(M+1)} | pcas -m {M} -n {K} {tmp2}").reshape(-1, K)
     U.call(f"rm {tmp1} {tmp2}", get=False)
@@ -45,11 +45,17 @@ def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
     # Python
     pca = diffsptk.PCA(M, K, cov_type=cov_type, batch_size=batch_size).to(device)
     x = torch.from_numpy(U.call(f"nrand -l {B*(M+1)}")).reshape(B, M + 1).to(device)
-    e, v, m = pca(x)
-    e2 = e.cpu().numpy()
+    s, v, m = pca(x)
+    s2 = s.cpu().numpy()
     v2 = torch.cat([m.unsqueeze(0), v], dim=0).cpu().numpy()
     y2 = pca.transform(x).cpu().numpy()
 
-    assert U.allclose(e1, e2)
+    assert U.allclose(s1, s2)
     assert U.allclose(np.abs(v1), np.abs(v2))
     assert U.allclose(np.abs(y1), np.abs(y2))
+
+    z = pca.center(x)
+    assert torch.allclose(torch.mean(z, dim=0), torch.zeros(M + 1))
+    if cov_type <= 1:
+        z = pca.whiten(x)
+        assert torch.allclose(torch.cov(z.T, correction=cov_type), torch.eye(K))
