@@ -43,7 +43,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
     igammatone = diffsptk.GammatoneFilterBankSynthesis(
         sr, filter_order=M, exact=exact, desired_delay=desired_delay
     ).to(device)
-    y = igammatone(gammatone(x.unsqueeze(0)), compensate_delay=True)
+    y = igammatone(gammatone(x.unsqueeze(0)).squeeze(0), compensate_delay=True)
     assert (x - y).abs().max() < 0.1
 
     if verbose:
