@@ -18,6 +18,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
 
 
@@ -94,7 +95,6 @@ class NonnegativeMatrixFactorization(nn.Module):
         self.act_norm = act_norm
         self.batch_size = batch_size
         self.verbose = verbose
-        self.hide_progress_bar = self.verbose <= 1
 
         if seed is not None:
             torch.manual_seed(seed)
@@ -114,6 +114,11 @@ class NonnegativeMatrixFactorization(nn.Module):
         else:
             phi = 1
         self.phi = phi
+
+        if self.verbose:
+            self.logger = get_logger("nmf")
+
+        self.hide_progress_bar = self.verbose <= 1
 
     def warmup(self, x, **lbg_params):
         """Initialize dictionary matrix by K-means clustering.
@@ -232,7 +237,7 @@ class NonnegativeMatrixFactorization(nn.Module):
                 t1 = t2
 
             if self.verbose:
-                print(f"  iter {n+1:5d}: divergence = {divergence:g}")
+                self.logger.info(f"  iter {n+1:5d}: divergence = {divergence:g}")
 
             # Check convergence.
             change = (prev_divergence - divergence).abs()

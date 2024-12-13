@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 from importlib import import_module
+import logging
 import math
 
 import numpy as np
@@ -41,6 +42,19 @@ class Lambda(nn.Module):
 def delayed_import(module_path, item_name):
     module = import_module(module_path)
     return getattr(module, item_name)
+
+
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
+    )
+    logger.handlers.clear()
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
 
 
 def is_power_of_two(n):

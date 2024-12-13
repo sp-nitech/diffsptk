@@ -14,13 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import logging
-
 import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_logger
 from ..misc.utils import outer
 from ..misc.utils import to_dataloader
 
@@ -152,15 +151,7 @@ class GaussianMixtureModeling(nn.Module):
             self.register_buffer("ubm_sigma", ubm_sigma)
 
         if self.verbose:
-            self.logger = logging.getLogger("gmm")
-            self.logger.setLevel(logging.INFO)
-            formatter = logging.Formatter(
-                "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
-            )
-            self.logger.handlers.clear()
-            handler = logging.StreamHandler()
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+            self.logger = get_logger("gmm")
 
         self.hide_progress_bar = self.verbose <= 1
 

@@ -14,13 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import logging
 import math
 
 import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
 from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
@@ -133,15 +133,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             self.init = init
 
         if self.verbose:
-            self.logger = logging.getLogger("lbg")
-            self.logger.setLevel(logging.INFO)
-            formatter = logging.Formatter(
-                "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
-            )
-            self.logger.handlers.clear()
-            handler = logging.StreamHandler()
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
+            self.logger = get_logger("lbg")
 
         self.hide_progress_bar = self.verbose <= 1
 
