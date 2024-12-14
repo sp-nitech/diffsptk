@@ -26,7 +26,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("func", ["logcosh", "gauss"])
-@pytest.mark.parametrize("batch_size", [None, 5])
+@pytest.mark.parametrize("batch_size", [None, 100])
 def test_convergence(device, func, batch_size, T=1000, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return

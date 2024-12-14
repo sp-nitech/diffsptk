@@ -55,7 +55,7 @@ def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
     assert U.allclose(np.abs(y1), np.abs(y2))
 
     z = pca.center(x)
-    assert torch.allclose(torch.mean(z, dim=0), torch.zeros(M + 1))
+    assert U.allclose(torch.mean(z, dim=0).cpu().numpy(), np.zeros(M + 1))
     if cov_type <= 1:
         z = pca.whiten(x)
-        assert torch.allclose(torch.cov(z.T, correction=cov_type), torch.eye(K))
+        assert U.allclose(torch.cov(z.T, correction=cov_type).cpu().numpy(), np.eye(K))

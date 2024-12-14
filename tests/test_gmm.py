@@ -145,7 +145,7 @@ def test_compatibility(
         device,
         _vc,
         [],
-        f"nrand -l {B*(N+1)} -s 10 -d 10",
+        f"nrand -l {B*(N+1)} -s 10 -d 1",
         f"vc -m {N} -M {N} -k {K} {optp} {tmp7}",
         [f"rm {tmp7}"],
         dx=N + 1,
