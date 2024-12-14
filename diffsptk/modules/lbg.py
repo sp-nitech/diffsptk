@@ -20,6 +20,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_generator
 from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
 from .gmm import GaussianMixtureModeling
@@ -104,11 +105,11 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         self.perturb_factor = perturb_factor
         self.metric = metric
         self.batch_size = batch_size
-        self.seed = seed
         self.verbose = verbose
 
-        if self.seed is not None:
-            torch.manual_seed(self.seed)
+        self.generator = get_generator(seed)
+        self.logger = get_logger("lbg")
+        self.hide_progress_bar = self.verbose <= 1
 
         self.vq = VectorQuantization(order, codebook_size).eval()
 
@@ -131,11 +132,6 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 c //= 2
             self.curr_codebook_size = c
             self.init = init
-
-        if self.verbose:
-            self.logger = get_logger("lbg")
-
-        self.hide_progress_bar = self.verbose <= 1
 
     def forward(self, x, return_indices=False):
         """Design a codebook.
@@ -173,9 +169,6 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         tensor(0.2331)
 
         """
-        if self.seed is not None:
-            torch.manual_seed(self.seed)
-
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
 
@@ -185,8 +178,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         elif self.init == "mean":
             if self.verbose:
                 self.logger.info("K = 1")
-            s = 0
-            T = 0
+            s = T = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 assert batch_x.dim() == 2
                 batch_xp = batch_x.to(device)
@@ -266,7 +258,15 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                     # Get index of largest cluster.
                     m = torch.argmax(n_data, 0)
                     copied_centroids = centroids[m : m + 1].expand((~mask).sum(), -1)
-                    r = torch.randn_like(copied_centroids) * self.perturb_factor
+                    r = (
+                        torch.randn(
+                            copied_centroids.size(),
+                            dtype=copied_centroids.dtype,
+                            device=device,
+                            generator=self.generator,
+                        )
+                        * self.perturb_factor
+                    )
                     centroids[~mask] = copied_centroids - r
                     centroids[m] += r.mean(0)
 

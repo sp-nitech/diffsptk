@@ -57,8 +57,11 @@ def get_logger(name):
     return logger
 
 
-def is_power_of_two(n):
-    return (n != 0) and (n & (n - 1) == 0)
+def get_generator(seed=None):
+    generator = torch.Generator()
+    if seed is not None:
+        generator.manual_seed(seed)
+    return generator
 
 
 def next_power_of_two(n):

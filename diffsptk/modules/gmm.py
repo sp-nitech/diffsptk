@@ -110,6 +110,9 @@ class GaussianMixtureModeling(nn.Module):
         self.batch_size = batch_size
         self.verbose = verbose
 
+        self.logger = get_logger("gmm")
+        self.hide_progress_bar = self.verbose <= 1
+
         if self.alpha != 0:
             assert ubm is not None
 
@@ -149,11 +152,6 @@ class GaussianMixtureModeling(nn.Module):
             self.register_buffer("ubm_w", ubm_w)
             self.register_buffer("ubm_mu", ubm_mu)
             self.register_buffer("ubm_sigma", ubm_sigma)
-
-        if self.verbose:
-            self.logger = get_logger("gmm")
-
-        self.hide_progress_bar = self.verbose <= 1
 
     def set_params(self, params):
         """Set model parameters.

@@ -18,6 +18,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_generator
 from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
 from .pca import PrincipalComponentAnalysis
@@ -47,6 +48,9 @@ class IndependentComponentAnalysis(nn.Module):
     batch_size : int >= 1 or None
         Batch size.
 
+    seed : int or None
+        Random seed.
+
     verbose : bool
         If True, show progress bar.
 
@@ -65,6 +69,7 @@ class IndependentComponentAnalysis(nn.Module):
         n_iter=100,
         eps=1e-4,
         batch_size=None,
+        seed=None,
         verbose=False,
     ):
         super().__init__()
@@ -78,6 +83,10 @@ class IndependentComponentAnalysis(nn.Module):
         self.batch_size = batch_size
         self.verbose = verbose
 
+        generator = get_generator(seed)
+        self.logger = get_logger("ica")
+        self.hide_progress_bar = self.verbose <= 1
+
         if func == "logcosh":
             self.g = torch.tanh
             self.g_prime = lambda u: 1 - torch.tanh(u) ** 2
@@ -89,12 +98,8 @@ class IndependentComponentAnalysis(nn.Module):
 
         self.pca = PrincipalComponentAnalysis(order, n_comp, batch_size=batch_size)
 
-        self.register_buffer("W", torch.randn(n_comp, n_comp))  # (K, K)
-
-        if self.verbose:
-            self.logger = get_logger("ica")
-
-        self.hide_progress_bar = self.verbose <= 1
+        W = torch.randn(n_comp, n_comp, generator=generator)
+        self.register_buffer("W", W)  # (K, K)
 
     def forward(self, x):
         """Estimate separating matrix.
