@@ -8,4 +8,6 @@ ica
 .. autoclass:: diffsptk.IndependentComponentAnalysis
     :members:
 
+.. seealso::
+
     :ref:`pca`
