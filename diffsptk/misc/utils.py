@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 from importlib import import_module
+import logging
 import math
 
 import numpy as np
@@ -43,8 +44,24 @@ def delayed_import(module_path, item_name):
     return getattr(module, item_name)
 
 
-def is_power_of_two(n):
-    return (n != 0) and (n & (n - 1) == 0)
+def get_logger(name):
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
+    )
+    logger.handlers.clear()
+    handler = logging.StreamHandler()
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
+
+
+def get_generator(seed=None):
+    generator = torch.Generator()
+    if seed is not None:
+        generator.manual_seed(seed)
+    return generator
 
 
 def next_power_of_two(n):

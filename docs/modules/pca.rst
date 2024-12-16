@@ -8,4 +8,4 @@ pca
 .. autoclass:: diffsptk.PrincipalComponentAnalysis
     :members:
 
-    :ref:`nmf` :ref:`lbg`
+    :ref:`nmf` :ref:`ica` :ref:`lbg`

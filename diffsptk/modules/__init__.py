@@ -44,6 +44,8 @@ from .hilbert import HilbertTransform
 from .hilbert2 import TwoDimensionalHilbertTransform
 from .histogram import Histogram
 from .ialaw import ALawExpansion
+from .ica import IndependentComponentAnalysis
+from .ica import IndependentComponentAnalysis as ICA
 from .icqt import InverseConstantQTransform
 from .icqt import InverseConstantQTransform as ICQT
 from .idct import InverseDiscreteCosineTransform

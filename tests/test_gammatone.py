@@ -26,7 +26,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("exact", [False, True])
-def test_analysis(device, exact, M=4, L=8192, sr=16000, verbose=True):
+def test_analysis(device, exact, M=4, L=8192, sr=16000, verbose=False):
     if device == "cuda" and not torch.cuda.is_available():
         return
 

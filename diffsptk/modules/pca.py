@@ -60,7 +60,6 @@ class PrincipalComponentAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= order
         assert 1 <= n_comp <= order + 1
         assert sort in ["ascending", "descending"]
 

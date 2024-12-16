@@ -14,13 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import logging
-
 import numpy as np
 import torch
 from torch import nn
 from tqdm import tqdm
 
+from ..misc.utils import get_logger
 from ..misc.utils import outer
 from ..misc.utils import to_dataloader
 
@@ -111,6 +110,9 @@ class GaussianMixtureModeling(nn.Module):
         self.batch_size = batch_size
         self.verbose = verbose
 
+        self.logger = get_logger("gmm")
+        self.hide_progress_bar = self.verbose <= 1
+
         if self.alpha != 0:
             assert ubm is not None
 
@@ -150,19 +152,6 @@ class GaussianMixtureModeling(nn.Module):
             self.register_buffer("ubm_w", ubm_w)
             self.register_buffer("ubm_mu", ubm_mu)
             self.register_buffer("ubm_sigma", ubm_sigma)
-
-        if self.verbose:
-            self.logger = logging.getLogger("gmm")
-            self.logger.setLevel(logging.INFO)
-            formatter = logging.Formatter(
-                "%(asctime)s (%(module)s:%(lineno)d) %(levelname)s: %(message)s"
-            )
-            self.logger.handlers.clear()
-            handler = logging.StreamHandler()
-            handler.setFormatter(formatter)
-            self.logger.addHandler(handler)
-
-        self.hide_progress_bar = self.verbose <= 1
 
     def set_params(self, params):
         """Set model parameters.
