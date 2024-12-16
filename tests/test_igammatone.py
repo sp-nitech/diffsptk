@@ -59,7 +59,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
     assert len(peaks) == len(gammatone.center_frequencies)
     assert np.abs(amplitude[peaks[1:-1]]) == pytest.approx(0, abs=0.1)
 
-    group_dleay = diffsptk.GroupDelay(L)(reconstructed_impulse)
+    group_dleay = diffsptk.GroupDelay(L).to(device)(reconstructed_impulse)
     group_dleay = group_dleay.cpu().numpy() / sr * 1000
     assert group_dleay.mean() == pytest.approx(desired_delay, abs=0.1)
 
