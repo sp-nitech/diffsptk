@@ -35,7 +35,7 @@ def test_compatibility(
         device,
         [plp, spec],
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B * L}",
         f"plp -m {M} -n {C} -l {L} -s {s} -c {lifter} -L {f_min} -f {factor} -o {o}",
         [],
         dx=L,

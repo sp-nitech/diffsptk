@@ -31,7 +31,7 @@ def test_compatibility(device, n_iter, gamma, M=8, L=32, B=2, alpha=0.1):
         device,
         [mgcep, spec],
         [],
-        f"nrand -l {B*L} | sopr -SQR",
+        f"nrand -l {B * L} | sopr -SQR",
         f"mgcep -d 0 -i {n_iter} -l {L} -m {M} -a {alpha} -g {gamma}",
         [],
         dx=L,

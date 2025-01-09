@@ -37,7 +37,7 @@ def test_compatibility(device, module, M, out_format, L=14, B=2):
         device,
         acorr,
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B * L}",
         f"acorr -l {L} -m {M} -o {out_format}",
         [],
         dx=L,

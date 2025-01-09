@@ -39,7 +39,7 @@ def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
     U.check_compatibility(
         device,
         zerodf,
-        [f"nrand -l {T} > {tmp1}", f"nrand -l {T//P*(M+1)} > {tmp2}"],
+        [f"nrand -l {T} > {tmp1}", f"nrand -l {T // P * (M + 1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
         f"zerodf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],

@@ -31,7 +31,10 @@ def test_compatibility(device, m=9, K=4, B=8):
     U.check_compatibility(
         device,
         [itemgetter(1), vq],
-        [f"nrand -s 123 -l {B*(m+1)} > {tmp1}", f"nrand -s 234 -l {K*(m+1)} > {tmp2}"],
+        [
+            f"nrand -s 123 -l {B * (m + 1)} > {tmp1}",
+            f"nrand -s 234 -l {K * (m + 1)} > {tmp2}",
+        ],
         [f"cat {tmp1}", f"cat {tmp2}"],
         f"msvq -m {m} -s {tmp2} < {tmp1} | x2x +id",
         [f"rm {tmp1} {tmp2}"],

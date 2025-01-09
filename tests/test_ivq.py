@@ -29,7 +29,7 @@ def test_compatibility(device, m=9, K=4):
     U.check_compatibility(
         device,
         ivq,
-        [f"echo 0 3 1 2 | x2x +ad > {tmp1}", f"nrand -s 234 -l {K*(m+1)} > {tmp2}"],
+        [f"echo 0 3 1 2 | x2x +ad > {tmp1}", f"nrand -s 234 -l {K * (m + 1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
         f"x2x +di {tmp1} | imsvq -m {m} -s {tmp2}",
         [f"rm {tmp1} {tmp2}"],

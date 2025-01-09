@@ -60,7 +60,7 @@ def test_compatibility(
         device,
         mlsacheck,
         [],
-        f"nrand -l {B*L} | mgcep -m {M} -l {L} -a {alpha} | sopr -m 10",
+        f"nrand -l {B * L} | mgcep -m {M} -l {L} -a {alpha} | sopr -m 10",
         f"mlsacheck -m {M} -l {L} -a {alpha} -P {P} {opt} -e 0 -x",
         [],
         dx=M + 1,

@@ -39,9 +39,12 @@ def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
     U.check_compatibility(
         device,
         grpdelay,
-        [f"nrand -s 1 -l {B*M} > {tmp1}", f"nrand -s 2 -l {B*N} > {tmp2}"],
+        [f"nrand -s 1 -l {B * M} > {tmp1}", f"nrand -s 2 -l {B * N} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"grpdelay -l {L} -m {M-1} -z {tmp1} -n {N-1} -p {tmp2} -a {alpha} -g {gamma}",
+        (
+            f"grpdelay -l {L} -m {M - 1} -z {tmp1} -n {N - 1} -p {tmp2} "
+            f"-a {alpha} -g {gamma}"
+        ),
         [f"rm {tmp1} {tmp2}"],
         dx=[M, N],
         dy=L // 2 + 1,
@@ -67,8 +70,8 @@ def test_compatibility_b(device, module, L=16, B=2):
         device,
         grpdelay,
         [],
-        f"nrand -s 1 -l {B*M}",
-        f"grpdelay -l {L} -m {M-1}",
+        f"nrand -s 1 -l {B * M}",
+        f"grpdelay -l {L} -m {M - 1}",
         [],
         dx=M,
         dy=L // 2 + 1,
@@ -92,9 +95,9 @@ def test_compatibility_a(device, module, L=16, B=2):
     U.check_compatibility(
         device,
         grpdelay,
-        [f"nrand -s 2 -l {B*N} > {tmp}"],
+        [f"nrand -s 2 -l {B * N} > {tmp}"],
         [f"cat {tmp}"],
-        f"grpdelay -l {L} -n {N-1} -p {tmp}",
+        f"grpdelay -l {L} -n {N - 1} -p {tmp}",
         [f"rm {tmp}"],
         dx=N,
         dy=L // 2 + 1,

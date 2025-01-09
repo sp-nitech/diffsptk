@@ -32,12 +32,10 @@
 
 import numpy as np
 import torch
-from torch import nn
 import torchaudio
+from torch import nn
 
-from ..misc.utils import delayed_import
-from ..misc.utils import get_resample_params
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import delayed_import, get_resample_params, numpy_to_torch
 from .istft import InverseShortTimeFourierTransform as ISTFT
 
 

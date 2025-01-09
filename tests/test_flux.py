@@ -39,7 +39,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
     elif reduction == "batchmean":
         reduce_cmd = "average"
     elif reduction == "mean":
-        reduce_cmd = f"average | sopr -d {L**(1/norm)}"
+        reduce_cmd = f"average | sopr -d {L**(1 / norm)}"
     elif reduction == "sum":
         reduce_cmd = "vsum"
     else:
@@ -49,12 +49,12 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
     U.check_compatibility(
         device,
         flux,
-        [f"nrand -s 1 -l {T*L} > {tmp1}", f"nrand -s 2 -l {T*L} > {tmp2}"],
+        [f"nrand -s 1 -l {T * L} > {tmp1}", f"nrand -s 2 -l {T * L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
         (
             f"delay -l {L} -s -{abs(lag)} {tmp1 if 0 < lag else tmp2} | "
             f"vopr -l {L} -s {tmp2 if 0 < lag else tmp1} | "
-            f"sopr -p {norm} | vsum -l 1 -t {L} | sopr -p {1/norm} | "
+            f"sopr -p {norm} | vsum -l 1 -t {L} | sopr -p {1 / norm} | "
             f"{reduce_cmd}"
         ),
         [f"rm {tmp1} {tmp2}"],

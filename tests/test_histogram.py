@@ -45,7 +45,7 @@ def test_compatibility(
         device,
         histogram,
         [],
-        [f"nrand -l {B*L}"],
+        [f"nrand -l {B * L}"],
         f"histogram -t {L} -b {K} -l {lower_bound} -u {upper_bound} {opt}",
         [],
         dx=L,

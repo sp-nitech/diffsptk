@@ -35,7 +35,7 @@ def test_compatibility(device, module, m=19, M=29, alpha=0.1, B=2):
         device,
         freqt,
         [],
-        f"nrand -l {B*(m+1)}",
+        f"nrand -l {B * (m + 1)}",
         f"freqt -m {m} -M {M} -A {alpha}",
         [],
         dx=m + 1,

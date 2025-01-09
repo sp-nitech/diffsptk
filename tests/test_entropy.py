@@ -37,7 +37,7 @@ def test_compatibility(device, module, out_format, L=5, B=2):
         device,
         entropy,
         [],
-        f"nrand -l {B*L} -d 0.5 | sopr -ABS",
+        f"nrand -l {B * L} -d 0.5 | sopr -ABS",
         f"entropy -l {L} -o {out_format} -f",
         [],
         dx=L,

@@ -42,7 +42,7 @@ def test_compatibility(device, module, M, n_iter, L=16, B=2, accel=0.001):
         device,
         [fftcep, spec],
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B * L}",
         f"fftcep -i {n_iter} -l {L} -m {M} -a {accel}",
         [],
         dx=L,

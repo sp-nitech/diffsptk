@@ -47,7 +47,7 @@ def test_compatibility(
         device,
         [fbank, spec],
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B * L}",
         f"fbank -n {C} -l {L} -s {s} -L {f_min} -H {f_max} -e {floor} -o {out_format}",
         [],
         dx=L,

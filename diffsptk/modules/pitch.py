@@ -14,15 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from abc import ABC
-from abc import abstractmethod
 import importlib
+from abc import ABC, abstractmethod
 
 import torch
 from torch import nn
 
-from ..misc.utils import UNVOICED_SYMBOL
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import UNVOICED_SYMBOL, numpy_to_torch
 from .frame import Frame
 from .stft import ShortTimeFourierTransform
 

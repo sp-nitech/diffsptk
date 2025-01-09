@@ -28,7 +28,7 @@ def test_compatibility(device, M=9, alpha=0.1, beta=0.2, onset=2, L=128, B=2):
         device,
         mcpf,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B * (M + 1)}",
         f"mcpf -m {M} -a {alpha} -b {beta} -s {onset} -l {L}",
         [],
         dx=M + 1,

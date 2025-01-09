@@ -38,7 +38,7 @@ def test_compatibility(device, module, gamma, c, M=4, B=2):
         device,
         ignorm,
         [],
-        f"nrand -l {B*(M+1)} | sopr -ABS",
+        f"nrand -l {B * (M + 1)} | sopr -ABS",
         f"ignorm -m {M} {opt}",
         [],
         dx=M + 1,

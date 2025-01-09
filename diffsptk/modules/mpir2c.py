@@ -17,8 +17,7 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import clog
+from ..misc.utils import check_size, clog
 
 
 class MinimumPhaseImpulseResponseToCepstrum(nn.Module):

@@ -38,7 +38,7 @@ def test_compatibility(device, module, M, out_format, L=16, B=2):
         device,
         lsp2sp,
         [],
-        f"nrand -l {B*L} | lpc -l {L} -m {M} | lpc2lsp -m {M}",
+        f"nrand -l {B * L} | lpc -l {L} -m {M} | lpc2lsp -m {M}",
         f"mglsp2sp -m {M} -l {L} -o {out_format}",
         [],
         dx=M + 1,

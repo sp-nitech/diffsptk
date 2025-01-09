@@ -19,9 +19,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import get_logger
-from ..misc.utils import outer
-from ..misc.utils import to_dataloader
+from ..misc.utils import get_logger, outer, to_dataloader
 
 
 class GaussianMixtureModeling(nn.Module):
@@ -338,7 +336,7 @@ class GaussianMixtureModeling(nn.Module):
 
             # Check convergence.
             if self.verbose:
-                self.logger.info(f"iter {n+1:5d}: average = {log_likelihood / T:g}")
+                self.logger.info(f"iter {n + 1:5d}: average = {log_likelihood / T:g}")
             change = log_likelihood - prev_log_likelihood
             if n and change < self.eps:
                 break

@@ -14,8 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..misc.utils import replicate1
 

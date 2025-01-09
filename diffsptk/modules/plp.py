@@ -18,8 +18,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from ..misc.utils import numpy_to_torch
-from ..misc.utils import replicate1
+from ..misc.utils import numpy_to_torch, replicate1
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum

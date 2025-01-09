@@ -35,7 +35,7 @@ def test_compatibility(device, module, L=32, M=9, gamma=0.9, B=2):
         device,
         lpc2par,
         [],
-        f"nrand -l {B*L} | lpc -l {L} -m {M}",
+        f"nrand -l {B * L} | lpc -l {L} -m {M}",
         f"lpc2par -m {M} -g {gamma}",
         [],
         dx=M + 1,

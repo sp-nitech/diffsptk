@@ -41,7 +41,7 @@ def test_compatibility(device, module, P, N=10):
         (
             f"cat {tmp}"
             if P == 1
-            else f"step -v 1 -l {N*P} | zerodf {tmp} -i 1 -m 0 -p {P}"
+            else f"step -v 1 -l {N * P} | zerodf {tmp} -i 1 -m 0 -p {P}"
         ),
         [f"rm {tmp}"],
     )

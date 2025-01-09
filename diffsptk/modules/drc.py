@@ -16,8 +16,8 @@
 
 import numpy as np
 import torch
-from torch import nn
 import torchcomp
+from torch import nn
 
 from ..misc.utils import to_2d
 

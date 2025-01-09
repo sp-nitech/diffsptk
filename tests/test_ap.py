@@ -51,10 +51,10 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
         ap,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
-            f"pitch -s {sr//1000} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
+            f"pitch -s {sr // 1000} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
         ],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"ap -s {sr//1000} -p {P} -l {L} -a 0 -q 1 -o {out_format} {tmp2} < {tmp1}",
+        f"ap -s {sr // 1000} -p {P} -l {L} -a 0 -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
         eq=eq(out_format),

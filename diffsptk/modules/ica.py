@@ -18,9 +18,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import get_generator
-from ..misc.utils import get_logger
-from ..misc.utils import to_dataloader
+from ..misc.utils import get_generator, get_logger, to_dataloader
 from .pca import PrincipalComponentAnalysis
 
 
@@ -148,7 +146,7 @@ class IndependentComponentAnalysis(nn.Module):
             similarity = torch.diagonal(torch.matmul(W, prev_W.T)).abs()
             criterion = (similarity - 1).abs().max()
             if self.verbose:
-                self.logger.info(f"  iter {n+1:5d}: criterion = {criterion:g}")
+                self.logger.info(f"  iter {n + 1:5d}: criterion = {criterion:g}")
             if criterion < self.eps:
                 break
 

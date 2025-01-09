@@ -53,7 +53,7 @@ def test_compatibility(device, module, cond, B=2, T=100, L=20):
     U.check_compatibility(
         device,
         snr,
-        [f"nrand -s 1 -l {B*T} > {tmp1}", f"nrand -s 2 -l {B*T} > {tmp2}"],
+        [f"nrand -s 1 -l {B * T} > {tmp1}", f"nrand -s 2 -l {B * T} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
         f"snr -o {o} -l {L} {tmp1} {tmp2} | sopr -m {mul}",
         [f"rm {tmp1} {tmp2}"],

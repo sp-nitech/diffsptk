@@ -65,7 +65,7 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=80, H=180):
         [pitch, lambda x: x / 32768],
         [],
         "x2x +sd tools/SPTK/asset/data.short",
-        f"pitch -s {sr//1000} -p {P} -L {L} -H {H} -o {out_format}",
+        f"pitch -s {sr // 1000} -p {P} -L {L} -H {H} -o {out_format}",
         [],
         eq=eq(out_format, sr),
     )

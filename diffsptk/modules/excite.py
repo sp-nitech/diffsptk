@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
-from ..misc.utils import TWO_PI
-from ..misc.utils import UNVOICED_SYMBOL
+from ..misc.utils import TWO_PI, UNVOICED_SYMBOL
 from .linear_intpl import LinearInterpolation
 
 

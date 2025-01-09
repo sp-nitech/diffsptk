@@ -18,8 +18,8 @@ import os
 
 import numpy as np
 import pytest
-from scipy.signal import find_peaks
 import torch
+from scipy.signal import find_peaks
 
 import diffsptk
 import tests.utils as U
@@ -71,7 +71,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "
             f"amplitude{suffix}.png -g -F 2 "
-            f"-xname 'Frequency [Hz]' -xscale {sr/2} "
+            f"-xname 'Frequency [Hz]' -xscale {sr / 2} "
             "-yname 'Log amplitude [dB]' -y -30 5"
         )
         U.call(cmd, get=False)
@@ -80,7 +80,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "
             f"grpdelay{suffix}.png -g -F 2 "
-            f"-xname 'Frequency [Hz]' -xscale {sr/2} "
+            f"-xname 'Frequency [Hz]' -xscale {sr / 2} "
             "-yname 'Group delay [ms]'"
         )
         U.call(cmd, get=False)

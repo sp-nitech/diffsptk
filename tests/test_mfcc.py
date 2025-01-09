@@ -35,7 +35,7 @@ def test_compatibility(
         device,
         [mfcc, spec],
         [],
-        f"nrand -l {B*L}",
+        f"nrand -l {B * L}",
         f"mfcc -m {M} -n {C} -l {L} -s {s} -c {lifter} -L {f_min} -e {floor} -o {o}",
         [],
         dx=L,
