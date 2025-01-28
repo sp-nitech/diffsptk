@@ -39,7 +39,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
     elif reduction == "batchmean":
         reduce_cmd = "average"
     elif reduction == "mean":
-        reduce_cmd = f"average | sopr -d {L**(1 / norm)}"
+        reduce_cmd = f"average | sopr -d {L ** (1 / norm)}"
     elif reduction == "sum":
         reduce_cmd = "vsum"
     else:

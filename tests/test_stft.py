@@ -43,7 +43,7 @@ def test_compatibility(
         },
     )
 
-    cmd = f"frame -l {L1} -p {P} | " f"window -l {L1} -L {L2} -n {n} -w {w} | "
+    cmd = f"frame -l {L1} -p {P} | window -l {L1} -L {L2} -n {n} -w {w} | "
     if comp:
         cmd += f"fftr -l {L2} -H -o 3"
     else:
