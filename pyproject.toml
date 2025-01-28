@@ -40,6 +40,7 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
   "build",
+  "codespell",
   "docstrfmt",
   "mdformat",
   "numpydoc",
@@ -70,6 +71,11 @@ path = "diffsptk/version.py"
 extend-select = ["E", "I", "FURB"]
 preview = true
 exclude = ["__init__.py"]
+
+[tool.codespell]
+skip = "./docs/_build,./tools,./venv"
+ignore-words-list = "numer"
+ignore-multiline-regex = "codespell:ignore-begin.*codespell:ignore-end"
 
 [tool.coverage.report]
 exclude_lines = [

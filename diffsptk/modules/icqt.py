@@ -75,7 +75,7 @@ class InverseConstantQTransform(nn.Module):
         Window function for the basis.
 
     scale : bool
-        If True, scale the CQT responce by the length of filter.
+        If True, scale the CQT response by the length of filter.
 
     res_type : ['kaiser_best', 'kaiser_fast'] or None
         Resampling type.

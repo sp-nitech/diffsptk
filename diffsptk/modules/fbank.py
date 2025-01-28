@@ -49,7 +49,7 @@ class MelFilterBankAnalysis(nn.Module):
         If True, use power spectrum instead of amplitude spectrum.
 
     out_format : ['y', 'yE', 'y,E']
-        `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
+        `y` is mel-filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
     References

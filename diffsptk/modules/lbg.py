@@ -170,7 +170,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
 
-        # Initalize codebook.
+        # Initialize codebook.
         if self.init == "none":
             pass
         elif self.init == "mean":

@@ -584,7 +584,7 @@ def fbank(x, n_channel, sample_rate, f_min=0, f_max=None, floor=1e-5, out_format
         Minimum mel-filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'y,E']
-        `y` is mel-filber bank outpus and `E` is energy. If this is `yE`, the two output
+        `y` is mel-filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
     Returns
@@ -711,7 +711,7 @@ def freqt(c, out_order, alpha=0):
         Order of output cepstrum, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frquency warping factor, :math:`\\alpha`.
+        Frequency warping factor, :math:`\\alpha`.
 
     Returns
     -------
