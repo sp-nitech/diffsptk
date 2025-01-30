@@ -20,7 +20,7 @@ jobs:
           - python: 3.9
             torch: 2.0.0
             torchaudio: 2.0.1
-          - python: 3.13
+          - python: 3.12
             torch: 2.6.0
             torchaudio: 2.6.0
 
