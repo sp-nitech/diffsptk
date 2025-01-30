@@ -36,7 +36,7 @@ def test_compatibility(device, module, M=19, N=30, L=512, B=2):
         device,
         mpir2c,
         [],
-        f"nrand -l {B*L} | fftcep -l {L} -m {M} | c2mpir -m {M} -l {N}",
+        f"nrand -l {B * L} | fftcep -l {L} -m {M} | c2mpir -m {M} -l {N}",
         f"mpir2c -M {M} -l {N}",
         [],
         dx=N,

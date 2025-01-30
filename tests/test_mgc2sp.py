@@ -36,7 +36,7 @@ def test_compatibility(device, module, out_format, M=7, L=16, B=2):
         device,
         mgc2sp,
         [],
-        f"nrand -l {B*L} | fftcep -l {L} -m {M}",
+        f"nrand -l {B * L} | fftcep -l {L} -m {M}",
         f"mgc2sp -m {M} -l {L} -o {out_format}",
         [],
         dx=M + 1,

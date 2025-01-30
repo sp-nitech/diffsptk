@@ -37,7 +37,7 @@ def test_compatibility(device, module, gamma, c, M=4, B=2):
         device,
         gnorm,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B * (M + 1)}",
         f"gnorm -m {M} {opt}",
         [],
         dx=M + 1,

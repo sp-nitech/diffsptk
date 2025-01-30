@@ -17,8 +17,7 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..misc.utils import check_size, to
 from .delta import Delta
 
 
@@ -117,7 +116,8 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         T = size
         W = torch.zeros((T * H, T), dtype=torch.double, device=device)
 
-        # Make window matrix
+        # Make window matrix.
+        # codespell:ignore-begin
         for t in range(T):
             hs = H * t
             he = hs + H
@@ -129,6 +129,7 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
                 W[hs:he, ts:] = window[:, : T - ts] * (th < T - t)
             else:
                 W[hs:he, ts:te] = window
+        # codespell:ignore-end
 
         WS = W.T  # Assume unit variance.
         WSW = torch.matmul(WS, W)

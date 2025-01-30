@@ -34,7 +34,7 @@ def test_compatibility(device, module, M=4, B=2):
         device,
         ipnorm,
         [],
-        f"nrand -l {B*(M+2)}",
+        f"nrand -l {B * (M + 2)}",
         f"ipnorm -m {M}",
         [],
         dx=M + 2,

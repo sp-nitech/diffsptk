@@ -34,7 +34,7 @@ def test_compatibility(device, module, B=2, M=4):
         device,
         norm0,
         [],
-        f"nrand -l {B*(M+1)}",
+        f"nrand -l {B * (M + 1)}",
         f"norm0 -m {M}",
         [],
         dx=M + 1,

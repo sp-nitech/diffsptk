@@ -36,10 +36,10 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
         device,
         [itemgetter(-1), lbg],
         [
-            f"nrand -u +2 -l {B*(M+1)} -s 1 > {tmp1}",
-            f"nrand -u -2 -l {B*(M+1)} -s 2 > {tmp2}",
-            f"nrand -u +4 -l {B*(M+1)} -s 3 > {tmp3}",
-            f"nrand -u -4 -l {B*(M+1)} -s 4 > {tmp4}",
+            f"nrand -u +2 -l {B * (M + 1)} -s 1 > {tmp1}",
+            f"nrand -u -2 -l {B * (M + 1)} -s 2 > {tmp2}",
+            f"nrand -u +4 -l {B * (M + 1)} -s 3 > {tmp3}",
+            f"nrand -u -4 -l {B * (M + 1)} -s 4 > {tmp4}",
         ],
         f"cat {tmp1} {tmp2} {tmp3} {tmp4}",
         (

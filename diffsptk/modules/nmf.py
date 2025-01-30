@@ -18,9 +18,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import get_generator
-from ..misc.utils import get_logger
-from ..misc.utils import to_dataloader
+from ..misc.utils import get_generator, get_logger, to_dataloader
 
 
 class NonnegativeMatrixFactorization(nn.Module):
@@ -234,7 +232,7 @@ class NonnegativeMatrixFactorization(nn.Module):
                 t1 = t2
 
             if self.verbose:
-                self.logger.info(f"  iter {n+1:5d}: divergence = {divergence:g}")
+                self.logger.info(f"  iter {n + 1:5d}: divergence = {divergence:g}")
 
             # Check convergence.
             change = (prev_divergence - divergence).abs()

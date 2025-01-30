@@ -14,16 +14,16 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from importlib import import_module
 import logging
 import math
+from importlib import import_module
 
 import numpy as np
 import soundfile as sf
 import torch
-from torch import nn
 import torch.nn.functional as F
 import torchaudio
+from torch import nn
 
 UNVOICED_SYMBOL = 0
 TWO_PI = math.tau

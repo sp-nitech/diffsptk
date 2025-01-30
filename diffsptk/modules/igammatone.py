@@ -15,13 +15,11 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..misc.signals import impulse
-from ..misc.utils import TWO_PI
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..misc.utils import TWO_PI, check_size, to
 from .gammatone import GammatoneFilterBankAnalysis
 
 

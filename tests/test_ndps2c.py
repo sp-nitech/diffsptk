@@ -36,7 +36,7 @@ def test_compatibility(device, module, M=8, L=16, B=2):
         device,
         ndps2c,
         [],
-        f"nrand -l {B*H}",
+        f"nrand -l {B * H}",
         f"ndps2c -m {M} -l {L}",
         [],
         dx=H,

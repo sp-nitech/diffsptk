@@ -20,9 +20,7 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import get_generator
-from ..misc.utils import get_logger
-from ..misc.utils import to_dataloader
+from ..misc.utils import get_generator, get_logger, to_dataloader
 from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
 
@@ -172,7 +170,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
 
-        # Initalize codebook.
+        # Initialize codebook.
         if self.init == "none":
             pass
         elif self.init == "mean":
@@ -223,7 +221,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
                 # E-step: evaluate model.
                 indices, distance = e_step(x)
                 if self.verbose:
-                    self.logger.info(f"  iter {n+1:5d}: distance = {distance:g}")
+                    self.logger.info(f"  iter {n + 1:5d}: distance = {distance:g}")
 
                 # Check convergence.
                 change = (prev_distance - distance).abs()

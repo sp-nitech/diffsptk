@@ -49,16 +49,15 @@ doc-clean:
 check: tool
 	. ./venv/bin/activate && python -m ruff check $(PROJECT) tests
 	. ./venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
-	. ./venv/bin/activate && python -m isort --check $(PROJECT) tests
 	. ./venv/bin/activate && python -m mdformat --check *.md
 	. ./venv/bin/activate && cd docs && python -m docstrfmt --check .
+	./venv/bin/codespell
 	./tools/taplo/taplo fmt --check *.toml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
 
 format: tool
 	. ./venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
 	. ./venv/bin/activate && python -m ruff format $(PROJECT) tests docs
-	. ./venv/bin/activate && python -m isort $(PROJECT) tests
 	. ./venv/bin/activate && python -m mdformat *.md
 	. ./venv/bin/activate && cd docs && python -m docstrfmt .
 	./tools/taplo/taplo fmt *.toml

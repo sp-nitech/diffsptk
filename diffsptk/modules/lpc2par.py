@@ -17,8 +17,7 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import get_gamma
+from ..misc.utils import check_size, get_gamma
 
 
 class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):

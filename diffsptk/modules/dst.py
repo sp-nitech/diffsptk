@@ -17,9 +17,7 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import plateau
-from ..misc.utils import to
+from ..misc.utils import check_size, plateau, to
 
 
 class DiscreteSineTransform(nn.Module):

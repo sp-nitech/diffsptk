@@ -34,9 +34,9 @@ def test_compatibility(device, m=9, K=4, Q=2, B=8):
         device,
         [itemgetter(1), msvq],
         [
-            f"nrand -s 123 -l {B*(m+1)} > {tmp1}",
-            f"nrand -s 234 -l {K*(m+1)} > {tmp2}",
-            f"nrand -s 345 -l {K*(m+1)} > {tmp3}",
+            f"nrand -s 123 -l {B * (m + 1)} > {tmp1}",
+            f"nrand -s 234 -l {K * (m + 1)} > {tmp2}",
+            f"nrand -s 345 -l {K * (m + 1)} > {tmp3}",
         ],
         [f"cat {tmp1}", f"cat {tmp2} {tmp3}"],
         f"msvq -m {m} -s {tmp2} -s {tmp3} < {tmp1} | x2x +id",

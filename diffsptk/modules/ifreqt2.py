@@ -17,13 +17,12 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..misc.utils import check_size, to
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 
 
 class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
-    """Second-order all-pass inverse frequecy transform module.
+    """Second-order all-pass inverse frequency transform module.
 
     Parameters
     ----------

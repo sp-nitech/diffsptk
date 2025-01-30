@@ -89,7 +89,7 @@ def test_convergence(device, func, batch_size, T=1000, verbose=False):
         x.T.cpu().numpy().astype(np.float64).tofile(tmp)
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/gwave {tmp} "
-            f"observed.png -i {M+1} -n {T} -g -r"
+            f"observed.png -i {M + 1} -n {T} -g -r"
         )
         U.call(cmd, get=False)
         os.remove(tmp)

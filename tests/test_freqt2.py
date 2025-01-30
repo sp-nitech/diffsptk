@@ -42,7 +42,7 @@ def test_compatibility(device, module, m=19, M=29, alpha=0.1, theta=0.2, B=2):
         device,
         [ifreqt2, freqt2],
         [],
-        f"nrand -l {B*(m+1)}",
+        f"nrand -l {B * (m + 1)}",
         "cat",
         [],
         dx=m + 1,

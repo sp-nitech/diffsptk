@@ -40,8 +40,8 @@ dynamic = ["version"]
 [project.optional-dependencies]
 dev = [
   "build",
+  "codespell",
   "docstrfmt",
-  "isort",
   "mdformat",
   "numpydoc",
   "pkginfo",
@@ -68,18 +68,14 @@ allow-direct-references = true
 path = "diffsptk/version.py"
 
 [tool.ruff.lint]
+extend-select = ["E", "I", "FURB"]
 preview = true
-extend-select = ["FURB"]
 exclude = ["__init__.py"]
 
-[tool.isort]
-known_first_party = ["diffsptk"]
-force_single_line = true
-force_sort_within_sections = true
-include_trailing_comma = true
-multi_line_output = 3
-sort_order = "native"
-use_parentheses = true
+[tool.codespell]
+skip = "./docs/_build,./tools,./venv"
+ignore-words-list = "numer"
+ignore-multiline-regex = "codespell:ignore-begin.*codespell:ignore-end"
 
 [tool.coverage.report]
 exclude_lines = [

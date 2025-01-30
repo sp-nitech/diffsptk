@@ -30,7 +30,7 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         device,
         ipqmf,
         [],
-        f"nrand -l {K*T}",
+        f"nrand -l {K * T}",
         f"transpose -r {K} -c {T} | ipqmf -k {K} -m {M} -a {a} -s {tau} -d {eps}",
         [],
         dx=T,

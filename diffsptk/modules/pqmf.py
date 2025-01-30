@@ -17,11 +17,10 @@
 import warnings
 
 import numpy as np
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
-from ..misc.utils import next_power_of_two
-from ..misc.utils import numpy_to_torch
+from ..misc.utils import next_power_of_two, numpy_to_torch
 
 
 def make_filter_banks(

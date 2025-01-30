@@ -14,15 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from scipy.special import comb
 import torch
-from torch import nn
 import torch.nn.functional as F
+from scipy.special import comb
+from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import hankel
-from ..misc.utils import to
-from ..misc.utils import vander
+from ..misc.utils import check_size, hankel, to, vander
 from .root_pol import PolynomialToRoots
 
 

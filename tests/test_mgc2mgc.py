@@ -85,7 +85,7 @@ def test_compatibility(
         device,
         mgc2mgc,
         [],
-        f"nrand -l {B*L} | fftcep -l {L} -m {m} | mgc2mgc {opt1}",
+        f"nrand -l {B * L} | fftcep -l {L} -m {m} | mgc2mgc {opt1}",
         f"mgc2mgc {opt2}",
         [],
         dx=m + 1,

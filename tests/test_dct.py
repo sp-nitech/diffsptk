@@ -38,7 +38,7 @@ def test_compatibility(device, module, dct_type, L=8, B=2):
             device,
             dct,
             [],
-            f"nrand -l {B*L}",
+            f"nrand -l {B * L}",
             f"dct -l {L}",
             [],
             dx=L,

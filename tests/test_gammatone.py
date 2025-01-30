@@ -52,8 +52,8 @@ def test_analysis(device, exact, M=4, L=8192, sr=16000, verbose=False):
         amplitude.cpu().numpy().astype(np.float64).tofile(tmp)
         cmd = (
             f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "
-            f"filter{suffix}.png -n {L//2+1} -g -F 2 "
-            f"-xname 'Frequency [Hz]' -xscale {sr/2} "
+            f"filter{suffix}.png -n {L // 2 + 1} -g -F 2 "
+            f"-xname 'Frequency [Hz]' -xscale {sr / 2} "
             "-yname 'Log amplitude [dB]' "
         )
         U.call(cmd, get=False)

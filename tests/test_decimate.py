@@ -35,7 +35,7 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
         device,
         decimate,
         [],
-        f"ramp -l {T*L}",
+        f"ramp -l {T * L}",
         f"decimate -l {L} -p {P} -s {S}",
         [],
         dx=L,

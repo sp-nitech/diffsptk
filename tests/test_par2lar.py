@@ -34,7 +34,7 @@ def test_compatibility(device, module, M=9, B=2):
         device,
         par2lar,
         [],
-        f"nrand -l {B*(M+1)} -v 0.1",
+        f"nrand -l {B * (M + 1)} -v 0.1",
         f"par2lar -m {M}",
         [],
         dx=M + 1,

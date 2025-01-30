@@ -42,7 +42,7 @@ def test_compatibility(device, module, seed, T=10, L=2):
         device,
         delta,
         [],
-        f"nrand -l {T*L}",
+        f"nrand -l {T * L}",
         f"delta -l {L} {opt}",
         [],
         dx=L,

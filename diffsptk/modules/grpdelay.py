@@ -15,11 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
-from ..misc.utils import remove_gain
-from ..misc.utils import to
+from ..misc.utils import remove_gain, to
 
 
 class GroupDelay(nn.Module):

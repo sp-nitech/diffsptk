@@ -17,8 +17,8 @@
 import warnings
 
 import numpy as np
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 from ..misc.utils import numpy_to_torch
 from .pqmf import make_filter_banks

@@ -36,7 +36,7 @@ def test_compatibility(device, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
         df2,
         [],
         f"nrand -l {T}",
-        f"df2 -s {sr//1000} -p {pf} {pb} -z {zf} {zb}",
+        f"df2 -s {sr // 1000} -p {pf} {pb} -z {zf} {zb}",
         [],
     )
 

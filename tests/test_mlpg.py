@@ -52,9 +52,9 @@ def test_compatibility(device, module, seed, T=100, D=2):
         device,
         mlpg,
         [
-            f"nrand -s 1 -l {T*D*H} > {tmp1}",  # mean
-            f"step -l {T*D*H} > {tmp2}",  # unit variance
-            f"merge -l {D*H} -L {D*H} {tmp1} {tmp2} > {tmp3}",
+            f"nrand -s 1 -l {T * D * H} > {tmp1}",  # mean
+            f"step -l {T * D * H} > {tmp2}",  # unit variance
+            f"merge -l {D * H} -L {D * H} {tmp1} {tmp2} > {tmp3}",
         ],
         f"cat {tmp1}",
         f"mlpg -l {D} {opt} -R 1 {tmp3}",

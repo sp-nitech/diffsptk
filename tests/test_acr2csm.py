@@ -38,7 +38,7 @@ def test_compatibility(device, module, M=25, L=100, B=2):
         device,
         acr2csm,
         [],
-        f"nrand -l {B*L} | acorr -m {M} -l {L}",
+        f"nrand -l {B * L} | acorr -m {M} -l {L}",
         f"acr2csm -m {M}",
         [],
         dx=M + 1,
