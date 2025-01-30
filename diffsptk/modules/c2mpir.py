@@ -76,7 +76,7 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
     @staticmethod
     def _forward(c, ir_length, n_fft):
         C = torch.fft.fft(c, n=n_fft)
-        h = torch.fft.ifft(cexp(C))[..., :ir_length].real
+        h = torch.fft.ifft(cexp(C)).real[..., :ir_length]
         return h
 
     _func = _forward
