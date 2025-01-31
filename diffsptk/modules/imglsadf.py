@@ -35,8 +35,11 @@ class PseudoInverseMGLSADigitalFilter(nn.Module):
         y : Tensor [shape=(..., T)]
             Audio signal.
 
-        mc : Tensor [shape=(..., T/P, M+1)]
-            Mel-generalized cepstrum, not MLSA digital filter coefficients.
+        mc : Tensor [shape=(..., T/P, M+1)] or [shape=(..., T/P, N+M+1)]
+            Mel-generalized cepstrum, not MLSA digital filter coefficients. Note that
+            the mixed-phase case assumes that the coefficients are of the form
+            c_{-N}, ..., c_{0}, ..., c_{M}, where M is the order of the minimum-phase
+            part and N is the order of the maximum-phase part.
 
         Returns
         -------

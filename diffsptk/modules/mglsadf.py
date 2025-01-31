@@ -156,15 +156,26 @@ class PseudoMGLSADigitalFilter(nn.Module):
         else:
             self.split_sections = (filter_order + 1,)
 
+        def flip(x):
+            if is_array_like(x):
+                return x[1], x[0]
+            return x
+
+        flip_keys = ("cep_order", "ir_length")
+        modified_kwargs = kwargs.copy()
+        for key in flip_keys:
+             if key in kwargs:
+                modified_kwargs[key] = flip(kwargs[key])
+
         if mode == "multi-stage":
             self.mglsadf = MultiStageFIRFilter(
-                filter_order,
+                flip(filter_order),
                 frame_period,
                 alpha=alpha,
                 gamma=gamma,
                 ignore_gain=ignore_gain,
                 phase=phase,
-                **kwargs,
+                **modified_kwargs,
             )
         elif mode == "single-stage":
             self.mglsadf = SingleStageFIRFilter(
@@ -174,7 +185,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
                 gamma=gamma,
                 ignore_gain=ignore_gain,
                 phase=phase,
-                **kwargs,
+                **modified_kwargs,
             )
         elif mode == "freq-domain":
             self.mglsadf = FrequencyDomainFIRFilter(
@@ -184,7 +195,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
                 gamma=gamma,
                 ignore_gain=ignore_gain,
                 phase=phase,
-                **kwargs,
+                **modified_kwargs,
             )
         else:
             raise ValueError(f"mode {mode} is not supported.")
