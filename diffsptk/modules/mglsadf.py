@@ -78,7 +78,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
     Parameters
     ----------
     filter_order : int >= 0 or tuple[int, int]
-        Order of filter coefficients, :math:`M` or :math:`(M, N)`. A tuple input is
+        Order of filter coefficients, :math:`M` or :math:`(N, M)`. A tuple input is
         allowed only if **phase** is 'mixed'.
 
     frame_period : int >= 1
@@ -152,7 +152,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
         gamma = get_gamma(gamma, c)
 
         if phase == "mixed":
-            self.split_sections = (filter_order[0] + 1, filter_order[1])
+            self.split_sections = (filter_order[0], filter_order[1] + 1)
         else:
             self.split_sections = (filter_order + 1,)
 
@@ -197,10 +197,10 @@ class PseudoMGLSADigitalFilter(nn.Module):
         x : Tensor [shape=(..., T)]
             Excitation signal.
 
-        mc : Tensor [shape=(..., T/P, M+1)] or [shape=(..., T/P, M+1+N)]
+        mc : Tensor [shape=(..., T/P, M+1)] or [shape=(..., T/P, N+M+1)]
             Mel-generalized cepstrum, not MLSA digital filter coefficients. Note that
             the mixed-phase case assumes that the coefficients are of the form
-            c_{-M}, ..., c_{0}, ..., c_{N}, where M is the order of the minimum-phase
+            c_{-N}, ..., c_{0}, ..., c_{M}, where M is the order of the minimum-phase
             part and N is the order of the maximum-phase part.
 
         Returns
@@ -225,10 +225,9 @@ class PseudoMGLSADigitalFilter(nn.Module):
         check_size(mc.size(-1), sum(self.split_sections), "dimension of mel-cepstrum")
         check_size(x.size(-1), mc.size(-2) * self.frame_period, "sequence length")
         if len(self.split_sections) != 1:
-            mc_min, mc_max = torch.split(mc, self.split_sections, dim=-1)
-            mc_min = mc_min.flip(-1)
-            mc_max = F.pad(mc_max, (1, 0))
-            mc = (mc_min, mc_max)  # (c0, c-1, ..., c-M), (0, c1, ..., cN)
+            mc_max, mc_min = torch.split(mc, self.split_sections, dim=-1)
+            mc_max = F.pad(mc_max.flip(-1), (1, 0))
+            mc = (mc_min, mc_max)  # (c0, c1, ..., cM), (0, c-1, ..., c-N)
         y = self.mglsadf(x, mc)
         return y
 

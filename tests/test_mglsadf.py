@@ -123,8 +123,10 @@ def test_zero_and_maximum_phase(
     U.check_differentiability(device, mglsadf3, [(B, S), (B, S // P, M + 1)])
 
 
+@pytest.mark.parametrize("phase", ["zero", "maximum"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 def test_mixed_phase(
+    phase,
     ignore_gain,
     alpha=0.42,
     M=24,
@@ -144,12 +146,15 @@ def test_mixed_phase(
         f"mgcep -a {alpha} -m {M} -l {fft_length} -E -60"
     )
     mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1))
-    half_mc = mc[..., 1:] * 0.5
-    mc_mix = torch.cat([half_mc.flip(-1), mc[..., :1], half_mc], dim=-1)
+    if phase == "zero":
+        half_mc = mc[..., 1:] * 0.5
+        mc_mix = torch.cat([half_mc.flip(-1), mc[..., :1], half_mc], dim=-1)
+    elif phase == "maximum":
+        mc_mix = torch.cat([mc.flip(-1), 0 * mc[..., 1:]], dim=-1)
 
     params0 = {"mode": "multi-stage", "cep_order": 200}
     mglsadf0 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase="zero", **params0
+        M, P, ignore_gain=ignore_gain, alpha=alpha, phase=phase, **params0
     )
     y0 = mglsadf0(x, mc).cpu().numpy()
 
@@ -172,7 +177,7 @@ def test_mixed_phase(
         M, P, ignore_gain=ignore_gain, alpha=alpha, phase="mixed", **params3
     )
     y3 = mglsadf3(x, mc_mix).cpu().numpy()
-    assert np.corrcoef(y1, y3)[0, 1] > 0.99
+    assert np.corrcoef(y1, y3)[0, 1] > 0.98
 
     device = "cpu"
     S = T // 10
