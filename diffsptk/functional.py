@@ -1203,6 +1203,26 @@ def iulaw(y, abs_max=1, mu=255):
     return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
 
 
+def iwht(y, wht_type=2):
+    """Compute inverse WHT.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., L)]
+        Input.
+
+    wht_type : int in [1, 3]
+        WHT type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        Inverse WHT output.
+
+    """
+    return nn.InverseWalshHadamardTransform._func(y, wht_type=wht_type)
+
+
 def lar2par(g):
     """Convert LAR to PARCOR.
 
@@ -2264,6 +2284,26 @@ def unframe(
         window=window,
         norm=norm,
     )
+
+
+def wht(x, wht_type=2):
+    """Compute WHT.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L)]
+        Input signal.
+
+    wht_type : int in [1, 3]
+        WHT type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L)]
+        WHT output.
+
+    """
+    return nn.WalshHadamardTransform._func(x, wht_type=wht_type)
 
 
 def window(x, out_length=None, *, window="blackman", norm="power"):

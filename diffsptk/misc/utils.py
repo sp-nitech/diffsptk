@@ -64,6 +64,10 @@ def get_generator(seed=None):
     return generator
 
 
+def is_power_of_two(n):
+    return (n != 0) and (n & (n - 1) == 0)
+
+
 def next_power_of_two(n):
     return 1 << (n - 1).bit_length()
 
