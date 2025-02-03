@@ -40,6 +40,7 @@ def test_compatibility(device, module, C=12):
         S=X.cpu().numpy().T,
         sr=sr,
         n_chroma=C,
+        tuning=0,
     ).T
 
     chroma = U.choice(
@@ -53,6 +54,6 @@ def test_compatibility(device, module, C=12):
         chroma.to(device)
     c2 = chroma(X).cpu().numpy()
 
-    U.allclose(c1, c2)
+    assert U.allclose(c1, c2)
 
     U.check_differentiability(device, chroma, [X.size(-1)])
