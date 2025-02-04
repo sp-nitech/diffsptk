@@ -17,7 +17,10 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size, hankel, symmetric_toeplitz, to
+from ..misc.utils import check_size
+from ..misc.utils import hankel
+from ..misc.utils import symmetric_toeplitz
+from ..misc.utils import to
 from .freqt import FrequencyTransform
 
 

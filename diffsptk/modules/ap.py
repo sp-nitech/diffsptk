@@ -19,7 +19,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import UNVOICED_SYMBOL, numpy_to_torch
+from ..misc.utils import UNVOICED_SYMBOL
+from ..misc.utils import numpy_to_torch
 
 
 class Aperiodicity(nn.Module):

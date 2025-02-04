@@ -17,7 +17,8 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size, symmetric_toeplitz
+from ..misc.utils import check_size
+from ..misc.utils import symmetric_toeplitz
 
 
 class LevinsonDurbin(nn.Module):

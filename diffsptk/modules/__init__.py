@@ -136,6 +136,10 @@ from .stft import ShortTimeFourierTransform as STFT
 from .ulaw import MuLawCompression
 from .unframe import Unframe
 from .vq import VectorQuantization
+from .wht import WalshHadamardTransform
+from .wht import WalshHadamardTransform as WHT
+from .wht import WalshHadamardTransform as InverseWalshHadamardTransform
+from .wht import WalshHadamardTransform as IWHT
 from .window import Window
 from .yingram import Yingram
 from .zcross import ZeroCrossingAnalysis

@@ -18,7 +18,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import TWO_PI, check_size, deconv1d
+from ..misc.utils import TWO_PI
+from ..misc.utils import check_size
+from ..misc.utils import deconv1d
 from .root_pol import PolynomialToRoots
 
 

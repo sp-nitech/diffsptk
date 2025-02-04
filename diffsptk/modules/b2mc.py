@@ -18,7 +18,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import check_size, to
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):

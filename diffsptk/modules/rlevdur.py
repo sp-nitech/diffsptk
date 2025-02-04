@@ -18,7 +18,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import check_size, remove_gain
+from ..misc.utils import check_size
+from ..misc.utils import remove_gain
 
 
 class ReverseLevinsonDurbin(nn.Module):

@@ -18,7 +18,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import remove_gain, to
+from ..misc.utils import remove_gain
+from ..misc.utils import to
 
 
 class GroupDelay(nn.Module):

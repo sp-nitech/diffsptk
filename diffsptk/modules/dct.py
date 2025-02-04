@@ -17,7 +17,9 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size, plateau, to
+from ..misc.utils import check_size
+from ..misc.utils import plateau
+from ..misc.utils import to
 
 
 class DiscreteCosineTransform(nn.Module):

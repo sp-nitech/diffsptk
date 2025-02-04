@@ -17,7 +17,10 @@
 import torch
 from torch import nn
 
-from ..misc.utils import Lambda, check_size, get_gamma, remove_gain
+from ..misc.utils import Lambda
+from ..misc.utils import check_size
+from ..misc.utils import get_gamma
+from ..misc.utils import remove_gain
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .istft import InverseShortTimeFourierTransform

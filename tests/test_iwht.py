@@ -14,9 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import librosa
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,36 +22,32 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, C=12):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read(
-        "assets/data.wav",
-        double=torch.get_default_dtype() == torch.double,
-        device=device,
-    )
-
-    X = diffsptk.functional.stft(x)
-
-    c1 = librosa.feature.chroma_stft(
-        S=X.cpu().numpy().T,
-        sr=sr,
-        n_chroma=C,
-        tuning=0,
-    ).T
-
-    chroma = U.choice(
+@pytest.mark.parametrize("wht_type", [1, 2, 3])
+def test_compatibility(device, module, wht_type, L=8, B=2):
+    wht = U.choice(
         module,
-        diffsptk.ChromaFilterBankAnalysis,
-        diffsptk.functional.chroma,
-        {"fft_length": 2 * (X.size(-1) - 1)},
-        {"n_channel": C, "sample_rate": sr},
+        diffsptk.WHT,
+        diffsptk.functional.wht,
+        {"wht_length": L},
+        {"wht_type": wht_type},
     )
-    if hasattr(chroma, "to"):
-        chroma.to(device)
-    c2 = chroma(X).cpu().numpy()
+    iwht = U.choice(
+        module,
+        diffsptk.IWHT,
+        diffsptk.functional.iwht,
+        {"wht_length": L},
+        {"wht_type": wht_type},
+    )
 
-    assert U.allclose(c1, c2)
+    U.check_compatibility(
+        device,
+        [iwht, wht],
+        [],
+        f"nrand -l {B * L}",
+        "cat",
+        [],
+        dx=L,
+        dy=L,
+    )
 
-    U.check_differentiability(device, chroma, [X.size(-1)])
+    U.check_differentiability(device, iwht, [B, L])
