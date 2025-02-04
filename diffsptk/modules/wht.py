@@ -19,7 +19,9 @@ import torch
 from scipy.linalg import hadamard
 from torch import nn
 
-from ..misc.utils import check_size, is_power_of_two, to
+from ..misc.utils import check_size
+from ..misc.utils import is_power_of_two
+from ..misc.utils import to
 
 
 class WalshHadamardTransform(nn.Module):

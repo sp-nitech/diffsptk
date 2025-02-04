@@ -17,7 +17,8 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size, to
+from ..misc.utils import check_size
+from ..misc.utils import to
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(nn.Module):

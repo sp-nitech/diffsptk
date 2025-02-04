@@ -18,7 +18,8 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import outer, to_dataloader
+from ..misc.utils import outer
+from ..misc.utils import to_dataloader
 
 
 class PrincipalComponentAnalysis(nn.Module):

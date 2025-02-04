@@ -18,7 +18,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import check_size, to_3d
+from ..misc.utils import check_size
+from ..misc.utils import to_3d
 from .pol_root import RootsToPolynomial
 
 

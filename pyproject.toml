@@ -72,6 +72,9 @@ extend-select = ["E", "I", "FURB"]
 preview = true
 exclude = ["__init__.py"]
 
+[tool.ruff.lint.isort]
+force-single-line = true
+
 [tool.codespell]
 skip = "./docs/_build,./tools,./venv"
 ignore-words-list = "numer"

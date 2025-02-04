@@ -18,7 +18,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import cexp, check_size, clog, to
+from ..misc.utils import cexp
+from ..misc.utils import check_size
+from ..misc.utils import clog
+from ..misc.utils import to
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
 from .ignorm import (
