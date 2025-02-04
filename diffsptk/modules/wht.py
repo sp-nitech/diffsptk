@@ -35,6 +35,12 @@ class WalshHadamardTransform(nn.Module):
     wht_type : ['sequency', 'natural', 'dyadic']
         Order of coefficients of Walsh matrix.
 
+    References
+    ----------
+    .. [1] K. Usha et al., "Generation of Walsh codes in two different orderings using
+           4-bit Gray and Inverse Gray codes," *Indian Journal of Science and
+           Technology*, vol. 5, no. 3, pp. 2341-2345, 2012.
+
     """
 
     def __init__(self, wht_length, wht_type="natural"):
