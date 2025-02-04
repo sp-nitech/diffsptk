@@ -32,16 +32,16 @@ class WalshHadamardTransform(nn.Module):
     wht_length : int >= 1
         WHT length, :math:`L`, must be a power of 2.
 
-    wht_type : int in [1, 3]
-        WHT type. 1: Sequency-ordered, 2: Natural-ordered, 3: Dyadic-ordered.
+    wht_type : ['sequency', 'natural', 'dyadic']
+        Order of coefficients of Walsh matrix.
 
     """
 
-    def __init__(self, wht_length, wht_type=2):
+    def __init__(self, wht_length, wht_type="natural"):
         super().__init__()
 
         assert is_power_of_two(wht_length)
-        assert 1 <= wht_type <= 3
+        assert wht_type in (1, 2, 3, "sequency", "natural", "dyadic")
 
         self.wht_length = wht_length
         self.register_buffer("W", self._precompute(wht_length, wht_type))
@@ -89,12 +89,12 @@ class WalshHadamardTransform(nn.Module):
     def _precompute(length, wht_type, dtype=None, device=None):
         z = 2 ** -(np.log2(length) / 2)
         W = hadamard(length)
-        if wht_type == 1:
+        if wht_type in (1, "sequency"):
             sign_changes = np.sum(np.abs(np.diff(W, axis=1)), axis=1)
             W = W[np.argsort(sign_changes)]
-        elif wht_type == 2:
+        elif wht_type in (2, "natural"):
             pass
-        elif wht_type == 3:
+        elif wht_type in (3, "dyadic"):
             gray_bits = [
                 [int(x) for x in np.binary_repr(i, width=int(np.log2(length)))]
                 for i in range(length)

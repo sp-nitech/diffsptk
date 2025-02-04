@@ -1203,7 +1203,7 @@ def iulaw(y, abs_max=1, mu=255):
     return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
 
 
-def iwht(y, wht_type=2):
+def iwht(y, wht_type="natural"):
     """Compute inverse WHT.
 
     Parameters
@@ -1211,8 +1211,8 @@ def iwht(y, wht_type=2):
     y : Tensor [shape=(..., L)]
         Input.
 
-    wht_type : int in [1, 3]
-        WHT type.
+    wht_type : ['sequency', 'natural', 'dyadic']
+        Order of coefficients of Walsh matrix.
 
     Returns
     -------
@@ -2286,7 +2286,7 @@ def unframe(
     )
 
 
-def wht(x, wht_type=2):
+def wht(x, wht_type="natural"):
     """Compute WHT.
 
     Parameters
@@ -2294,8 +2294,8 @@ def wht(x, wht_type=2):
     x : Tensor [shape=(..., L)]
         Input signal.
 
-    wht_type : int in [1, 3]
-        WHT type.
+    wht_type : ['sequency', 'natural', 'dyadic']
+        Order of coefficients of Walsh matrix.
 
     Returns
     -------
