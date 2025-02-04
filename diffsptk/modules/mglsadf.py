@@ -164,12 +164,13 @@ class PseudoMGLSADigitalFilter(nn.Module):
         flip_keys = ("cep_order", "ir_length")
         modified_kwargs = kwargs.copy()
         for key in flip_keys:
-             if key in kwargs:
+            if key in kwargs:
                 modified_kwargs[key] = flip(kwargs[key])
+        flipped_filter_order = flip(filter_order)
 
         if mode == "multi-stage":
             self.mglsadf = MultiStageFIRFilter(
-                flip(filter_order),
+                flipped_filter_order,
                 frame_period,
                 alpha=alpha,
                 gamma=gamma,
@@ -179,7 +180,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
             )
         elif mode == "single-stage":
             self.mglsadf = SingleStageFIRFilter(
-                filter_order,
+                flipped_filter_order,
                 frame_period,
                 alpha=alpha,
                 gamma=gamma,
@@ -189,7 +190,7 @@ class PseudoMGLSADigitalFilter(nn.Module):
             )
         elif mode == "freq-domain":
             self.mglsadf = FrequencyDomainFIRFilter(
-                filter_order,
+                flipped_filter_order,
                 frame_period,
                 alpha=alpha,
                 gamma=gamma,
