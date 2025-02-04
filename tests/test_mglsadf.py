@@ -29,7 +29,16 @@ import tests.utils as U
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 @pytest.mark.parametrize("c", [0, 10])
 def test_compatibility(
-    device, ignore_gain, mode, c, alpha=0.42, M=24, P=80, L=400, fft_length=512
+    device,
+    ignore_gain,
+    mode,
+    c,
+    alpha=0.42,
+    M=24,
+    P=80,
+    L=400,
+    fft_length=512,
+    B=2,
 ):
     if mode == "multi-stage":
         params = {"taylor_order": 7, "cep_order": 100}
@@ -71,12 +80,16 @@ def test_compatibility(
         eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.98,
     )
 
+    S = T // 10
+    U.check_differentiability(device, mglsadf, [(B, S), (B, S // P, M + 1)])
+
 
 @pytest.mark.parametrize("phase", ["zero", "maximum"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 def test_zero_and_maximum_phase(
     phase,
     ignore_gain,
+    device="cpu",
     alpha=0.42,
     M=24,
     P=80,
@@ -116,7 +129,6 @@ def test_zero_and_maximum_phase(
     y3 = mglsadf3(x, mc).cpu().numpy()
     assert np.corrcoef(y1, y3)[0, 1] > 0.98
 
-    device = "cpu"
     S = T // 10
     U.check_differentiability(device, mglsadf1, [(B, S), (B, S // P, M + 1)])
     U.check_differentiability(device, mglsadf2, [(B, S), (B, S // P, M + 1)])
@@ -128,6 +140,7 @@ def test_zero_and_maximum_phase(
 def test_mixed_phase(
     phase,
     ignore_gain,
+    device="cpu",
     alpha=0.42,
     M=24,
     P=80,
@@ -179,7 +192,6 @@ def test_mixed_phase(
     y3 = mglsadf3(x, mc_mix).cpu().numpy()
     assert np.corrcoef(y1, y3)[0, 1] > 0.98
 
-    device = "cpu"
     S = T // 10
     U.check_differentiability(device, mglsadf1, [(B, S), (B, S // P, 2 * M + 1)])
     U.check_differentiability(device, mglsadf2, [(B, S), (B, S // P, 2 * M + 1)])
