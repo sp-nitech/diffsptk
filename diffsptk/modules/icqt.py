@@ -46,7 +46,7 @@ class InverseConstantQTransform(nn.Module):
 
     Parameters
     ----------
-    frame_peirod : int >= 1
+    frame_period : int >= 1
         Frame period in samples, :math:`P`.
 
     sample_rate : int >= 1
