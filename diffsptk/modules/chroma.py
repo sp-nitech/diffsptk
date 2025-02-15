@@ -19,6 +19,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from ..misc.librosa import chroma
 from ..misc.utils import check_size
 from ..misc.utils import to
 
@@ -119,9 +120,7 @@ class ChromaFilterBankAnalysis(nn.Module):
 
     @staticmethod
     def _precompute(n_channel, fft_length, sample_rate, dtype=None, device=None):
-        import librosa
-
-        weights = librosa.filters.chroma(
+        weights = chroma(
             sr=sample_rate,
             n_fft=fft_length,
             n_chroma=n_channel,

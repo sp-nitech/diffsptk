@@ -14,29 +14,18 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-# ------------------------------------------------------------------------ #
-# Copyright (c) 2013--2022, librosa development team.                      #
-#                                                                          #
-# Permission to use, copy, modify, and/or distribute this software for any #
-# purpose with or without fee is hereby granted, provided that the above   #
-# copyright notice and this permission notice appear in all copies.        #
-#                                                                          #
-# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES #
-# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF         #
-# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR  #
-# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES   #
-# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN    #
-# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF  #
-# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
-# ------------------------------------------------------------------------ #
-
 import numpy as np
 import torch
 import torchaudio
 from torch import nn
 
+from ..misc.librosa import cqt_frequencies
+from ..misc.librosa import early_downsample_count
+from ..misc.librosa import et_relative_bw
+from ..misc.librosa import relative_bandwidth
+from ..misc.librosa import vqt_filter_fft
+from ..misc.librosa import wavelet_lengths
 from ..misc.utils import Lambda
-from ..misc.utils import delayed_import
 from ..misc.utils import get_resample_params
 from ..misc.utils import numpy_to_torch
 from .stft import ShortTimeFourierTransform as STFT
@@ -108,14 +97,6 @@ class ConstantQTransform(nn.Module):
     ):
         super().__init__()
 
-        import librosa
-
-        et_relative_bw = delayed_import("librosa.core.constantq", "__et_relative_bw")
-        vqt_filter_fft = delayed_import("librosa.core.constantq", "__vqt_filter_fft")
-        early_downsample_count = delayed_import(
-            "librosa.core.constantq", "__early_downsample_count"
-        )
-
         assert 1 <= frame_period
         assert 1 <= sample_rate
 
@@ -125,7 +106,7 @@ class ConstantQTransform(nn.Module):
         n_octave = int(np.ceil(K / B))
         n_filter = min(B, K)
 
-        freqs = librosa.cqt_frequencies(
+        freqs = cqt_frequencies(
             n_bins=K,
             fmin=f_min,
             bins_per_octave=B,
@@ -135,9 +116,9 @@ class ConstantQTransform(nn.Module):
         if K == 1:
             alpha = et_relative_bw(B)
         else:
-            alpha = librosa.filters._relative_bandwidth(freqs=freqs)
+            alpha = relative_bandwidth(freqs=freqs)
 
-        lengths, filter_cutoff = librosa.filters.wavelet_lengths(
+        lengths, filter_cutoff = wavelet_lengths(
             freqs=freqs,
             sr=sample_rate,
             window=window,
@@ -173,7 +154,7 @@ class ConstantQTransform(nn.Module):
 
             # Update lengths for scaling.
             if scale:
-                lengths, _ = librosa.filters.wavelet_lengths(
+                lengths, _ = wavelet_lengths(
                     freqs=freqs,
                     sr=sample_rate,
                     window=window,
