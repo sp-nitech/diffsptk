@@ -227,9 +227,6 @@ class InverseConstantQTransform(nn.Module):
             if i == 0:
                 y = x[..., :out_length]
             else:
-                if out_length is None:
-                    end = x.size(-1)
-                else:
-                    end = min(x.size(-1), out_length)
+                end = x.size(-1) if out_length is None else min(x.size(-1), out_length)
                 y[..., :end] += x[..., :end]
         return y
