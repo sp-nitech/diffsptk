@@ -108,15 +108,15 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.sin(100, 10)
-        >>> pitch = diffsptk.Pitch(80, 16000, out_format="f0")
+        >>> x = diffsptk.sin(1000, 80)
+        >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
         >>> f0 = pitch(x)
         >>> f0.shape
-        (2,)
-        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(80, 1024, 16000)
+        torch.Size([7])
+        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 1024, 8000)
         >>> sp = pitch_spec(x, f0)
         >>> sp.shape
-        (2, 513)
+        torch.Size([7, 513])
 
         """
         rate = self.sample_rate / self.fft_length

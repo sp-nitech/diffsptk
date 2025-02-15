@@ -122,11 +122,11 @@ class Pitch(nn.Module):
 
         Examples
         --------
-        >>> x = diffsptk.sin(100, 10)
-        >>> pitch = diffsptk.Pitch(80, 16000)
+        >>> x = diffsptk.sin(1000, 80)
+        >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
         >>> y = pitch(x)
         >>> y
-        tensor([10.0860, 10.0860])
+        tensor([  0.0000,  99.7280,  99.7676,  99.8334,  99.8162, 100.1602,   0.0000])
 
         """
         d = x.dim()
@@ -220,7 +220,7 @@ class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
         self.frame = Frame(
             self.penn.WINDOW_SIZE,
             frame_period * self.penn.SAMPLE_RATE // sample_rate,
-            zmean=False,
+            mode="reflect",
         )
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate,
