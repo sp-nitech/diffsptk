@@ -10,4 +10,4 @@ spec
 
 .. seealso::
 
-    :ref:`frame` :ref:`window` :ref:`stft` :ref:`phase`
+    :ref:`frame` :ref:`window` :ref:`stft` :ref:`phase` :ref:`pitch_spec`
