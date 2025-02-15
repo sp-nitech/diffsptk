@@ -10,29 +10,27 @@ maintainers = [
 ]
 description = "Speech signal processing modules for machine learning"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["dsp", "pytorch", "signal processing", "sptk"]
 license = { text = "Apache 2.0" }
 classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
-  "numpy >= 1.20.3, < 2.0.0",
-  "scipy >= 1.5.4, < 1.14.0",
-  "tqdm >= 4.15.0",
-  "librosa >= 0.10.1",
+  "numpy >= 2.0.0",
+  "scipy >= 1.14.0",
+  "tqdm >= 4.63.0",
   "soundfile >= 0.10.2",
-  "torch >= 2.0.0",
-  "torchaudio >= 2.0.1",
-  "torchcrepe >= 0.0.22",
-  "torchlpc >= 0.2.0",
-  "torchcomp >= 0.1.0",
+  "torch >= 2.3.1",
+  "torchaudio >= 2.3.1",
+  "torchlpc >= 0.6.0",
+  "torchcomp >= 0.2.0",
   "vector-quantize-pytorch >= 1.14.9",
 ]
 dynamic = ["version"]
@@ -70,13 +68,13 @@ path = "diffsptk/version.py"
 [tool.ruff.lint]
 extend-select = ["E", "I", "FURB"]
 preview = true
-exclude = ["__init__.py"]
+exclude = ["__init__.py", "*/librosa/*"]
 
 [tool.ruff.lint.isort]
 force-single-line = true
 
 [tool.codespell]
-skip = "./docs/_build,./tools,./venv"
+skip = "./docs/_build,./tools"
 ignore-words-list = "numer"
 ignore-multiline-regex = "codespell:ignore-begin.*codespell:ignore-end"
 
