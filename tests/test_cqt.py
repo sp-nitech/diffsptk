@@ -44,8 +44,7 @@ def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
     ).to(device)
 
     try:  # pragma: no cover
-        importlib.import_module("librosa")
-        import librosa
+        librosa = importlib.import_module("librosa")
 
         c1 = librosa.cqt(
             x.cpu().numpy(),

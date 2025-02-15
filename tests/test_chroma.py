@@ -47,8 +47,7 @@ def test_compatibility(device, module, C=12):
         chroma.to(device)
 
     try:  # pragma: no cover
-        importlib.import_module("librosa")
-        import librosa
+        librosa = importlib.import_module("librosa")
 
         c1 = librosa.feature.chroma_stft(
             S=X.cpu().numpy().T,

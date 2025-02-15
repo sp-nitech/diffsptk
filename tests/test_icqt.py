@@ -37,8 +37,7 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
     ).to(device)
 
     try:  # pragma: no cover
-        importlib.import_module("librosa")
-        import librosa
+        librosa = importlib.import_module("librosa")
 
         x, _ = diffsptk.read(librosa.ex("trumpet"))
         T = x.size(0)

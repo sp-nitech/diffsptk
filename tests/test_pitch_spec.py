@@ -14,8 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
