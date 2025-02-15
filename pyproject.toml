@@ -31,6 +31,7 @@ dependencies = [
   "torchaudio >= 2.3.1",
   "torchlpc >= 0.6.0",
   "torchcomp >= 0.2.0",
+  "penn >= 0.0.1",
   "vector-quantize-pytorch >= 1.14.9",
 ]
 dynamic = ["version"]

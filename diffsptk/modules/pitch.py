@@ -19,6 +19,7 @@ from abc import ABC
 from abc import abstractmethod
 
 import torch
+import torchaudio
 from torch import nn
 
 from ..misc.utils import UNVOICED_SYMBOL
@@ -38,7 +39,7 @@ class Pitch(nn.Module):
     sample_rate : int >= 1
         Sample rate in Hz.
 
-    algorithm : ['crepe']
+    algorithm : ['fcnf0', 'crepe']
         Algorithm.
 
     out_format : ['pitch', 'f0', 'log-f0', 'prob', 'embed']
@@ -53,19 +54,13 @@ class Pitch(nn.Module):
     voicing_threshold : float
         Voiced/unvoiced threshold.
 
-    silence_threshold : float
-        Silence threshold in dB.
-
-    filter_length : int >= 1
-        Window length of median and moving average filters.
-
-    model : ['tiny', 'full']
-        Model size.
-
     References
     ----------
     .. [1] J. W. Kim et al., "CREPE: A Convolutional Representation for Pitch
            Estimation," *Proceedings of ICASSP*, pp. 161-165, 2018.
+
+    .. [2] M. Morisson et al., "Cross-domain Neural Pitch and Periodicity Estimation,"
+           *arXiv prepreint*, arXiv:2301.12258, 2023.
 
     """
 
@@ -73,7 +68,7 @@ class Pitch(nn.Module):
         self,
         frame_period,
         sample_rate,
-        algorithm="crepe",
+        algorithm="fcnf0",
         out_format="pitch",
         **kwargs,
     ):
@@ -82,18 +77,20 @@ class Pitch(nn.Module):
         assert 1 <= frame_period
         assert 1 <= sample_rate
 
-        if algorithm == "crepe":
-            self.extractor = PitchExtractionByCrepe(frame_period, sample_rate, **kwargs)
+        if algorithm == "fcnf0":
+            self.extractor = PitchExtractionByFCNF0(frame_period, sample_rate, **kwargs)
+        elif algorithm == "crepe":
+            self.extractor = PitchExtractionByCREPE(frame_period, sample_rate, **kwargs)
         else:
             raise ValueError(f"algorithm {algorithm} is not supported.")
 
+        @torch.inference_mode()
         def calc_pitch(x, convert, unvoiced_symbol=UNVOICED_SYMBOL):
-            with torch.no_grad():
-                y = self.extractor.calc_pitch(x)
-                mask = y != UNVOICED_SYMBOL
-                y[mask] = convert(y[mask])
-                if unvoiced_symbol != UNVOICED_SYMBOL:
-                    y[~mask] = unvoiced_symbol
+            y = self.extractor.calc_pitch(x)
+            mask = y != UNVOICED_SYMBOL
+            y[mask] = convert(y[mask])
+            if unvoiced_symbol != UNVOICED_SYMBOL:
+                y[~mask] = unvoiced_symbol
             return y
 
         if out_format in (0, "pitch"):
@@ -196,14 +193,72 @@ class PitchExtractionInterface(ABC):
         """
 
 
-class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
+class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
+    """Pitch extraction by FCNF0."""
+
+    def __init__(
+        self,
+        frame_period,
+        sample_rate,
+        f_min=None,
+        f_max=None,
+        voicing_threshold=0.5,
+    ):
+        super().__init__()
+
+        try:
+            self.penn = importlib.import_module("penn")
+        except ImportError:
+            raise ImportError("Please install torchcrepe by `pip install penn`.")
+
+        self.f_min = self.penn.FMIN if f_min is None else f_min
+        self.f_max = self.penn.FMAX if f_max is None else f_max
+        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+
+        self.voicing_threshold = voicing_threshold
+
+        self.frame = Frame(
+            self.penn.WINDOW_SIZE,
+            frame_period * self.penn.SAMPLE_RATE // sample_rate,
+            zmean=False,
+        )
+        self.resample = torchaudio.transforms.Resample(
+            orig_freq=sample_rate,
+            new_freq=self.penn.SAMPLE_RATE,
+            dtype=torch.get_default_dtype(),
+        )
+
+    def forward(self, x):
+        x = self.resample(x)
+        frames = self.frame(x).reshape(-1, 1, self.penn.WINDOW_SIZE)
+        logits = self.penn.infer(frames)
+        logits = logits.reshape(x.size(0), -1, self.penn.PITCH_BINS)
+        return logits
+
+    def calc_prob(self, x):
+        return torch.softmax(self.forward(x), dim=-1)
+
+    def calc_embed(self, x):
+        raise NotImplementedError
+
+    def calc_pitch(self, x):
+        logits = self.forward(x)
+        logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)
+        result = self.penn.postprocess(logits)
+        pitch = result[1]
+        mask = result[2] < self.voicing_threshold
+        pitch[mask] = UNVOICED_SYMBOL
+        return pitch.reshape(x.size(0), -1)
+
+
+class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
     """Pitch extraction by CREPE."""
 
     def __init__(
         self,
         frame_period,
         sample_rate,
-        f_min=0,
+        f_min=None,
         f_max=None,
         voicing_threshold=1e-2,
         silence_threshold=-60,
@@ -212,43 +267,48 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
     ):
         super().__init__()
 
-        self.torchcrepe = importlib.import_module("torchcrepe")
+        try:
+            self.torchcrepe = importlib.import_module("torchcrepe")
+        except ImportError:
+            raise ImportError("Please install torchcrepe by `pip install torchcrepe`.")
 
-        self.f_min = f_min
+        self.f_min = 50 if f_min is None else f_min
         self.f_max = self.torchcrepe.MAX_FMAX if f_max is None else f_max
+        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+
         self.voicing_threshold = voicing_threshold
         self.silence_threshold = silence_threshold
         self.filter_length = filter_length
-        self.model = model
 
-        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+        self.model = model
         assert self.model in ("tiny", "full")
 
-        if sample_rate != self.torchcrepe.SAMPLE_RATE:
-            raise ValueError(
-                f"Only {self.torchcrepe.SAMPLE_RATE} Hz is supported. "
-                "Please use a resampler in advance."
-            )
-
-        self.frame = Frame(self.torchcrepe.WINDOW_SIZE, frame_period, zmean=True)
+        self.frame = Frame(
+            self.torchcrepe.WINDOW_SIZE,
+            frame_period * self.torchcrepe.SAMPLE_RATE // sample_rate,
+            zmean=True,
+        )
         self.stft = ShortTimeFourierTransform(
             self.torchcrepe.WINDOW_SIZE,
-            frame_period,
+            frame_period * self.torchcrepe.SAMPLE_RATE // sample_rate,
             self.torchcrepe.WINDOW_SIZE,
             norm="none",
             window="hanning",
             out_format="db",
+        )
+        self.resample = torchaudio.transforms.Resample(
+            orig_freq=sample_rate,
+            new_freq=self.torchcrepe.SAMPLE_RATE,
+            dtype=torch.get_default_dtype(),
         )
 
         weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
         self.register_buffer("weights", numpy_to_torch(weights))
 
     def forward(self, x, embed=True):
-        # torchcrepe.preprocess
         x = self.frame(x)
         x = x / torch.clip(x.std(dim=-1, keepdim=True), min=1e-10)
 
-        # torchcrepe.infer
         B, N, L = x.shape
         x = x.reshape(-1, L)
         y = self.torchcrepe.infer(x, model=self.model, embed=embed, device=x.device)
@@ -262,10 +322,8 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
         return self.forward(x, embed=True)
 
     def calc_pitch(self, x):
-        # Compute pitch probabilities.
         prob = self.calc_prob(x).transpose(-2, -1)
 
-        # Decode pitch probabilities.
         pitch, periodicity = self.torchcrepe.postprocess(
             prob,
             fmin=self.f_min,
@@ -275,14 +333,12 @@ class PitchExtractionByCrepe(PitchExtractionInterface, nn.Module):
             return_periodicity=True,
         )
 
-        # Apply filters.
         periodicity = self.torchcrepe.filter.median(periodicity, self.filter_length)
         org_dtype = torch.get_default_dtype()
         torch.set_default_dtype(torch.float)
         pitch = self.torchcrepe.filter.mean(pitch.float(), self.filter_length)
         torch.set_default_dtype(org_dtype)
 
-        # Decide voiced/unvoiced.
         loudness = self.stft(x) + self.weights
         loudness = torch.clip(loudness, min=self.torchcrepe.loudness.MIN_DB)
         loudness = loudness.mean(-1)
