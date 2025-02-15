@@ -32,11 +32,11 @@ class Aperiodicity(nn.Module):
     frame_period : int >= 1
         Frame period, :math:`P`.
 
-    sample_rate : int >= 1
-        Sample rate in Hz.
-
-    fft_length : int
+    fft_length : int >= 8
         Size of double-sided aperiodicity, :math:`L`.
+
+    sample_rate : int >= 8000
+        Sample rate in Hz.
 
     algorithm : ['tandem']
         Algorithm.
@@ -67,8 +67,8 @@ class Aperiodicity(nn.Module):
     def __init__(
         self,
         frame_period,
-        sample_rate,
         fft_length,
+        sample_rate,
         algorithm="tandem",
         out_format="a",
         **kwargs,
@@ -76,11 +76,11 @@ class Aperiodicity(nn.Module):
         super().__init__()
 
         assert 1 <= frame_period
-        assert 1 <= sample_rate
+        assert 8000 <= sample_rate
 
         if algorithm == "tandem":
             self.extractor = AperiodicityExtractionByTandem(
-                frame_period, sample_rate, fft_length, **kwargs
+                frame_period, fft_length, sample_rate, **kwargs
             )
         else:
             raise ValueError(f"algorithm {algorithm} is not supported.")
@@ -104,12 +104,12 @@ class Aperiodicity(nn.Module):
         x : Tensor [shape=(B, T) or (T,)]
             Waveform.
 
-        f0 : Tensor [shape=(B, N) or (N,)]
+        f0 : Tensor [shape=(B, T/P) or (T/P,)]
             F0 in Hz.
 
         Returns
         -------
-        out : Tensor [shape=(B, N, L/2+1) or (N, L/2+1)]
+        out : Tensor [shape=(B, T/P, L/2+1) or (T/P, L/2+1)]
             Aperiodicity.
 
         Examples
@@ -119,7 +119,7 @@ class Aperiodicity(nn.Module):
         >>> f0 = pitch(x)
         >>> f0
         tensor([1597.2064, 1597.2064])
-        >>> aperiodicity = diffsptk.Aperiodicity(80, 16000, 8)
+        >>> aperiodicity = diffsptk.Aperiodicity(80, 8, 16000)
         >>> ap = aperiodicity(x, f0)
         >>> ap
         tensor([[0.0010, 0.0010, 0.1729, 0.1647, 0.1569],
@@ -148,8 +148,8 @@ class AperiodicityExtractionByTandem(nn.Module):
     def __init__(
         self,
         frame_period,
-        sample_rate,
         fft_length,
+        sample_rate,
         lower_bound=0.001,
         upper_bound=0.999,
         window_length_ms=30,

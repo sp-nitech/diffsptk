@@ -24,7 +24,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
-    ap = diffsptk.Aperiodicity(P, sr, L, out_format=out_format)
+    ap = diffsptk.Aperiodicity(P, L, sr, out_format=out_format)
 
     def eq(o):
         def convert(x, o):
@@ -44,6 +44,7 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
 
         return inner_eq
 
+    ksr = sr // 1000
     tmp1 = "ap.tmp1"
     tmp2 = "ap.tmp2"
     U.check_compatibility(
@@ -51,10 +52,10 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
         ap,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
-            f"pitch -s {sr // 1000} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
+            f"pitch -s {ksr} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
         ],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"ap -s {sr // 1000} -p {P} -l {L} -a 0 -q 1 -o {out_format} {tmp2} < {tmp1}",
+        f"ap -s {ksr} -p {P} -l {L} -a 0 -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
         eq=eq(out_format),
