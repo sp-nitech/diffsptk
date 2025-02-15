@@ -64,9 +64,9 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
             hop_length=fp,
             scale=scale,
             res_type="kaiser_best",
-            dtype=(
-                np.float64 if torch.get_default_dtype() == torch.double else np.float32
-            ),
+            dtype=np.float64
+            if torch.get_default_dtype() == torch.double
+            else np.float32,
             length=T,
         )
         if verbose:
@@ -82,4 +82,11 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
     except ImportError:
         pass
 
-    U.check_differentiability(device, icqt, [1, K], dtype=c2.dtype)
+    U.check_differentiability(
+        device,
+        icqt,
+        [1, K],
+        dtype=torch.complex128
+        if torch.get_default_dtype() == torch.double
+        else torch.complex64,
+    )

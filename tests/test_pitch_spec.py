@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import pytest
 
 import diffsptk
@@ -23,6 +24,9 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(device, out_format, P=80, sr=16000, L=1024, B=2):
+    if torch.get_default_dtype() == torch.float:
+        pytest.skip("This test is only for torch.double")
+
     pitch_spec = diffsptk.CheapTrick(P, L, sr, out_format=out_format)
 
     ksr = sr // 1000
@@ -39,6 +43,7 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=1024, B=2):
         f"pitch_spec -x -s {ksr} -p {P} -l {L} -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
+        rtol=1e-5 if device == "cpu" else 1e-4,
     )
 
     U.check_differentiability(
