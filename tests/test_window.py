@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5])
+@pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5, 6])
 @pytest.mark.parametrize("norm", [0, 1, 2])
 @pytest.mark.parametrize("L1", [8, 10])
 def test_compatibility(device, module, w, norm, L1, L2=10, B=2):

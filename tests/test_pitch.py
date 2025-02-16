@@ -22,7 +22,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("algorithm", ["fcnf0", "crepe"])
+@pytest.mark.parametrize("algorithm", ["crepe", "fcnf0"])
 @pytest.mark.parametrize("out_format", [0, 1, 2])
 def test_compatibility(device, algorithm, out_format, P=80, sr=16000, L=80, H=180):
     try:

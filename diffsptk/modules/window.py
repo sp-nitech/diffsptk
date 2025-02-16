@@ -35,7 +35,7 @@ class Window(nn.Module):
         Output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -109,6 +109,11 @@ class Window(nn.Module):
             w = torch.minimum(torch.clip(slope, min=0, max=1), slope.flip(0))
         elif window in (5, "rectangular"):
             w = torch.ones(length, **params)
+        elif window in (6, "nuttall"):
+            c1 = torch.tensor([0.355768, -0.487396, 0.144232, -0.012604], **params)
+            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / (length - 1))
+            seed = torch.arange(length, **params)
+            w = torch.sum(c1 * torch.cos(torch.outer(seed, c2)), dim=1)
         elif window == "sine":
             w = torch.signal.windows.cosine(length, **params)
         elif window == "vorbis":

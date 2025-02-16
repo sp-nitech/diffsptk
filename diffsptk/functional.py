@@ -1162,7 +1162,7 @@ def istft(
         assume that the center of data is the left edge of frame.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2179,7 +2179,7 @@ def stft(
 
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2269,7 +2269,7 @@ def unframe(
         assume that the center of data is the left edge of frame.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2324,7 +2324,7 @@ def window(x, out_length=None, *, window="blackman", norm="power"):
         Output length, :math:`L_2`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
