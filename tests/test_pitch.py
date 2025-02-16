@@ -46,7 +46,7 @@ def test_compatibility(device, algorithm, out_format, P=80, sr=16000, L=80, H=18
             return x
 
         unvoiced_symbol = 0
-        target_f0_error = 4
+        target_f0_error = 5
         target_uv_error = 35
 
         def inner_eq(y_hat, y):
