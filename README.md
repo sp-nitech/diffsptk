@@ -73,7 +73,13 @@ error = (x_hat - x).abs().sum()
 print(error)
 
 # Extract pitch of x.
-pitch = diffsptk.Pitch(frame_period=fp, sample_rate=sr, f_min=80, f_max=180)
+pitch = diffsptk.Pitch(
+    frame_period=fp,
+    sample_rate=sr,
+    f_min=80,
+    f_max=180,
+    voicing_threshold=0.4,
+)
 p = pitch(x)
 
 # Generate excitation signal.

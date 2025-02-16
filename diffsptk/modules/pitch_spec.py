@@ -122,7 +122,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         rate = self.sample_rate / self.fft_length
 
         # SetParametersForGetWindowedWaveform()
-        f0 = torch.where(f0 <= self.f_min, self.default_f0, f0).unsqueeze(-1)
+        f0 = torch.where(f0 <= self.f_min, self.default_f0, f0).unsqueeze(-1).detach()
         half_window_length = torch.round(1.5 * self.sample_rate / f0).long()
         half_fft_length = self.fft_length // 2
         base_index = self.ramp - half_fft_length

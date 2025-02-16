@@ -211,6 +211,7 @@ class GaussianMixtureModeling(nn.Module):
         params = (w, mu, sigma)
         self.set_params(params)
 
+    @torch.inference_mode()
     def forward(self, x, return_posterior=False):
         """Train Gaussian mixture models.
 

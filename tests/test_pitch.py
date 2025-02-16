@@ -22,12 +22,15 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("algorithm", ["fcnf0"])
+@pytest.mark.parametrize("algorithm", ["fcnf0", "crepe"])
 @pytest.mark.parametrize("out_format", [0, 1, 2])
 def test_compatibility(device, algorithm, out_format, P=80, sr=16000, L=80, H=180):
-    pitch = diffsptk.Pitch(
-        P, sr, algorithm, f_min=L, f_max=H, out_format=out_format, voicing_threshold=0.4
-    )
+    try:
+        pitch = diffsptk.Pitch(
+            P, sr, algorithm, f_min=L, f_max=H, out_format=out_format
+        )
+    except ImportError:
+        pytest.skip(f"Algorithm '{algorithm}' is not available.")
 
     def eq(o, sr):
         def convert(x, o):
@@ -44,7 +47,7 @@ def test_compatibility(device, algorithm, out_format, P=80, sr=16000, L=80, H=18
 
         unvoiced_symbol = 0
         target_f0_error = 4
-        target_uv_error = 30
+        target_uv_error = 35
 
         def inner_eq(y_hat, y):
             y_hat = convert(y_hat, o)

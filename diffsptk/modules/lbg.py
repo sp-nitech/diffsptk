@@ -133,6 +133,7 @@ class LindeBuzoGrayAlgorithm(nn.Module):
             self.curr_codebook_size = c
             self.init = init
 
+    @torch.inference_mode()
     def forward(self, x, return_indices=False):
         """Design a codebook.
 

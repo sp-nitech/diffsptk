@@ -109,6 +109,7 @@ class ExcitationGeneration(nn.Module):
         )
 
     @staticmethod
+    @torch.inference_mode()
     def _forward(p, frame_period, voiced_region, unvoiced_region, polarity, init_phase):
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)

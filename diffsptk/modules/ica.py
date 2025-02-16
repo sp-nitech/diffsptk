@@ -101,6 +101,7 @@ class IndependentComponentAnalysis(nn.Module):
         W = torch.randn(n_comp, n_comp, generator=generator)
         self.register_buffer("W", W)  # (K, K)
 
+    @torch.inference_mode()
     def forward(self, x):
         """Estimate separating matrix.
 

@@ -245,9 +245,9 @@ class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
         logits = self.forward(x)
         logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)
         result = self.penn.postprocess(logits)
-        pitch = result[1]
-        mask = result[2] < self.voicing_threshold
-        pitch[mask] = UNVOICED_SYMBOL
+        pitch = torch.where(
+            self.voicing_threshold <= result[2], result[1], UNVOICED_SYMBOL
+        )
         return pitch.reshape(x.size(0), -1)
 
 
