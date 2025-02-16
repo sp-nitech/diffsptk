@@ -50,6 +50,11 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     safe_min : float > 0
         A small value added to random values to avoid computation errors.
 
+    References
+    ----------
+    .. [1] M. Morise, "CheapTrick, a spectral envelope estimator for high-quality speech
+           synthesis", *Speech Communication*, vol. 67, pp. 1-7, 2015.
+
     """
 
     def __init__(

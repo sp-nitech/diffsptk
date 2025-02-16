@@ -39,7 +39,7 @@ class Pitch(nn.Module):
     sample_rate : int >= 1
         Sample rate in Hz.
 
-    algorithm : ['fcnf0', 'crepe']
+    algorithm : ['crepe', 'fcnf0']
         Algorithm.
 
     out_format : ['pitch', 'f0', 'log-f0', 'prob', 'embed']
@@ -56,10 +56,10 @@ class Pitch(nn.Module):
 
     References
     ----------
-    .. [1] J. W. Kim et al., "CREPE: A Convolutional Representation for Pitch
-           Estimation," *Proceedings of ICASSP*, pp. 161-165, 2018.
+    .. [1] J. W. Kim et al., "CREPE: A convolutional representation for pitch
+           estimation," *Proceedings of ICASSP*, pp. 161-165, 2018.
 
-    .. [2] M. Morisson et al., "Cross-domain Neural Pitch and Periodicity Estimation,"
+    .. [2] M. Morisson et al., "Cross-domain neural pitch and periodicity estimation,"
            *arXiv prepreint*, arXiv:2301.12258, 2023.
 
     """
@@ -77,10 +77,10 @@ class Pitch(nn.Module):
         assert 1 <= frame_period
         assert 1 <= sample_rate
 
-        if algorithm == "fcnf0":
-            self.extractor = PitchExtractionByFCNF0(frame_period, sample_rate, **kwargs)
-        elif algorithm == "crepe":
+        if algorithm == "crepe":
             self.extractor = PitchExtractionByCREPE(frame_period, sample_rate, **kwargs)
+        elif algorithm == "fcnf0":
+            self.extractor = PitchExtractionByFCNF0(frame_period, sample_rate, **kwargs)
         else:
             raise ValueError(f"algorithm {algorithm} is not supported.")
 
@@ -193,64 +193,6 @@ class PitchExtractionInterface(ABC):
         """
 
 
-class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
-    """Pitch extraction by FCNF0."""
-
-    def __init__(
-        self,
-        frame_period,
-        sample_rate,
-        f_min=None,
-        f_max=None,
-        voicing_threshold=0.5,
-    ):
-        super().__init__()
-
-        try:
-            self.penn = importlib.import_module("penn")
-        except ImportError:
-            raise ImportError("Please install torchcrepe by `pip install penn`.")
-
-        self.f_min = self.penn.FMIN if f_min is None else f_min
-        self.f_max = self.penn.FMAX if f_max is None else f_max
-        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
-
-        self.voicing_threshold = voicing_threshold
-
-        self.frame = Frame(
-            self.penn.WINDOW_SIZE,
-            frame_period * self.penn.SAMPLE_RATE // sample_rate,
-            mode="reflect",
-        )
-        self.resample = torchaudio.transforms.Resample(
-            orig_freq=sample_rate,
-            new_freq=self.penn.SAMPLE_RATE,
-            dtype=torch.get_default_dtype(),
-        )
-
-    def forward(self, x):
-        x = self.resample(x)
-        frames = self.frame(x).reshape(-1, 1, self.penn.WINDOW_SIZE)
-        logits = self.penn.infer(frames)
-        logits = logits.reshape(x.size(0), -1, self.penn.PITCH_BINS)
-        return logits
-
-    def calc_prob(self, x):
-        return torch.softmax(self.forward(x), dim=-1)
-
-    def calc_embed(self, x):
-        raise NotImplementedError
-
-    def calc_pitch(self, x):
-        logits = self.forward(x)
-        logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)
-        result = self.penn.postprocess(logits)
-        pitch = torch.where(
-            self.voicing_threshold <= result[2], result[1], UNVOICED_SYMBOL
-        )
-        return pitch.reshape(x.size(0), -1)
-
-
 class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
     """Pitch extraction by CREPE."""
 
@@ -347,3 +289,61 @@ class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
         )
         pitch[mask] = UNVOICED_SYMBOL
         return pitch
+
+
+class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
+    """Pitch extraction by FCNF0."""
+
+    def __init__(
+        self,
+        frame_period,
+        sample_rate,
+        f_min=None,
+        f_max=None,
+        voicing_threshold=0.5,
+    ):
+        super().__init__()
+
+        try:
+            self.penn = importlib.import_module("penn")
+        except ImportError:
+            raise ImportError("Please install torchcrepe by `pip install penn`.")
+
+        self.f_min = self.penn.FMIN if f_min is None else f_min
+        self.f_max = self.penn.FMAX if f_max is None else f_max
+        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+
+        self.voicing_threshold = voicing_threshold
+
+        self.frame = Frame(
+            self.penn.WINDOW_SIZE,
+            frame_period * self.penn.SAMPLE_RATE // sample_rate,
+            mode="reflect",
+        )
+        self.resample = torchaudio.transforms.Resample(
+            orig_freq=sample_rate,
+            new_freq=self.penn.SAMPLE_RATE,
+            dtype=torch.get_default_dtype(),
+        )
+
+    def forward(self, x):
+        x = self.resample(x)
+        frames = self.frame(x).reshape(-1, 1, self.penn.WINDOW_SIZE)
+        logits = self.penn.infer(frames)
+        logits = logits.reshape(x.size(0), -1, self.penn.PITCH_BINS)
+        return logits
+
+    def calc_prob(self, x):
+        return torch.softmax(self.forward(x), dim=-1)
+
+    def calc_embed(self, x):
+        raise NotImplementedError
+
+    def calc_pitch(self, x):
+        logits = self.forward(x)
+        logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)
+        result = self.penn.postprocess(logits)
+        pitch = torch.where(
+            self.voicing_threshold <= result[2], result[1], UNVOICED_SYMBOL
+        )
+        return pitch.reshape(x.size(0), -1)
