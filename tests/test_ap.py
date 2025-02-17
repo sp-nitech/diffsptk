@@ -34,7 +34,7 @@ def test_compatibility(device, algorithm, out_format, M=24, P=80, sr=16000, L=51
     elif algorithm == "d4c":
         params = {"threshold": 0.01}
 
-    ap = diffsptk.Aperiodicity(P, L, sr, algorithm, out_format=out_format, **params)
+    ap = diffsptk.Aperiodicity(P, sr, L, algorithm, out_format=out_format, **params)
 
     def eq(a, o):
         if a == 1:

@@ -33,11 +33,11 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     frame_period : int >= 1
         Frame period in sample, :math:`P`.
 
-    fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
-
     sample_rate : int >= 8000
         Sample rate in Hz.
+
+    fft_length : int >= 2 or None
+        Number of FFT bins, :math:`L`. If None, automatically determined.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
@@ -58,8 +58,8 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     def __init__(
         self,
         frame_period,
-        fft_length,
         sample_rate,
+        fft_length=None,
         out_format="power",
         q1=-0.15,
         default_f0=500,
@@ -70,7 +70,6 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         assert 8000 <= sample_rate
 
         self.frame_period = frame_period
-        self.fft_length = fft_length
         self.sample_rate = sample_rate
         self.formatter = self._formatter(out_format)
 
@@ -78,11 +77,12 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         self.f_min = 3 * sample_rate / (fft_length - 3)
         assert self.f_min <= default_f0
 
-        # GetFFTSizeForCheapTrick
+        # GetFFTSizeForCheapTrick()
         min_fft_length = 2 ** (
             1 + int(np.log(3 * sample_rate / self.f_min + 1) / np.log(2))
         )
-        assert min_fft_length <= fft_length
+        self.fft_length = min_fft_length if fft_length is None else fft_length
+        assert min_fft_length <= self.fft_length
 
         # Set WORLD constants.
         self.q1 = q1
@@ -116,7 +116,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         >>> f0 = pitch(x)
         >>> f0.shape
         torch.Size([7])
-        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 1024, 8000)
+        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 8000, 1024)
         >>> sp = pitch_spec(x, f0)
         >>> sp.shape
         torch.Size([7, 513])
@@ -130,9 +130,9 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
             f0,
             3,
             0,
+            self.frame_period,
             self.sample_rate,
             self.fft_length,
-            self.frame_period,
             "hanning",
             True,
             1e-12,

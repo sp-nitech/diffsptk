@@ -38,11 +38,12 @@ class Aperiodicity(nn.Module):
     frame_period : int >= 1
         Frame period, :math:`P`.
 
-    fft_length : int >= 8
-        Size of double-sided aperiodicity, :math:`L`.
-
     sample_rate : int >= 8000
         Sample rate in Hz.
+
+    fft_length : int >= 8 or None
+        Size of double-sided aperiodicity, :math:`L`. If None, band aperiodicity
+        (uninterpolated aperiodicity) is returned as the output.
 
     algorithm : ['tandem', 'd4c']
         Algorithm.
@@ -70,8 +71,8 @@ class Aperiodicity(nn.Module):
     def __init__(
         self,
         frame_period,
-        fft_length,
         sample_rate,
+        fft_length=None,
         algorithm="tandem",
         out_format="a",
         lower_bound=0.001,
@@ -89,11 +90,11 @@ class Aperiodicity(nn.Module):
 
         if algorithm == "tandem":
             self.extractor = AperiodicityExtractionByTANDEM(
-                frame_period, fft_length, sample_rate, **kwargs
+                frame_period, sample_rate, fft_length, **kwargs
             )
         elif algorithm == "d4c":
             self.extractor = AperiodicityExtractionByD4C(
-                frame_period, fft_length, sample_rate, **kwargs
+                frame_period, sample_rate, fft_length, **kwargs
             )
         else:
             raise ValueError(f"algorithm {algorithm} is not supported.")
@@ -132,7 +133,7 @@ class Aperiodicity(nn.Module):
         >>> f0 = pitch(x)
         >>> f0.shape
         torch.Size([7])
-        >>> aperiodicity = diffsptk.Aperiodicity(80, 8, 16000)
+        >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 8)
         >>> ap = aperiodicity(x, f0)
         >>> ap
         tensor([[0.1010, 0.9948, 0.9990, 0.9990, 0.9990],
@@ -168,21 +169,19 @@ class AperiodicityExtractionByTANDEM(nn.Module):
     def __init__(
         self,
         frame_period,
-        fft_length,
         sample_rate,
+        fft_length=None,
         window_length_ms=30,
         eps=1e-5,
     ):
         super().__init__()
 
-        assert fft_length % 2 == 0
         assert 1 <= window_length_ms
         assert 0 < eps
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
         self.n_band = int(np.log2(sample_rate / 600))
-        assert self.n_band <= fft_length // 2
 
         self.default_f0 = 150
         self.n_trial = 10
@@ -190,20 +189,23 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.cutoff_list = [sample_rate / 2**i for i in range(2, self.n_band + 1)]
         self.cutoff_list.append(self.cutoff_list[-1])
 
-        coarse_axis = [sample_rate / 2**i for i in range(self.n_band, 0, -1)]
-        coarse_axis.insert(0, 0)
-        coarse_axis = np.asarray(coarse_axis)
-        freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
+        if fft_length is not None:
+            assert self.n_band <= fft_length // 2 and fft_length % 2 == 0
 
-        idx = np.searchsorted(coarse_axis, freq_axis) - 1
-        idx = np.clip(idx, 0, len(coarse_axis) - 2)
-        idx = idx.reshape(1, 1, -1)
-        self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+            coarse_axis = [sample_rate / 2**i for i in range(self.n_band, 0, -1)]
+            coarse_axis.insert(0, 0)
+            coarse_axis = np.asarray(coarse_axis)
+            freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
 
-        x0 = coarse_axis[:-1]
-        dx = coarse_axis[1:] - x0
-        weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
-        self.register_buffer("interp_weights", numpy_to_torch(weights))
+            idx = np.searchsorted(coarse_axis, freq_axis) - 1
+            idx = np.clip(idx, 0, len(coarse_axis) - 2)
+            idx = idx.reshape(1, 1, -1)
+            self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+
+            x0 = coarse_axis[:-1]
+            dx = coarse_axis[1:] - x0
+            weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
+            self.register_buffer("interp_weights", numpy_to_torch(weights))
 
         self.segment_length = [
             int(i * window_length_ms / 500 + 1.5) for i in self.cutoff_list
@@ -294,16 +296,17 @@ class AperiodicityExtractionByTANDEM(nn.Module):
             bap.append(A)
 
         bap.append(bap[-1])
-        bap = torch.stack(bap[::-1], dim=-1)  # (B, N, D)
+        ap = torch.stack(bap[::-1], dim=-1)  # (B, N, D)
 
         # Interpolate band aperiodicity.
-        y = torch.log(bap)
-        y0 = y[..., :-1]
-        dy = y[..., 1:] - y0
-        index = self.interp_indices.expand(B, N, -1)
-        y = torch.gather(dy, -1, index) * self.interp_weights
-        y += torch.gather(y0, -1, index)
-        ap = torch.exp(y)
+        if hasattr(self, "interp_indices"):
+            y = torch.log(ap)
+            y0 = y[..., :-1]
+            dy = y[..., 1:] - y0
+            index = self.interp_indices.expand(B, N, -1)
+            y = torch.gather(dy, -1, index) * self.interp_weights
+            y += torch.gather(y0, -1, index)
+            ap = torch.exp(y)
         return ap
 
     def _qmf_high(self, dtype=np.float64):
@@ -363,8 +366,8 @@ class AperiodicityExtractionByD4C(nn.Module):
     def __init__(
         self,
         frame_period,
-        fft_length,
         sample_rate,
+        fft_length=None,
         threshold=0.0,
         default_f0=150,
     ):
@@ -408,18 +411,19 @@ class AperiodicityExtractionByD4C(nn.Module):
         self.register_buffer("windows", torch.stack(windows))
         self.window_length = window_length
 
-        coarse_axis = np.arange(n_aperiodicity + 2) * freqency_interval
-        coarse_axis[-1] = sample_rate / 2
-        freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
-        idx = np.searchsorted(coarse_axis, freq_axis) - 1
-        idx = np.clip(idx, 0, len(coarse_axis) - 2)
-        idx = idx.reshape(1, 1, -1)
-        self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+        if fft_length is not None:
+            coarse_axis = np.arange(n_aperiodicity + 2) * freqency_interval
+            coarse_axis[-1] = sample_rate / 2
+            freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
+            idx = np.searchsorted(coarse_axis, freq_axis) - 1
+            idx = np.clip(idx, 0, len(coarse_axis) - 2)
+            idx = idx.reshape(1, 1, -1)
+            self.register_buffer("interp_indices", numpy_to_torch(idx).long())
 
-        x0 = coarse_axis[:-1]
-        dx = coarse_axis[1:] - x0
-        weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
-        self.register_buffer("interp_weights", numpy_to_torch(weights))
+            x0 = coarse_axis[:-1]
+            dx = coarse_axis[1:] - x0
+            weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
+            self.register_buffer("interp_weights", numpy_to_torch(weights))
 
         self.spec_love = Spectrum(self.fft_length_love)
         self.spec_d4c = Spectrum(self.fft_length_d4c)
@@ -431,16 +435,16 @@ class AperiodicityExtractionByD4C(nn.Module):
             torch.where(f0 < self.lowest_f0, self.default_f0, f0).unsqueeze(-1).detach()
         )
 
+        # D4CLoveTrain()
         if 0 < self.threshold:
-            # D4CLoveTrain()
             waveform = get_windowed_waveform(
                 x,
                 f0,
                 3,
                 0,
+                self.frame_period,
                 self.sample_rate,
                 self.fft_length_love,
-                self.frame_period,
                 "blackman",
                 False,
                 1e-6,
@@ -464,9 +468,9 @@ class AperiodicityExtractionByD4C(nn.Module):
                 f0,
                 4,
                 bias_ratio,
+                self.frame_period,
                 self.sample_rate,
                 self.fft_length_d4c,
-                self.frame_period,
                 "blackman",
                 False,
                 1e-6,
@@ -493,9 +497,9 @@ class AperiodicityExtractionByD4C(nn.Module):
             f0,
             4,
             0,
+            self.frame_period,
             self.sample_rate,
             self.fft_length_love,
-            self.frame_period,
             "hanning",
             False,
             1e-6,
@@ -532,14 +536,17 @@ class AperiodicityExtractionByD4C(nn.Module):
         )
 
         # GetAperiodicity()
-        coarse_aperiodicity = F.pad(coarse_aperiodicity, (1, 0), value=-60)
-        coarse_aperiodicity = F.pad(coarse_aperiodicity, (0, 1), value=-1e-12)
-        y0 = coarse_aperiodicity[..., :-1]
-        dy = coarse_aperiodicity[..., 1:] - y0
-        index = self.interp_indices.expand(f0.size(0), f0.size(1), -1)
-        y = torch.gather(dy, -1, index) * self.interp_weights
-        y += torch.gather(y0, -1, index)
+        y = coarse_aperiodicity
+        if hasattr(self, "interp_indices"):
+            y = F.pad(y, (1, 0), value=-60)
+            y = F.pad(y, (0, 1), value=-1e-12)
+            y0 = y[..., :-1]
+            dy = y[..., 1:] - y0
+            index = self.interp_indices.expand(f0.size(0), f0.size(1), -1)
+            y = torch.gather(dy, -1, index) * self.interp_weights
+            y += torch.gather(y0, -1, index)
         aperiodicity = 10 ** (y / 20)
+
         if 0 < self.threshold:
             aperiodicity = torch.where(
                 aperiodicity0 <= self.threshold, 1 - 1e-12, aperiodicity
