@@ -514,7 +514,7 @@ class AperiodicityExtractionByD4C(nn.Module):
         )
 
         # GetStaticGroupDelay()
-        static_group_delay = static_centroid / smoothed_power_spectrum
+        static_group_delay = static_centroid / (smoothed_power_spectrum + 1e-12)
         static_group_delay = linear_smoothing(
             static_group_delay, f0 / 2, self.sample_rate, self.fft_length_d4c, self.ramp
         )
