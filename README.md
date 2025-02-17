@@ -58,7 +58,12 @@ X = stft(x)
 
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
-mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, n_iter=10)
+mcep = diffsptk.MelCepstralAnalysis(
+    cep_order=M,
+    fft_length=n_fft,
+    alpha=alpha,
+    n_iter=10,
+)
 mc = mcep(X)
 
 # Reconstruct x.
@@ -79,6 +84,7 @@ pitch = diffsptk.Pitch(
     f_min=80,
     f_max=180,
     voicing_threshold=0.4,
+    out_format="pitch",
 )
 p = pitch(x)
 
@@ -94,6 +100,71 @@ x_unvoiced = mlsa(n, mc)
 # Output analysis-synthesis result.
 diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
+```
+
+### WORLD analysis and mel-cepstral synthesis
+
+```python
+import diffsptk
+
+fl = 400      # Frame length.
+fp = 80       # Frame period.
+n_fft = 1024  # FFT length.
+M = 24        # Mel-cepstrum dimensions.
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Extract F0 of x, or prepare well-estimated F0.
+pitch = diffsptk.Pitch(
+    frame_period=fp,
+    sample_rate=sr,
+    f_min=80,
+    f_max=180,
+    voicing_threshold=0.4,
+    out_format="f0",
+)
+f0 = pitch(x)
+
+# Extract aperiodicity of x by D4C.
+ap = diffsptk.Aperiodicity(
+    frame_period=fp,
+    sample_rate=sr,
+    fft_length=n_fft,
+    algorithm="d4c",
+    out_format="a",
+)
+A = ap(x, f0)
+
+# Extract spectral envelope of x by CheapTrick.
+pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
+    frame_period=fp,
+    sample_rate=sr,
+    fft_length=n_fft,
+)
+H = pitch_spec(x, f0)
+
+# Estimate mel-cepstrum of x.
+alpha = diffsptk.get_alpha(sr)
+mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
+mc_a = mcep(A)
+mc_h = mcep(H)
+
+# Generate excitation signals.
+excite = diffsptk.ExcitationGeneration(frame_period=fp, unvoiced_region="zeros")
+p = (sr / f0).nan_to_num(posinf=0)
+pulse = excite(p)
+noise = diffsptk.nrand(len(pulse) - 1)
+
+# Make mixed excitation signal and reconstruct x.
+mlsa = diffsptk.MLSA(filter_order=M, frame_period=fp, alpha=alpha, taylor_order=20)
+e_p = pulse - mlsa(pulse, mc_a)
+e_a = mlsa(noise, mc_a)
+e = e_p + e_a
+x_hat = mlsa(e, mc_h)
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
 ```
 
 ### LPC analysis and synthesis
