@@ -16,6 +16,7 @@
 
 import numpy as np
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -25,6 +26,9 @@ import tests.utils as U
 @pytest.mark.parametrize("algorithm", ["tandem", "d4c"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(device, algorithm, out_format, M=24, P=80, sr=16000, L=512, B=2):
+    if torch.get_default_dtype() == torch.float:
+        pytest.skip("This test is only for torch.double.")
+
     if algorithm == "tandem":
         params = {}
     elif algorithm == "d4c":

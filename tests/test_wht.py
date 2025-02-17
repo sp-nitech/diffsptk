@@ -73,7 +73,7 @@ def test_compatibility(device, module, wht_type, L=8, B=2):
                     [1, -1, -1, 1, -1, 1, 1, -1],
                 ]
             )
-        W = (wht.W * 2 ** (np.log2(L) / 2)).numpy().astype(np.int64)
+        W = np.round(wht.W.numpy() * 2 ** (np.log2(L) / 2))
         assert U.allclose(W, H)
 
     U.check_differentiability(device, wht, [B, L])

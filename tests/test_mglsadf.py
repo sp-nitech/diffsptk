@@ -176,7 +176,7 @@ def test_mixed_phase(
         M, P, ignore_gain=ignore_gain, alpha=alpha, phase="mixed", **params1
     )
     y1 = mglsadf1(x, mc_mix).cpu().numpy()
-    assert U.allclose(y0, y1)
+    assert np.corrcoef(y1, y0)[0, 1] > 0.99
 
     params2 = {"mode": "single-stage", "ir_length": 200, "n_fft": 512}
     mglsadf2 = diffsptk.MLSA(

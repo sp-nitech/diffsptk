@@ -21,7 +21,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import numpy_to_torch
 from ..misc.world import dc_correction
 from ..misc.world import get_windowed_waveform
@@ -227,7 +226,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.register_buffer("window_sqrt", self.window.sqrt())
 
     def forward(self, x, f0):
-        f0 = torch.where(f0 == UNVOICED_SYMBOL, self.default_f0, f0).detach()
+        f0 = torch.where(f0 <= 32, self.default_f0, f0).detach()
 
         B, N = f0.shape
         time_axis = torch.arange(N, dtype=f0.dtype, device=f0.device) * (
