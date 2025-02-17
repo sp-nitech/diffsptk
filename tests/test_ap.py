@@ -22,11 +22,20 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("algorithm", ["tandem", "d4c"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
-    ap = diffsptk.Aperiodicity(P, L, sr, out_format=out_format)
+def test_compatibility(device, algorithm, out_format, M=24, P=80, sr=16000, L=512, B=2):
+    if algorithm == "tandem":
+        params = {}
+    elif algorithm == "d4c":
+        params = {"threshold": 0.01}
 
-    def eq(o):
+    ap = diffsptk.Aperiodicity(P, L, sr, algorithm, out_format=out_format, **params)
+
+    def eq(a, o):
+        if a == 1:
+            return None
+
         def convert(x, o):
             if o == 0 or o == 1:
                 return x
@@ -45,6 +54,7 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
         return inner_eq
 
     ksr = sr // 1000
+    a = 0 if algorithm == "tandem" else 1
     tmp1 = "ap.tmp1"
     tmp2 = "ap.tmp2"
     U.check_compatibility(
@@ -55,10 +65,10 @@ def test_compatibility(device, out_format, M=24, P=80, sr=16000, L=512, B=2):
             f"pitch -s {ksr} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
         ],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"ap -s {ksr} -p {P} -l {L} -a 0 -q 1 -o {out_format} {tmp2} < {tmp1}",
+        f"ap -s {ksr} -p {P} -l {L} -a {a} -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
-        eq=eq(out_format),
+        eq=eq(a, out_format),
     )
 
     U.check_differentiability(device, ap, [(B, sr), (B, sr // P)], checks=[True, False])

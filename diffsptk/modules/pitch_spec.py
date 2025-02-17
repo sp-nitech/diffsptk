@@ -16,10 +16,11 @@
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from torch import nn
 
-from .frame import Frame
+from ..misc.world import dc_correction
+from ..misc.world import get_windowed_waveform
+from ..misc.world import linear_smoothing
 from .spec import Spectrum
 
 
@@ -88,7 +89,6 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         self.default_f0 = default_f0
 
         # Prepare modules.
-        self.frame = Frame(fft_length, frame_period, mode="replicate")
         self.spec = Spectrum(fft_length)
 
         self.register_buffer("ramp", torch.arange(fft_length))
@@ -122,73 +122,35 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         torch.Size([7, 513])
 
         """
-        rate = self.sample_rate / self.fft_length
-
-        # SetParametersForGetWindowedWaveform()
         f0 = torch.where(f0 <= self.f_min, self.default_f0, f0).unsqueeze(-1).detach()
-        half_window_length = torch.round(1.5 * self.sample_rate / f0).long()
-        half_fft_length = self.fft_length // 2
-        base_index = self.ramp - half_fft_length
-        position = base_index / (1.5 * self.sample_rate)
-        window = 0.5 * torch.cos(torch.pi * position * f0) + 0.5
-        mask1 = -half_window_length <= base_index
-        mask2 = base_index <= half_window_length
-        mask = torch.logical_and(mask1, mask2)
-        window *= mask
-        window = window / torch.linalg.vector_norm(window, dim=-1, keepdim=True)
 
         # GetWindowedWaveform()
-        waveform = self.frame(x) * window
-        waveform += torch.randn_like(waveform) * 1e-12 * mask
-        tmp_weight1 = waveform.sum(dim=-1, keepdim=True)
-        tmp_weight2 = window.sum(dim=-1, keepdim=True)
-        weighting_coefficient = tmp_weight1 / tmp_weight2
-        waveform -= window * weighting_coefficient
+        waveform = get_windowed_waveform(
+            x,
+            f0,
+            3,
+            0,
+            self.sample_rate,
+            self.fft_length,
+            self.frame_period,
+            "hanning",
+            True,
+            1e-12,
+            self.ramp,
+        )
 
         # GetPowerSpectrum()
         power_spectrum = self.spec(waveform)
 
-        def interp1Q(x, shift, y, xi):
-            z = (xi - x) / shift
-            xi_base = torch.clip(z.long(), min=0)
-            xi_fraction = z - xi_base
-            delta_y = torch.diff(y, dim=-1, append=y[..., -1:])
-            yi = (
-                torch.gather(y, -1, xi_base)
-                + torch.gather(delta_y, -1, xi_base) * xi_fraction
-            )
-            return yi
-
         # DCCorrection()
-        one_sided_length = half_fft_length + 1
-        low_frequency_axis = self.ramp[:one_sided_length] * rate
-        corrected_power_spectrum = interp1Q(
-            f0, -rate, power_spectrum, low_frequency_axis
+        power_spectrum = dc_correction(
+            power_spectrum, f0, self.sample_rate, self.fft_length, self.ramp
         )
-        mask = low_frequency_axis < f0
-        power_spectrum = power_spectrum + corrected_power_spectrum * mask
 
         # LinearSmoothing()
-        width = f0 * 2 / 3
-        boundary = (width / rate).long() + 1
-        max_boundary = torch.amax(boundary)
-        mirroring_spectrum = F.pad(
-            power_spectrum, (max_boundary, max_boundary), mode="reflect"
+        power_spectrum = linear_smoothing(
+            power_spectrum, f0 * (2 / 3), self.sample_rate, self.fft_length, self.ramp
         )
-        bias = max_boundary - boundary
-        mask = bias <= self.ramp[:max_boundary]
-        mask = F.pad(mask, (0, one_sided_length + max_boundary), value=True)
-        mirroring_spectrum = mirroring_spectrum * mask
-        mirroring_segment = torch.cumsum(mirroring_spectrum * rate, dim=-1)
-        origin_of_mirroring_axis = -(max_boundary - 0.5) * rate
-        frequency_axis = self.ramp[:one_sided_length] * rate - width / 2
-        low_levels = interp1Q(
-            origin_of_mirroring_axis, rate, mirroring_segment, frequency_axis
-        )
-        high_levels = interp1Q(
-            origin_of_mirroring_axis, rate, mirroring_segment, frequency_axis + width
-        )
-        power_spectrum = (high_levels - low_levels) / width
 
         # AddInfinitesimalNoise()
         power_spectrum += (
@@ -196,6 +158,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         )
 
         # SmoothingWithRecovery()
+        one_sided_length = self.fft_length // 2 + 1
         quefrency = self.ramp[:one_sided_length] / self.sample_rate
         z = torch.pi * f0 * quefrency
         smoothing_lifter = torch.sin(z) / z

@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import math
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -21,6 +23,11 @@ from torch import nn
 
 from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import numpy_to_torch
+from ..misc.world import dc_correction
+from ..misc.world import get_windowed_waveform
+from ..misc.world import linear_smoothing
+from .spec import Spectrum
+from .window import Window
 
 
 class Aperiodicity(nn.Module):
@@ -38,7 +45,7 @@ class Aperiodicity(nn.Module):
     sample_rate : int >= 8000
         Sample rate in Hz.
 
-    algorithm : ['tandem']
+    algorithm : ['tandem', 'd4c']
         Algorithm.
 
     out_format : ['a', 'p', 'a/p', 'p/a']
@@ -50,17 +57,14 @@ class Aperiodicity(nn.Module):
     upper_bound : float <= 1
         Upper bound of aperiodicity.
 
-    window_length_ms : int >= 1
-        Window length in msec.
-
-    eps : float > 0
-        A number used to stabilize colesky decomposition.
-
     References
     ----------
     .. [1] H. Kawahara et al., "Simplification and extension of non-periodic excitation
            source representations for high-quality speech manipulation systems,"
            *Proceedings of Interspeech*, pp. 38-41, 2010.
+
+    .. [2] M. Morise, "D4C, a band-aperiodicity estimator for high-quality speech
+           synthesis," *Speech Communication*, vol. 84, pp. 57-65, 2016.
 
     """
 
@@ -71,15 +75,25 @@ class Aperiodicity(nn.Module):
         sample_rate,
         algorithm="tandem",
         out_format="a",
+        lower_bound=0.001,
+        upper_bound=0.999,
         **kwargs,
     ):
         super().__init__()
 
         assert 1 <= frame_period
         assert 8000 <= sample_rate
+        assert 0 <= lower_bound < upper_bound <= 1
+
+        self.lower_bound = lower_bound
+        self.upper_bound = upper_bound
 
         if algorithm == "tandem":
-            self.extractor = AperiodicityExtractionByTandem(
+            self.extractor = AperiodicityExtractionByTANDEM(
+                frame_period, fft_length, sample_rate, **kwargs
+            )
+        elif algorithm == "d4c":
+            self.extractor = AperiodicityExtractionByD4C(
                 frame_period, fft_length, sample_rate, **kwargs
             )
         else:
@@ -140,14 +154,16 @@ class Aperiodicity(nn.Module):
             f0 = f0.unsqueeze(0)
         assert f0.dim() == 2, "Input must be 2D tensor."
 
-        ap = self.convert(self.extractor(x, f0))
+        ap = self.extractor(x, f0)
+        ap = torch.clip(ap, min=self.lower_bound, max=self.upper_bound)
+        ap = self.convert(ap)
 
         if d == 1:
             ap = ap.squeeze(0)
         return ap
 
 
-class AperiodicityExtractionByTandem(nn.Module):
+class AperiodicityExtractionByTANDEM(nn.Module):
     """Aperiodicity extraction by TANDEM-STRAIGHT."""
 
     def __init__(
@@ -155,22 +171,17 @@ class AperiodicityExtractionByTandem(nn.Module):
         frame_period,
         fft_length,
         sample_rate,
-        lower_bound=0.001,
-        upper_bound=0.999,
         window_length_ms=30,
         eps=1e-5,
     ):
         super().__init__()
 
         assert fft_length % 2 == 0
-        assert 0 <= lower_bound < upper_bound <= 1
         assert 1 <= window_length_ms
         assert 0 < eps
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
-        self.lower_bound = lower_bound
-        self.upper_bound = upper_bound
         self.n_band = int(np.log2(sample_rate / 600))
         assert self.n_band <= fft_length // 2
 
@@ -216,8 +227,7 @@ class AperiodicityExtractionByTandem(nn.Module):
         self.register_buffer("window_sqrt", self.window.sqrt())
 
     def forward(self, x, f0):
-        f0 = f0.detach().clone()
-        f0[f0 == UNVOICED_SYMBOL] = self.default_f0
+        f0 = torch.where(f0 == UNVOICED_SYMBOL, self.default_f0, f0).detach()
 
         B, N = f0.shape
         time_axis = torch.arange(N, dtype=f0.dtype, device=f0.device) * (
@@ -286,7 +296,6 @@ class AperiodicityExtractionByTandem(nn.Module):
 
         bap.append(bap[-1])
         bap = torch.stack(bap[::-1], dim=-1)  # (B, N, D)
-        bap = torch.clip(bap, min=self.lower_bound, max=self.upper_bound)
 
         # Interpolate band aperiodicity.
         y = torch.log(bap)
@@ -347,3 +356,193 @@ class AperiodicityExtractionByTandem(nn.Module):
         hLP[18] = +0.52827343594055032
         hLP[19:] = hLP[17::-1]
         return hLP
+
+
+class AperiodicityExtractionByD4C(nn.Module):
+    """Aperiodicity extraction by D4C."""
+
+    def __init__(
+        self,
+        frame_period,
+        fft_length,
+        sample_rate,
+        threshold=0.0,
+        default_f0=150,
+    ):
+        super().__init__()
+
+        self.frame_period = frame_period
+        self.sample_rate = sample_rate
+        self.threshold = threshold
+        self.default_f0 = default_f0
+
+        freqency_interval = 3000
+        upper_limit = 15000
+        floor_f0 = 47
+        self.lowest_f0 = 40
+
+        self.fft_length_love = 2 ** (
+            1 + int(np.log(3 * sample_rate / self.lowest_f0 + 1) / np.log(2))
+        )
+        self.fft_length_d4c = 2 ** (
+            1 + int(np.log(4 * sample_rate / floor_f0 + 1) / np.log(2))
+        )
+
+        n_aperiodicity = int(
+            min(upper_limit, sample_rate / 2 - freqency_interval) / freqency_interval
+        )
+        window_length = freqency_interval * self.fft_length_d4c // sample_rate * 2 + 1
+        half_window_length = window_length // 2
+        padded_window_length = self.fft_length_d4c // 2 + 1
+        window = Window(window_length, window="nuttall", norm="none").window
+        windows = []
+        for i in range(1, n_aperiodicity + 1):
+            center = freqency_interval * i * self.fft_length_d4c // sample_rate
+            left = center - half_window_length
+            right = center + half_window_length
+            windows.append(
+                F.pad(
+                    window,
+                    (left, padded_window_length - right - 1),
+                )
+            )
+        self.register_buffer("windows", torch.stack(windows))
+        self.window_length = window_length
+
+        coarse_axis = np.arange(n_aperiodicity + 2) * freqency_interval
+        coarse_axis[-1] = sample_rate / 2
+        freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
+        idx = np.searchsorted(coarse_axis, freq_axis) - 1
+        idx = np.clip(idx, 0, len(coarse_axis) - 2)
+        idx = idx.reshape(1, 1, -1)
+        self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+
+        x0 = coarse_axis[:-1]
+        dx = coarse_axis[1:] - x0
+        weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
+        self.register_buffer("interp_weights", numpy_to_torch(weights))
+
+        self.spec_love = Spectrum(self.fft_length_love)
+        self.spec_d4c = Spectrum(self.fft_length_d4c)
+
+        self.register_buffer("ramp", torch.arange(self.fft_length_d4c))
+
+    def forward(self, x, f0):
+        f0 = (
+            torch.where(f0 < self.lowest_f0, self.default_f0, f0).unsqueeze(-1).detach()
+        )
+
+        if 0 < self.threshold:
+            # D4CLoveTrain()
+            waveform = get_windowed_waveform(
+                x,
+                f0,
+                3,
+                0,
+                self.sample_rate,
+                self.fft_length_love,
+                self.frame_period,
+                "blackman",
+                False,
+                1e-6,
+                self.ramp,
+            )
+            power_spectrum = self.spec_love(waveform)
+            rate = self.sample_rate / self.fft_length_love
+            boundary0 = math.ceil(100 / rate) + 1
+            boundary1 = math.ceil(4000 / rate)
+            boundary2 = math.ceil(7900 / rate)
+            power_spectrum = torch.cumsum(power_spectrum[..., boundary0:], dim=-1)
+            aperiodicity0 = (
+                power_spectrum[..., boundary1 - boundary0]
+                / power_spectrum[..., boundary2 - boundary0]
+            ).unsqueeze(-1)
+
+        # GetCentroid()
+        def get_centroid(x, f0, bias_ratio):
+            waveform = get_windowed_waveform(
+                x,
+                f0,
+                4,
+                bias_ratio,
+                self.sample_rate,
+                self.fft_length_d4c,
+                self.frame_period,
+                "blackman",
+                False,
+                1e-6,
+                self.ramp,
+            )
+            power = waveform.square().sum(dim=-1, keepdim=True)
+            waveform = waveform / torch.sqrt(power)
+            spectrum1 = torch.fft.rfft(waveform)
+            spectrum2 = torch.fft.rfft(waveform * torch.cumsum(waveform != 0, dim=-1))
+            centroid = spectrum1.real * spectrum2.real + spectrum1.imag * spectrum2.imag
+            return centroid
+
+        # GetStaticCentroid()
+        centroid1 = get_centroid(x, f0, -0.25)
+        centroid2 = get_centroid(x, f0, 0.25)
+        static_centroid = centroid1 + centroid2
+        static_centroid = dc_correction(
+            static_centroid, f0, self.sample_rate, self.fft_length_d4c, self.ramp
+        )
+
+        # GetSmoothedPowerSpectrum()
+        waveform = get_windowed_waveform(
+            x,
+            f0,
+            4,
+            0,
+            self.sample_rate,
+            self.fft_length_love,
+            self.frame_period,
+            "hanning",
+            False,
+            1e-6,
+            self.ramp,
+        )
+        power_spectrum = self.spec_d4c(waveform)
+        power_spectrum = dc_correction(
+            power_spectrum, f0, self.sample_rate, self.fft_length_d4c, self.ramp
+        )
+        smoothed_power_spectrum = linear_smoothing(
+            power_spectrum, f0, self.sample_rate, self.fft_length_d4c, self.ramp
+        )
+
+        # GetStaticGroupDelay()
+        static_group_delay = static_centroid / smoothed_power_spectrum
+        static_group_delay = linear_smoothing(
+            static_group_delay, f0 / 2, self.sample_rate, self.fft_length_d4c, self.ramp
+        )
+        smoothed_group_delay = linear_smoothing(
+            static_group_delay, f0, self.sample_rate, self.fft_length_d4c, self.ramp
+        )
+        static_group_delay = static_group_delay - smoothed_group_delay
+
+        # GetCoarseAperiodicity()
+        boundary = round(self.fft_length_d4c * 8 / self.window_length)
+        power_spectrum = self.spec_d4c(static_group_delay.unsqueeze(-2) * self.windows)
+        power_spectrum, _ = torch.sort(power_spectrum)
+        power_spectrum = torch.cumsum(power_spectrum, dim=-1)
+        coarse_aperiodicity = 10 * torch.log10(
+            power_spectrum[..., -(boundary + 2)] / power_spectrum[..., -1]
+        )
+        coarse_aperiodicity = torch.clip(
+            coarse_aperiodicity + (f0 - 100) / 50, max=-1e-12
+        )
+
+        # GetAperiodicity()
+        coarse_aperiodicity = F.pad(coarse_aperiodicity, (1, 0), value=-60)
+        coarse_aperiodicity = F.pad(coarse_aperiodicity, (0, 1), value=-1e-12)
+        y0 = coarse_aperiodicity[..., :-1]
+        dy = coarse_aperiodicity[..., 1:] - y0
+        index = self.interp_indices.expand(f0.size(0), f0.size(1), -1)
+        y = torch.gather(dy, -1, index) * self.interp_weights
+        y += torch.gather(y0, -1, index)
+        aperiodicity = 10 ** (y / 20)
+        if 0 < self.threshold:
+            aperiodicity = torch.where(
+                aperiodicity0 <= self.threshold, 1 - 1e-12, aperiodicity
+            )
+        return aperiodicity
