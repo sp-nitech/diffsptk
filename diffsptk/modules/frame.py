@@ -87,7 +87,9 @@ class Frame(nn.Module):
         )
 
     @staticmethod
-    def _forward(x, frame_length, frame_period, center, zmean, mode="constant"):
+    def _forward(
+        x, frame_length, frame_period, center=True, zmean=False, mode="constant"
+    ):
         if center:
             padding = (frame_length // 2, (frame_length - 1) // 2)
         else:

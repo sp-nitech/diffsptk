@@ -47,9 +47,6 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     default_f0 : float > 0
         F0 value used when the input F0 is unvoiced.
 
-    safe_min : float > 0
-        A small value added to random values to avoid computation errors.
-
     References
     ----------
     .. [1] M. Morise, "CheapTrick, a spectral envelope estimator for high-quality speech
@@ -78,6 +75,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
 
         # GetF0FloorForCheapTrick()
         self.f_min = 3 * sample_rate / (fft_length - 3)
+        assert self.f_min <= default_f0
 
         # GetFFTSizeForCheapTrick
         min_fft_length = 2 ** (
@@ -131,7 +129,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         half_window_length = torch.round(1.5 * self.sample_rate / f0).long()
         half_fft_length = self.fft_length // 2
         base_index = self.ramp - half_fft_length
-        position = base_index / 1.5 / self.sample_rate
+        position = base_index / (1.5 * self.sample_rate)
         window = 0.5 * torch.cos(torch.pi * position * f0) + 0.5
         mask1 = -half_window_length <= base_index
         mask2 = base_index <= half_window_length

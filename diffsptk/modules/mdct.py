@@ -82,7 +82,7 @@ class ModifiedDiscreteCosineTransform(nn.Module):
     def _func(x, frame_length, window, **kwargs):
         frame_period = frame_length // 2
         x = F.pad(x, (0, frame_period))
-        y = Frame._func(x, frame_length, frame_period, True, False)
+        y = Frame._func(x, frame_length, frame_period)
         y = Window._func(y, None, window, "none")
         y = ModifiedDiscreteTransform._func(y, window, **kwargs)
         return y
