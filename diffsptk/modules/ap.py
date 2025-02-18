@@ -514,7 +514,8 @@ class AperiodicityExtractionByD4C(nn.Module):
         )
 
         # GetStaticGroupDelay()
-        static_group_delay = static_centroid / (smoothed_power_spectrum + 1e-12)
+        eps = 1e-12
+        static_group_delay = static_centroid / (smoothed_power_spectrum + eps)
         static_group_delay = linear_smoothing(
             static_group_delay, f0 / 2, self.sample_rate, self.fft_length_d4c, self.ramp
         )
@@ -532,14 +533,14 @@ class AperiodicityExtractionByD4C(nn.Module):
             power_spectrum[..., -(boundary + 2)] / power_spectrum[..., -1]
         )
         coarse_aperiodicity = torch.clip(
-            coarse_aperiodicity + (f0 - 100) / 50, max=-1e-12
+            coarse_aperiodicity + (f0 - 100) / 50, max=-eps
         )
 
         # GetAperiodicity()
         y = coarse_aperiodicity
         if hasattr(self, "interp_indices"):
             y = F.pad(y, (1, 0), value=-60)
-            y = F.pad(y, (0, 1), value=-1e-12)
+            y = F.pad(y, (0, 1), value=-eps)
             y0 = y[..., :-1]
             dy = y[..., 1:] - y0
             index = self.interp_indices.expand(f0.size(0), f0.size(1), -1)
@@ -549,6 +550,6 @@ class AperiodicityExtractionByD4C(nn.Module):
 
         if 0 < self.threshold:
             aperiodicity = torch.where(
-                aperiodicity0 <= self.threshold, 1 - 1e-12, aperiodicity
+                aperiodicity0 <= self.threshold, 1 - eps, aperiodicity
             )
         return aperiodicity
