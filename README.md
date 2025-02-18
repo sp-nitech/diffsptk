@@ -3,10 +3,10 @@
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
 [![Latest Manual](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
-[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/2.4.0/)
+[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/2.5.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
-[![PyTorch Version](https://img.shields.io/badge/pytorch-2.0.0%20%7C%202.6.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
+[![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.6.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![Codecov](https://codecov.io/gh/sp-nitech/diffsptk/branch/master/graph/badge.svg)](https://app.codecov.io/gh/sp-nitech/diffsptk)
 [![License](https://img.shields.io/github/license/sp-nitech/diffsptk.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
@@ -15,8 +15,8 @@
 
 ## Requirements
 
-- Python 3.9+
-- PyTorch 2.0.0+
+- Python 3.10+
+- PyTorch 2.3.1+
 
 ## Documentation
 
@@ -58,7 +58,12 @@ X = stft(x)
 
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
-mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha, n_iter=10)
+mcep = diffsptk.MelCepstralAnalysis(
+    cep_order=M,
+    fft_length=n_fft,
+    alpha=alpha,
+    n_iter=10,
+)
 mc = mcep(X)
 
 # Reconstruct x.
@@ -73,7 +78,14 @@ error = (x_hat - x).abs().sum()
 print(error)
 
 # Extract pitch of x.
-pitch = diffsptk.Pitch(frame_period=fp, sample_rate=sr, f_min=80, f_max=180)
+pitch = diffsptk.Pitch(
+    frame_period=fp,
+    sample_rate=sr,
+    f_min=80,
+    f_max=180,
+    voicing_threshold=0.4,
+    out_format="pitch",
+)
 p = pitch(x)
 
 # Generate excitation signal.
@@ -88,6 +100,70 @@ x_unvoiced = mlsa(n, mc)
 # Output analysis-synthesis result.
 diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
+```
+
+### WORLD analysis and mel-cepstral synthesis
+
+```python
+import diffsptk
+
+fp = 80       # Frame period.
+n_fft = 1024  # FFT length.
+M = 24        # Mel-cepstrum dimensions.
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Extract F0 of x, or prepare well-estimated F0.
+pitch = diffsptk.Pitch(
+    frame_period=fp,
+    sample_rate=sr,
+    f_min=80,
+    f_max=180,
+    voicing_threshold=0.4,
+    out_format="f0",
+)
+f0 = pitch(x)
+
+# Extract aperiodicity of x by D4C.
+ap = diffsptk.Aperiodicity(
+    frame_period=fp,
+    sample_rate=sr,
+    fft_length=n_fft,
+    algorithm="d4c",
+    out_format="a",
+)
+A = ap(x, f0)
+
+# Extract spectral envelope of x by CheapTrick.
+pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
+    frame_period=fp,
+    sample_rate=sr,
+    fft_length=n_fft,
+)
+H = pitch_spec(x, f0)
+
+# Estimate mel-cepstrum of x.
+alpha = diffsptk.get_alpha(sr)
+mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
+mc_a = mcep(A)
+mc_h = mcep(H)
+
+# Generate excitation signals.
+excite = diffsptk.ExcitationGeneration(frame_period=fp, unvoiced_region="zeros")
+p = (sr / f0).nan_to_num(posinf=0)
+pulse = excite(p)
+noise = diffsptk.nrand(len(pulse) - 1)
+
+# Make mixed excitation signal and reconstruct x.
+mlsa = diffsptk.MLSA(filter_order=M, frame_period=fp, alpha=alpha, taylor_order=20)
+e_p = pulse - mlsa(pulse, mc_a)
+e_a = mlsa(noise, mc_a)
+e = e_p + e_a
+x_hat = mlsa(e, mc_h)
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
 ```
 
 ### LPC analysis and synthesis

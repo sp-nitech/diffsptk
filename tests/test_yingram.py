@@ -28,8 +28,10 @@ def test_compatibility(
 ):
     if device == "cuda" and not torch.cuda.is_available():
         return
-    if torch.get_default_dtype() != torch.double:  # pragma: no cover
-        return  # This is due to the difference in the calculation of autocorrelation.
+
+    # This is due to the difference in the calculation of autocorrelation.
+    if torch.get_default_dtype() == torch.float:
+        pytest.skip("This test is only for torch.double.")
 
     frame = diffsptk.Frame(fl, fp, center=False).to(device)
     yingram = U.choice(

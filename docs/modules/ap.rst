@@ -8,4 +8,4 @@ ap
 
 .. seealso::
 
-    :ref:`excite`
+    :ref:`excite` :ref:`pitch` :ref:`pitch_spec`

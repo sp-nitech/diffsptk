@@ -14,7 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import librosa
+import importlib
+
 import numpy as np
 import pytest
 import torch
@@ -38,25 +39,29 @@ def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
         device=device,
     )
 
-    c1 = librosa.cqt(
-        x.cpu().numpy(),
-        sr=sr,
-        fmin=f_min,
-        n_bins=K,
-        bins_per_octave=B,
-        hop_length=fp,
-        scale=scale,
-        res_type=res_type,
-        dtype=None,
-    ).T
-
     cqt = diffsptk.CQT(
         fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale, res_type=res_type
     ).to(device)
-    c2 = cqt(x).cpu().numpy()
 
-    c1 = c1[: c2.shape[0]]
-    assert np.corrcoef(c1.real.flatten(), c2.real.flatten())[0, 1] > 0.99
-    assert np.corrcoef(c1.imag.flatten(), c2.imag.flatten())[0, 1] > 0.99
+    try:  # pragma: no cover
+        librosa = importlib.import_module("librosa")
+
+        c1 = librosa.cqt(
+            x.cpu().numpy(),
+            sr=sr,
+            fmin=f_min,
+            n_bins=K,
+            bins_per_octave=B,
+            hop_length=fp,
+            scale=scale,
+            res_type=res_type,
+            dtype=None,
+        ).T
+        c2 = cqt(x).cpu().numpy()
+        c1 = c1[: c2.shape[0]]
+        assert np.corrcoef(c1.real.flatten(), c2.real.flatten())[0, 1] > 0.99
+        assert np.corrcoef(c1.imag.flatten(), c2.imag.flatten())[0, 1] > 0.99
+    except ImportError:
+        pass
 
     U.check_differentiability(device, [torch.abs, cqt], [fp])

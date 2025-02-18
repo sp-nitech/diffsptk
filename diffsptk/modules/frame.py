@@ -27,7 +27,7 @@ class Frame(nn.Module):
     frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
     center : bool
@@ -37,9 +37,14 @@ class Frame(nn.Module):
     zmean : bool
         If True, perform mean subtraction on each frame.
 
+    mode : ['constant', 'reflect', 'replicate', 'circular']
+        Padding mode.
+
     """
 
-    def __init__(self, frame_length, frame_period, center=True, zmean=False):
+    def __init__(
+        self, frame_length, frame_period, center=True, zmean=False, mode="constant"
+    ):
         super().__init__()
 
         assert 1 <= frame_length
@@ -49,6 +54,7 @@ class Frame(nn.Module):
         self.frame_period = frame_period
         self.center = center
         self.zmean = zmean
+        self.mode = mode
 
     def forward(self, x):
         """Apply framing to given waveform.
@@ -77,16 +83,21 @@ class Frame(nn.Module):
 
         """
         return self._forward(
-            x, self.frame_length, self.frame_period, self.center, self.zmean
+            x, self.frame_length, self.frame_period, self.center, self.zmean, self.mode
         )
 
     @staticmethod
-    def _forward(x, frame_length, frame_period, center, zmean):
+    def _forward(
+        x, frame_length, frame_period, center=True, zmean=False, mode="constant"
+    ):
         if center:
             padding = (frame_length // 2, (frame_length - 1) // 2)
         else:
             padding = (0, frame_length - 1)
-        x = F.pad(x, padding)
+        if mode != "constant" and x.dim() == 1:
+            x = F.pad(x.unsqueeze(0), padding, mode=mode).squeeze(0)
+        else:
+            x = F.pad(x, padding, mode=mode)
         y = x.unfold(-1, frame_length, frame_period)
         if zmean:
             y = y - y.mean(-1, keepdim=True)

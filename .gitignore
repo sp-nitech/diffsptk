@@ -1,6 +1,6 @@
 # project
+.venv/
 dist/
-venv/
 
 # codecov
 .coverage

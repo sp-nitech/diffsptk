@@ -139,6 +139,7 @@ class NonnegativeMatrixFactorization(nn.Module):
         codebook, _ = lbg(x)
         self.H[:] = codebook
 
+    @torch.inference_mode()
     def forward(self, x):
         """Estimate coefficient matrix and dictionary matrix.
 

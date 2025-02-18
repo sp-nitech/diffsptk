@@ -663,7 +663,9 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
     return nn.Flux._func(x, y, lag=lag, norm=norm, reduction=reduction)
 
 
-def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
+def frame(
+    x, frame_length=400, frame_period=80, center=True, zmean=False, mode="constant"
+):
     """Perform framing.
 
     Parameters
@@ -684,6 +686,9 @@ def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
     zmean : bool
         If True, perform mean subtraction on each frame.
 
+    mode : ['constant', 'reflect', 'replicate', 'circular']
+        Padding mode.
+
     Returns
     -------
     out : Tensor [shape=(..., T/P, L)]
@@ -696,6 +701,7 @@ def frame(x, frame_length=400, frame_period=80, center=True, zmean=False):
         frame_period=frame_period,
         center=center,
         zmean=zmean,
+        mode=mode,
     )
 
 
@@ -1156,7 +1162,7 @@ def istft(
         assume that the center of data is the left edge of frame.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2173,7 +2179,7 @@ def stft(
 
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2263,7 +2269,7 @@ def unframe(
         assume that the center of data is the left edge of frame.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -2318,7 +2324,7 @@ def window(x, out_length=None, *, window="blackman", norm="power"):
         Output length, :math:`L_2`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
+              'rectangular', 'nuttall']
         Window type.
 
     norm : ['none', 'power', 'magnitude']

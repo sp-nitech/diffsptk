@@ -15,34 +15,37 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5, 6])
-@pytest.mark.parametrize("norm", [0, 1, 2])
-@pytest.mark.parametrize("L1", [8, 10])
-def test_compatibility(device, module, w, norm, L1, L2=10, B=2):
-    window = U.choice(
-        module,
-        diffsptk.Window,
-        diffsptk.functional.window,
-        {"in_length": L1},
-        {"out_length": L2, "window": w, "norm": norm},
-    )
+@pytest.mark.parametrize("out_format", [0, 1, 2, 3])
+def test_compatibility(device, out_format, P=80, sr=16000, L=1024, B=2):
+    if torch.get_default_dtype() == torch.float:
+        pytest.skip("This test is only for torch.double.")
 
+    pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(P, sr, L, out_format=out_format)
+
+    ksr = sr // 1000
+    tmp1 = "pitch_spec.tmp1"
+    tmp2 = "pitch_spec.tmp2"
     U.check_compatibility(
         device,
-        window,
-        [],
-        f"step -l {L1}",
-        f"window -w {w} -n {norm} -l {L1} -L {L2}",
-        [],
-        dx=L1,
-        dy=L2,
+        pitch_spec,
+        [
+            f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
+            f"pitch -s {ksr} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
+        ],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"pitch_spec -x -s {ksr} -p {P} -l {L} -q 1 -o {out_format} {tmp2} < {tmp1}",
+        [f"rm {tmp1} {tmp2}"],
+        dy=L // 2 + 1,
+        rtol=1e-5 if device == "cpu" else 1e-4,
     )
 
-    U.check_differentiability(device, window, [B, L1])
+    U.check_differentiability(
+        device, pitch_spec, [(B, sr), (B, sr // P)], checks=[True, False]
+    )

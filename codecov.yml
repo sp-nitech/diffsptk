@@ -8,3 +8,4 @@ coverage:
 
 ignore:
   - "tests/utils.py"
+  - "**/librosa/*.py"

@@ -18,54 +18,54 @@ PROJECT := diffsptk
 MODULE  :=
 OPT     :=
 
-PYTHON_VERSION     := 3.9
-TORCH_VERSION      := 2.0.0
-TORCHAUDIO_VERSION := 2.0.1
-PLATFORM           := cu118
+PYTHON_VERSION     := 3.10
+TORCH_VERSION      := 2.3.1
+TORCHAUDIO_VERSION := 2.3.1
+PLATFORM           := cu121
 
 venv:
-	test -d venv || python$(PYTHON_VERSION) -m venv venv
-	. ./venv/bin/activate && python -m pip install --upgrade pip
-	. ./venv/bin/activate && python -m pip install --upgrade wheel icc-rt
-	. ./venv/bin/activate && python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
+	test -d .venv || python$(PYTHON_VERSION) -m venv .venv
+	. .venv/bin/activate && python -m pip install --upgrade pip
+	. .venv/bin/activate && python -m pip install --upgrade wheel
+	. .venv/bin/activate && python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
 		--index-url https://download.pytorch.org/whl/$(PLATFORM)
-	. ./venv/bin/activate && python -m pip install -e .[dev]
+	. .venv/bin/activate && python -m pip install -e .[dev]
 
 dist:
-	. ./venv/bin/activate && python -m build
-	. ./venv/bin/activate && python -m twine check dist/*
+	. .venv/bin/activate && python -m build
+	. .venv/bin/activate && python -m twine check dist/*
 
 dist-clean:
 	rm -rf dist
 
 doc:
-	. ./venv/bin/activate && cd docs && make html
+	. .venv/bin/activate && cd docs && make html
 
 doc-clean:
-	@if [ -f ./venv/bin/activate ]; then \
-		. ./venv/bin/activate && cd docs && make clean; \
+	@if [ -f .venv/bin/activate ]; then \
+		. .venv/bin/activate && cd docs && make clean; \
 	fi
 
 check: tool
-	. ./venv/bin/activate && python -m ruff check $(PROJECT) tests
-	. ./venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
-	. ./venv/bin/activate && python -m mdformat --check *.md
-	. ./venv/bin/activate && cd docs && python -m docstrfmt --check .
-	./venv/bin/codespell
+	. .venv/bin/activate && python -m ruff check $(PROJECT) tests
+	. .venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
+	. .venv/bin/activate && python -m mdformat --check *.md
+	. .venv/bin/activate && cd docs && python -m docstrfmt --check .
+	.venv/bin/codespell
 	./tools/taplo/taplo fmt --check *.toml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
 
 format: tool
-	. ./venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
-	. ./venv/bin/activate && python -m ruff format $(PROJECT) tests docs
-	. ./venv/bin/activate && python -m mdformat *.md
-	. ./venv/bin/activate && cd docs && python -m docstrfmt .
+	. .venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
+	. .venv/bin/activate && python -m ruff format $(PROJECT) tests docs
+	. .venv/bin/activate && python -m mdformat *.md
+	. .venv/bin/activate && cd docs && python -m docstrfmt .
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
 test: tool
 	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
-	. ./venv/bin/activate && export PATH=./tools/SPTK/bin:$$PATH CUDA_HOME=/usr/local/cuda-11.8 NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
+	. .venv/bin/activate && export PATH=./tools/SPTK/bin:$$PATH NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
 	python -m pytest $$module $(OPT)
 
 test-clean:
@@ -79,13 +79,13 @@ tool-clean:
 	cd tools && make clean
 
 update: tool
-	. ./venv/bin/activate && python -m pip install --upgrade pip
+	. .venv/bin/activate && python -m pip install --upgrade pip
 	@for package in $$(./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev); do \
-		. ./venv/bin/activate && python -m pip install --upgrade $$package; \
+		. .venv/bin/activate && python -m pip install --upgrade $$package; \
 	done
 
 clean: dist-clean doc-clean test-clean tool-clean
-	rm -rf venv
+	rm -rf .venv
 	find . -name "__pycache__" -type d | xargs rm -rf
 
 .PHONY: venv dist dist-clean doc doc-clean check format test test-clean tool tool-clean update clean

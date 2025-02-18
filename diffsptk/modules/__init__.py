@@ -115,6 +115,7 @@ from .pca import PrincipalComponentAnalysis
 from .pca import PrincipalComponentAnalysis as PCA
 from .phase import Phase
 from .pitch import Pitch
+from .pitch_spec import PitchAdaptiveSpectralAnalysis
 from .plp import PerceptualLinearPredictiveCoefficientsAnalysis
 from .plp import PerceptualLinearPredictiveCoefficientsAnalysis as PLP
 from .pnorm import MelCepstrumPowerNormalization

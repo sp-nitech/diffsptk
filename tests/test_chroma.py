@@ -14,7 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import librosa
+import importlib
+
 import pytest
 import torch
 
@@ -33,15 +34,7 @@ def test_compatibility(device, module, C=12):
         double=torch.get_default_dtype() == torch.double,
         device=device,
     )
-
     X = diffsptk.functional.stft(x)
-
-    c1 = librosa.feature.chroma_stft(
-        S=X.cpu().numpy().T,
-        sr=sr,
-        n_chroma=C,
-        tuning=0,
-    ).T
 
     chroma = U.choice(
         module,
@@ -52,8 +45,19 @@ def test_compatibility(device, module, C=12):
     )
     if hasattr(chroma, "to"):
         chroma.to(device)
-    c2 = chroma(X).cpu().numpy()
 
-    assert U.allclose(c1, c2)
+    try:  # pragma: no cover
+        librosa = importlib.import_module("librosa")
+
+        c1 = librosa.feature.chroma_stft(
+            S=X.cpu().numpy().T,
+            sr=sr,
+            n_chroma=C,
+            tuning=0,
+        ).T
+        c2 = chroma(X).cpu().numpy()
+        assert U.allclose(c1, c2)
+    except ImportError:
+        pass
 
     U.check_differentiability(device, chroma, [X.size(-1)])

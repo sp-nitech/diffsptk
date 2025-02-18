@@ -28,7 +28,7 @@ class Unframe(nn.Module):
     frame_length : int >= 1
         Frame length, :math:`L`.
 
-    frame_peirod : int >= 1
+    frame_period : int >= 1
         Frame period, :math:`P`.
 
     center : bool
