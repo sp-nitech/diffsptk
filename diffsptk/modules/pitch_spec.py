@@ -36,8 +36,8 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     sample_rate : int >= 8000
         Sample rate in Hz.
 
-    fft_length : int >= 1024 or None
-        Number of FFT bins, :math:`L`. If None, automatically determined.
+    fft_length : int >= 1024
+        Number of FFT bins, :math:`L`.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         Output format.
