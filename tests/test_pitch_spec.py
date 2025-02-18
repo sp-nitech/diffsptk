@@ -27,7 +27,7 @@ def test_compatibility(device, out_format, P=80, sr=16000, L=1024, B=2):
     if torch.get_default_dtype() == torch.float:
         pytest.skip("This test is only for torch.double.")
 
-    pitch_spec = diffsptk.CheapTrick(P, sr, L, out_format=out_format)
+    pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(P, sr, L, out_format=out_format)
 
     ksr = sr // 1000
     tmp1 = "pitch_spec.tmp1"
