@@ -41,7 +41,7 @@ class Aperiodicity(nn.Module):
     sample_rate : int >= 8000
         Sample rate in Hz.
 
-    fft_length : int >= 8 or None
+    fft_length : int >= 16 or None
         Size of double-sided aperiodicity, :math:`L`. If None, band aperiodicity
         (uninterpolated aperiodicity) is returned as the output.
 
@@ -83,6 +83,7 @@ class Aperiodicity(nn.Module):
 
         assert 1 <= frame_period
         assert 8000 <= sample_rate
+        assert fft_length is None or 16 <= fft_length
         assert 0 <= lower_bound < upper_bound <= 1
 
         self.lower_bound = lower_bound
@@ -190,8 +191,6 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.cutoff_list.append(self.cutoff_list[-1])
 
         if fft_length is not None:
-            assert self.n_band <= fft_length // 2 and fft_length % 2 == 0
-
             coarse_axis = [sample_rate / 2**i for i in range(self.n_band, 0, -1)]
             coarse_axis.insert(0, 0)
             coarse_axis = np.asarray(coarse_axis)

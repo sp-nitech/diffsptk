@@ -36,7 +36,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     sample_rate : int >= 8000
         Sample rate in Hz.
 
-    fft_length : int >= 2 or None
+    fft_length : int >= 1024 or None
         Number of FFT bins, :math:`L`. If None, automatically determined.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
@@ -59,7 +59,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         self,
         frame_period,
         sample_rate,
-        fft_length=None,
+        fft_length,
         out_format="power",
         q1=-0.15,
         default_f0=500,
@@ -71,6 +71,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
+        self.fft_length = fft_length
         self.formatter = self._formatter(out_format)
 
         # GetF0FloorForCheapTrick()
@@ -81,8 +82,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         min_fft_length = 2 ** (
             1 + int(np.log(3 * sample_rate / self.f_min + 1) / np.log(2))
         )
-        self.fft_length = min_fft_length if fft_length is None else fft_length
-        assert min_fft_length <= self.fft_length
+        assert min_fft_length <= fft_length
 
         # Set WORLD constants.
         self.q1 = q1
