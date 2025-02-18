@@ -107,7 +107,6 @@ diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```python
 import diffsptk
 
-fl = 400      # Frame length.
 fp = 80       # Frame period.
 n_fft = 1024  # FFT length.
 M = 24        # Mel-cepstrum dimensions.

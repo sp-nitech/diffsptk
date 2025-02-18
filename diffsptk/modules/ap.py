@@ -401,13 +401,8 @@ class AperiodicityExtractionByD4C(nn.Module):
         for i in range(1, n_aperiodicity + 1):
             center = freqency_interval * i * self.fft_length_d4c // sample_rate
             left = center - half_window_length
-            right = center + half_window_length
-            windows.append(
-                F.pad(
-                    window,
-                    (left, padded_window_length - right - 1),
-                )
-            )
+            right = center + half_window_length + 1
+            windows.append(F.pad(window, (left, padded_window_length - right)))
         self.register_buffer("windows", torch.stack(windows))
         self.window_length = window_length
 

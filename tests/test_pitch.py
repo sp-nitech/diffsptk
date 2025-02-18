@@ -16,6 +16,7 @@
 
 import numpy as np
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -75,3 +76,18 @@ def test_compatibility(device, algorithm, out_format, P=80, sr=16000, L=80, H=18
         [],
         eq=eq(out_format, sr),
     )
+
+
+@pytest.mark.parametrize("algorithm", ["crepe", "fcnf0"])
+def test_probability_calculation(algorithm, P=80, L=80, H=180):
+    x, sr = diffsptk.read(
+        "assets/data.wav",
+        double=torch.get_default_dtype() == torch.double,
+    )
+
+    try:
+        pitch = diffsptk.Pitch(P, sr, algorithm, f_min=L, f_max=H, out_format="prob")
+    except ImportError:
+        pytest.skip(f"Algorithm '{algorithm}' is not available.")
+
+    pitch(x)

@@ -248,6 +248,7 @@ class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
         self.register_buffer("weights", numpy_to_torch(weights))
 
     def forward(self, x, embed=True):
+        x = self.resample(x)
         x = self.frame(x)
         x = x / torch.clip(x.std(dim=-1, keepdim=True), min=1e-10)
 
@@ -328,9 +329,10 @@ class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
 
     def forward(self, x):
         x = self.resample(x)
-        frames = self.frame(x).reshape(-1, 1, self.penn.WINDOW_SIZE)
-        logits = self.penn.infer(frames)
-        logits = logits.reshape(x.size(0), -1, self.penn.PITCH_BINS)
+        frames = self.frame(x)
+        target_shape = frames.shape[:-1] + (self.penn.PITCH_BINS,)
+        logits = self.penn.infer(frames.reshape(-1, 1, self.penn.WINDOW_SIZE))
+        logits = logits.reshape(*target_shape)
         return logits
 
     def calc_prob(self, x):
@@ -341,9 +343,10 @@ class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
 
     def calc_pitch(self, x):
         logits = self.forward(x)
+        target_shape = logits.shape[:-1]
         logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)
         result = self.penn.postprocess(logits)
         pitch = torch.where(
             self.voicing_threshold <= result[2], result[1], UNVOICED_SYMBOL
         )
-        return pitch.reshape(x.size(0), -1)
+        return pitch.reshape(*target_shape)
