@@ -48,10 +48,11 @@ def get_windowed_waveform(
     base_index = ramp[:fft_length] - bias - fft_length // 2
     position = base_index / (window_length_ratio / 2 * sample_rate)
     z = torch.pi * position * f0
+    # https://github.com/mmorise/World/issues/150
     if window_type == "hanning":
-        window = 0.5 * torch.cos(z) + 0.5
+        window = 0.5 + 0.5 * torch.cos(z)
     elif window_type == "blackman":
-        window = 0.42 - 0.5 * torch.cos(z) + 0.08 * torch.cos(2 * z)
+        window = 0.42 + 0.5 * torch.cos(z) + 0.08 * torch.cos(2 * z)
     else:
         raise RuntimeError
     mask1 = -half_window_length <= base_index
