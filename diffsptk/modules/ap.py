@@ -172,6 +172,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         frame_period,
         sample_rate,
         fft_length=None,
+        *,
         window_length_ms=30,
         eps=1e-5,
     ):
@@ -367,6 +368,7 @@ class AperiodicityExtractionByD4C(nn.Module):
         frame_period,
         sample_rate,
         fft_length=None,
+        *,
         threshold=0.0,
         default_f0=150,
     ):

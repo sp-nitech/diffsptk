@@ -20,7 +20,7 @@ import numpy as np
 import torch
 from torch import nn
 
-from ..misc.utils import TWO_PI
+from ..misc.utils import TAU
 from .poledf import AllPoleDigitalFilter
 from .zerodf import AllZeroDigitalFilter
 
@@ -109,8 +109,8 @@ class GammatoneFilterBankAnalysis(nn.Module):
             / math.factorial(gamma - 1) ** 2
         )
         b = erb_audiological / a_gamma
-        lambda_ = np.exp(-TWO_PI * b / sample_rate)
-        beta = TWO_PI * center_frequencies_in_hz / sample_rate
+        lambda_ = np.exp(-TAU * b / sample_rate)
+        beta = TAU * center_frequencies_in_hz / sample_rate
         z = np.exp(1j * beta)
         a_tilde = lambda_ * z
 

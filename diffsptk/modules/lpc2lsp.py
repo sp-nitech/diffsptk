@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import TWO_PI
+from ..misc.utils import TAU
 from ..misc.utils import check_size
 from ..misc.utils import deconv1d
 from .root_pol import PolynomialToRoots
@@ -156,11 +156,11 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
         if out_format in (0, "radian"):
             return lambda x: x
         elif out_format in (1, "cycle"):
-            return lambda x: x / TWO_PI
+            return lambda x: x / TAU
         elif out_format in (2, "khz"):
             assert sample_rate is not None and 0 < sample_rate
-            return lambda x: x * (sample_rate / 1000 / TWO_PI)
+            return lambda x: x * (sample_rate / 1000 / TAU)
         elif out_format in (3, "hz"):
             assert sample_rate is not None and 0 < sample_rate
-            return lambda x: x * (sample_rate / TWO_PI)
+            return lambda x: x * (sample_rate / TAU)
         raise ValueError(f"out_format {out_format} is not supported.")

@@ -26,7 +26,7 @@ import torchaudio
 from torch import nn
 
 UNVOICED_SYMBOL = 0
-TWO_PI = math.tau
+TAU = math.tau
 
 
 class Lambda(nn.Module):
@@ -314,7 +314,7 @@ def outer(x, y=None):
     )
 
 
-def iir(x, b=None, a=None):
+def iir(x, b=None, a=None, batching=True):
     if b is None:
         b = torch.ones(1, dtype=x.dtype, device=x.device)
     if a is None:
@@ -325,7 +325,7 @@ def iir(x, b=None, a=None):
         a = F.pad(a, (0, diff))
     elif diff < 0:
         b = F.pad(b, (0, -diff))
-    y = torchaudio.functional.lfilter(x, a, b, clamp=False, batching=True)
+    y = torchaudio.functional.lfilter(x, a, b, clamp=False, batching=batching)
     return y
 
 

@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import TWO_PI
+from ..misc.utils import TAU
 from ..misc.utils import UNVOICED_SYMBOL
 from .linear_intpl import LinearInterpolation
 
@@ -166,9 +166,9 @@ class ExcitationGeneration(nn.Module):
                 e[pulse_pos1 & ~pulse_pos2] *= -1
         elif voiced_region == "sinusoidal":
             if unipolar:
-                e[mask] = 0.5 * (1 - torch.cos(TWO_PI * phase[mask]))
+                e[mask] = 0.5 * (1 - torch.cos(TAU * phase[mask]))
             else:
-                e[mask] = torch.sin(TWO_PI * phase[mask])
+                e[mask] = torch.sin(TAU * phase[mask])
         elif voiced_region == "sawtooth":
             if unipolar:
                 e[mask] = torch.fmod(phase[mask], 1)
