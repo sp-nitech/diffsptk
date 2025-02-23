@@ -14,49 +14,44 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
 
 
-class Decimation(nn.Module):
+class Decimation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/decimate.html>`_
     for details.
 
     Parameters
     ----------
     period : int >= 1
-        Decimation period, :math:`P`.
+        The decimation period, :math:`P`.
 
     start : int >= 0
-        Start point, :math:`S`.
+        The start point, :math:`S`.
 
     dim : int
-        Dimension along which to shift the tensors.
+        The dimension along which to shift the tensors.
 
     """
 
     def __init__(self, period, start=0, dim=-1):
         super().__init__()
 
-        assert 1 <= period
-        assert 0 <= start
-
-        self.period = period
-        self.start = start
-        self.dim = dim
+        self.values = self._precompute(period, start, dim)
 
     def forward(self, x):
-        """Decimate signal.
+        """Decimate the input signal.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
-            Signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., T/P-S, ...)]
-            Decimated signal.
+            The decimated signal.
 
         Examples
         --------
@@ -67,13 +62,29 @@ class Decimation(nn.Module):
         tensor([1., 4., 7.])
 
         """
-        return self._forward(x, self.period, self.start, self.dim)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = Decimation._precompute(*args, **kwargs)
+        return Decimation._forward(x, *values)
+
+    @staticmethod
+    def _check(period, start, dim):
+        if period <= 0:
+            raise ValueError("period must be positive.")
+        if start < 0:
+            raise ValueError("start must be non-negative.")
+
+    @staticmethod
+    def _precompute(period, start, dim):
+        Decimation._check(period, start, dim)
+        return period, start, dim
 
     @staticmethod
     def _forward(x, period, start, dim):
-        T = x.shape[dim]
-        indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
-        y = torch.index_select(x, dim, indices)
+        if not -x.ndim <= dim < x.ndim:
+            raise ValueError(f"Dimension {dim} out of range.")
+        dim = dim % x.ndim  # Handle negative dim.
+        y = x[(slice(None),) * dim + (slice(start, None, period),)]
         return y
-
-    _func = _forward
