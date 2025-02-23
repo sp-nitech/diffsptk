@@ -15,46 +15,45 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from .base import BaseFunctionalModule
 from .dst import DiscreteSineTransform as DST
 
 
-class InverseDiscreteSineTransform(nn.Module):
+class InverseDiscreteSineTransform(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.DiscreteSineTransform`.
 
     Parameters
     ----------
     dst_length : int >= 1
-        DST length, :math:`L`.
+        The DST length, :math:`L`.
 
     dst_type : int in [1, 4]
-        DST type.
+        The DST type.
 
     """
 
     def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
-        assert 1 <= dst_length
-        assert 1 <= dst_type <= 4
+        self.input_dim = dst_length
 
-        self.dst_length = dst_length
-        self.register_buffer("W", self._precompute(dst_length, dst_type))
+        _, tensors = self._precompute(dst_length, dst_type)
+        self.register_buffer("W", tensors[0])
 
     def forward(self, y):
-        """Apply inverse DST to input.
+        """Apply inverse DST to the input.
 
         Parameters
         ----------
         y : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            Inverse DST output.
+            The inverse DST output.
 
         Examples
         --------
@@ -66,19 +65,19 @@ class InverseDiscreteSineTransform(nn.Module):
         tensor([1.1921e-07, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        check_size(y.size(-1), self.dst_length, "dimension of input")
-        return self._forward(y, self.W)
+        check_size(y.size(-1), self.input_dim, "dimension of input")
+        return self._forward(y, **self._buffers)
 
     @staticmethod
-    def _forward(y, W):
-        return torch.matmul(y, W)
-
-    @staticmethod
-    def _func(y, dst_type):
-        W = InverseDiscreteSineTransform._precompute(
-            y.size(-1), dst_type, dtype=y.dtype, device=y.device
+    def _func(y, *args, **kwargs):
+        _, tensors = InverseDiscreteSineTransform._precompute(
+            y.size(-1), *args, **kwargs, dtype=y.dtype, device=y.device
         )
-        return InverseDiscreteSineTransform._forward(y, W)
+        return InverseDiscreteSineTransform._forward(y, *tensors)
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        DST._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(dst_length, dst_type, dtype=None, device=None):
@@ -86,3 +85,7 @@ class InverseDiscreteSineTransform(nn.Module):
         return DST._precompute(
             dst_length, type2type[dst_type], dtype=dtype, device=device
         )
+
+    @staticmethod
+    def _forward(y, W):
+        return torch.matmul(y, W)
