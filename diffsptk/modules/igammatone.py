@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..misc.signals import impulse
-from ..misc.utils import TWO_PI
+from ..misc.utils import TAU
 from ..misc.utils import check_size
 from ..misc.utils import to
 from .gammatone import GammatoneFilterBankAnalysis
@@ -124,7 +124,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
 
         # Compute gains.
         center_frequencies_in_hz = torch.from_numpy(analyzer.center_frequencies)
-        z = torch.exp(1j * TWO_PI * center_frequencies_in_hz / sample_rate)
+        z = torch.exp(1j * TAU * center_frequencies_in_hz / sample_rate)
         positive_response = analyzer._H(z)
         negative_response = analyzer._H(z.conj())
         positive_response = (
