@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -24,13 +25,14 @@ import tests.utils as U
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("S", [-2, 0, 2])
 @pytest.mark.parametrize("keeplen", [False, True])
-def test_compatibility(device, module, S, keeplen, T=20, B=2):
+@pytest.mark.parametrize("dim", [0, -1])
+def test_compatibility(device, module, S, keeplen, dim, T=20, B=4):
     delay = U.choice(
         module,
         diffsptk.Delay,
         diffsptk.functional.delay,
         {},
-        {"start": S, "keeplen": keeplen},
+        {"start": S, "keeplen": keeplen, "dim": dim},
     )
 
     opt = "-k" if keeplen else ""
@@ -44,3 +46,15 @@ def test_compatibility(device, module, S, keeplen, T=20, B=2):
     )
 
     U.check_differentiability(device, delay, [B, T])
+
+
+def test_dim_option():
+    x = torch.randn(5, 5)
+    assert diffsptk.functional.delay(x, 1, False, 0).shape == (6, 5)
+    assert diffsptk.functional.delay(x, 1, False, 1).shape == (5, 6)
+    assert diffsptk.functional.delay(x, 1, False, -2).shape == (6, 5)
+    assert diffsptk.functional.delay(x, 1, True, 0).shape == (5, 5)
+    assert diffsptk.functional.delay(x, -1, False, 0).shape == (4, 5)
+    assert diffsptk.functional.delay(x, -1, False, 1).shape == (5, 4)
+    assert diffsptk.functional.delay(x, -1, False, -1).shape == (5, 4)
+    assert diffsptk.functional.delay(x, -1, True, 0).shape == (5, 5)

@@ -15,48 +15,45 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
+from .decimate import Decimation
 
 
-class Interpolation(nn.Module):
+class Interpolation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/interpolate.html>`_
     for details.
 
     Parameters
     ----------
     period : int >= 1
-        Interpolation period, :math:`P`.
+        The interpolation period, :math:`P`.
 
     start : int >= 0
-        Start point, :math:`S`.
+        The start point, :math:`S`.
 
     dim : int
-        Dimension along which to interpolate the tensors.
+        The dimension along which to interpolate the tensors.
 
     """
 
     def __init__(self, period, start=0, dim=-1):
         super().__init__()
 
-        assert 1 <= period
-        assert 0 <= start
-
-        self.period = period
-        self.start = start
-        self.dim = dim
+        self.values = self._precompute(period, start, dim)
 
     def forward(self, x):
-        """Interpolate signal.
+        """Interpolate the input signal.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
-            Signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., TxP+S, ...)]
-            Interpolated signal.
+            The interpolated signal.
 
         Examples
         --------
@@ -67,18 +64,31 @@ class Interpolation(nn.Module):
         tensor([0., 1., 0., 0., 2., 0., 0., 3., 0., 0.])
 
         """
-        return self._forward(x, self.period, self.start, self.dim)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = Interpolation._precompute(*args, **kwargs)
+        return Interpolation._forward(x, *values)
+
+    @staticmethod
+    def _check(period, start, dim):
+        Decimation._check(period, start, dim)
+
+    @staticmethod
+    def _precompute(period, start, dim):
+        return Decimation._precompute(period, start, dim)
 
     @staticmethod
     def _forward(x, period, start, dim):
-        # Determine the size of the output tensor.
+        if not -x.ndim <= dim < x.ndim:
+            raise ValueError(f"Dimension {dim} out of range.")
+
         T = x.shape[dim] * period + start
-        size = list(x.shape)
-        size[dim] = T
+        output_size = list(x.shape)
+        output_size[dim] = T
 
-        y = torch.zeros(size, dtype=x.dtype, device=x.device)
+        y = torch.zeros(output_size, dtype=x.dtype, device=x.device)
         indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
-        y.index_add_(dim, indices, x)
+        y.index_copy_(dim, indices, x)
         return y
-
-    _func = _forward

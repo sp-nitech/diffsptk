@@ -14,45 +14,29 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import pytest
-import torch
+from abc import ABC
+from abc import abstractmethod
 
-import diffsptk
-import tests.utils as U
-
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, P=2, S=1, T=20, L=4):
-    decimate = U.choice(
-        module,
-        diffsptk.Decimation,
-        diffsptk.functional.decimate,
-        {},
-        {"period": P, "start": S, "dim": 0},
-    )
-
-    U.check_compatibility(
-        device,
-        decimate,
-        [],
-        f"ramp -l {T * L}",
-        f"decimate -l {L} -p {P} -s {S}",
-        [],
-        dx=L,
-        dy=L,
-    )
-
-    U.check_differentiability(device, decimate, [T, L])
+from torch import nn
 
 
-def test_dim_option(P=2, S=0, T=20, L=4):
-    x = torch.arange(T * L).reshape(T, L)
-    y0 = diffsptk.functional.decimate(x, P, S, 0)
-    assert U.allclose(x[S::P], y0)
-    y1 = diffsptk.functional.decimate(x, P, S, 1)
-    assert U.allclose(x[:, S::P], y1)
-    y0 = diffsptk.functional.decimate(x, P, S, -2)
-    assert U.allclose(x[S::P], y0)
-    y1 = diffsptk.functional.decimate(x, P, S, -1)
-    assert U.allclose(x[:, S::P], y1)
+class BaseFunctionalModule(ABC, nn.Module):
+    @staticmethod
+    @abstractmethod
+    def _func(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def _check(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def _precompute(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
+    def _forward(*args, **kwargs):
+        raise NotImplementedError

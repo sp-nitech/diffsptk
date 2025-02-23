@@ -15,23 +15,22 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
+class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2ndps.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     References
     ----------
@@ -43,13 +42,8 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
     def __init__(self, cep_order, fft_length):
         super().__init__()
 
-        assert 0 <= cep_order
-        assert max(1, cep_order) <= fft_length // 2
-
-        self.cep_order = cep_order
-        self.fft_length = fft_length
-        ramp = self._precompute(self.cep_order, self.fft_length)
-        self.register_buffer("ramp", ramp)
+        self.values, tensors = self._precompute(cep_order, fft_length)
+        self.register_buffer("ramp", tensors[0])
 
     def forward(self, c):
         """Convert cepstrum to NDPS.
@@ -57,12 +51,12 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M+1)]
-            Cepstrum.
+            The cepstrum.
 
         Returns
         -------
         out : Tensor [shape=(..., L/2+1)]
-            NDPS.
+            The NDPS.
 
         Examples
         --------
@@ -73,26 +67,37 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(nn.Module):
         tensor([ 30.0000, -21.6569,  12.0000, -10.3431,  10.0000])
 
         """
-        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.fft_length, self.ramp)
+        return self._forward(c, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(c, fft_length):
+        values, tensors = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
+            c.size(-1) - 1, fft_length, dtype=c.dtype, device=c.device
+        )
+        return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
+            c, *values, *tensors
+        )
+
+    @staticmethod
+    def _check(cep_order, fft_length):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if fft_length // 2 < max(1, cep_order):
+            raise ValueError(
+                "half of fft_length must be greater than or equal to cep_order."
+            )
+
+    @staticmethod
+    def _precompute(cep_order, fft_length, dtype=None, device=None):
+        CepstrumToNegativeDerivativeOfPhaseSpectrum._check(cep_order, fft_length)
+        half_fft_length = fft_length // 2
+        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
+        if cep_order == half_fft_length:
+            ramp[-1] *= 2
+        return (fft_length,), (to(ramp, dtype=dtype),)
 
     @staticmethod
     def _forward(c, fft_length, ramp):
         v = c * ramp
         n = torch.fft.hfft(v, n=fft_length)[..., : fft_length // 2 + 1]
         return n
-
-    @staticmethod
-    def _func(c, fft_length):
-        ramp = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
-            c.size(-1) - 1, fft_length, dtype=c.dtype, device=c.device
-        )
-        return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(c, fft_length, ramp)
-
-    @staticmethod
-    def _precompute(cep_order, fft_length, dtype=None, device=None):
-        half_fft_length = fft_length // 2
-        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
-        if cep_order == half_fft_length:
-            ramp[-1] *= 2
-        return to(ramp, dtype=dtype)

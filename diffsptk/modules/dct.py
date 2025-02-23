@@ -15,48 +15,47 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import plateau
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class DiscreteCosineTransform(nn.Module):
+class DiscreteCosineTransform(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/dct.html>`_
     for details.
 
     Parameters
     ----------
     dct_length : int >= 1
-        DCT length, :math:`L`.
+        The DCT length, :math:`L`.
 
     dct_type : int in [1, 4]
-        DCT type.
+        The DCT type.
 
     """
 
     def __init__(self, dct_length, dct_type=2):
         super().__init__()
 
-        assert 1 <= dct_length
-        assert 1 <= dct_type <= 4
+        self.input_dim = dct_length
 
-        self.dct_length = dct_length
-        self.register_buffer("W", self._precompute(dct_length, dct_type))
+        _, tensors = self._precompute(dct_length, dct_type)
+        self.register_buffer("W", tensors[0])
 
     def forward(self, x):
-        """Apply DCT to input.
+        """Apply DCT to the input.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            DCT output.
+            The DCT output.
 
         Examples
         --------
@@ -67,23 +66,27 @@ class DiscreteCosineTransform(nn.Module):
         tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
 
         """
-        check_size(x.size(-1), self.dct_length, "dimension of input")
-        return self._forward(x, self.W)
+        check_size(x.size(-1), self.input_dim, "dimension of input")
+        return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x, dct_type):
-        W = DiscreteCosineTransform._precompute(
-            x.size(-1), dct_type, dtype=x.dtype, device=x.device
+    def _func(x, *args, **kwargs):
+        _, tensors = DiscreteCosineTransform._precompute(
+            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
         )
-        return DiscreteCosineTransform._forward(x, W)
+        return DiscreteCosineTransform._forward(x, *tensors)
 
     @staticmethod
-    def _precompute(length, dct_type, dtype=None, device=None):
-        L = length
+    def _check(dct_length, dct_type):
+        if dct_length <= 0:
+            raise ValueError("dct_length must be positive.")
+        if not 1 <= dct_type <= 4:
+            raise ValueError("dct_type must be in [1, 4].")
+
+    @staticmethod
+    def _precompute(dct_length, dct_type, dtype=None, device=None):
+        DiscreteCosineTransform._check(dct_length, dct_type)
+        L = dct_length
         n = torch.arange(L, dtype=torch.double, device=device)
         k = torch.arange(L, dtype=torch.double, device=device)
         if dct_type == 2 or dct_type == 4:
@@ -106,6 +109,11 @@ class DiscreteCosineTransform(nn.Module):
         elif dct_type == 4:
             z = (2 / L) ** 0.5
         else:
-            raise ValueError
+            raise ValueError(f"dct_type {dct_type} is not supported.")
+
         W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
-        return to(W, dtype=dtype)
+        return None, (to(W, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, W):
+        return torch.matmul(x, W)

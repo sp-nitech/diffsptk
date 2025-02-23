@@ -69,6 +69,7 @@ path = "diffsptk/version.py"
 
 [tool.ruff.lint]
 extend-select = ["E", "I", "FURB"]
+extend-ignore = ["E731"]
 preview = true
 exclude = ["__init__.py", "*/librosa/*"]
 

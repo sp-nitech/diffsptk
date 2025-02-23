@@ -17,45 +17,41 @@
 import math
 
 import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
 
 
-class MuLawCompression(nn.Module):
+class MuLawCompression(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/ulaw.html>`_
     for details.
 
     Parameters
     ----------
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     mu : int >= 1
-        Compression factor, :math:`\\mu`.
+        The compression factor, :math:`\\mu`.
 
     """
 
     def __init__(self, abs_max=1, mu=255):
         super().__init__()
 
-        assert 0 < abs_max
-        assert 1 <= mu
-
-        self.abs_max = abs_max
-        self.mu = mu
-        self.const = self._precompute(self.abs_max, self.mu)
+        self.values = self._precompute(abs_max, mu)
 
     def forward(self, x):
-        """Compress waveform by :math:`\\mu`-law algorithm.
+        """Compress the input waveform using the :math:`\\mu`-law algorithm.
 
         Parameters
         ----------
         x : Tensor [shape=(...,)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(...,)]
-            Compressed waveform.
+            The compressed waveform.
 
         Examples
         --------
@@ -66,19 +62,31 @@ class MuLawCompression(nn.Module):
         tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
 
         """
-        return self._forward(x, self.abs_max, self.mu, self.const)
+        return self._forward(x, *self.values)
 
     @staticmethod
-    def _forward(x, abs_max, mu, const):
-        x_abs = x.abs() / abs_max
-        y = const * torch.sign(x) * torch.log1p(mu * x_abs)
-        return y
+    def _func(x, *args, **kwargs):
+        values = MuLawCompression._precompute(*args, **kwargs)
+        return MuLawCompression._forward(x, *values)
 
     @staticmethod
-    def _func(x, abs_max, mu):
-        const = MuLawCompression._precompute(abs_max, mu)
-        return MuLawCompression._forward(x, abs_max, mu, const)
+    def _check(abs_max, mu):
+        if abs_max < 0:
+            raise ValueError("abs_max must be non-negative.")
+        if mu < 1:
+            raise ValueError("mu must be greater than or equal to 1.")
 
     @staticmethod
     def _precompute(abs_max, mu):
-        return abs_max / math.log1p(mu)
+        MuLawCompression._check(abs_max, mu)
+        return (
+            abs_max,
+            mu,
+            abs_max / math.log1p(mu),
+        )
+
+    @staticmethod
+    def _forward(x, abs_max, mu, c):
+        x_abs = x.abs() / abs_max
+        y = c * torch.sign(x) * torch.log1p(mu * x_abs)
+        return y
