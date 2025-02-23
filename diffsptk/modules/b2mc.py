@@ -17,6 +17,7 @@
 import torch
 import torch.nn.functional as F
 
+from ..misc.utils import check_size
 from ..misc.utils import to
 from .base import BaseFunctionalModule
 
@@ -44,6 +45,8 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
     def __init__(self, cep_order, alpha=0):
         super().__init__()
 
+        self.input_dim = cep_order + 1
+
         _, tensors = self._precompute(cep_order, alpha)
         self.register_buffer("A", tensors[0])
 
@@ -70,6 +73,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
+        check_size(b.size(-1), self.input_dim, "dimension of cepstrum")
         return self._forward(b, **self._buffers)
 
     @staticmethod
