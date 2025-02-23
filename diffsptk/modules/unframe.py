@@ -15,32 +15,31 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn.functional as F
-from torch import nn
 
+from .base import BaseFunctionalModule
 from .window import Window
 
 
-class Unframe(nn.Module):
+class Unframe(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.Frame`.
 
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in sample, :math:`L`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in sample, :math:`P`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
-        Window type.
+              'rectangular', 'nuttall']
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     """
 
@@ -55,31 +54,26 @@ class Unframe(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period <= frame_length
-
-        self.frame_length = frame_length
-        self.frame_period = frame_period
-        self.center = center
-        self.register_buffer(
-            "window",
-            Window._precompute(self.frame_length, window, norm).view(1, -1, 1),
+        self.precomputed, tensors = self._precompute(
+            frame_length, frame_period, center, window, norm
         )
+        self.register_buffer("window", tensors[0])
 
     def forward(self, y, out_length=None):
-        """Revert framed waveform.
+        """Revert the framed waveform to the unframed waveform.
 
         Parameters
         ----------
         y : Tensor [shape=(..., T/P, L)]
-            Framed waveform.
+            The framed waveform.
 
         out_length : int or None
-            Length of original signal, `T`.
+            The length of the original waveform, :math:`T`.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Waveform.
+            The unframed waveform.
 
         Examples
         --------
@@ -101,18 +95,41 @@ class Unframe(nn.Module):
         return self._forward(
             y,
             out_length,
-            self.frame_period,
-            self.center,
-            self.window,
+            *self.precomputed,
+            **self._buffers,
         )
 
     @staticmethod
-    def _forward(y, out_length, frame_period, center, window):
-        frame_length = window.size(-2)
+    def _func(y, out_length, *args, **kwargs):
+        precomputed, tensors = Unframe._precompute(
+            *args, **kwargs, dtype=y.dtype, device=y.device
+        )
+        return Unframe._forward(y, out_length, *precomputed, *tensors)
 
+    @staticmethod
+    def _check(frame_length, frame_period, center, window, norm):
+        if frame_length <= 0:
+            raise ValueError("frame_length must be positive.")
+        if frame_length < frame_period:
+            raise ValueError("frame_period must be less than or equal to frame_length.")
+
+    @staticmethod
+    def _precompute(
+        frame_length, frame_period, center, window, norm, dtype=None, device=None
+    ):
+        Unframe._check(frame_length, frame_period, center, window, norm)
+        w = Window._precompute(
+            frame_length, window, norm, dtype=dtype, device=device
+        ).view(1, -1, 1)
+        return (frame_length, frame_period, center), (w,)
+
+    @staticmethod
+    def _forward(y, out_length, frame_length, frame_period, center, window):
         d = y.dim()
         N = y.size(-2)
-        assert 2 <= d <= 4, "Input must be 2D, 3D, or 4D tensor."
+
+        if not 2 <= d <= 4:
+            raise ValueError("Input must be 2D, 3D, or 4D tensor.")
 
         def fold(x):
             x = F.fold(
@@ -139,16 +156,3 @@ class Unframe(nn.Module):
         if d == 2:
             x = x.squeeze(0)
         return x
-
-    @staticmethod
-    def _func(y, out_length, frame_length, frame_period, center, window, norm):
-        window = Unframe._precompute(
-            frame_length, window, norm, dtype=y.dtype, device=y.device
-        )
-        return Unframe._forward(y, out_length, frame_period, center, window)
-
-    @staticmethod
-    def _precompute(length, window, norm, dtype=None, device=None):
-        return Window._precompute(
-            length, window, norm, dtype=dtype, device=device
-        ).view(1, -1, 1)

@@ -16,23 +16,22 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import check_size
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
+class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/b2mc.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     References
     ----------
@@ -45,16 +44,8 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
     def __init__(self, cep_order, alpha=0):
         super().__init__()
 
-        assert 0 <= cep_order
-        assert abs(alpha) < 1
-
-        self.cep_order = cep_order
-        self.alpha = alpha
-
-        # Make transform matrix.
-        A = torch.eye(self.cep_order + 1, dtype=torch.double)
-        A[:, 1:].fill_diagonal_(self.alpha)
-        self.register_buffer("A", to(A.T))
+        _, tensors = self._precompute(cep_order, alpha)
+        self.register_buffer("A", tensors[0])
 
     def forward(self, b):
         """Convert MLSA filter coefficients to mel-cepstrum.
@@ -62,12 +53,12 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         Parameters
         ----------
         b : Tensor [shape=(..., M+1)]
-            MLSA filter coefficients.
+            The MLSA filter coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Mel-cepstral coefficients.
+            The mel-cepstral coefficients.
 
         Examples
         --------
@@ -79,13 +70,27 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(nn.Module):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        check_size(b.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(b, self.A)
+        return self._forward(b, **self._buffers)
+
+    @staticmethod
+    def _func(b, alpha):
+        MLSADigitalFilterCoefficientsToMelCepstrum._check(b.size(-1) - 1, alpha)
+        return b + F.pad(alpha * b[..., 1:], (0, 1))
+
+    @staticmethod
+    def _check(cep_order, alpha):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+
+    @staticmethod
+    def _precompute(cep_order, alpha):
+        MLSADigitalFilterCoefficientsToMelCepstrum._check(cep_order, alpha)
+        A = torch.eye(cep_order + 1, dtype=torch.double)
+        A[:, 1:].fill_diagonal_(alpha)
+        return None, (to(A.T),)
 
     @staticmethod
     def _forward(b, A):
         return torch.matmul(b, A)
-
-    @staticmethod
-    def _func(b, alpha):
-        return b + F.pad(alpha * b[..., 1:], (0, 1))
