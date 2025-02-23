@@ -54,7 +54,7 @@ class Unframe(BaseFunctionalModule):
     ):
         super().__init__()
 
-        self.precomputed, tensors = self._precompute(
+        self.values, tensors = self._precompute(
             frame_length, frame_period, center, window, norm
         )
         self.register_buffer("window", tensors[0])
@@ -95,16 +95,16 @@ class Unframe(BaseFunctionalModule):
         return self._forward(
             y,
             out_length,
-            *self.precomputed,
+            *self.values,
             **self._buffers,
         )
 
     @staticmethod
     def _func(y, out_length, *args, **kwargs):
-        precomputed, tensors = Unframe._precompute(
+        values, tensors = Unframe._precompute(
             *args, **kwargs, dtype=y.dtype, device=y.device
         )
-        return Unframe._forward(y, out_length, *precomputed, *tensors)
+        return Unframe._forward(y, out_length, *values, *tensors)
 
     @staticmethod
     def _check(frame_length, frame_period, center, window, norm):

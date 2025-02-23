@@ -39,7 +39,7 @@ class ALawExpansion(BaseFunctionalModule):
     def __init__(self, abs_max=1, a=87.6):
         super().__init__()
 
-        self.precomputed = self._precompute(abs_max, a)
+        self.values = self._precompute(abs_max, a)
 
     def forward(self, y):
         """Expand the waveform using the A-law algorithm.
@@ -64,12 +64,12 @@ class ALawExpansion(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, *self.precomputed)
+        return self._forward(y, *self.values)
 
     @staticmethod
     def _func(y, *args, **kwargs):
-        precomputed = ALawExpansion._precompute(*args, **kwargs)
-        return ALawExpansion._forward(y, *precomputed)
+        values = ALawExpansion._precompute(*args, **kwargs)
+        return ALawExpansion._forward(y, *values)
 
     @staticmethod
     def _check(abs_max, a):

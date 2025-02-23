@@ -47,9 +47,7 @@ class Frame(BaseFunctionalModule):
     ):
         super().__init__()
 
-        self.precomputed = self._precompute(
-            frame_length, frame_period, center, zmean, mode
-        )
+        self.values = self._precompute(frame_length, frame_period, center, zmean, mode)
 
     def forward(self, x):
         """Apply framing to the given waveform.
@@ -77,12 +75,12 @@ class Frame(BaseFunctionalModule):
                 [7., 8., 9., 0., 0.]])
 
         """
-        return self._forward(x, *self.precomputed)
+        return self._forward(x, *self.values)
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        precomputed = Frame._precompute(*args, **kwargs)
-        return Frame._forward(x, *precomputed)
+        values = Frame._precompute(*args, **kwargs)
+        return Frame._forward(x, *values)
 
     @staticmethod
     def _check(frame_length, frame_period, center, zmean, mode):

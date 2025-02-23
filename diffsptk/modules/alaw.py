@@ -38,7 +38,7 @@ class ALawCompression(BaseFunctionalModule):
     def __init__(self, abs_max=1, a=87.6):
         super().__init__()
 
-        self.precomputed = self._precompute(abs_max, a)
+        self.values = self._precompute(abs_max, a)
 
     def forward(self, x):
         """Compress the input waveform using the A-law algorithm.
@@ -62,12 +62,12 @@ class ALawCompression(BaseFunctionalModule):
         tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
 
         """
-        return self._forward(x, *self.precomputed)
+        return self._forward(x, *self.values)
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        precomputed = ALawCompression._precompute(*args, **kwargs)
-        return ALawCompression._forward(x, *precomputed)
+        values = ALawCompression._precompute(*args, **kwargs)
+        return ALawCompression._forward(x, *values)
 
     @staticmethod
     def _check(abs_max, a):

@@ -15,7 +15,8 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
 
 
 class Floor(torch.autograd.Function):
@@ -38,44 +39,40 @@ class Round(torch.autograd.Function):
         return grad
 
 
-class UniformQuantization(nn.Module):
+class UniformQuantization(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/quantize.html>`_
-    for details. The gradient is copied from the next module.
+    for details. The gradient is copied from the subsequent module.
 
     Parameters
     ----------
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     n_bit : int >= 1
-        Number of quantization bits.
+        The number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
-        Quantizer.
+        The quantizer type.
 
     """
 
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super().__init__()
 
-        assert 0 < abs_max
-        assert 1 <= n_bit
-
-        self.abs_max = abs_max
-        self.const = self._precompute(n_bit, quantizer)
+        self.values = self._precompute(abs_max, n_bit, quantizer)
 
     def forward(self, x):
-        """Quantize input.
+        """Quantize the input waveform.
 
         Parameters
         ----------
         x : Tensor [shape=(...,)]
-            Input.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(...,)]
-            Quantized input.
+            The quantized waveform.
 
         Examples
         --------
@@ -86,25 +83,41 @@ class UniformQuantization(nn.Module):
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
         """
-        return self._forward(x, self.abs_max, *self.const)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = UniformQuantization._precompute(*args, **kwargs)
+        return UniformQuantization._forward(x, *values)
+
+    @staticmethod
+    def _check(abs_max, n_bit):
+        if abs_max < 0:
+            raise ValueError("abs_max must be non-negative.")
+        if n_bit <= 0:
+            raise ValueError("n_bit must be positive.")
+
+    @staticmethod
+    def _precompute(abs_max, n_bit, quantizer):
+        UniformQuantization._check(abs_max, n_bit)
+        if quantizer in (0, "mid-rise"):
+            level = 1 << n_bit
+            return (
+                abs_max,
+                level,
+                lambda x: Floor.apply(x + level // 2),
+            )
+        elif quantizer in (1, "mid-tread"):
+            level = (1 << n_bit) - 1
+            return (
+                abs_max,
+                level,
+                lambda x: Round.apply(x + (level - 1) // 2),
+            )
+        raise ValueError(f"quantizer {quantizer} is not supported.")
 
     @staticmethod
     def _forward(x, abs_max, level, func):
         y = func(x * (level / (2 * abs_max)))
         y = torch.clip(y, min=0, max=level - 1)
         return y
-
-    @staticmethod
-    def _func(x, abs_max, n_bit, quantizer):
-        const = UniformQuantization._precompute(n_bit, quantizer)
-        return UniformQuantization._forward(x, abs_max, *const)
-
-    @staticmethod
-    def _precompute(n_bit, quantizer):
-        if quantizer in (0, "mid-rise"):
-            level = 1 << n_bit
-            return level, lambda x: Floor.apply(x + level // 2)
-        elif quantizer in (1, "mid-tread"):
-            level = (1 << n_bit) - 1
-            return level, lambda x: Round.apply(x + (level - 1) // 2)
-        raise ValueError(f"quantizer {quantizer} is not supported.")
