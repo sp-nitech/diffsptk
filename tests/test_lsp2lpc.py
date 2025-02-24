@@ -23,21 +23,26 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("M", [0, 1, 7, 8])
-def test_compatibility(device, module, M, L=32, B=2):
+@pytest.mark.parametrize("in_format", [0, 1, 2, 3])
+def test_compatibility(device, module, M, in_format, sr=8000, L=32, B=2):
     lsp2lpc = U.choice(
         module,
         diffsptk.LineSpectralPairsToLinearPredictiveCoefficients,
         diffsptk.functional.lsp2lpc,
         {"lpc_order": M},
-        {"log_gain": True},
+        {"log_gain": True, "sample_rate": sr, "in_format": in_format},
     )
 
+    ksr = sr // 1000
     U.check_compatibility(
         device,
         lsp2lpc,
         [],
-        f"nrand -l {B * L} | lpc -l {L} -m {M} | lpc2lsp -m {M} -k 1",
-        f"lsp2lpc -m {M} -k 1",
+        (
+            f"nrand -l {B * L} | lpc -l {L} -m {M} | "
+            f"lpc2lsp -m {M} -k 1 -s {ksr} -o {in_format}"
+        ),
+        f"lsp2lpc -m {M} -k 1 -s {ksr} -q {in_format}",
         [],
         dx=M + 1,
         dy=M + 1,

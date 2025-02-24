@@ -1387,7 +1387,7 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     )
 
 
-def lsp2lpc(w, log_gain=False):
+def lsp2lpc(w, log_gain=False, sample_rate=None, in_format="radian"):
     """Convert LSP to LPC.
 
     Parameters
@@ -1405,7 +1405,7 @@ def lsp2lpc(w, log_gain=False):
 
     """
     return nn.LineSpectralPairsToLinearPredictiveCoefficients._func(
-        w, log_gain=log_gain
+        w, log_gain=log_gain, sample_rate=sample_rate, in_format=in_format
     )
 
 

@@ -15,46 +15,45 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from .base import BaseFunctionalModule
 from .dht import DiscreteHartleyTransform as DHT
 
 
-class InverseDiscreteHartleyTransform(nn.Module):
+class InverseDiscreteHartleyTransform(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.DiscreteHartleyTransform`.
 
     Parameters
     ----------
     dht_length : int >= 1
-        DHT length, :math:`L`.
+        The DHT length, :math:`L`.
 
     dht_type : int in [1, 4]
-        DHT type.
+        The DHT type.
 
     """
 
     def __init__(self, dht_length, dht_type=2):
         super().__init__()
 
-        assert 1 <= dht_length
-        assert 1 <= dht_type <= 4
+        self.input_dim = dht_length
 
-        self.dht_length = dht_length
-        self.register_buffer("W", self._precompute(dht_length, dht_type))
+        _, tensors = self._precompute(dht_length, dht_type)
+        self.register_buffer("W", tensors[0])
 
     def forward(self, y):
-        """Apply inverse DHT to input.
+        """Apply inverse DHT to the input.
 
         Parameters
         ----------
         y : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            Inverse DHT output.
+            The inverse DHT output.
 
         Examples
         --------
@@ -66,19 +65,19 @@ class InverseDiscreteHartleyTransform(nn.Module):
         tensor([5.9605e-08, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        check_size(y.size(-1), self.dht_length, "dimension of input")
-        return self._forward(y, self.W)
+        check_size(y.size(-1), self.input_dim, "dimension of input")
+        return self._forward(y, **self._buffers)
 
     @staticmethod
-    def _forward(y, W):
-        return torch.matmul(y, W)
-
-    @staticmethod
-    def _func(y, dht_type):
-        W = InverseDiscreteHartleyTransform._precompute(
-            y.size(-1), dht_type, dtype=y.dtype, device=y.device
+    def _func(y, *args, **kwargs):
+        _, tensors = InverseDiscreteHartleyTransform._precompute(
+            y.size(-1), *args, **kwargs, dtype=y.dtype, device=y.device
         )
-        return InverseDiscreteHartleyTransform._forward(y, W)
+        return InverseDiscreteHartleyTransform._forward(y, *tensors)
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        DHT._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(dht_length, dht_type, dtype=None, device=None):
@@ -86,3 +85,7 @@ class InverseDiscreteHartleyTransform(nn.Module):
         return DHT._precompute(
             dht_length, type2type[dht_type], dtype=dtype, device=device
         )
+
+    @staticmethod
+    def _forward(y, W):
+        return torch.matmul(y, W)

@@ -15,47 +15,46 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import cas
 from ..misc.utils import check_size
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class DiscreteHartleyTransform(nn.Module):
+class DiscreteHartleyTransform(BaseFunctionalModule):
     """Discrete Hartley transform module.
 
     Parameters
     ----------
     dht_length : int >= 1
-        DHT length, :math:`L`.
+        The DHT length, :math:`L`.
 
     dht_type : int in [1, 4]
-        DHT type.
+        The DHT type.
 
     """
 
     def __init__(self, dht_length, dht_type=2):
         super().__init__()
 
-        assert 1 <= dht_length
-        assert 1 <= dht_type <= 4
+        self.input_dim = dht_length
 
-        self.dht_length = dht_length
-        self.register_buffer("W", self._precompute(dht_length, dht_type))
+        _, tensors = self._precompute(dht_length, dht_type)
+        self.register_buffer("W", tensors[0])
 
     def forward(self, x):
-        """Apply DHT to input.
+        """Apply DHT to the input.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            DHT output.
+            The DHT output.
 
         Examples
         --------
@@ -66,23 +65,27 @@ class DiscreteHartleyTransform(nn.Module):
         tensor([ 3.0000, -1.4142, -1.0000, -1.4142])
 
         """
-        check_size(x.size(-1), self.dht_length, "dimension of input")
-        return self._forward(x, self.W)
+        check_size(x.size(-1), self.input_dim, "dimension of input")
+        return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x, dht_type):
-        W = DiscreteHartleyTransform._precompute(
-            x.size(-1), dht_type, dtype=x.dtype, device=x.device
+    def _func(x, *args, **kwargs):
+        _, tensors = DiscreteHartleyTransform._precompute(
+            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
         )
-        return DiscreteHartleyTransform._forward(x, W)
+        return DiscreteHartleyTransform._forward(x, *tensors)
 
     @staticmethod
-    def _precompute(length, dht_type, dtype=None, device=None):
-        L = length
+    def _check(dht_length, dht_type):
+        if dht_length <= 0:
+            raise ValueError("dht_length must be positive.")
+        if not 1 <= dht_type <= 4:
+            raise ValueError("dht_type must be in [1, 4].")
+
+    @staticmethod
+    def _precompute(dht_length, dht_type, dtype=None, device=None):
+        DiscreteHartleyTransform._check(dht_length, dht_type)
+        L = dht_length
         n = torch.arange(L, dtype=torch.double, device=device)
         k = torch.arange(L, dtype=torch.double, device=device)
         if dht_type == 2 or dht_type == 4:
@@ -92,4 +95,8 @@ class DiscreteHartleyTransform(nn.Module):
         n *= 2 * torch.pi / L
         z = L**-0.5
         W = z * cas(k.unsqueeze(0) * n.unsqueeze(1))
-        return to(W, dtype=dtype)
+        return None, (to(W, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, W):
+        return torch.matmul(x, W)

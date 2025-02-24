@@ -17,24 +17,25 @@
 import math
 
 import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
 
 
-class Entropy(nn.Module):
+class Entropy(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/entropy.html>`_
     for details.
 
     Parameters
     ----------
     out_format : ['bit', 'nat', 'dit']
-        Unit of entropy.
+        The unit of the entropy.
 
     """
 
     def __init__(self, out_format="nat"):
         super().__init__()
 
-        self.const = self._precompute(out_format)
+        self.values = self._precompute(out_format)
 
     def forward(self, p):
         """Compute entropy from probability sequence.
@@ -42,12 +43,12 @@ class Entropy(nn.Module):
         Parameters
         ----------
         p : Tensor [shape=(..., N)]
-            Probability sequence.
+            The probability sequence.
 
         Returns
         -------
         out : Tensor [shape=(...,)]
-            Entropy.
+            The entropy.
 
         Examples
         --------
@@ -60,24 +61,27 @@ class Entropy(nn.Module):
         tensor(2.)
 
         """
-        return self._forward(p, self.const)
+        return self._forward(p, *self.values)
 
     @staticmethod
-    def _forward(p, const):
-        h = torch.special.entr(p).sum(-1) * const
-        return h
+    def _func(p, *args, **kwargs):
+        values = Entropy._precompute(*args, **kwargs)
+        return Entropy._forward(p, *values)
 
     @staticmethod
-    def _func(p, out_format):
-        const = Entropy._precompute(out_format)
-        return Entropy._forward(p, const)
+    def _check(*args, **kwargs):
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(out_format):
         if out_format in (0, "bit"):
-            return math.log2(math.e)
+            return (math.log2(math.e),)
         elif out_format in (1, "nat"):
-            return 1
+            return (1,)
         elif out_format in (2, "dit"):
-            return math.log10(math.e)
+            return (math.log10(math.e),)
         raise ValueError(f"out_format {out_format} is not supported.")
+
+    @staticmethod
+    def _forward(p, c):
+        return c * torch.special.entr(p).sum(-1)
