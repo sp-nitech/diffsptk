@@ -86,13 +86,13 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, *values)
 
     @staticmethod
-    def _check(lpc_order, gamma, c):
-        LinearPredictiveCoefficientsToParcorCoefficients._check(lpc_order, gamma, c)
+    def _check(*args, **kwargs):
+        LinearPredictiveCoefficientsToParcorCoefficients._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(lpc_order, gamma, c):
+    def _precompute(*args, **kwargs):
         return LinearPredictiveCoefficientsToParcorCoefficients._precompute(
-            lpc_order, gamma, c
+            *args, **kwargs
         )
 
     @staticmethod

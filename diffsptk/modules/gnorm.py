@@ -93,7 +93,7 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
             raise ValueError("c must be greater than or equal to 1.")
 
     @staticmethod
-    def _precompute(cep_order, gamma, c):
+    def _precompute(cep_order, gamma, c=None):
         GeneralizedCepstrumGainNormalization._check(cep_order, gamma, c)
         return (get_gamma(gamma, c),)
 

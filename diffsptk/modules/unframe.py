@@ -118,10 +118,10 @@ class Unframe(BaseFunctionalModule):
         frame_length, frame_period, center, window, norm, dtype=None, device=None
     ):
         Unframe._check(frame_length, frame_period, center, window, norm)
-        w = Window._precompute(
-            frame_length, window, norm, dtype=dtype, device=device
-        ).view(1, -1, 1)
-        return (frame_length, frame_period, center), (w,)
+        window_ = Window._precompute(
+            frame_length, None, window, norm, dtype=dtype, device=device
+        )[1][0].view(1, -1, 1)
+        return (frame_length, frame_period, center), (window_,)
 
     @staticmethod
     def _forward(y, out_length, frame_length, frame_period, center, window):

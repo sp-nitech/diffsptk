@@ -2183,6 +2183,7 @@ def stft(
     fft_length=512,
     center=True,
     zmean=False,
+    mode="constant",
     window="blackman",
     norm="power",
     eps=1e-9,
@@ -2212,6 +2213,8 @@ def stft(
     zmean : bool
         If True, perform mean subtraction on each frame.
 
+    mode : ['constant', 'reflect', 'replicate', 'circular']
+        The padding method.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
@@ -2242,6 +2245,7 @@ def stft(
         fft_length=fft_length,
         center=center,
         zmean=zmean,
+        mode=mode,
         window=window,
         norm=norm,
         eps=eps,

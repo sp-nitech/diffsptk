@@ -67,11 +67,11 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         tensor([ 8.2942, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
-        return self._forward(x, *self.modules)
+        return self._forward(x, *self.layers)
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        layers = MelCepstrumPowerNormalization._precompute(
+        _, _, layers = MelCepstrumPowerNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs, module=False
         )
         return MelCepstrumPowerNormalization._forward(x, *layers)

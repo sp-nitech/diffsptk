@@ -18,33 +18,33 @@ import torch
 from torch import nn
 
 from ..misc.utils import Lambda
+from .base import BaseFunctionalModule
 from .unframe import Unframe
 
 
-class InverseShortTimeFourierTransform(nn.Module):
+class InverseShortTimeFourierTransform(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.ShortTimeFourierTransform`.
 
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in sample, :math:`L`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in sample, :math:`P`.
 
     fft_length : int >= L
-        Number of FFT bins, :math:`N`.
+        The number of FFT bins, :math:`N`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular']
-        Window type.
+              'rectangular', 'nuttall']
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     """
 
@@ -60,12 +60,15 @@ class InverseShortTimeFourierTransform(nn.Module):
     ):
         super().__init__()
 
-        self.ifft = Lambda(
-            lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
+        _, _, layers = self._precompute(
+            frame_length,
+            frame_period,
+            fft_length,
+            center,
+            window,
+            norm,
         )
-        self.unframe = Unframe(
-            frame_length, frame_period, center=center, norm=norm, window=window
-        )
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, y, out_length=None):
         """Compute inverse short-time Fourier transform.
@@ -73,15 +76,15 @@ class InverseShortTimeFourierTransform(nn.Module):
         Parameters
         ----------
         y : Tensor [shape=(..., T/P, N/2+1)]
-            Complex spectrum.
+            The complex spectrogram.
 
-        out_length : int or None
-            Length of output waveform.
+        out_length : int > 0 or None
+            The length of the output waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------
@@ -96,22 +99,43 @@ class InverseShortTimeFourierTransform(nn.Module):
         tensor([1., 2., 3.])
 
         """
-        x = self.ifft(y)
-        x = self.unframe(x, out_length=out_length)
-        return x
+        return self._forward(y, out_length, *self.layers)
 
     @staticmethod
-    def _func(
-        y, out_length, frame_length, frame_period, fft_length, center, window, norm
-    ):
-        x = torch.fft.irfft(y, n=fft_length)[..., :frame_length]
-        x = Unframe._func(
-            x,
-            out_length,
-            frame_length,
-            frame_period,
-            center=center,
-            window=window,
-            norm=norm,
+    def _func(x, out_length, *args, **kwargs):
+        _, _, layers = InverseShortTimeFourierTransform._precompute(
+            *args, **kwargs, module=False
         )
-        return x
+        return InverseShortTimeFourierTransform._forward(x, out_length, *layers)
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    def _precompute(
+        frame_length,
+        frame_period,
+        fft_length,
+        center,
+        window,
+        norm,
+        module=True,
+    ):
+        if module:
+            ifft = Lambda(
+                lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
+            )
+            unframe = Unframe(
+                frame_length, frame_period, center=center, norm=norm, window=window
+            )
+        else:
+            ifft = lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length]
+            unframe = lambda x, out_length: Unframe._func(
+                x, out_length, frame_length, frame_period, center, window, norm=norm
+            )
+        return None, None, (ifft, unframe)
+
+    @staticmethod
+    def _forward(y, out_length, ifft, unframe):
+        return unframe(ifft(y), out_length)

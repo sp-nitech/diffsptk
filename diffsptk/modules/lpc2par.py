@@ -95,7 +95,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
             raise ValueError("c must be greater than or equal to 1.")
 
     @staticmethod
-    def _precompute(lpc_order, gamma, c):
+    def _precompute(lpc_order, gamma=1, c=None):
         LinearPredictiveCoefficientsToParcorCoefficients._check(lpc_order, gamma, c)
         return (get_gamma(gamma, c),)
 

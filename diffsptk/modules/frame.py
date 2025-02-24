@@ -90,7 +90,9 @@ class Frame(BaseFunctionalModule):
             raise ValueError("frame_period must be positive.")
 
     @staticmethod
-    def _precompute(frame_length, frame_period, center, zmean, mode):
+    def _precompute(
+        frame_length, frame_period, center=True, zmean=False, mode="constant"
+    ):
         Frame._check(frame_length, frame_period, center, zmean, mode)
         return (
             frame_length,
