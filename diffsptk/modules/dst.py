@@ -38,7 +38,7 @@ class DiscreteSineTransform(BaseFunctionalModule):
     def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
-        self.input_dim = dst_length
+        self.in_dim = dst_length
 
         _, tensors = self._precompute(dst_length, dst_type)
         self.register_buffer("W", tensors[0])
@@ -65,7 +65,7 @@ class DiscreteSineTransform(BaseFunctionalModule):
         tensor([ 2.7716, -2.0000,  1.1481, -1.0000])
 
         """
-        check_size(x.size(-1), self.input_dim, "dimension of input")
+        check_size(x.size(-1), self.in_dim, "dimension of input")
         return self._forward(x, **self._buffers)
 
     @staticmethod

@@ -39,7 +39,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
     def __init__(self, dct_length, dct_type=2):
         super().__init__()
 
-        self.input_dim = dct_length
+        self.in_dim = dct_length
 
         _, tensors = self._precompute(dct_length, dct_type)
         self.register_buffer("W", tensors[0])
@@ -66,7 +66,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         tensor([ 3.0000, -2.2304,  0.0000, -0.1585])
 
         """
-        check_size(x.size(-1), self.input_dim, "dimension of input")
+        check_size(x.size(-1), self.in_dim, "dimension of input")
         return self._forward(x, **self._buffers)
 
     @staticmethod

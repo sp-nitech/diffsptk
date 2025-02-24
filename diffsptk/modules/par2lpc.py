@@ -40,7 +40,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
     def __init__(self, lpc_order, gamma=1, c=None):
         super().__init__()
 
-        self.input_dim = lpc_order + 1
+        self.in_dim = lpc_order + 1
 
         self.values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
             lpc_order, gamma, c
@@ -75,7 +75,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         tensor([ 1.6036,  0.0573, -0.5615, -0.0638])
 
         """
-        check_size(k.size(-1), self.input_dim, "dimension of PARCOR")
+        check_size(k.size(-1), self.in_dim, "dimension of PARCOR")
         return self._forward(k, *self.values)
 
     @staticmethod

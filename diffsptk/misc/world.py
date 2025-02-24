@@ -68,6 +68,8 @@ def get_windowed_waveform(
             x,
             fft_length,
             frame_period,
+            center=True,
+            zmean=False,
             mode="replicate",
         )
         * window

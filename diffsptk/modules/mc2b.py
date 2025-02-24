@@ -45,7 +45,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
     def __init__(self, cep_order, alpha=0):
         super().__init__()
 
-        self.input_dim = cep_order + 1
+        self.in_dim = cep_order + 1
 
         _, tensors = self._precompute(cep_order, alpha)
         self.register_buffer("A", tensors[0])
@@ -72,7 +72,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         tensor([-0.1686,  0.5620,  1.4600,  1.8000,  4.0000])
 
         """
-        check_size(mc.size(-1), self.input_dim, "dimension of cepstrum")
+        check_size(mc.size(-1), self.in_dim, "dimension of cepstrum")
         return self._forward(mc, **self._buffers)
 
     @staticmethod

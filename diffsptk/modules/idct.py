@@ -38,7 +38,7 @@ class InverseDiscreteCosineTransform(BaseFunctionalModule):
     def __init__(self, dct_length, dct_type=2):
         super().__init__()
 
-        self.input_dim = dct_length
+        self.in_dim = dct_length
 
         _, tensors = self._precompute(dct_length, dct_type)
         self.register_buffer("W", tensors[0])
@@ -66,7 +66,7 @@ class InverseDiscreteCosineTransform(BaseFunctionalModule):
         tensor([-4.4703e-08,  1.0000e+00,  2.0000e+00,  3.0000e+00])
 
         """
-        check_size(y.size(-1), self.input_dim, "dimension of input")
+        check_size(y.size(-1), self.in_dim, "dimension of input")
         return self._forward(y, **self._buffers)
 
     @staticmethod

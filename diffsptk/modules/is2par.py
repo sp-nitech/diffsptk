@@ -33,7 +33,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
     def __init__(self, par_order):
         super().__init__()
 
-        self.input_dim = par_order + 1
+        self.in_dim = par_order + 1
 
         self.values = self._precompute(par_order)
 
@@ -59,7 +59,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
         tensor([0.1000, 0.3090, 0.4540, 0.5878])
 
         """
-        check_size(s.size(-1), self.input_dim, "dimension of parcor")
+        check_size(s.size(-1), self.in_dim, "dimension of parcor")
         return self._forward(s, *self.values)
 
     @staticmethod

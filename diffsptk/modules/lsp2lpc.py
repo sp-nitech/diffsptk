@@ -47,7 +47,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
     def __init__(self, lpc_order, log_gain=False, sample_rate=None, in_format="radian"):
         super().__init__()
 
-        self.input_dim = lpc_order + 1
+        self.in_dim = lpc_order + 1
 
         self.values, tensors = self._precompute(
             lpc_order, log_gain, sample_rate, in_format
@@ -77,7 +77,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         tensor([ 0.0000,  0.8658, -0.0698,  0.0335])
 
         """
-        check_size(w.size(-1), self.input_dim, "dimension of LSP")
+        check_size(w.size(-1), self.in_dim, "dimension of LSP")
         return self._forward(w, *self.values, **self._buffers)
 
     @staticmethod
@@ -141,11 +141,11 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         p = z[..., 1::2]
         q = z[..., 0::2]
         if M == 1:
-            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1), real=True)
+            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1))
             a = 0.5 * q[..., 1:-1]
         else:
-            p = RootsToPolynomial._func(torch.cat([p, p.conj()], dim=-1), real=True)
-            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1), real=True)
+            p = RootsToPolynomial._func(torch.cat([p, p.conj()], dim=-1))
+            q = RootsToPolynomial._func(torch.cat([q, q.conj()], dim=-1))
             p = F.conv1d(p, kernel_p, padding=1 if M % 2 == 1 else 0)
             q = F.conv1d(q, kernel_q)
             a = 0.5 * (p + q)

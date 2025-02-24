@@ -47,7 +47,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
     def __init__(self, cep_order, gamma=0, c=None):
         super().__init__()
 
-        self.input_dim = cep_order + 1
+        self.in_dim = cep_order + 1
 
         self.values = self._precompute(cep_order, gamma, c)
 
@@ -74,7 +74,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
         tensor([1., 2., 3., 4.])
 
         """
-        check_size(y.size(-1), self.input_dim, "dimension of cepstrum")
+        check_size(y.size(-1), self.in_dim, "dimension of cepstrum")
         return self._forward(y, *self.values)
 
     @staticmethod

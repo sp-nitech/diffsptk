@@ -27,34 +27,33 @@ class PolynomialToRoots(nn.Module):
     Parameters
     ----------
     order : int >= 1
-        Order of polynomial.
+        The order of the polynomial.
 
     out_format : ['rectangular', 'polar']
-        Output format.
+        The output format.
 
     """
 
     def __init__(self, order, out_format="rectangular"):
         super().__init__()
 
-        assert 1 <= order
+        self.in_dim = order + 1
 
-        self.order = order
-        self.formatter = self._formatter(out_format)
-        self.register_buffer("eye", self._precompute(self.order))
+        self.values, tensors = self._precompute(order, out_format)
+        self.register_buffer("eye", tensors[0])
 
     def forward(self, a):
-        """Find roots of polynomial.
+        """Find the roots of the input polynomial.
 
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            Polynomial coefficients.
+            The polynomial coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M)]
-            Complex roots.
+            The complex roots.
 
         Examples
         --------
@@ -65,13 +64,39 @@ class PolynomialToRoots(nn.Module):
         tensor([[-0.6667+1.1055j, -0.6667-1.1055j]])
 
         """
-        check_size(a.size(-1), self.order + 1, "order of polynomial")
-        return self._forward(a, self.formatter, self.eye)
+        check_size(a.size(-1), self.in_dim, "order of polynomial")
+        return self._forward(a, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(a, *args, **kwargs):
+        values, tensors = PolynomialToRoots._precompute(
+            a.size(-1) - 1, *args, **kwargs, dtype=a.dtype, device=a.device
+        )
+        return PolynomialToRoots._forward(a, *values, *tensors)
+
+    @staticmethod
+    def _check(order):
+        if order <= 0:
+            raise ValueError("order must be positive.")
+
+    @staticmethod
+    def _precompute(order, out_format="rectangular", dtype=None, device=None):
+        PolynomialToRoots._check(order)
+
+        if out_format in (0, "rectangular"):
+            formatter = lambda x: x
+        elif out_format in (1, "polar"):
+            formatter = lambda x: torch.complex(x.abs(), x.angle())
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        eye = torch.eye(order - 1, order, dtype=dtype, device=device)
+        return (formatter,), (eye,)
 
     @staticmethod
     def _forward(a, formatter, eye):
         if torch.any(a[..., 0] == 0):
-            raise RuntimeError("Leading coefficient must be non-zero.")
+            raise ValueError("Leading coefficient must be non-zero.")
 
         # Make companion matrix.
         a = -a[..., 1:] / a[..., :1]  # (..., M)
@@ -82,23 +107,3 @@ class PolynomialToRoots(nn.Module):
         x, _ = torch.linalg.eig(A)
         x = formatter(x)
         return x
-
-    @staticmethod
-    def _func(a, out_format="rectangular"):
-        formatter = PolynomialToRoots._formatter(out_format)
-        eye = PolynomialToRoots._precompute(
-            a.size(-1) - 1, dtype=a.dtype, device=a.device
-        )
-        return PolynomialToRoots._forward(a, formatter, eye)
-
-    @staticmethod
-    def _precompute(order, dtype=None, device=None):
-        return torch.eye(order - 1, order, dtype=dtype, device=device)
-
-    @staticmethod
-    def _formatter(out_format):
-        if out_format in (0, "rectangular"):
-            return lambda x: x
-        elif out_format in (1, "polar"):
-            return lambda x: torch.complex(x.abs(), x.angle())
-        raise ValueError(f"out_format {out_format} is not supported.")

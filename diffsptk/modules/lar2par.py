@@ -34,7 +34,7 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
     def __init__(self, par_order):
         super().__init__()
 
-        self.input_dim = par_order + 1
+        self.in_dim = par_order + 1
 
         self.values = self._precompute(par_order)
 
@@ -60,7 +60,7 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
         tensor([0.1000, 0.0997, 0.1489, 0.1974])
 
         """
-        check_size(g.size(-1), self.input_dim, "dimension of parcor")
+        check_size(g.size(-1), self.in_dim, "dimension of parcor")
         return self._forward(g, *self.values)
 
     @staticmethod

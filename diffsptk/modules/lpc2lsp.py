@@ -55,7 +55,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
     ):
         super().__init__()
 
-        self.input_dim = lpc_order + 1
+        self.in_dim = lpc_order + 1
 
         self.values, tensors = self._precompute(
             lpc_order, log_gain, sample_rate, out_format
@@ -91,7 +91,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         tensor([2.7969, 0.9037, 1.8114, 2.4514])
 
         """
-        check_size(a.size(-1), self.input_dim, "dimension of LPC")
+        check_size(a.size(-1), self.in_dim, "dimension of LPC")
         return self._forward(a, *self.values, **self._buffers)
 
     @staticmethod

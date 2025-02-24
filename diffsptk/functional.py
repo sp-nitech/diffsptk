@@ -1963,7 +1963,7 @@ def pnorm(x, alpha=0, ir_length=128):
     return nn.MelCepstrumPowerNormalization._func(x, alpha=alpha, ir_length=ir_length)
 
 
-def pol_root(x, real=False):
+def pol_root(x, eps=None):
     """Compute polynomial coefficients from roots.
 
     Parameters
@@ -1971,8 +1971,9 @@ def pol_root(x, real=False):
     x : Tensor [shape=(..., M)]
         Complex roots.
 
-    real : bool
-        If True, return as real numbers.
+    eps : float >= 0 or None
+        If the absolute value of the imaginary part of the roots is less than this
+        value, it is considered as a real root.
 
     Returns
     -------
@@ -1980,7 +1981,7 @@ def pol_root(x, real=False):
         Polynomial coefficients.
 
     """
-    return nn.RootsToPolynomial._func(x, real=real)
+    return nn.RootsToPolynomial._func(x, eps=eps)
 
 
 def poledf(x, a, frame_period=80, ignore_gain=False):

@@ -44,7 +44,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
     def __init__(self, cep_order, fft_length):
         super().__init__()
 
-        self.input_dim = fft_length // 2 + 1
+        self.in_dim = fft_length // 2 + 1
 
         self.values, tensors = self._precompute(cep_order, fft_length)
         self.register_buffer("ramp", tensors[0])
@@ -71,7 +71,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
         tensor([ 0.0000, -1.7071,  0.0000, -0.0976,  0.0000])
 
         """
-        check_size(n.size(-1), self.input_dim, "dimension of spectrum")
+        check_size(n.size(-1), self.in_dim, "dimension of spectrum")
         return self._forward(n, *self.values, **self._buffers)
 
     @staticmethod

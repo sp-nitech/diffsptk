@@ -34,7 +34,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
     def __init__(self, cep_order):
         super().__init__()
 
-        self.input_dim = cep_order + 2
+        self.in_dim = cep_order + 2
 
     def forward(self, y):
         """Perform cepstrum inverse power normalization.
@@ -59,7 +59,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
         tensor([1., 2., 3., 4.])
 
         """
-        check_size(y.size(-1), self.input_dim, "dimension of cepstrum")
+        check_size(y.size(-1), self.in_dim, "dimension of cepstrum")
         return self._forward(y)
 
     @staticmethod

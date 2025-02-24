@@ -27,32 +27,33 @@ class RootsToPolynomial(nn.Module):
     Parameters
     ----------
     order : int >= 1
-        Order of polynomial.
+        The order of the polynomial.
+
+    eps : float >= 0 or None
+        If the absolute value of the imaginary part of the roots is less than this
+        value, it is considered as a real root.
 
     """
 
-    def __init__(self, order):
+    def __init__(self, order, eps=None):
         super().__init__()
 
-        assert 1 <= order
+        self.in_dim = order
 
-        self.order = order
+        self.values = self._precompute(order, eps)
 
-    def forward(self, x, real=False):
+    def forward(self, x):
         """Convert roots to polynomial coefficients.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M)]
-            Complex roots.
-
-        real : bool
-            If True, return as real numbers.
+            The roots, can be complex.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Polynomial coefficients.
+            The polynomial coefficients.
 
         Examples
         --------
@@ -63,16 +64,35 @@ class RootsToPolynomial(nn.Module):
         tensor([ 1, -6,  5, 12])
 
         """
-        check_size(x.size(-1), self.order, "number of roots")
-        return self._forward(x, real)
+        check_size(x.size(-1), self.in_dim, "number of roots")
+        return self._forward(x, *self.values)
 
     @staticmethod
-    def _forward(x, real):
+    def _func(x, *args, **kwargs):
+        values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs)
+        return RootsToPolynomial._forward(x, *values)
+
+    @staticmethod
+    def _check(order, eps):
+        if order <= 0:
+            raise ValueError("order must be positive.")
+        if eps is not None and eps < 0:
+            raise ValueError("eps must be non-negative.")
+
+    @staticmethod
+    def _precompute(order, eps=None):
+        RootsToPolynomial._check(order, eps)
+        if eps is None:
+            eps = 1e-5 if torch.get_default_dtype() == torch.float else 1e-8
+        return (eps,)
+
+    @staticmethod
+    def _forward(x, eps):
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)
         for m in range(M):
             z = a.clone()
             a[..., 1:] = z[..., 1:] - x[..., m : m + 1] * z[..., :-1]
-        return a.real if real else a
-
-    _func = _forward
+        if torch.is_complex(a) and torch.all(a.imag.abs() < eps):
+            a = a.real
+        return a
