@@ -68,6 +68,7 @@ from .interpolate import Interpolation
 from .ipnorm import MelCepstrumInversePowerNormalization
 from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis
 from .ipqmf import PseudoQuadratureMirrorFilterBankSynthesis as IPQMF
+from .is2par import InverseSineToParcorCoefficients
 from .istft import InverseShortTimeFourierTransform
 from .istft import InverseShortTimeFourierTransform as ISTFT
 from .iulaw import MuLawExpansion
@@ -109,6 +110,7 @@ from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .nmf import NonnegativeMatrixFactorization
 from .nmf import NonnegativeMatrixFactorization as NMF
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
+from .par2is import ParcorCoefficientsToInverseSine
 from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 from .pca import PrincipalComponentAnalysis

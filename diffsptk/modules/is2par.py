@@ -20,9 +20,8 @@ from ..misc.utils import check_size
 from .base import BaseFunctionalModule
 
 
-class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/par2lar.html>`_
-    for details.
+class InverseSineToParcorCoefficients(BaseFunctionalModule):
+    """This is a similar module to :func:`~diffsptk.LogAreaRatioToParcorCoefficients`.
 
     Parameters
     ----------
@@ -36,38 +35,37 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
 
         self.input_dim = par_order + 1
 
-        self.values = ParcorCoefficientsToLogAreaRatio._precompute(par_order)
+        self.values = self._precompute(par_order)
 
-    def forward(self, k):
-        """Convert PARCOR to LAR.
+    def forward(self, s):
+        """Convert IS to PARCOR.
 
         Parameters
         ----------
-        k : Tensor [shape=(..., M+1)]
-            The PARCOR coefficients.
+        s : Tensor [shape=(..., M+1)]
+            The inverse sine coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            The log area ratio.
+            The PARCOR coefficients.
 
         Examples
         --------
-        >>> k = diffsptk.ramp(1, 4) * 0.1
-        >>> par2lar = diffsptk.ParcorCoefficientsToLogAreaRatio(3)
-        >>> lar2par = diffsptk.LogAreaRatioToParcorCoefficients(3)
-        >>> k2 = lar2par(par2lar(k))
-        >>> k2
-        tensor([0.1000, 0.2000, 0.3000, 0.4000])
+        >>> s = diffsptk.ramp(1, 4) * 0.1
+        >>> is2par = diffsptk.InverseSineToParcorCoefficients(3)
+        >>> k = is2par(s)
+        >>> k
+        tensor([0.1000, 0.3090, 0.4540, 0.5878])
 
         """
-        check_size(k.size(-1), self.input_dim, "dimension of parcor")
-        return self._forward(k, *self.values)
+        check_size(s.size(-1), self.input_dim, "dimension of parcor")
+        return self._forward(s, *self.values)
 
     @staticmethod
     def _func(x):
-        values = ParcorCoefficientsToLogAreaRatio._precompute(x.size(-1) - 1)
-        return ParcorCoefficientsToLogAreaRatio._forward(x, *values)
+        values = InverseSineToParcorCoefficients._precompute(x.size(-1) - 1)
+        return InverseSineToParcorCoefficients._forward(x, *values)
 
     @staticmethod
     def _check(par_order):
@@ -76,11 +74,11 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(par_order):
-        ParcorCoefficientsToLogAreaRatio._check(par_order)
-        return (2,)
+        InverseSineToParcorCoefficients._check(par_order)
+        return (torch.pi / 2,)
 
     @staticmethod
-    def _forward(k, c):
-        K, k = torch.split(k, [1, k.size(-1) - 1], dim=-1)
-        g = torch.cat((K, c * torch.atanh(k)), dim=-1)
-        return g
+    def _forward(s, c):
+        K, s = torch.split(s, [1, s.size(-1) - 1], dim=-1)
+        k = torch.cat((K, torch.sin(c * s)), dim=-1)
+        return k

@@ -1127,6 +1127,23 @@ def ipnorm(y):
     return nn.MelCepstrumInversePowerNormalization._func(y)
 
 
+def is2par(s):
+    """Convert IS to PARCOR.
+
+    Parameters
+    ----------
+    s : Tensor [shape=(..., M+1)]
+        Inverse sine coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    """
+    return nn.InverseSineToParcorCoefficients._func(s)
+
+
 def istft(
     y,
     *,
@@ -1836,6 +1853,23 @@ def norm0(a):
 
     """
     return nn.AllPoleToAllZeroDigitalFilterCoefficients._func(a)
+
+
+def par2is(k):
+    """Convert PARCOR to IS.
+
+    Parameters
+    ----------
+    k : Tensor [shape=(..., M+1)]
+        PARCOR coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        Inverse sine coefficients.
+
+    """
+    return nn.ParcorCoefficientsToInverseSine._func(k)
 
 
 def par2lar(k):
