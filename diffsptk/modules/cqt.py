@@ -28,49 +28,50 @@ from ..misc.librosa import wavelet_lengths
 from ..misc.utils import Lambda
 from ..misc.utils import get_resample_params
 from ..misc.utils import numpy_to_torch
+from .base import BaseNonFunctionalModule
 from .stft import ShortTimeFourierTransform as STFT
 
 
-class ConstantQTransform(nn.Module):
+class ConstantQTransform(BaseNonFunctionalModule):
     """Perform constant-Q transform based on the librosa implementation.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period in samples, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     f_min : float > 0
-        Minimum center frequency in Hz.
+        The minimum center frequency in Hz.
 
     n_bin : int >= 1
-        Number of CQ-bins, :math:`K`.
+        The number of CQ-bins, :math:`K`.
 
     n_bin_per_octave : int >= 1
-        number of bins per octave, :math:`B`.
+        The number of bins per octave, :math:`B`.
 
     tuning : float
-        Tuning offset in fractions of a bin.
+        The tuning offset in fractions of a bin.
 
     filter_scale : float > 0
-        Filter scale factor.
+        The filter scale factor.
 
     norm : float
-        Type of norm used in basis function normalization.
+        The type of norm used in the basis function normalization.
 
     sparsity : float in [0, 1)
-        Sparsification factor.
+        The sparsification factor.
 
     window : str
-        Window function for the basis.
+        The window function for the basis.
 
     scale : bool
-        If True, scale the CQT response by the length of filter.
+        If True, scale the CQT response by the length of the filter.
 
     res_type : ['kaiser_best', 'kaiser_fast'] or None
-        Resampling type.
+        The resampling type.
 
     **kwargs : additional keyword arguments
         See `torchaudio.transforms.Resample
@@ -97,8 +98,8 @@ class ConstantQTransform(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert 1 <= sample_rate
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
 
         K = n_bin
         B = n_bin_per_octave
@@ -238,12 +239,12 @@ class ConstantQTransform(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T/P, K)]
-            CQT complex output.
+            The CQT complex output.
 
         Examples
         --------
@@ -263,12 +264,12 @@ class ConstantQTransform(nn.Module):
             cs.append(torch.matmul(X, W))
             if i != len(self.transforms) - 1:
                 x = self.resamplers[i](x)
-        c = self._trim_stack(cs) * self.cqt_scale
+        c = self._trim_stack(len(self.cqt_scale), cs) * self.cqt_scale
         return c
 
-    def _trim_stack(self, cqt_response):
+    @staticmethod
+    def _trim_stack(n_bin, cqt_response):
         max_col = min(c.shape[-2] for c in cqt_response)
-        n_bin = len(self.cqt_scale)
         shape = list(cqt_response[0].shape)
         shape[-2] = max_col
         shape[-1] = n_bin

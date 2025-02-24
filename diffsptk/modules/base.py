@@ -20,6 +20,10 @@ from abc import abstractmethod
 from torch import nn
 
 
+class BaseNonFunctionalModule(ABC, nn.Module):
+    pass
+
+
 class BaseFunctionalModule(ABC, nn.Module):
     @staticmethod
     @abstractmethod

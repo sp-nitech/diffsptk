@@ -15,37 +15,37 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import get_gamma
+from .base import BaseFunctionalModule
 
 
-class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
+class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc2par.html>`_
     for details.
 
     Parameters
     ----------
     lpc_order : int >= 0
-        Order of LPC, :math:`M`.
+        The order of the LPC, :math:`M`.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     """
 
     def __init__(self, lpc_order, gamma=1, c=None):
         super().__init__()
 
-        assert 0 <= lpc_order
-        assert abs(gamma) <= 1
+        self.input_dim = lpc_order + 1
 
-        self.lpc_order = lpc_order
-        self.gamma = self._precompute(gamma, c)
+        self.values = LinearPredictiveCoefficientsToParcorCoefficients._precompute(
+            lpc_order, gamma, c
+        )
 
     def forward(self, a):
         """Convert LPC to PARCOR.
@@ -53,12 +53,12 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            LPC coefficients.
+            The LPC coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            PARCOR coefficients.
+            The PARCOR coefficients.
 
         Examples
         --------
@@ -75,8 +75,29 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         tensor([ 1.6036,  0.0491, -0.5601, -0.0638])
 
         """
-        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
-        return self._forward(a, self.gamma)
+        check_size(a.size(-1), self.input_dim, "dimension of LPC")
+        return self._forward(a, *self.values)
+
+    @staticmethod
+    def _func(a, *args, **kwargs):
+        values = LinearPredictiveCoefficientsToParcorCoefficients._precompute(
+            a.size(-1) - 1, *args, **kwargs
+        )
+        return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, *values)
+
+    @staticmethod
+    def _check(lpc_order, gamma, c):
+        if lpc_order < 0:
+            raise ValueError("lpc_order must be non-negative.")
+        if 1 < abs(gamma):
+            raise ValueError("gamma must be in [-1, 1].")
+        if c is not None and c < 1:
+            raise ValueError("c must be greater than or equal to 1.")
+
+    @staticmethod
+    def _precompute(lpc_order, gamma, c):
+        LinearPredictiveCoefficientsToParcorCoefficients._check(lpc_order, gamma, c)
+        return (get_gamma(gamma, c),)
 
     @staticmethod
     def _forward(a, gamma):
@@ -97,12 +118,3 @@ class LinearPredictiveCoefficientsToParcorCoefficients(nn.Module):
         ks.append(K)
         k = torch.cat(ks[::-1], dim=-1)
         return k
-
-    @staticmethod
-    def _func(a, gamma=1, c=None):
-        gamma = LinearPredictiveCoefficientsToParcorCoefficients._precompute(gamma, c)
-        return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, gamma)
-
-    @staticmethod
-    def _precompute(gamma, c):
-        return get_gamma(gamma, c)
