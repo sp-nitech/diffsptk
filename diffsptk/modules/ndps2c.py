@@ -76,9 +76,14 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
         return self._forward(n, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(n, cep_order):
+    def _func(n, cep_order, *args, **kwargs):
         values, _, tensors = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute(
-            cep_order, 2 * (n.size(-1) - 1), device=n.device, dtype=n.dtype
+            cep_order,
+            2 * n.size(-1) - 2,
+            *args,
+            **kwargs,
+            device=n.device,
+            dtype=n.dtype,
         )
         return NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
             n, *values, *tensors

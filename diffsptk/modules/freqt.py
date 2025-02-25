@@ -15,26 +15,27 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class FrequencyTransform(nn.Module):
+class FrequencyTransform(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/freqt.html>`_
     for details.
 
     Parameters
     ----------
     in_order : int >= 0
-        Order of input sequence, :math:`M_1`.
+        The order of the input sequence, :math:`M_1`.
 
     out_order : int >= 0
-        Order of output sequence, :math:`M_2`.
+        The order of the output sequence, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     References
     ----------
@@ -43,18 +44,13 @@ class FrequencyTransform(nn.Module):
 
     """
 
-    def __init__(self, in_order, out_order, alpha=0):
+    def __init__(self, in_order, out_order, alpha=0, device=None, dtype=None):
         super().__init__()
 
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert abs(alpha) < 1
+        self.in_dim = in_order + 1
 
-        self.in_order = in_order
-        self.out_order = out_order
-        self.register_buffer(
-            "A", self._precompute(self.in_order, self.out_order, alpha)
-        )
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("A", tensors[0])
 
     def forward(self, c):
         """Perform frequency transform.
@@ -62,12 +58,12 @@ class FrequencyTransform(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M1+1)]
-            Input sequence.
+            The input sequence.
 
         Returns
         -------
         out : Tensor [shape=(..., M2+1)]
-            Warped sequence.
+            The warped sequence.
 
         Examples
         --------
@@ -84,36 +80,44 @@ class FrequencyTransform(nn.Module):
         tensor([-9.8953e-10,  1.0000e+00,  2.0000e+00,  3.0000e+00])
 
         """
-        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.A)
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, **self._buffers)
 
     @staticmethod
-    def _forward(c, A):
-        return torch.matmul(c, A)
-
-    @staticmethod
-    def _func(c, out_order, alpha):
-        in_order = c.size(-1) - 1
-        A = FrequencyTransform._precompute(
-            in_order, out_order, alpha, dtype=c.dtype, device=c.device
+    def _func(c, *args, **kwargs):
+        _, _, tensors = FrequencyTransform._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
-        return FrequencyTransform._forward(c, A)
+        return FrequencyTransform._forward(c, *tensors)
 
     @staticmethod
-    def _precompute(in_order, out_order, alpha, dtype=None, device=None):
+    def _check(in_order, out_order, alpha):
+        if in_order < 0:
+            raise ValueError("in_order must be non-negative.")
+        if out_order < 0:
+            raise ValueError("out_order must be non-negative.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, device=None, dtype=None):
+        FrequencyTransform._check(in_order, out_order, alpha)
         L1 = in_order + 1
         L2 = out_order + 1
         beta = 1 - alpha * alpha
 
-        # Make transform matrix.
-        arange = torch.arange(L1, dtype=torch.double, device=device)
-        A = torch.zeros((L2, L1), dtype=torch.double, device=device)
-        A[0, :] = alpha**arange
+        ramp = torch.arange(L1, device=device, dtype=torch.double)
+        A = torch.zeros((L2, L1), device=device, dtype=torch.double)
+        A[0, :] = alpha**ramp
         if 1 < L2 and 1 < L1:
-            A[1, 1:] = A[0, :-1] * beta * arange[1:]
+            A[1, 1:] = A[0, :-1] * beta * ramp[1:]
         for i in range(2, L2):
             i1 = i - 1
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
-        return to(A.T, dtype=dtype)
+        return None, None, (to(A.T, dtype=dtype),)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)

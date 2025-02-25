@@ -237,7 +237,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         y, E = fbank(x)
         y = (torch.exp(y) * equal_loudness_curve) ** compression_factor
         y = replicate1(y)
-        y = torch.fft.hfft(y, norm="forward")[..., : len(liftering_vector)].real
+        y = torch.fft.hfft(y, norm="forward").real[..., : len(liftering_vector)]
         y = lpc2c(levdur(y)) * liftering_vector
         c, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
         return formatter(y, c, E)

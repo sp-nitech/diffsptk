@@ -72,7 +72,7 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
             theta = sC1.angle() * out_gamma
             C2 = (r * torch.cos(theta) - 1) / out_gamma
 
-        c02 = torch.fft.ifft(C2)[..., : out_order + 1].real
+        c02 = torch.fft.ifft(C2).real[..., : out_order + 1]
         c2 = torch.cat((c1[..., :1], 2 * c02[..., 1:]), dim=-1)
         return c2
 

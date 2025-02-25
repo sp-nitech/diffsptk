@@ -17,6 +17,7 @@
 import torch
 from torch import nn
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
@@ -39,10 +40,10 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0, ir_length=128):
+    def __init__(self, cep_order, alpha=0, ir_length=128, device=None, dtype=None):
         super().__init__()
 
-        _, layers, _ = self._precompute(cep_order, alpha, ir_length)
+        _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
@@ -72,22 +73,20 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
     @staticmethod
     def _func(x, *args, **kwargs):
         _, layers, _ = MelCepstrumPowerNormalization._precompute(
-            x.size(-1) - 1, *args, **kwargs, module=False
+            x.size(-1) - 1, *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return MelCepstrumPowerNormalization._forward(x, *layers)
 
     @staticmethod
     def _check(*args, **kwargs):
-        raise NotImplementedError
+        pass
 
     @staticmethod
-    def _precompute(cep_order, alpha, ir_length, module=True):
-        if module:
-            freqt = FrequencyTransform(cep_order, ir_length - 1, -alpha)
-            c2acr = CepstrumToAutocorrelation(ir_length - 1, 0, ir_length)
-        else:
-            freqt = lambda mc: FrequencyTransform._func(mc, ir_length - 1, -alpha)
-            c2acr = lambda c: CepstrumToAutocorrelation._func(c, 0, ir_length)
+    def _precompute(cep_order, alpha, ir_length, device=None, dtype=None):
+        freqt = FrequencyTransform(
+            cep_order, ir_length - 1, -alpha, device=device, dtype=dtype
+        )
+        c2acr = CepstrumToAutocorrelation(ir_length - 1, 0, ir_length)
         return None, (freqt, c2acr), None
 
     @staticmethod

@@ -16,43 +16,44 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import remove_gain
+from .base import BaseFunctionalModule
 
 
-class ReverseLevinsonDurbin(nn.Module):
+class ReverseLevinsonDurbin(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/rlevdur.html>`_
     for details.
 
     Parameters
     ----------
     lpc_order : int >= 0
-        Order of LPC coefficients, :math:`M`.
+        The order of the LPC coefficients, :math:`M`.
 
     """
 
     def __init__(self, lpc_order):
         super().__init__()
 
-        assert 0 <= lpc_order
+        self.in_dim = lpc_order + 1
 
-        self.lpc_order = lpc_order
-        self.register_buffer("eye", self._precompute(self.lpc_order))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("eye", tensors[0])
 
     def forward(self, a):
-        """Solve a Yule-Walker linear system given LPC coefficients.
+        """Solve a Yule-Walker linear system given the LPC coefficients.
 
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            Gain and LPC coefficients.
+            The gain and the LPC coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Autocorrelation.
+            The autocorrelation.
 
         Examples
         --------
@@ -68,8 +69,26 @@ class ReverseLevinsonDurbin(nn.Module):
         tensor([ 5.8784,  0.8978, -2.0951])
 
         """
-        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC coefficients")
-        return self._forward(a, self.eye)
+        check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")
+        return self._forward(a, **self._buffers)
+
+    @staticmethod
+    def _func(a, *args, **kwargs):
+        _, _, tensors = ReverseLevinsonDurbin._precompute(
+            a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
+        )
+        return ReverseLevinsonDurbin._forward(a, *tensors)
+
+    @staticmethod
+    def _check(lpc_order):
+        if lpc_order < 0:
+            raise ValueError("lpc_order must be non-negative.")
+
+    @staticmethod
+    def _precompute(lpc_order, dtype=None, device=None):
+        ReverseLevinsonDurbin._check(lpc_order)
+        eye = torch.eye(lpc_order + 1, device=device, dtype=dtype)
+        return None, None, (eye,)
 
     @staticmethod
     def _forward(a, eye):
@@ -93,14 +112,3 @@ class ReverseLevinsonDurbin(nn.Module):
         V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
         r = torch.matmul(V[..., :1].transpose(-2, -1) * E, V).squeeze(-2)
         return r
-
-    @staticmethod
-    def _func(a):
-        eye = ReverseLevinsonDurbin._precompute(
-            a.size(-1) - 1, dtype=a.dtype, device=a.device
-        )
-        return ReverseLevinsonDurbin._forward(a, eye)
-
-    @staticmethod
-    def _precompute(order, dtype=None, device=None):
-        return torch.eye(order + 1, dtype=dtype, device=device)

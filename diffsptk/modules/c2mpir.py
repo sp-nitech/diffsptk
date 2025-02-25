@@ -15,52 +15,50 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import cexp
 from ..misc.utils import check_size
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
-class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
+class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2mpir.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     ir_length : int >= 1
-        Length of impulse response, :math:`N`.
+        The length of the impulse response, :math:`N`.
 
     n_fft : int >> N
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins used for conversion. The accurate conversion requires the
+        large vlaue.
 
     """
 
     def __init__(self, cep_order, ir_length, n_fft=512):
         super().__init__()
 
-        assert 0 <= cep_order
-        assert 1 <= ir_length
-        assert max(cep_order + 1, ir_length) <= n_fft
+        self.in_dim = cep_order + 1
 
-        self.cep_order = cep_order
-        self.ir_length = ir_length
-        self.n_fft = n_fft
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, c):
-        """Convert cepstrum to minimum phase impulse response.
+        """Convert cepstrum to minimum-phase impulse response.
 
         Parameters
         ----------
         c : Tensor [shape=(..., M+1)]
-            Cepstral coefficients.
+            The cepstral coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., N)]
-            Truncated minimum phase impulse response.
+            The truncated minimum-phase impulse response.
 
         Examples
         --------
@@ -71,13 +69,32 @@ class CepstrumToMinimumPhaseImpulseResponse(nn.Module):
         tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
 
         """
-        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.ir_length, self.n_fft)
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, *self.values)
+
+    @staticmethod
+    def _func(c, *args, **kwargs):
+        values = CepstrumToMinimumPhaseImpulseResponse._precompute(
+            c.size(-1) - 1, *args, **kwargs
+        )
+        return CepstrumToMinimumPhaseImpulseResponse._forward(c, *values)
+
+    @staticmethod
+    def _check(cep_order, ir_length, n_fft):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if ir_length <= 0:
+            raise ValueError("ir_length must be positive.")
+        if n_fft < max(cep_order + 1, ir_length):
+            raise ValueError("n_fft must be large value.")
+
+    @staticmethod
+    def _precompute(cep_order, ir_length, n_fft):
+        CepstrumToMinimumPhaseImpulseResponse._check(cep_order, ir_length, n_fft)
+        return (ir_length, n_fft)
 
     @staticmethod
     def _forward(c, ir_length, n_fft):
         C = torch.fft.fft(c, n=n_fft)
         h = torch.fft.ifft(cexp(C)).real[..., :ir_length]
         return h
-
-    _func = _forward

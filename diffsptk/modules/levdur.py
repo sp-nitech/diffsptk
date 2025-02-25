@@ -15,33 +15,34 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import symmetric_toeplitz
+from .base import BaseFunctionalModule
 
 
-class LevinsonDurbin(nn.Module):
+class LevinsonDurbin(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/levdur.html>`_
     for details. The implementation is based on a simple matrix inversion.
 
     Parameters
     ----------
     lpc_order : int >= 0
-        Order of LPC coefficients, :math:`M`.
+        The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0
         A small value to improve numerical stability.
 
     """
 
-    def __init__(self, lpc_order, eps=0):
+    def __init__(self, lpc_order, eps=0, device=None, dtype=None):
         super().__init__()
 
-        assert 0 <= lpc_order
+        self.in_dim = lpc_order + 1
 
-        self.lpc_order = lpc_order
-        self.register_buffer("eye", self._precompute(self.lpc_order, eps))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("eye", tensors[0])
 
     def forward(self, r):
         """Solve a Yule-Walker linear system.
@@ -49,12 +50,12 @@ class LevinsonDurbin(nn.Module):
         Parameters
         ----------
         r : Tensor [shape=(..., M+1)]
-            Autocorrelation.
+            The autocorrelation.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Gain and LPC coefficients.
+            The gain and the LPC coefficients.
 
         Examples
         --------
@@ -68,8 +69,28 @@ class LevinsonDurbin(nn.Module):
         tensor([0.8726, 0.1475, 0.5270])
 
         """
-        check_size(r.size(-1), self.lpc_order + 1, "dimension of autocorrelation")
-        return self._forward(r, self.eye)
+        check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")
+        return self._forward(r, **self._buffers)
+
+    @staticmethod
+    def _func(r, *args, **kwargs):
+        _, _, tensors = LevinsonDurbin._precompute(
+            r.size(-1) - 1, *args, **kwargs, device=r.device, dtype=r.dtype
+        )
+        return LevinsonDurbin._forward(r, *tensors)
+
+    @staticmethod
+    def _check(lpc_order, eps):
+        if lpc_order < 0:
+            raise ValueError("lpc_order must be non-negative.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
+
+    @staticmethod
+    def _precompute(lpc_order, eps, device=None, dtype=None):
+        LevinsonDurbin._check(lpc_order, eps)
+        eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
+        return None, None, (eye,)
 
     @staticmethod
     def _forward(r, eye):
@@ -86,14 +107,3 @@ class LevinsonDurbin(nn.Module):
 
         a = torch.cat((K, a), dim=-1)
         return a
-
-    @staticmethod
-    def _func(r, eps):
-        eye = LevinsonDurbin._precompute(
-            r.size(-1) - 1, eps, dtype=r.dtype, device=r.device
-        )
-        return LevinsonDurbin._forward(r, eye)
-
-    @staticmethod
-    def _precompute(order, eps, dtype=None, device=None):
-        return torch.eye(order, dtype=dtype, device=device) * eps
