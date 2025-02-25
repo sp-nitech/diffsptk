@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .gnorm import GeneralizedCepstrumGainNormalization
 
@@ -49,7 +50,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values = self._precompute(cep_order, gamma, c)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
         """Perform cepstrum inverse gain normalization.

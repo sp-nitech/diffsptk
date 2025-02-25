@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -35,7 +36,7 @@ class Entropy(BaseFunctionalModule):
     def __init__(self, out_format="nat"):
         super().__init__()
 
-        self.values = self._precompute(out_format)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, p):
         """Compute entropy from probability sequence.
@@ -70,17 +71,19 @@ class Entropy(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        raise NotImplementedError
+        pass
 
     @staticmethod
     def _precompute(out_format):
+        Entropy._check()
         if out_format in (0, "bit"):
             return (math.log2(math.e),)
         elif out_format in (1, "nat"):
             return (1,)
         elif out_format in (2, "dit"):
             return (math.log10(math.e),)
-        raise ValueError(f"out_format {out_format} is not supported.")
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
 
     @staticmethod
     def _forward(p, c):

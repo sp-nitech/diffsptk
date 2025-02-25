@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import plateau
 from ..misc.utils import to
 from .base import BaseFunctionalModule
@@ -35,12 +36,12 @@ class DiscreteSineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dst_length, dst_type=2):
+    def __init__(self, dst_length, dst_type=2, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = dst_length
 
-        _, tensors = self._precompute(dst_length, dst_type)
+        _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x):
@@ -70,8 +71,8 @@ class DiscreteSineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, tensors = DiscreteSineTransform._precompute(
-            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
+        _, _, tensors = DiscreteSineTransform._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return DiscreteSineTransform._forward(x, *tensors)
 
@@ -83,11 +84,12 @@ class DiscreteSineTransform(BaseFunctionalModule):
             raise ValueError("dst_type must be in [1, 4].")
 
     @staticmethod
-    def _precompute(dst_length, dst_type, dtype=None, device=None):
+    def _precompute(dst_length, dst_type, device=None, dtype=None):
         DiscreteSineTransform._check(dst_length, dst_type)
+        param = {"device": device, "dtype": torch.double}
         L = dst_length
-        n = torch.arange(1, L + 1, dtype=torch.double, device=device)
-        k = torch.arange(1, L + 1, dtype=torch.double, device=device)
+        n = torch.arange(1, L + 1, **param)
+        k = torch.arange(1, L + 1, **param)
         if dst_type == 2 or dst_type == 4:
             n -= 0.5
         if dst_type == 3 or dst_type == 4:
@@ -97,10 +99,10 @@ class DiscreteSineTransform(BaseFunctionalModule):
         if dst_type == 1:
             z = (2 / (L + 1)) ** 0.5
         elif dst_type == 2:
-            z = plateau(L, 2, 2, 1, dtype=torch.double, device=device)
+            z = plateau(L, 2, 2, 1, **param)
             z = torch.sqrt(z / L).unsqueeze(0)
         elif dst_type == 3:
-            z = plateau(L, 2, 2, 1, dtype=torch.double, device=device)
+            z = plateau(L, 2, 2, 1, **param)
             z = torch.sqrt(z / L).unsqueeze(1)
         elif dst_type == 4:
             z = (2 / L) ** 0.5
@@ -108,7 +110,7 @@ class DiscreteSineTransform(BaseFunctionalModule):
             raise ValueError(f"dst_type {dst_type} is not supported.")
 
         W = z * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
-        return None, (to(W, dtype=dtype),)
+        return None, None, (to(W, dtype=dtype),)
 
     @staticmethod
     def _forward(x, W):

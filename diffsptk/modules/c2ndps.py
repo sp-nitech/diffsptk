@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
 
@@ -39,10 +40,10 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, fft_length):
+    def __init__(self, cep_order, fft_length, device=None, dtype=None):
         super().__init__()
 
-        self.values, tensors = self._precompute(cep_order, fft_length)
+        self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, c):
@@ -70,9 +71,9 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
         return self._forward(c, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(c, fft_length):
-        values, tensors = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
-            c.size(-1) - 1, fft_length, dtype=c.dtype, device=c.device
+    def _func(c, *args, **kwargs):
+        values, _, tensors = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
         return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
             c, *values, *tensors
@@ -88,13 +89,13 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
             )
 
     @staticmethod
-    def _precompute(cep_order, fft_length, dtype=None, device=None):
+    def _precompute(cep_order, fft_length, device=None, dtype=None):
         CepstrumToNegativeDerivativeOfPhaseSpectrum._check(cep_order, fft_length)
         half_fft_length = fft_length // 2
-        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device) * 0.5
+        ramp = torch.arange(cep_order + 1, device=device, dtype=torch.double) * 0.5
         if cep_order == half_fft_length:
             ramp[-1] *= 2
-        return (fft_length,), (to(ramp, dtype=dtype),)
+        return (fft_length,), None, (to(ramp, dtype=dtype),)
 
     @staticmethod
     def _forward(c, fft_length, ramp):

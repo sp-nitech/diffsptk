@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -36,7 +37,9 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = ParcorCoefficientsToLogAreaRatio._precompute(par_order)
+        self.values = ParcorCoefficientsToLogAreaRatio._precompute(
+            *get_values(locals())
+        )
 
     def forward(self, k):
         """Convert PARCOR to LAR.
@@ -65,8 +68,10 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
         return self._forward(k, *self.values)
 
     @staticmethod
-    def _func(x):
-        values = ParcorCoefficientsToLogAreaRatio._precompute(x.size(-1) - 1)
+    def _func(x, *args, **kwargs):
+        values = ParcorCoefficientsToLogAreaRatio._precompute(
+            x.size(-1) - 1, *args, **kwargs
+        )
         return ParcorCoefficientsToLogAreaRatio._forward(x, *values)
 
     @staticmethod

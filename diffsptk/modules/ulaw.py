@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +39,7 @@ class MuLawCompression(BaseFunctionalModule):
     def __init__(self, abs_max=1, mu=255):
         super().__init__()
 
-        self.values = self._precompute(abs_max, mu)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Compress the input waveform using the :math:`\\mu`-law algorithm.

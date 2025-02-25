@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class Decimation(BaseFunctionalModule):
     def __init__(self, period, start=0, dim=-1):
         super().__init__()
 
-        self.values = self._precompute(period, start, dim)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Decimate the input signal.

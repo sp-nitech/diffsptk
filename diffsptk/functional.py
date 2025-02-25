@@ -1583,6 +1583,73 @@ def mdst(x, frame_length=400, window="sine"):
     )
 
 
+def mfcc(
+    x,
+    mfcc_order,
+    n_channel,
+    sample_rate,
+    lifter=1,
+    f_min=0,
+    f_max=None,
+    floor=1e-5,
+    out_format="y",
+):
+    """Compute the MFCC from the power spectrum.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    mfcc_order : int >= 1
+        The order of the MFCC, :math:`M`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    lifter : int >= 1
+        The liftering coefficient.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    floor : float > 0
+        The minimum mel filter bank output in linear scale.
+
+    out_format : ['y', 'yE', 'yc', 'ycE']
+        `y` is MFCC, `c` is C0, and `E` is energy.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., M)]
+        The MFCC without C0.
+
+    E : Tensor [shape=(..., 1)] (optional)
+        The energy.
+
+    c : Tensor [shape=(..., 1)] (optional)
+        The C0.
+
+    """
+    return nn.MelFrequencyCepstralCoefficientsAnalysis._func(
+        x,
+        mfcc_order=mfcc_order,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        lifter=lifter,
+        f_min=f_min,
+        f_max=f_max,
+        floor=floor,
+        out_format=out_format,
+    )
+
+
 def mgc2mgc(
     mc,
     out_order,
@@ -1938,6 +2005,84 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
 
     """
     return nn.Phase._func(b, a, fft_length=fft_length, unwrap=unwrap)
+
+
+def plp(
+    x,
+    plp_order,
+    n_channel,
+    sample_rate,
+    compression_factor=0.33,
+    lifter=1,
+    f_min=0,
+    f_max=None,
+    floor=1e-5,
+    n_fft=512,
+    out_format="y",
+):
+    """Compute the MFCC from the power spectrum.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    plp_order : int >= 1
+        The order of the PLP, :math:`M`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    compression_factor : float > 0
+        The amplitude compression factor.
+
+    lifter : int >= 1
+        The liftering coefficient.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    floor : float > 0
+        The minimum mel filter bank output in linear scale.
+
+    n_fft : int >> M
+        The number of FFT bins for the conversion from LPC to cepstrum.
+        The accurate conversion requires the large value.
+
+    out_format : ['y', 'yE', 'yc', 'ycE']
+        `y` is MFCC, `c` is C0, and `E` is energy.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., M)]
+        The MFCC without C0.
+
+    E : Tensor [shape=(..., 1)] (optional)
+        The energy.
+
+    c : Tensor [shape=(..., 1)] (optional)
+        The C0.
+
+    """
+    return nn.PerceptualLinearPredictiveCoefficientsAnalysis._func(
+        x,
+        plp_order=plp_order,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        compression_factor=compression_factor,
+        lifter=lifter,
+        f_min=f_min,
+        f_max=f_max,
+        floor=floor,
+        n_fft=n_fft,
+        out_format=out_format,
+    )
 
 
 def pnorm(x, alpha=0, ir_length=128):

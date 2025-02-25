@@ -18,6 +18,7 @@ import torch
 from torch import nn
 
 from ..misc.utils import Lambda
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
@@ -79,22 +80,12 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps=1e-9,
         relative_floor=None,
         out_format="power",
+        device=None,
+        dtype=None,
     ):
         super().__init__()
 
-        _, _, layers = self._precompute(
-            frame_length,
-            frame_period,
-            fft_length,
-            center,
-            zmean,
-            mode,
-            window,
-            norm,
-            eps,
-            relative_floor,
-            out_format,
-        )
+        _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
@@ -127,8 +118,8 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, _, layers = ShortTimeFourierTransform._precompute(
-            *args, **kwargs, module=False
+        _, layers, _ = ShortTimeFourierTransform._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return ShortTimeFourierTransform._forward(x, *layers)
 
@@ -149,34 +140,28 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps,
         relative_floor,
         out_format,
-        module=True,
+        device,
+        dtype,
     ):
-        if module:
-            frame = Frame(
-                frame_length, frame_period, center=center, zmean=zmean, mode=mode
-            )
-            window_ = Window(frame_length, fft_length, window=window, norm=norm)
-            if out_format == "complex":
-                spec = Lambda(torch.fft.rfft)
-            else:
-                spec = Spectrum(
-                    fft_length,
-                    eps=eps,
-                    relative_floor=relative_floor,
-                    out_format=out_format,
-                )
+        frame = Frame(frame_length, frame_period, center=center, zmean=zmean, mode=mode)
+        window_ = Window(
+            frame_length,
+            fft_length,
+            window=window,
+            norm=norm,
+            device=device,
+            dtype=dtype,
+        )
+        if out_format == "complex":
+            spec = Lambda(torch.fft.rfft)
         else:
-            frame = lambda x: Frame._func(
-                x, frame_length, frame_period, center, zmean, mode
+            spec = Spectrum(
+                fft_length,
+                eps=eps,
+                relative_floor=relative_floor,
+                out_format=out_format,
             )
-            window_ = lambda x: Window._func(x, fft_length, window, norm)
-            if out_format == "complex":
-                spec = lambda x: torch.fft.rfft(x)
-            else:
-                spec = lambda x: Spectrum._func(
-                    x, None, fft_length, eps, relative_floor, out_format
-                )
-        return None, None, (frame, window_, spec)
+        return None, (frame, window_, spec), None
 
     @staticmethod
     def _forward(x, frame, window, spec):

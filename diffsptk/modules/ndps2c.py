@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
 from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
@@ -41,12 +42,12 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, fft_length):
+    def __init__(self, cep_order, fft_length, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, tensors = self._precompute(cep_order, fft_length)
+        self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, n):
@@ -76,27 +77,27 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
     @staticmethod
     def _func(n, cep_order):
-        values, tensors = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute(
-            cep_order, 2 * (n.size(-1) - 1), dtype=n.dtype, device=n.device
+        values, _, tensors = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute(
+            cep_order, 2 * (n.size(-1) - 1), device=n.device, dtype=n.dtype
         )
         return NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
             n, *values, *tensors
         )
 
     @staticmethod
-    def _check(cep_order, fft_length):
-        CepstrumToNegativeDerivativeOfPhaseSpectrum._check(cep_order, fft_length)
+    def _check(*args, **kwargs):
+        CepstrumToNegativeDerivativeOfPhaseSpectrum._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(cep_order, fft_length, dtype=None, device=None):
+    def _precompute(cep_order, fft_length, device=None, dtype=None):
         NegativeDerivativeOfPhaseSpectrumToCepstrum._check(cep_order, fft_length)
         half_fft_length = fft_length // 2
-        ramp = torch.arange(cep_order + 1, dtype=torch.double, device=device)
+        ramp = torch.arange(cep_order + 1, device=device, dtype=torch.double)
         ramp *= half_fft_length
         if cep_order == half_fft_length:
             ramp[-1] *= 2
         ramp[1:] = 1 / ramp[1:]
-        return (cep_order,), (to(ramp, dtype=dtype),)
+        return (cep_order,), None, (to(ramp, dtype=dtype),)
 
     @staticmethod
     def _forward(n, cep_order, ramp):

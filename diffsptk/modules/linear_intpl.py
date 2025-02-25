@@ -15,30 +15,29 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn.functional as F
-from torch import nn
 
+from ..misc.utils import get_values
 from ..misc.utils import replicate1
+from .base import BaseFunctionalModule
 
 
-class LinearInterpolation(nn.Module):
+class LinearInterpolation(BaseFunctionalModule):
     """Perform linear interpolation.
 
-    Note that this is not for linear_intpl in C/C++ version of SPTK, but for
-    filter coefficients interpolation in digital filtering.
+    Note that this is not related to `linear_intpl` in the C/C++ version of SPTK, but
+    is instead intended for interpolation of filter coefficients in digital filtering.
 
     Parameters
     ----------
     upsampling_factor : int >= 1
-        Upsampling factor, :math:`P`.
+        The upsampling factor, :math:`P`.
 
     """
 
     def __init__(self, upsampling_factor):
         super().__init__()
 
-        assert 1 <= upsampling_factor
-
-        self.upsampling_factor = upsampling_factor
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Interpolate filter coefficients.
@@ -46,12 +45,12 @@ class LinearInterpolation(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-            Filter coefficients.
+            The filter coefficients.
 
         Returns
         -------
         out : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
-            Upsampled filter coefficients.
+            The upsampled filter coefficients.
 
         Examples
         --------
@@ -64,7 +63,22 @@ class LinearInterpolation(nn.Module):
         tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
 
         """
-        return self._forward(x, self.upsampling_factor)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = LinearInterpolation._precompute(*args, **kwargs)
+        return LinearInterpolation._forward(x, *values)
+
+    @staticmethod
+    def _check(upsampling_factor):
+        if upsampling_factor <= 0:
+            raise ValueError("The upsampling factor must be positive.")
+
+    @staticmethod
+    def _precompute(upsampling_factor):
+        LinearInterpolation._check(upsampling_factor)
+        return (upsampling_factor,)
 
     @staticmethod
     def _forward(x, upsampling_factor):
@@ -76,9 +90,10 @@ class LinearInterpolation(nn.Module):
             x = x.view(1, -1, 1)
         elif d == 2:
             x = x.unsqueeze(0)
-        assert x.dim() == 3, "Input must be 3D tensor."
-        B, T, D = x.shape
+        if x.dim() != 3:
+            raise ValueError("Input must be 1D, 2D, or 3D tensor.")
 
+        B, T, D = x.shape
         x = x.transpose(-2, -1).contiguous()  # (B, D, T)
         x = replicate1(x, left=False)
         x = F.interpolate(
@@ -94,5 +109,3 @@ class LinearInterpolation(nn.Module):
         elif d == 2:
             y = y.squeeze(0)
         return y
-
-    _func = _forward

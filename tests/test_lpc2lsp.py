@@ -33,13 +33,13 @@ def test_compatibility(device, module, M, out_format, sr=8000, L=32, B=2):
         {"log_gain": True, "sample_rate": sr, "out_format": out_format},
     )
 
-    ksr = sr // 1000
+    s = sr // 1000
     U.check_compatibility(
         device,
         lpc2lsp,
         [],
         f"nrand -l {B * L} | lpc -l {L} -m {M}",
-        f"lpc2lsp -m {M} -o {out_format} -k 1 -s {ksr}",
+        f"lpc2lsp -m {M} -o {out_format} -k 1 -s {s}",
         [],
         dx=M + 1,
         dy=M + 1,

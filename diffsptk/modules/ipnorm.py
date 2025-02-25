@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -35,6 +36,8 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
         super().__init__()
 
         self.in_dim = cep_order + 2
+
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
         """Perform cepstrum inverse power normalization.
@@ -64,7 +67,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
 
     @staticmethod
     def _func(y):
-        MelCepstrumInversePowerNormalization._check(y.size(-1) - 1)
+        MelCepstrumInversePowerNormalization._precompute(y.size(-1) - 1)
         return MelCepstrumInversePowerNormalization._forward(y)
 
     @staticmethod
@@ -73,8 +76,8 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
             raise ValueError("cep_order must be non-negative.")
 
     @staticmethod
-    def _precompute(*args, **kwargs):
-        raise NotImplementedError
+    def _precompute(cep_order):
+        MelCepstrumInversePowerNormalization._check(cep_order)
 
     @staticmethod
     def _forward(y):

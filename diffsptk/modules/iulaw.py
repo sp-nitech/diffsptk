@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .ulaw import MuLawCompression
 
@@ -37,7 +38,7 @@ class MuLawExpansion(BaseFunctionalModule):
     def __init__(self, abs_max=1, mu=255):
         super().__init__()
 
-        self.values = self._precompute(abs_max, mu)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
         """Expand the waveform using the :math:`\\mu`-law algorithm.
@@ -70,8 +71,8 @@ class MuLawExpansion(BaseFunctionalModule):
         return MuLawExpansion._forward(y, *values)
 
     @staticmethod
-    def _check(abs_max, mu):
-        MuLawCompression._check(abs_max, mu)
+    def _check(*args, **kwargs):
+        MuLawCompression._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(abs_max, mu):

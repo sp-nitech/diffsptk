@@ -17,67 +17,66 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.librosa import chroma
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class ChromaFilterBankAnalysis(nn.Module):
-    """Chroma-filter bank analysis.
+class ChromaFilterBankAnalysis(BaseFunctionalModule):
+    """Chroma filter bank analysis module.
 
     Parameters
     ----------
-    n_channel : int >= 1
-        Number of chroma-filter banks, :math:`C`.
-
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
+
+    n_channel : int >= 1
+        The number of chroma-filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     norm : float
-        Normalization factor.
+        The normalization factor.
 
     use_power : bool
-        If True, use power spectrum instead of amplitude spectrum.
+        If True, use the power spectrum instead of the amplitude spectrum.
 
     """
 
     def __init__(
         self,
-        n_channel,
+        *,
         fft_length,
+        n_channel,
         sample_rate,
         norm=float("inf"),
         use_power=True,
+        device=None,
+        dtype=None,
     ):
         super().__init__()
 
-        assert 1 <= n_channel
-        assert 2 <= fft_length
-        assert 1 <= sample_rate
+        self.in_dim = fft_length // 2 + 1
 
-        self.fft_length = fft_length
-        self.norm = norm
-        self.use_power = use_power
-
-        self.register_buffer("H", self._precompute(n_channel, fft_length, sample_rate))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("H", tensors[0])
 
     def forward(self, x):
-        """Apply chroma-filter banks to STFT.
+        """Apply chroma-filter banks to the STFT.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         out : Tensor [shape=(..., C)]
-            Chroma-filter bank output.
+            The chroma filter bank output.
 
         Examples
         --------
@@ -91,8 +90,39 @@ class ChromaFilterBankAnalysis(nn.Module):
                  1.0000, 0.7806, 0.3505]])
 
         """
-        check_size(x.size(-1), self.fft_length // 2 + 1, "dimension of spectrum")
-        return self._forward(x, self.norm, self.use_power, self.H)
+        check_size(x.size(-1), self.in_dim, "dimension of spectrum")
+        return self._forward(x, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values, _, tensors = ChromaFilterBankAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return ChromaFilterBankAnalysis._forward(x, *values, *tensors)
+
+    @staticmethod
+    def _check(fft_length, n_channel, sample_rate):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if n_channel <= 0:
+            raise ValueError("n_channel must be positive.")
+        if sample_rate <= 0:
+            raise ValueError("sample_rate must be positive.")
+
+    @staticmethod
+    def _precompute(
+        fft_length, n_channel, sample_rate, norm, use_power, device=None, dtype=None
+    ):
+        ChromaFilterBankAnalysis._check(fft_length, n_channel, sample_rate)
+        H = chroma(
+            sr=sample_rate,
+            n_fft=fft_length,
+            n_chroma=n_channel,
+            base_c=True,
+            dtype=np.float64,
+        ).T
+        H = torch.from_numpy(H)
+        return (norm, use_power), None, (to(H, device=device, dtype=dtype),)
 
     @staticmethod
     def _forward(x, norm, use_power, H):
@@ -100,32 +130,3 @@ class ChromaFilterBankAnalysis(nn.Module):
         y = torch.matmul(y, H)
         y = F.normalize(y, p=norm, dim=-1)
         return y
-
-    @staticmethod
-    def _func(
-        x,
-        n_channel,
-        sample_rate,
-        norm,
-        use_power,
-    ):
-        H = ChromaFilterBankAnalysis._precompute(
-            n_channel,
-            2 * (x.size(-1) - 1),
-            sample_rate,
-            dtype=x.dtype,
-            device=x.device,
-        )
-        return ChromaFilterBankAnalysis._forward(x, norm, use_power, H)
-
-    @staticmethod
-    def _precompute(n_channel, fft_length, sample_rate, dtype=None, device=None):
-        weights = chroma(
-            sr=sample_rate,
-            n_fft=fft_length,
-            n_chroma=n_channel,
-            base_c=True,
-            dtype=np.float64,
-        ).T
-        weights = torch.from_numpy(weights)
-        return to(weights, dtype=dtype, device=device)

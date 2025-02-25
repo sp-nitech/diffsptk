@@ -16,7 +16,6 @@
 
 import logging
 import math
-from importlib import import_module
 
 import numpy as np
 import soundfile as sf
@@ -39,9 +38,8 @@ class Lambda(nn.Module):
         return self.func(x, **self.opt)
 
 
-def delayed_import(module_path, item_name):
-    module = import_module(module_path)
-    return getattr(module, item_name)
+def get_values(dictionary, begin=1, end=-1):
+    return list(dictionary.values())[begin:end]
 
 
 def get_logger(name):
@@ -106,13 +104,13 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
-def to(x, dtype=None, device=None):
+def to(x, device=None, dtype=None):
     if dtype is None:
         if torch.is_complex(x):
             dtype = torch_default_complex_dtype()
         else:
             dtype = torch.get_default_dtype()
-    return x.to(dtype=dtype, device=device)
+    return x.to(device=device, dtype=dtype)
 
 
 def to_2d(x):

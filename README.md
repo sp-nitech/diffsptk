@@ -140,6 +140,8 @@ pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
     frame_period=fp,
     sample_rate=sr,
     fft_length=n_fft,
+    algorithm="cheap-trick",
+    out_format="power",
 )
 H = pitch_spec(x, f0)
 
@@ -221,8 +223,8 @@ X = stft(x)
 
 # Extract log mel-spectrogram.
 fbank = diffsptk.MelFilterBankAnalysis(
-    n_channel=n_channel,
     fft_length=n_fft,
+    n_channel=n_channel,
     sample_rate=sr,
 )
 Y = fbank(X)
@@ -230,9 +232,9 @@ print(Y.shape)
 
 # Extract MFCC.
 mfcc = diffsptk.MFCC(
+    fft_length=n_fft,
     mfcc_order=M,
     n_channel=n_channel,
-    fft_length=n_fft,
     sample_rate=sr,
 )
 Y = mfcc(X)
@@ -240,9 +242,9 @@ print(Y.shape)
 
 # Extract PLP.
 plp = diffsptk.PLP(
+    fft_length=n_fft,
     plp_order=M,
     n_channel=n_channel,
-    fft_length=n_fft,
     sample_rate=sr,
 )
 Y = plp(X)

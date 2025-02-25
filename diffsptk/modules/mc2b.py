@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule
@@ -42,12 +43,12 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order, alpha=0, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        _, tensors = self._precompute(cep_order, alpha)
+        _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, mc):
@@ -86,18 +87,18 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         return b
 
     @staticmethod
-    def _check(cep_order, alpha):
-        MLSADigitalFilterCoefficientsToMelCepstrum._check(cep_order, alpha)
+    def _check(*args, **kwargs):
+        MLSADigitalFilterCoefficientsToMelCepstrum._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(cep_order, alpha):
+    def _precompute(cep_order, alpha, device=None, dtype=None):
         MelCepstrumToMLSADigitalFilterCoefficients._check(cep_order, alpha)
         a = 1
-        A = torch.eye(cep_order + 1, dtype=torch.double)
+        A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
         for m in range(1, len(A)):
             a *= -alpha
             A[:, m:].fill_diagonal_(a)
-        return None, (to(A.T),)
+        return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod
     def _forward(mc, A):

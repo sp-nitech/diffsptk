@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import plateau
 from ..misc.utils import to
 from .base import BaseFunctionalModule
@@ -36,12 +37,12 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dct_length, dct_type=2):
+    def __init__(self, dct_length, dct_type=2, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = dct_length
 
-        _, tensors = self._precompute(dct_length, dct_type)
+        _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x):
@@ -71,8 +72,8 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, tensors = DiscreteCosineTransform._precompute(
-            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
+        _, _, tensors = DiscreteCosineTransform._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return DiscreteCosineTransform._forward(x, *tensors)
 
@@ -84,11 +85,12 @@ class DiscreteCosineTransform(BaseFunctionalModule):
             raise ValueError("dct_type must be in [1, 4].")
 
     @staticmethod
-    def _precompute(dct_length, dct_type, dtype=None, device=None):
+    def _precompute(dct_length, dct_type=2, device=None, dtype=None):
         DiscreteCosineTransform._check(dct_length, dct_type)
+        param = {"device": device, "dtype": torch.double}
         L = dct_length
-        n = torch.arange(L, dtype=torch.double, device=device)
-        k = torch.arange(L, dtype=torch.double, device=device)
+        n = torch.arange(L, **param)
+        k = torch.arange(L, **param)
         if dct_type == 2 or dct_type == 4:
             n += 0.5
         if dct_type == 3 or dct_type == 4:
@@ -97,14 +99,14 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
         if dct_type == 1:
             c = (1 / 2) ** 0.5
-            z0 = plateau(L, c, 1, c, dtype=torch.double, device=device)
-            z1 = plateau(L, 1, 2, 1, dtype=torch.double, device=device)
+            z0 = plateau(L, c, 1, c, **param)
+            z1 = plateau(L, 1, 2, 1, **param)
             z = z0.unsqueeze(0) * torch.sqrt(z1 / (L - 1)).unsqueeze(1)
         elif dct_type == 2:
-            z = plateau(L, 1, 2, dtype=torch.double, device=device)
+            z = plateau(L, 1, 2, **param)
             z = torch.sqrt(z / L).unsqueeze(0)
         elif dct_type == 3:
-            z = plateau(L, 1, 2, dtype=torch.double, device=device)
+            z = plateau(L, 1, 2, **param)
             z = torch.sqrt(z / L).unsqueeze(1)
         elif dct_type == 4:
             z = (2 / L) ** 0.5
@@ -112,7 +114,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
             raise ValueError(f"dct_type {dct_type} is not supported.")
 
         W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
-        return None, (to(W, dtype=dtype),)
+        return None, None, (to(W, dtype=dtype),)
 
     @staticmethod
     def _forward(x, W):

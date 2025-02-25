@@ -17,23 +17,24 @@
 import numpy as np
 import torch
 from scipy.linalg import hadamard
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import is_power_of_two
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class WalshHadamardTransform(nn.Module):
+class WalshHadamardTransform(BaseFunctionalModule):
     """Walsh-Hadamard Transform module.
 
     Parameters
     ----------
     wht_length : int >= 1
-        WHT length, :math:`L`, must be a power of 2.
+        The WHT length, :math:`L`, must be a power of 2.
 
     wht_type : ['sequency', 'natural', 'dyadic']
-        Order of coefficients of Walsh matrix.
+        The order of coefficients of the Walsh matrix.
 
     References
     ----------
@@ -43,27 +44,26 @@ class WalshHadamardTransform(nn.Module):
 
     """
 
-    def __init__(self, wht_length, wht_type="natural"):
+    def __init__(self, wht_length, wht_type="natural", device=None, dtype=None):
         super().__init__()
 
-        assert is_power_of_two(wht_length)
-        assert wht_type in (1, 2, 3, "sequency", "natural", "dyadic")
+        self.in_dim = wht_length
 
-        self.wht_length = wht_length
-        self.register_buffer("W", self._precompute(wht_length, wht_type))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("W", tensors[0])
 
     def forward(self, x):
-        """Apply WHT to input.
+        """Apply WHT to the input.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            WHT output.
+            The WHT output.
 
         Examples
         --------
@@ -77,24 +77,27 @@ class WalshHadamardTransform(nn.Module):
         tensor([0., 1., 2., 3.])
 
         """
-        check_size(x.size(-1), self.wht_length, "dimension of input")
-        return self._forward(x, self.W)
+        check_size(x.size(-1), self.in_dim, "dimension of input")
+        return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x, wht_type):
-        W = WalshHadamardTransform._precompute(
-            x.size(-1), wht_type, dtype=x.dtype, device=x.device
+    def _func(x, *args, **kwargs):
+        _, _, tensors = WalshHadamardTransform._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return WalshHadamardTransform._forward(x, W)
+        return WalshHadamardTransform._forward(x, *tensors)
 
     @staticmethod
-    def _precompute(length, wht_type, dtype=None, device=None):
-        z = 2 ** -(np.log2(length) / 2)
-        W = hadamard(length)
+    def _check(wht_length):
+        if wht_length <= 0 or not is_power_of_two(wht_length):
+            raise ValueError("wht_length must be a power of 2.")
+
+    @staticmethod
+    def _precompute(wht_length, wht_type, device=None, dtype=None):
+        WalshHadamardTransform._check(wht_length)
+        L = wht_length
+        z = 2 ** -(np.log2(L) / 2)
+        W = hadamard(L)
         if wht_type in (1, "sequency"):
             sign_changes = np.sum(np.abs(np.diff(W, axis=1)), axis=1)
             W = W[np.argsort(sign_changes)]
@@ -102,14 +105,18 @@ class WalshHadamardTransform(nn.Module):
             pass
         elif wht_type in (3, "dyadic"):
             gray_bits = [
-                [int(x) for x in np.binary_repr(i, width=int(np.log2(length)))]
-                for i in range(length)
+                [int(x) for x in np.binary_repr(i, width=int(np.log2(L)))]
+                for i in range(L)
             ]
             binary_bits = np.bitwise_xor.accumulate(gray_bits, axis=1)
             permutation = [int("".join(row), 2) for row in binary_bits.astype(str)]
             sign_changes = np.sum(np.abs(np.diff(W, axis=1)), axis=1)
             W = W[np.argsort(sign_changes)][permutation]
         else:
-            raise ValueError
+            raise ValueError(f"wht_type {wht_type} is not supported.")
         W = torch.from_numpy(W * z)
-        return to(W, dtype=dtype, device=device)
+        return None, None, (to(W, device=device, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, W):
+        return torch.matmul(x, W)

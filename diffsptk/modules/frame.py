@@ -16,6 +16,7 @@
 
 import torch.nn.functional as F
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -47,7 +48,7 @@ class Frame(BaseFunctionalModule):
     ):
         super().__init__()
 
-        self.values = self._precompute(frame_length, frame_period, center, zmean, mode)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Apply framing to the given waveform.
@@ -83,7 +84,7 @@ class Frame(BaseFunctionalModule):
         return Frame._forward(x, *values)
 
     @staticmethod
-    def _check(frame_length, frame_period, center, zmean, mode):
+    def _check(frame_length, frame_period):
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if frame_period <= 0:
@@ -93,7 +94,7 @@ class Frame(BaseFunctionalModule):
     def _precompute(
         frame_length, frame_period, center=True, zmean=False, mode="constant"
     ):
-        Frame._check(frame_length, frame_period, center, zmean, mode)
+        Frame._check(frame_length, frame_period)
         return (
             frame_length,
             frame_period,

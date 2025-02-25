@@ -22,6 +22,7 @@ from torch import nn
 
 from ..misc.utils import next_power_of_two
 from ..misc.utils import numpy_to_torch
+from .base import BaseNonFunctionalModule
 
 
 def make_filter_banks(
@@ -39,45 +40,52 @@ def make_filter_banks(
     Parameters
     ----------
     n_band : int >= 1
-        Number of subbands, :math:`K`.
+        The number of subbands, :math:`K`.
 
-    filter_order : int >= 1
-        Order of filter, :math:`M`.
+    filter_order : int >= 2
+        The order of the filters, :math:`M`.
 
     mode : ['analysis' or 'synthesis']
         Analysis or synthesis.
 
     alpha : float > 0
-        Stopband attenuation in dB.
+        The stopband attenuation in dB.
 
     n_iter : int >= 1
-        Number of iterations.
+        The number of iterations to find optimal filter-bank coefficients.
 
     step_size : float > 0
-        Step size.
+        The step size of optimization.
 
     decay : float > 0
-        Decay factor of step size.
+        The decay factor of the step size.
 
     eps : float >= 0
-        Tolerance.
+        The convergence criterion.
 
     Returns
     -------
     filters : ndarray [shape=(K, M + 1)]
-        Filter-bank coefficients.
+        The filter-bank coefficients.
 
     is_converged : bool
-        Whether the algorithm converged.
+        Whether the optimization is converged.
 
     """
-    assert 1 <= n_band
-    assert 1 <= filter_order
-    assert 1 <= n_iter
-    assert 0 < alpha
-    assert 0 < step_size
-    assert 0 < decay
-    assert 0 <= eps
+    if n_band <= 0:
+        raise ValueError("n_band must be positive.")
+    if filter_order <= 1:
+        raise ValueError("filter_order must be greater than or equal to 2.")
+    if n_iter <= 0:
+        raise ValueError("n_iter must be positive.")
+    if alpha <= 0:
+        raise ValueError("alpha must be positive.")
+    if step_size <= 0:
+        raise ValueError("step_size must be positive.")
+    if decay <= 0:
+        raise ValueError("decay must be positive.")
+    if eps < 0:
+        raise ValueError("eps must be non-negative.")
 
     def alpha_to_beta(alpha):
         if alpha <= 21:
@@ -139,26 +147,26 @@ def make_filter_banks(
     return filters, is_converged
 
 
-class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
+class PseudoQuadratureMirrorFilterBankAnalysis(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pqmf.html>`_
     for details.
 
     Parameters
     ----------
     n_band : int >= 1
-        Number of subbands, :math:`K`.
+        The number of subbands, :math:`K`.
 
     filter_order : int >= 2
-        Order of filter, :math:`M`.
+        The order of the filters, :math:`M`.
 
     alpha : float > 0
-        Stopband attenuation in dB.
+        The stopband attenuation in dB.
 
     learnable : bool
-        Whether to make filter-bank coefficients learnable.
+        Whether to make the filter-bank coefficients learnable.
 
     **kwargs : additional keyword arguments
-        Parameters to find optimal filter-bank coefficients.
+        The parameters to find optimal filter-bank coefficients.
 
     References
     ----------
@@ -173,10 +181,6 @@ class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
 
     def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
         super().__init__()
-
-        assert 1 <= n_band
-        assert 2 <= filter_order
-        assert 0 < alpha
 
         # Make filterbanks.
         filters, is_converged = make_filter_banks(
@@ -199,9 +203,9 @@ class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
         else:
             delay_left = (filter_order + 1) // 2
             delay_right = (filter_order - 1) // 2
-
         self.pad = nn.Sequential(
-            nn.ConstantPad1d((delay_left, 0), 0), nn.ReplicationPad1d((0, delay_right))
+            nn.ConstantPad1d((delay_left, 0), 0),
+            nn.ReplicationPad1d((0, delay_right)),
         )
 
     def forward(self, x):
@@ -210,12 +214,12 @@ class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(B, 1, T) or (B, T) or (T,)]
-            Original waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(B, K, T)]
-            Subband waveforms.
+            The subband waveforms.
 
         Examples
         --------
@@ -231,7 +235,8 @@ class PseudoQuadratureMirrorFilterBankAnalysis(nn.Module):
             x = x.view(1, 1, -1)
         elif x.dim() == 2:
             x = x.unsqueeze(1)
-        assert x.dim() == 3, "Input must be 3D tensor."
+        if x.dim() != 3:
+            raise ValueError("Input must be 1D tensor.")
 
         y = F.conv1d(self.pad(x), self.filters)
         return y

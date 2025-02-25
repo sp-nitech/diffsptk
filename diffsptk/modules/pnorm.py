@@ -42,7 +42,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
     def __init__(self, cep_order, alpha=0, ir_length=128):
         super().__init__()
 
-        _, _, layers = self._precompute(cep_order, alpha, ir_length)
+        _, layers, _ = self._precompute(cep_order, alpha, ir_length)
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
@@ -71,7 +71,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, _, layers = MelCepstrumPowerNormalization._precompute(
+        _, layers, _ = MelCepstrumPowerNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs, module=False
         )
         return MelCepstrumPowerNormalization._forward(x, *layers)
@@ -88,7 +88,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         else:
             freqt = lambda mc: FrequencyTransform._func(mc, ir_length - 1, -alpha)
             c2acr = lambda c: CepstrumToAutocorrelation._func(c, 0, ir_length)
-        return None, None, (freqt, c2acr)
+        return None, (freqt, c2acr), None
 
     @staticmethod
     def _forward(x, freqt, c2acr):

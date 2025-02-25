@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .decimate import Decimation
 
@@ -40,7 +41,7 @@ class Interpolation(BaseFunctionalModule):
     def __init__(self, period, start=0, dim=-1):
         super().__init__()
 
-        self.values = self._precompute(period, start, dim)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Interpolate the input signal.
@@ -72,12 +73,12 @@ class Interpolation(BaseFunctionalModule):
         return Interpolation._forward(x, *values)
 
     @staticmethod
-    def _check(period, start, dim):
-        Decimation._check(period, start, dim)
+    def _check(*args, **kwargs):
+        Decimation._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(period, start, dim):
-        return Decimation._precompute(period, start, dim)
+    def _precompute(*args, **kwargs):
+        return Decimation._precompute(*args, **kwargs)
 
     @staticmethod
     def _forward(x, period, start, dim):
@@ -88,7 +89,7 @@ class Interpolation(BaseFunctionalModule):
         output_size = list(x.shape)
         output_size[dim] = T
 
-        y = torch.zeros(output_size, dtype=x.dtype, device=x.device)
-        indices = torch.arange(start, T, period, dtype=torch.long, device=x.device)
+        y = torch.zeros(output_size, device=x.device, dtype=x.dtype)
+        indices = torch.arange(start, T, period, device=x.device, dtype=torch.long)
         y.index_copy_(dim, indices, x)
         return y

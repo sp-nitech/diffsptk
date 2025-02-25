@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .quantize import UniformQuantization
 
@@ -40,7 +41,7 @@ class InverseUniformQuantization(BaseFunctionalModule):
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super().__init__()
 
-        self.values = self._precompute(abs_max, n_bit, quantizer)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
         """Dequantize the input waveform.
@@ -75,8 +76,8 @@ class InverseUniformQuantization(BaseFunctionalModule):
         return InverseUniformQuantization._forward(y, *values)
 
     @staticmethod
-    def _check(abs_max, n_bit):
-        UniformQuantization._check(abs_max, n_bit)
+    def _check(*args, **kwargs):
+        UniformQuantization._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(abs_max, n_bit, quantizer):

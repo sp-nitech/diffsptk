@@ -19,6 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 
 
 class RootsToPolynomial(nn.Module):
@@ -40,7 +41,7 @@ class RootsToPolynomial(nn.Module):
 
         self.in_dim = order
 
-        self.values = self._precompute(order, eps)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Convert roots to polynomial coefficients.

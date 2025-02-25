@@ -18,6 +18,7 @@ import torch
 
 from ..misc.utils import cas
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
 
@@ -35,12 +36,12 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dht_length, dht_type=2):
+    def __init__(self, dht_length, dht_type=2, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = dht_length
 
-        _, tensors = self._precompute(dht_length, dht_type)
+        _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x):
@@ -70,8 +71,8 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, tensors = DiscreteHartleyTransform._precompute(
-            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
+        _, _, tensors = DiscreteHartleyTransform._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return DiscreteHartleyTransform._forward(x, *tensors)
 
@@ -83,11 +84,12 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
             raise ValueError("dht_type must be in [1, 4].")
 
     @staticmethod
-    def _precompute(dht_length, dht_type, dtype=None, device=None):
+    def _precompute(dht_length, dht_type, device=None, dtype=None):
         DiscreteHartleyTransform._check(dht_length, dht_type)
+        param = {"device": device, "dtype": torch.double}
         L = dht_length
-        n = torch.arange(L, dtype=torch.double, device=device)
-        k = torch.arange(L, dtype=torch.double, device=device)
+        n = torch.arange(L, **param)
+        k = torch.arange(L, **param)
         if dht_type == 2 or dht_type == 4:
             n += 0.5
         if dht_type == 3 or dht_type == 4:
@@ -95,7 +97,7 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
         n *= 2 * torch.pi / L
         z = L**-0.5
         W = z * cas(k.unsqueeze(0) * n.unsqueeze(1))
-        return None, (to(W, dtype=dtype),)
+        return None, None, (to(W, dtype=dtype),)
 
     @staticmethod
     def _forward(x, W):

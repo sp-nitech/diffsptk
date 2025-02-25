@@ -14,55 +14,58 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
 import torch
 from torch import nn
 
+from ..misc.utils import get_values
 from ..misc.utils import numpy_to_torch
 from ..misc.utils import replicate1
+from ..misc.utils import to
+from .base import BaseFunctionalModule
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
-class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
+class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/plp.html>`_
     for details.
 
     Parameters
     ----------
-    mfcc_order : int >= 1
-        Order of MFCC, :math:`M`.
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
+
+    plp_order : int >= 1
+        The order of the PLP, :math:`M`.
 
     n_channel : int >= 1
-        Number of mel-filter banks, :math:`C`.
-
-    fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        Number of mel filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
-
-    lifter : int >= 1
-        Liftering coefficient.
+        The sample rate in Hz.
 
     compression_factor : float > 0
-        Amplitude compression factor.
+        The amplitude compression factor.
+
+    lifter : int >= 1
+        The liftering coefficient.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     floor : float > 0
-        Minimum mel-filter bank output in linear scale.
+        The minimum mel filter bank output in linear scale.
 
     n_fft : int >> M
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins for the conversion from LPC to cepstrum.
+        The accurate conversion requires the large value.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
-        `y` is MFCC, `c` is C0, and `E` is energy.
+        `y` is PLP, `c` is C0, and `E` is energy.
 
     References
     ----------
@@ -72,71 +75,44 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
 
     def __init__(
         self,
+        *,
+        fft_length,
         plp_order,
         n_channel,
-        fft_length,
         sample_rate,
-        lifter=1,
         compression_factor=0.33,
+        lifter=1,
+        f_min=0,
+        f_max=None,
+        floor=1e-5,
         n_fft=512,
         out_format="y",
-        **fbank_kwargs,
     ):
         super().__init__()
 
-        assert 1 <= plp_order < n_channel
-        assert 1 <= lifter
-        assert 0 < compression_factor
-
-        self.plp_order = plp_order
-        self.compression_factor = compression_factor
-        self.formatter = self._formatter(out_format)
-
-        self.fbank = MelFilterBankAnalysis(
-            n_channel,
-            fft_length,
-            sample_rate,
-            use_power=True,
-            out_format="y,E",
-            **fbank_kwargs,
-        )
-        self.levdur = LevinsonDurbin(self.plp_order)
-        self.lpc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            self.plp_order,
-            self.plp_order,
-            in_gamma=-1,
-            in_norm=True,
-            in_mul=True,
-            n_fft=n_fft,
-        )
-
-        f = self.fbank.center_frequencies[:-1] ** 2
-        e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
-        self.register_buffer("equal_loudness_curve", numpy_to_torch(e))
-
-        m = np.arange(self.plp_order + 1)
-        v = 1 + (lifter / 2) * np.sin((np.pi / lifter) * m)
-        v[0] = 2
-        self.register_buffer("liftering_vector", numpy_to_torch(v))
+        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
+        self.register_buffer("equal_loudness_curve", tensors[0])
+        self.register_buffer("liftering_vector", tensors[1])
 
     def forward(self, x):
-        """Compute PLP.
+        """Compute the PLP from the power spectrum.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         y : Tensor [shape=(..., M)]
-            PLP without C0.
+            The PLP without C0.
 
         E : Tensor [shape=(..., 1)] (optional)
-            Energy.
+            The energy.
 
         c : Tensor [shape=(..., 1)] (optional)
-            C0.
+            The C0.
 
         Examples
         --------
@@ -149,24 +125,119 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(nn.Module):
                 [ 0.4468, -0.5820,  0.0104, -0.0505]])
 
         """
-        y, E = self.fbank(x)
-        y = (torch.exp(y) * self.equal_loudness_curve) ** self.compression_factor
-        y = replicate1(y)
-        y = torch.fft.hfft(y, norm="forward")[..., : self.plp_order + 1].real
-        y = self.levdur(y)
-        y = self.lpc2c(y)
-        y *= self.liftering_vector
-        c, y = torch.split(y, [1, self.plp_order], dim=-1)
-        return self.formatter(y, c, E)
+        return self._forward(x, *self.values, *self.layers, **self._buffers)
 
     @staticmethod
-    def _formatter(out_format):
+    def _func(x, *args, **kwargs):
+        values, layers, tensors = (
+            PerceptualLinearPredictiveCoefficientsAnalysis._precompute(
+                2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+            )
+        )
+        return PerceptualLinearPredictiveCoefficientsAnalysis._forward(
+            x, *values, *layers, *tensors
+        )
+
+    @staticmethod
+    def _check(plp_order, n_channel, compression_factor, lifter):
+        if plp_order < 0:
+            raise ValueError("plp_order must be non-negative.")
+        if n_channel <= plp_order:
+            raise ValueError("plp_order must be less than n_channel.")
+        if compression_factor <= 0:
+            raise ValueError("compression_factor must be positive.")
+        if lifter < 0:
+            raise ValueError("lifter must be non-negative.")
+
+    @staticmethod
+    def _precompute(
+        fft_length,
+        plp_order,
+        n_channel,
+        sample_rate,
+        compression_factor,
+        lifter,
+        f_min,
+        f_max,
+        floor,
+        n_fft,
+        out_format,
+        device=None,
+        dtype=None,
+    ):
+        PerceptualLinearPredictiveCoefficientsAnalysis._check(
+            plp_order, n_channel, compression_factor, lifter
+        )
+
         if out_format in (0, "y"):
-            return lambda y, c, E: y
+            formatter = lambda y, c, E: y
         elif out_format in (1, "yE"):
-            return lambda y, c, E: torch.cat((y, E), dim=-1)
+            formatter = lambda y, c, E: torch.cat((y, E), dim=-1)
         elif out_format in (2, "yc"):
-            return lambda y, c, E: torch.cat((y, c), dim=-1)
+            formatter = lambda y, c, E: torch.cat((y, c), dim=-1)
         elif out_format in (3, "ycE"):
-            return lambda y, c, E: torch.cat((y, c, E), dim=-1)
-        raise ValueError(f"out_format {out_format} is not supported.")
+            formatter = lambda y, c, E: torch.cat((y, c, E), dim=-1)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        fbank = MelFilterBankAnalysis(
+            fft_length=fft_length,
+            n_channel=n_channel,
+            sample_rate=sample_rate,
+            f_min=f_min,
+            f_max=f_max,
+            floor=floor,
+            use_power=True,
+            out_format="y,E",
+            device=device,
+            dtype=dtype,
+        )
+        levdur = LevinsonDurbin(
+            plp_order,
+            device=device,
+            dtype=dtype,
+        )
+        lpc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+            plp_order,
+            plp_order,
+            in_gamma=-1,
+            in_norm=True,
+            in_mul=True,
+            n_fft=n_fft,
+        )
+
+        f = fbank.center_frequencies[:-1] ** 2
+        e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
+        equal_loudness_curve = numpy_to_torch(e)
+
+        ramp = torch.arange(plp_order + 1, device=device, dtype=torch.double)
+        liftering_vector = 1 + (lifter / 2) * torch.sin((torch.pi / lifter) * ramp)
+        liftering_vector[0] = 2
+
+        return (
+            (compression_factor, formatter),
+            (fbank, levdur, lpc2c),
+            (
+                to(equal_loudness_curve, device=device, dtype=dtype),
+                to(liftering_vector, dtype=dtype),
+            ),
+        )
+
+    @staticmethod
+    def _forward(
+        x,
+        compression_factor,
+        formatter,
+        fbank,
+        levdur,
+        lpc2c,
+        equal_loudness_curve,
+        liftering_vector,
+    ):
+        y, E = fbank(x)
+        y = (torch.exp(y) * equal_loudness_curve) ** compression_factor
+        y = replicate1(y)
+        y = torch.fft.hfft(y, norm="forward")[..., : len(liftering_vector)].real
+        y = lpc2c(levdur(y)) * liftering_vector
+        c, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
+        return formatter(y, c, E)

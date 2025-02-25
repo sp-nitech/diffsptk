@@ -18,6 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
 
@@ -42,12 +43,12 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order, alpha=0, device=None, dtype=None):
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        _, tensors = self._precompute(cep_order, alpha)
+        _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, b):
@@ -89,11 +90,11 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
             raise ValueError("alpha must be in (-1, 1).")
 
     @staticmethod
-    def _precompute(cep_order, alpha):
+    def _precompute(cep_order, alpha, device=None, dtype=None):
         MLSADigitalFilterCoefficientsToMelCepstrum._check(cep_order, alpha)
-        A = torch.eye(cep_order + 1, dtype=torch.double)
+        A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
         A[:, 1:].fill_diagonal_(alpha)
-        return None, (to(A.T),)
+        return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod
     def _forward(b, A):

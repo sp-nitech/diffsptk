@@ -16,41 +16,42 @@
 
 import numpy as np
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class MelFilterBankAnalysis(nn.Module):
+class MelFilterBankAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/fbank.html>`_
     for details.
 
     Parameters
     ----------
-    n_channel : int >= 1
-        Number of mel-filter banks, :math:`C`.
-
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     floor : float > 0
-        Minimum mel-filter bank output in linear scale.
+        The minimum mel filter bank output in linear scale.
 
     use_power : bool
-        If True, use power spectrum instead of amplitude spectrum.
+        If True, use the power spectrum instead of the amplitude spectrum.
 
     out_format : ['y', 'yE', 'y,E']
-        `y` is mel-filber bank output and `E` is energy. If this is `yE`, the two output
+        `y` is mel filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
     References
@@ -61,49 +62,41 @@ class MelFilterBankAnalysis(nn.Module):
 
     def __init__(
         self,
-        n_channel,
-        fft_length,
-        sample_rate,
         *,
+        fft_length,
+        n_channel,
+        sample_rate,
         f_min=0,
         f_max=None,
         floor=1e-5,
         use_power=False,
         out_format="y",
+        device=None,
+        dtype=None,
     ):
         super().__init__()
 
-        assert 1 <= n_channel
-        assert 2 <= fft_length
-        assert 1 <= sample_rate
-        assert 0 <= f_min < sample_rate / 2
-        assert 0 < floor
+        self.in_dim = fft_length // 2 + 1
 
-        self.fft_length = fft_length
-        self.floor = floor
-        self.use_power = use_power
-        self.formatter = self._formatter(out_format)
-        H, center_frequencies = self._precompute(
-            n_channel, fft_length, sample_rate, f_min, f_max
-        )
-        self.register_buffer("H", H)
-        self.center_frequencies = center_frequencies  # For PLP.
+        self.values, _, tensors, others = self._precompute(*get_values(locals()))
+        self.register_buffer("H", tensors[0])
+        self.center_frequencies = others[0]  # For PLP.
 
     def forward(self, x):
-        """Apply mel-filter banks to STFT.
+        """Apply mel filter banks to the STFT.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         y : Tensor [shape=(..., C)]
-            Mel-filter bank output.
+            The mel filter bank output.
 
         E : Tensor [shape=(..., 1)] (optional)
-            Energy.
+            The energy.
 
         Examples
         --------
@@ -116,21 +109,34 @@ class MelFilterBankAnalysis(nn.Module):
                 [3.3640, 3.4518, 2.7717, 0.5088]])
 
         """
-        check_size(x.size(-1), self.fft_length // 2 + 1, "dimension of spectrum")
-        return self._forward(x, self.floor, self.use_power, self.formatter, self.H)
+        check_size(x.size(-1), self.in_dim, "dimension of spectrum")
+        return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _forward(x, floor, use_power, formatter, H):
-        y = x if use_power else torch.sqrt(x)
-        y = torch.matmul(y, H)
-        y = torch.log(torch.clip(y, min=floor))
-        E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
-        E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
-        return formatter(y, E)
+    def _func(x, *args, **kwargs):
+        values, _, tensors, _ = MelFilterBankAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return MelFilterBankAnalysis._forward(x, *values, *tensors)
 
     @staticmethod
-    def _func(
-        x,
+    def _check(fft_length, n_channel, sample_rate, f_min, f_max, floor):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if n_channel <= 0:
+            raise ValueError("n_channel must be positive.")
+        if sample_rate <= 0:
+            raise ValueError("sample_rate must be positive.")
+        if f_min < 0 or sample_rate / 2 <= f_min:
+            raise ValueError("invalid f_min.")
+        if f_max is not None and not (f_min < f_max <= sample_rate / 2):
+            raise ValueError("invalid f_min and f_max.")
+        if floor <= 0:
+            raise ValueError("floor must be positive.")
+
+    @staticmethod
+    def _precompute(
+        fft_length,
         n_channel,
         sample_rate,
         f_min,
@@ -138,23 +144,27 @@ class MelFilterBankAnalysis(nn.Module):
         floor,
         use_power,
         out_format,
+        device=None,
+        dtype=None,
     ):
-        formatter = MelFilterBankAnalysis._formatter(out_format)
-        H, _ = MelFilterBankAnalysis._precompute(
+        MelFilterBankAnalysis._check(
+            fft_length,
             n_channel,
-            2 * (x.size(-1) - 1),
             sample_rate,
             f_min,
             f_max,
-            dtype=x.dtype,
-            device=x.device,
+            floor,
         )
-        return MelFilterBankAnalysis._forward(x, floor, use_power, formatter, H)
 
-    @staticmethod
-    def _precompute(
-        n_channel, fft_length, sample_rate, f_min, f_max, dtype=None, device=None
-    ):
+        if out_format in (0, "y"):
+            formatter = lambda y, E: y
+        elif out_format in (1, "yE"):
+            formatter = lambda y, E: torch.cat((y, E), dim=-1)
+        elif out_format in (2, "y,E"):
+            formatter = lambda y, E: (y, E)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
         if f_max is None:
             f_max = sample_rate / 2
 
@@ -182,7 +192,7 @@ class MelFilterBankAnalysis(nn.Module):
 
         diff = center_frequencies - np.insert(center_frequencies[:-1], 0, mel_min)
         weights = torch.zeros(
-            (fft_length // 2 + 1, n_channel), dtype=torch.double, device=device
+            (fft_length // 2 + 1, n_channel), device=device, dtype=torch.double
         )
         for i, k in enumerate(bin_indices):
             m = lower_channel_map[i]
@@ -192,14 +202,18 @@ class MelFilterBankAnalysis(nn.Module):
             if m < n_channel:
                 weights[k, m] += 1 - w
 
-        return to(weights, dtype=dtype), center_frequencies_in_hz
+        return (
+            (floor, use_power, formatter),
+            None,
+            (to(weights, dtype=dtype),),
+            (center_frequencies_in_hz,),
+        )
 
     @staticmethod
-    def _formatter(out_format):
-        if out_format in (0, "y"):
-            return lambda y, E: y
-        elif out_format in (1, "yE"):
-            return lambda y, E: torch.cat((y, E), dim=-1)
-        elif out_format in (2, "y,E"):
-            return lambda y, E: (y, E)
-        raise ValueError(f"out_format {out_format} is not supported.")
+    def _forward(x, floor, use_power, formatter, H):
+        y = x if use_power else torch.sqrt(x)
+        y = torch.matmul(y, H)
+        y = torch.log(torch.clip(y, min=floor))
+        E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
+        E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
+        return formatter(y, E)

@@ -16,6 +16,7 @@
 
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 
@@ -43,7 +44,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         self.in_dim = lpc_order + 1
 
         self.values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
-            lpc_order, gamma, c
+            *get_values(locals())
         )
 
     def forward(self, k):

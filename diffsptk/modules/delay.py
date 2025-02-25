@@ -16,6 +16,7 @@
 
 import torch.nn.functional as F
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -39,7 +40,7 @@ class Delay(BaseFunctionalModule):
     def __init__(self, start, keeplen=False, dim=-1):
         super().__init__()
 
-        self.values = self._precompute(start, keeplen, dim)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Delay signal.

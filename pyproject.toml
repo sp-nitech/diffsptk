@@ -96,7 +96,7 @@ exclude_lines = [
 disable_warnings = ["couldnt-parse"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=. --cov-report xml -s -x"
+addopts = "-s"
 filterwarnings = [
   "ignore:Casting complex values to real discards the imaginary part",
 ]

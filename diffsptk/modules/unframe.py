@@ -16,6 +16,7 @@
 
 import torch.nn.functional as F
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .window import Window
 
@@ -51,12 +52,12 @@ class Unframe(BaseFunctionalModule):
         center=True,
         window="rectangular",
         norm="none",
+        device=None,
+        dtype=None,
     ):
         super().__init__()
 
-        self.values, tensors = self._precompute(
-            frame_length, frame_period, center, window, norm
-        )
+        self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("window", tensors[0])
 
     def forward(self, y, out_length=None):
@@ -101,8 +102,8 @@ class Unframe(BaseFunctionalModule):
 
     @staticmethod
     def _func(y, out_length, *args, **kwargs):
-        values, tensors = Unframe._precompute(
-            *args, **kwargs, dtype=y.dtype, device=y.device
+        values, _, tensors = Unframe._precompute(
+            *args, **kwargs, device=y.device, dtype=y.dtype
         )
         return Unframe._forward(y, out_length, *values, *tensors)
 
@@ -115,13 +116,13 @@ class Unframe(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        frame_length, frame_period, center, window, norm, dtype=None, device=None
+        frame_length, frame_period, center, window, norm, device=None, dtype=None
     ):
         Unframe._check(frame_length, frame_period, center, window, norm)
         window_ = Window._precompute(
-            frame_length, None, window, norm, dtype=dtype, device=device
-        )[1][0].view(1, -1, 1)
-        return (frame_length, frame_period, center), (window_,)
+            frame_length, None, window, norm, device=device, dtype=dtype
+        )[-1][0].view(1, -1, 1)
+        return (frame_length, frame_period, center), None, (window_,)
 
     @staticmethod
     def _forward(y, out_length, frame_length, frame_period, center, window):
