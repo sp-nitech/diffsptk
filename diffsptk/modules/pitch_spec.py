@@ -39,7 +39,7 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period in sample, :math:`P`.
+        Frame period in samples, :math:`P`.
 
     sample_rate : int >= 8000
         Sample rate in Hz.

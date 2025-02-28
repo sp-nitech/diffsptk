@@ -29,8 +29,7 @@ def test_compatibility(device, module, dht_type, L=8, B=2):
         module,
         diffsptk.IDHT,
         diffsptk.functional.idht,
-        {"dht_length": L},
-        {"dht_type": dht_type},
+        {"dht_length": L, "dht_type": dht_type},
     )
 
     U.check_compatibility(

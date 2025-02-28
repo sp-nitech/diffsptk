@@ -37,7 +37,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dct_length, dct_type=2, device=None, dtype=None):
+    def __init__(self, dct_length, dct_type=2):
         super().__init__()
 
         self.in_dim = dct_length
@@ -78,6 +78,10 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         return DiscreteCosineTransform._forward(x, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(dct_length, dct_type):
         if dct_length <= 0:
             raise ValueError("dct_length must be positive.")
@@ -87,10 +91,10 @@ class DiscreteCosineTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(dct_length, dct_type=2, device=None, dtype=None):
         DiscreteCosineTransform._check(dct_length, dct_type)
-        param = {"device": device, "dtype": torch.double}
+        params = {"device": device, "dtype": torch.double}
         L = dct_length
-        n = torch.arange(L, **param)
-        k = torch.arange(L, **param)
+        n = torch.arange(L, **params)
+        k = torch.arange(L, **params)
         if dct_type == 2 or dct_type == 4:
             n += 0.5
         if dct_type == 3 or dct_type == 4:
@@ -99,14 +103,14 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
         if dct_type == 1:
             c = (1 / 2) ** 0.5
-            z0 = plateau(L, c, 1, c, **param)
-            z1 = plateau(L, 1, 2, 1, **param)
+            z0 = plateau(L, c, 1, c, **params)
+            z1 = plateau(L, 1, 2, 1, **params)
             z = z0.unsqueeze(0) * torch.sqrt(z1 / (L - 1)).unsqueeze(1)
         elif dct_type == 2:
-            z = plateau(L, 1, 2, **param)
+            z = plateau(L, 1, 2, **params)
             z = torch.sqrt(z / L).unsqueeze(0)
         elif dct_type == 3:
-            z = plateau(L, 1, 2, **param)
+            z = plateau(L, 1, 2, **params)
             z = torch.sqrt(z / L).unsqueeze(1)
         elif dct_type == 4:
             z = (2 / L) ** 0.5

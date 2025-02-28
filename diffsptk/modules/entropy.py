@@ -70,20 +70,25 @@ class Entropy(BaseFunctionalModule):
         return Entropy._forward(p, *values)
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
         pass
 
     @staticmethod
     def _precompute(out_format):
         Entropy._check()
         if out_format in (0, "bit"):
-            return (math.log2(math.e),)
+            c = math.log2(math.e)
         elif out_format in (1, "nat"):
-            return (1,)
+            c = 1
         elif out_format in (2, "dit"):
-            return (math.log10(math.e),)
+            c = math.log10(math.e)
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
+        return (c,)
 
     @staticmethod
     def _forward(p, c):

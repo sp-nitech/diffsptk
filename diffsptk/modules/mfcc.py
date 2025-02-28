@@ -14,9 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
+from ..misc.utils import get_layer
 from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
@@ -75,8 +78,6 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         f_max=None,
         floor=1e-5,
         out_format="y",
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -126,6 +127,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         )
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(mfcc_order, n_channel, lifter):
         if mfcc_order < 0:
             raise ValueError("mfcc_order must be non-negative.")
@@ -149,6 +154,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         dtype=None,
     ):
         MelFrequencyCepstralCoefficientsAnalysis._check(mfcc_order, n_channel, lifter)
+        module = inspect.stack()[1].function == "__init__"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y
@@ -161,23 +167,27 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-        fbank = MelFilterBankAnalysis(
-            fft_length=fft_length,
-            n_channel=n_channel,
-            sample_rate=sample_rate,
-            f_min=f_min,
-            f_max=f_max,
-            floor=floor,
-            use_power=False,
-            out_format="y,E",
-            device=device,
-            dtype=dtype,
+        fbank = get_layer(
+            module,
+            MelFilterBankAnalysis,
+            dict(
+                fft_length=fft_length,
+                n_channel=n_channel,
+                sample_rate=sample_rate,
+                f_min=f_min,
+                f_max=f_max,
+                floor=floor,
+                use_power=False,
+                out_format="y,E",
+            ),
         )
-        dct = DiscreteCosineTransform(
-            n_channel,
-            dct_type=2,
-            device=device,
-            dtype=dtype,
+        dct = get_layer(
+            module,
+            DiscreteCosineTransform,
+            dict(
+                dct_length=n_channel,
+                dct_type=2,
+            ),
         )
 
         ramp = torch.arange(mfcc_order + 1, device=device, dtype=torch.double)

@@ -71,6 +71,10 @@ class ALawCompression(BaseFunctionalModule):
         return ALawCompression._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(abs_max, a):
         if abs_max < 0:
             raise ValueError("abs_max must be non-negative.")

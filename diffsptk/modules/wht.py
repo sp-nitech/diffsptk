@@ -34,7 +34,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
         The WHT length, :math:`L`, must be a power of 2.
 
     wht_type : ['sequency', 'natural', 'dyadic']
-        The order of coefficients of the Walsh matrix.
+        The order of the coefficients in the Walsh matrix.
 
     References
     ----------
@@ -44,7 +44,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, wht_length, wht_type="natural", device=None, dtype=None):
+    def __init__(self, wht_length, wht_type="natural"):
         super().__init__()
 
         self.in_dim = wht_length
@@ -86,6 +86,10 @@ class WalshHadamardTransform(BaseFunctionalModule):
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return WalshHadamardTransform._forward(x, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(wht_length):

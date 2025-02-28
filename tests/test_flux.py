@@ -29,9 +29,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
         module,
         diffsptk.Flux,
         diffsptk.functional.flux,
-        {},
         {"lag": lag, "norm": norm, "reduction": reduction},
-        n_input=2,
     )
 
     if reduction == "none":
@@ -66,19 +64,10 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
 
 @pytest.mark.parametrize("module", [False, True])
 def test_special_case(module, T=20):
-    flux1 = U.choice(
+    flux = U.choice(
         module,
         diffsptk.Flux,
         diffsptk.functional.flux,
-        {},
-        n_input=1,
-    )
-    flux2 = U.choice(
-        module,
-        diffsptk.Flux,
-        diffsptk.functional.flux,
-        {},
-        n_input=2,
     )
     x = diffsptk.nrand(T)
-    assert U.allclose(flux1(x), flux2(x, x))
+    assert U.allclose(flux(x), flux(x, x))

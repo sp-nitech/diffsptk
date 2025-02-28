@@ -77,6 +77,10 @@ class InverseDiscreteHartleyTransform(BaseFunctionalModule):
         return InverseDiscreteHartleyTransform._forward(y, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(*args, **kwargs):
         DHT._check(*args, **kwargs)
 

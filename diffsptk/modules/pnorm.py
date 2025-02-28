@@ -14,9 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
+from ..misc.utils import get_layer
 from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
@@ -57,7 +60,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         Returns
         -------
         out : Tensor [shape=(..., M+2)]
-            The power-normalized mel-cepstrum.
+            The log power and power-normalized mel-cepstrum.
 
         Examples
         --------
@@ -78,15 +81,36 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         return MelCepstrumPowerNormalization._forward(x, *layers)
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check():
         pass
 
     @staticmethod
     def _precompute(cep_order, alpha, ir_length, device=None, dtype=None):
-        freqt = FrequencyTransform(
-            cep_order, ir_length - 1, -alpha, device=device, dtype=dtype
+        MelCepstrumPowerNormalization._check()
+        module = inspect.stack()[1].function == "__init__"
+
+        freqt = get_layer(
+            module,
+            FrequencyTransform,
+            dict(
+                in_order=cep_order,
+                out_order=ir_length - 1,
+                alpha=-alpha,
+            ),
         )
-        c2acr = CepstrumToAutocorrelation(ir_length - 1, 0, ir_length)
+        c2acr = get_layer(
+            module,
+            CepstrumToAutocorrelation,
+            dict(
+                cep_order=ir_length - 1,
+                acr_order=0,
+                n_fft=ir_length,
+            ),
+        )
         return None, (freqt, c2acr), None
 
     @staticmethod

@@ -14,9 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
+from ..misc.utils import get_layer
 from ..misc.utils import get_values
 from ..misc.utils import numpy_to_torch
 from ..misc.utils import replicate1
@@ -139,6 +142,10 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         )
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(plp_order, n_channel, compression_factor, lifter):
         if plp_order < 0:
             raise ValueError("plp_order must be non-negative.")
@@ -168,6 +175,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
         )
+        module = inspect.stack()[1].function == "__init__"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y
@@ -180,30 +188,38 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-        fbank = MelFilterBankAnalysis(
-            fft_length=fft_length,
-            n_channel=n_channel,
-            sample_rate=sample_rate,
-            f_min=f_min,
-            f_max=f_max,
-            floor=floor,
-            use_power=True,
-            out_format="y,E",
-            device=device,
-            dtype=dtype,
+        fbank = get_layer(
+            module,
+            MelFilterBankAnalysis,
+            dict(
+                fft_length=fft_length,
+                n_channel=n_channel,
+                sample_rate=sample_rate,
+                f_min=f_min,
+                f_max=f_max,
+                floor=floor,
+                use_power=True,
+                out_format="y,E",
+            ),
         )
-        levdur = LevinsonDurbin(
-            plp_order,
-            device=device,
-            dtype=dtype,
+        levdur = get_layer(
+            module,
+            LevinsonDurbin,
+            dict(
+                lpc_order=plp_order,
+            ),
         )
-        lpc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            plp_order,
-            plp_order,
-            in_gamma=-1,
-            in_norm=True,
-            in_mul=True,
-            n_fft=n_fft,
+        lpc2c = get_layer(
+            module,
+            MelGeneralizedCepstrumToMelGeneralizedCepstrum,
+            dict(
+                in_order=plp_order,
+                out_order=plp_order,
+                in_gamma=-1,
+                in_norm=True,
+                in_mul=True,
+                n_fft=n_fft,
+            ),
         )
 
         f = fbank.center_frequencies[:-1] ** 2

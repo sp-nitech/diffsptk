@@ -14,10 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
 from ..misc.utils import Lambda
+from ..misc.utils import get_layer
 from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .frame import Frame
@@ -31,10 +34,10 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     Parameters
     ----------
     frame_length : int >= 1
-        The frame length in sample, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        The frame period in sample, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     fft_length : int >= L
         The number of FFT bins, :math:`N`.
@@ -80,8 +83,6 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps=1e-9,
         relative_floor=None,
         out_format="power",
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -119,13 +120,18 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     @staticmethod
     def _func(x, *args, **kwargs):
         _, layers, _ = ShortTimeFourierTransform._precompute(
-            *args, **kwargs, device=x.device, dtype=x.dtype
+            *args,
+            **kwargs,
         )
         return ShortTimeFourierTransform._forward(x, *layers)
 
     @staticmethod
-    def _check(*args, **kwargs):
-        raise NotImplementedError
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
 
     @staticmethod
     def _precompute(
@@ -140,26 +146,43 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps,
         relative_floor,
         out_format,
-        device,
-        dtype,
     ):
-        frame = Frame(frame_length, frame_period, center=center, zmean=zmean, mode=mode)
-        window_ = Window(
-            frame_length,
-            fft_length,
-            window=window,
-            norm=norm,
-            device=device,
-            dtype=dtype,
+        ShortTimeFourierTransform._check()
+        module = inspect.stack()[1].function == "__init__"
+
+        frame = get_layer(
+            module,
+            Frame,
+            dict(
+                frame_length=frame_length,
+                frame_period=frame_period,
+                center=center,
+                zmean=zmean,
+                mode=mode,
+            ),
+        )
+        window_ = get_layer(
+            module,
+            Window,
+            dict(
+                in_length=frame_length,
+                out_length=fft_length,
+                window=window,
+                norm=norm,
+            ),
         )
         if out_format == "complex":
             spec = Lambda(torch.fft.rfft)
         else:
-            spec = Spectrum(
-                fft_length,
-                eps=eps,
-                relative_floor=relative_floor,
-                out_format=out_format,
+            spec = get_layer(
+                module,
+                Spectrum,
+                dict(
+                    fft_length=fft_length,
+                    eps=eps,
+                    relative_floor=relative_floor,
+                    out_format=out_format,
+                ),
             )
         return None, (frame, window_, spec), None
 

@@ -29,11 +29,10 @@ def test_compatibility(device, module, wht_type, L=8, B=2):
         module,
         diffsptk.WHT,
         diffsptk.functional.wht,
-        {"wht_length": L},
-        {"wht_type": wht_type},
+        {"wht_length": L, "wht_type": wht_type},
     )
 
-    if device == "cuda" and module:
+    if device == "cpu" and module:
         if wht_type == 1:
             H = np.array(
                 [

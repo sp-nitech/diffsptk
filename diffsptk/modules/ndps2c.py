@@ -20,7 +20,6 @@ from ..misc.utils import check_size
 from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
-from .c2ndps import CepstrumToNegativeDerivativeOfPhaseSpectrum
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
@@ -29,11 +28,11 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
     Parameters
     ----------
-    cep_order : int >= 0
-        The order of the cepstrum, :math:`M`.
-
     fft_length : int >= 2
         The number of FFT bins, :math:`L`.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
 
     References
     ----------
@@ -42,7 +41,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, fft_length, device=None, dtype=None):
+    def __init__(self, fft_length, cep_order):
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
@@ -76,26 +75,30 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
         return self._forward(n, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(n, cep_order, *args, **kwargs):
+    def _func(n, *args, **kwargs):
         values, _, tensors = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute(
-            cep_order,
-            2 * n.size(-1) - 2,
-            *args,
-            **kwargs,
-            device=n.device,
-            dtype=n.dtype,
+            2 * n.size(-1) - 2, *args, **kwargs, device=n.device, dtype=n.dtype
         )
         return NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
             n, *values, *tensors
         )
 
     @staticmethod
-    def _check(*args, **kwargs):
-        CepstrumToNegativeDerivativeOfPhaseSpectrum._check(*args, **kwargs)
+    def _takes_input_size():
+        return True
 
     @staticmethod
-    def _precompute(cep_order, fft_length, device=None, dtype=None):
-        NegativeDerivativeOfPhaseSpectrumToCepstrum._check(cep_order, fft_length)
+    def _check(fft_length, cep_order):
+        if fft_length // 2 < max(1, cep_order):
+            raise ValueError(
+                "half of fft_length must be greater than or equal to cep_order."
+            )
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+
+    @staticmethod
+    def _precompute(fft_length, cep_order, device=None, dtype=None):
+        NegativeDerivativeOfPhaseSpectrumToCepstrum._check(fft_length, cep_order)
         half_fft_length = fft_length // 2
         ramp = torch.arange(cep_order + 1, device=device, dtype=torch.double)
         ramp *= half_fft_length

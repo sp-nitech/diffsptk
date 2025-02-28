@@ -38,7 +38,6 @@ def test_compatibility(device, module, T=19200):
         module,
         diffsptk.ISTFT,
         diffsptk.functional.istft,
-        {},
         stft_params,
     )
 

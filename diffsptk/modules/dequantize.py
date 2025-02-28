@@ -76,6 +76,10 @@ class InverseUniformQuantization(BaseFunctionalModule):
         return InverseUniformQuantization._forward(y, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(*args, **kwargs):
         UniformQuantization._check(*args, **kwargs)
 

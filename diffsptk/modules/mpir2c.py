@@ -15,33 +15,32 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import clog
 from ..misc.utils import get_values
-from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
+from .base import BaseFunctionalModule
 
 
-class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
+class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mpir2c.html>`_
     for details.
 
     Parameters
     ----------
-    cep_order : int >= 0
-        The order of the cepstrum, :math:`M`.
-
     ir_length : int >= 1
         The length of the impulse response, :math:`N`.
 
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
     n_fft : int >> N
         The number of FFT bins used for conversion. The accurate conversion requires the
-        large vlaue.
+        large value.
 
     """
 
-    def __init__(self, cep_order, ir_length, n_fft=512):
+    def __init__(self, ir_length, cep_order, n_fft=512):
         super().__init__()
 
         self.in_dim = ir_length
@@ -74,19 +73,28 @@ class MinimumPhaseImpulseResponseToCepstrum(nn.Module):
         return self._forward(h, *self.values)
 
     @staticmethod
-    def _func(h, cep_order, *args, **kwargs):
+    def _func(h, *args, **kwargs):
         values = MinimumPhaseImpulseResponseToCepstrum._precompute(
-            cep_order, h.size(-1), *args, **kwargs
+            h.size(-1), *args, **kwargs
         )
         return MinimumPhaseImpulseResponseToCepstrum._forward(h, *values)
 
     @staticmethod
-    def _check(*args, **kwargs):
-        CepstrumToMinimumPhaseImpulseResponse._check(*args, **kwargs)
+    def _takes_input_size():
+        return True
 
     @staticmethod
-    def _precompute(cep_order, ir_length, n_fft):
-        MinimumPhaseImpulseResponseToCepstrum._check(cep_order, ir_length, n_fft)
+    def _check(ir_length, cep_order, n_fft):
+        if ir_length <= 0:
+            raise ValueError("ir_length must be positive.")
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if n_fft < max(cep_order + 1, ir_length):
+            raise ValueError("n_fft must be large value.")
+
+    @staticmethod
+    def _precompute(ir_length, cep_order, n_fft):
+        MinimumPhaseImpulseResponseToCepstrum._check(ir_length, cep_order, n_fft)
         return (cep_order, n_fft)
 
     @staticmethod

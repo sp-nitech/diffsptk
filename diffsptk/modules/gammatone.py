@@ -18,38 +18,38 @@ import math
 
 import numpy as np
 import torch
-from torch import nn
 
 from ..misc.utils import TAU
+from .base import BaseNonFunctionalModule
 from .poledf import AllPoleDigitalFilter
 from .zerodf import AllZeroDigitalFilter
 
 
-class GammatoneFilterBankAnalysis(nn.Module):
-    """Gammatone filter bank analysis.
+class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
+    """Gammatone filter bank analysis module.
 
     Parameters
     ----------
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_base : float >= 0
-        Base frequency in Hz.
+        The base frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     filter_order : int >= 1
-        Order of Gammatone filter.
+        The order of the Gammatone filter.
 
     bandwidth_factor : float > 0
-        Bandwidth of Gammatone filter.
+        The bandwidth of the Gammatone filter.
 
     density : float > 0
-        Density of frequencies on the ERB scale.
+        The density of frequencies on the ERB scale.
 
     exact : bool
         If False, use all-pole approximation.
@@ -75,10 +75,14 @@ class GammatoneFilterBankAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= f_min <= f_base <= f_max <= sample_rate / 2
-        assert 1 <= filter_order
-        assert 0 < bandwidth_factor
-        assert 0 < density
+        if not (0 <= f_min <= f_base <= f_max <= sample_rate / 2):
+            raise ValueError("Invalid frequency range.")
+        if filter_order <= 0:
+            raise ValueError("filter_order must be positive.")
+        if bandwidth_factor <= 0:
+            raise ValueError("bandwidth_factor must be positive.")
+        if density <= 0:
+            raise ValueError("density must be positive.")
 
         self.exact = exact
 
@@ -149,17 +153,17 @@ class GammatoneFilterBankAnalysis(nn.Module):
         self.center_frequencies = center_frequencies_in_hz  # For synthesis.
 
     def forward(self, x):
-        """Apply Gammatone filter banks to signals.
+        """Apply Gammatone filter banks to the input signal.
 
         Parameters
         ----------
         x : Tensor [shape=(B, 1, T) or (B, T) or (T,)]
-            Original waveform.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(B, K, T)]
-            Filtered signals.
+            The analyzed signal.
 
         Examples
         --------
@@ -174,7 +178,8 @@ class GammatoneFilterBankAnalysis(nn.Module):
             x = x.unsqueeze(0)
         elif x.dim() == 3:
             x = x.squeeze(1)
-        assert x.dim() == 2, "Input must be 2D tensor."
+        if x.dim() != 2:
+            raise ValueError("Input must be 1D, 2D, or 3D tensor.")
 
         B, T = x.shape
         K, _ = self.a.shape
@@ -198,7 +203,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
         Parameters
         ----------
         z : Tensor [shape=(C,)]
-            Complex frequency.
+            The complex frequency.
 
         ignore_gain : bool
             If True, the gain is ignored.
@@ -206,7 +211,7 @@ class GammatoneFilterBankAnalysis(nn.Module):
         Returns
         -------
         out : Tensor [shape=(C, K)]
-            Frequency response at z for each filter.
+            The frequency response at z for each filter.
 
         """
         gamma = self.a.size(-1) - 1

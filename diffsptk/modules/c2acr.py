@@ -79,6 +79,10 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
         return CepstrumToAutocorrelation._forward(c, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(cep_order, acr_order, n_fft):
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")

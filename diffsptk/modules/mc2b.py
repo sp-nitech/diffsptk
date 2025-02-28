@@ -43,7 +43,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0, device=None, dtype=None):
+    def __init__(self, cep_order, alpha=0):
         super().__init__()
 
         self.in_dim = cep_order + 1
@@ -85,6 +85,10 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         for m in reversed(range(M)):
             b[..., m] = mc[..., m] - alpha * b[..., m + 1]
         return b
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(*args, **kwargs):

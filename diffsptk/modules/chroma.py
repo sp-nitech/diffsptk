@@ -101,6 +101,10 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         return ChromaFilterBankAnalysis._forward(x, *values, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(fft_length, n_channel, sample_rate):
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")

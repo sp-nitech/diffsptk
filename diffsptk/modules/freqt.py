@@ -44,7 +44,7 @@ class FrequencyTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, in_order, out_order, alpha=0, device=None, dtype=None):
+    def __init__(self, in_order, out_order, alpha=0):
         super().__init__()
 
         self.in_dim = in_order + 1
@@ -91,6 +91,10 @@ class FrequencyTransform(BaseFunctionalModule):
         return FrequencyTransform._forward(c, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(in_order, out_order, alpha):
         if in_order < 0:
             raise ValueError("in_order must be non-negative.")
@@ -116,6 +120,7 @@ class FrequencyTransform(BaseFunctionalModule):
             for j in range(1, L1):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+
         return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod

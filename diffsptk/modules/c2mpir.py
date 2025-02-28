@@ -36,7 +36,7 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
 
     n_fft : int >> N
         The number of FFT bins used for conversion. The accurate conversion requires the
-        large vlaue.
+        large value.
 
     """
 
@@ -78,6 +78,10 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
             c.size(-1) - 1, *args, **kwargs
         )
         return CepstrumToMinimumPhaseImpulseResponse._forward(c, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(cep_order, ir_length, n_fft):

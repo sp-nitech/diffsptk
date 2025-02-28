@@ -35,7 +35,7 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dst_length, dst_type=2, device=None, dtype=None):
+    def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
         self.in_dim = dst_length
@@ -75,6 +75,10 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
         return InverseDiscreteSineTransform._forward(y, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(*args, **kwargs):

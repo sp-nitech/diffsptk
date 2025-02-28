@@ -3,7 +3,7 @@
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
 [![Latest Manual](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
-[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/2.6.0/)
+[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.0.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.6.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
@@ -59,8 +59,8 @@ X = stft(x)
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
 mcep = diffsptk.MelCepstralAnalysis(
-    cep_order=M,
     fft_length=n_fft,
+    cep_order=M,
     alpha=alpha,
     n_iter=10,
 )
@@ -147,7 +147,7 @@ H = pitch_spec(x, f0)
 
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
-mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
+mcep = diffsptk.MelCepstralAnalysis(fft_length=n_fft, cep_order=M, alpha=alpha)
 mc_a = mcep(A)
 mc_h = mcep(H)
 

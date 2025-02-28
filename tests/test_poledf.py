@@ -31,9 +31,7 @@ def test_compatibility(device, module, ignore_gain, M=24, P=80, L=400):
         module,
         diffsptk.AllPoleDigitalFilter,
         diffsptk.functional.poledf,
-        {"filter_order": M},
-        {"frame_period": P, "ignore_gain": ignore_gain},
-        n_input=2,
+        {"filter_order": M, "frame_period": P, "ignore_gain": ignore_gain},
     )
 
     tmp1 = "poledf.tmp1"

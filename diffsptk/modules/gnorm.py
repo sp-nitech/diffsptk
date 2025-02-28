@@ -85,6 +85,10 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
         return GeneralizedCepstrumGainNormalization._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(cep_order, gamma, c):
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")

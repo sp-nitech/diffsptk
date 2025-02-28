@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import check_size
 from ..misc.utils import get_values
 from ..misc.utils import to
 from .base import BaseFunctionalModule
@@ -40,8 +41,10 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, fft_length, device=None, dtype=None):
+    def __init__(self, cep_order, fft_length):
         super().__init__()
+
+        self.in_dim = cep_order + 1
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("ramp", tensors[0])
@@ -68,6 +71,7 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
         tensor([ 30.0000, -21.6569,  12.0000, -10.3431,  10.0000])
 
         """
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
         return self._forward(c, *self.values, **self._buffers)
 
     @staticmethod
@@ -78,6 +82,10 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
         return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
             c, *values, *tensors
         )
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(cep_order, fft_length):

@@ -32,6 +32,11 @@ class BaseFunctionalModule(ABC, nn.Module):
 
     @staticmethod
     @abstractmethod
+    def _takes_input_size():
+        raise NotImplementedError
+
+    @staticmethod
+    @abstractmethod
     def _check(*args, **kwargs):
         raise NotImplementedError
 

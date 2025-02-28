@@ -28,9 +28,7 @@ def test_compatibility(device, module, reduction, B=2, L=10):
         module,
         diffsptk.RMSE,
         diffsptk.functional.rmse,
-        {},
         {"reduction": reduction},
-        n_input=2,
     )
 
     opt = "-f" if reduction == "none" else ""

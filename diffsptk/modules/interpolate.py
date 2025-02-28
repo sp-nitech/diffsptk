@@ -73,6 +73,10 @@ class Interpolation(BaseFunctionalModule):
         return Interpolation._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(*args, **kwargs):
         Decimation._check(*args, **kwargs)
 

@@ -31,7 +31,6 @@ def test_compatibility(device, module, S, keeplen, dim, T=20, B=4):
         module,
         diffsptk.Delay,
         diffsptk.functional.delay,
-        {},
         {"start": S, "keeplen": keeplen, "dim": dim},
     )
 

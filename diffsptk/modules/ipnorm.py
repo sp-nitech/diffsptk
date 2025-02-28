@@ -40,12 +40,12 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
         self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
-        """Perform cepstrum inverse power normalization.
+        """Perform mel-cepstrum inverse power normalization.
 
         Parameters
         ----------
         y : Tensor [shape=(..., M+2)]
-            The power-normalized cepstrum.
+            The log power and power-normalized cepstrum.
 
         Returns
         -------
@@ -69,6 +69,10 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
     def _func(y):
         MelCepstrumInversePowerNormalization._precompute(y.size(-1) - 1)
         return MelCepstrumInversePowerNormalization._forward(y)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(cep_order):

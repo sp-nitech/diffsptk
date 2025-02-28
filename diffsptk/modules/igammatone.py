@@ -16,52 +16,52 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.signals import impulse
 from ..misc.utils import TAU
 from ..misc.utils import check_size
 from ..misc.utils import to
+from .base import BaseNonFunctionalModule
 from .gammatone import GammatoneFilterBankAnalysis
 
 
-class GammatoneFilterBankSynthesis(nn.Module):
-    """Gammatone filter bank analysis.
+class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
+    """Gammatone filter bank synthesis module.
 
     Parameters
     ----------
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     desired_delay : float > 0
         Desired delay in milliseconds.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_base : float >= 0
-        Base frequency in Hz.
+        The base frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     filter_order : int >= 1
-        Order of Gammatone filter.
+        The order of the Gammatone filter.
 
     bandwidth_factor : float > 0
-        Bandwidth of Gammatone filter.
+        The bandwidth of the Gammatone filter.
 
     density : float > 0
-        Density of frequencies on the ERB scale.
+        The density of frequencies on the ERB scale.
 
     exact : bool
         If False, use all-pole approximation.
 
     n_iter : int >= 1
-        Number of iterations for gain computation.
+        The number of iterations for gain computation.
 
     eps : float >= 0
-        Tolerance for gain computation.
+        The tolerance for gain computation.
 
     References
     ----------
@@ -92,9 +92,12 @@ class GammatoneFilterBankSynthesis(nn.Module):
         super().__init__()
 
         self.delay = round(desired_delay * sample_rate / 1000)
-        assert 1 <= self.delay, "Please increase the desired delay."
-        assert 1 <= n_iter
-        assert 0 <= eps
+        if self.delay < 1:
+            raise ValueError("Please increase the desired delay.")
+        if n_iter <= 0:
+            raise ValueError("The number of iterations must be positive.")
+        if eps < 0:
+            raise ValueError("The tolerance must be non-negative.")
 
         # Compute delays.
         analyzer = GammatoneFilterBankAnalysis(
@@ -150,10 +153,10 @@ class GammatoneFilterBankSynthesis(nn.Module):
         Parameters
         ----------
         y : Tensor [shape=(B, K, T) or (K, T)]
-            Filtered signals.
+            The filter bank signals.
 
         keepdim : bool
-            If True, the output shape is (B, 1, T) instead (B, T).
+            If True, the output shape is (B, 1, T) instead of (B, T).
 
         compensate_delay : bool
             If True, compensate the delay.
@@ -161,7 +164,7 @@ class GammatoneFilterBankSynthesis(nn.Module):
         Returns
         -------
         out : Tensor [shape=(B, 1, T) or (B, T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------
@@ -177,7 +180,8 @@ class GammatoneFilterBankSynthesis(nn.Module):
         """
         if y.dim() == 2:
             y = y.unsqueeze(0)
-        assert y.dim() == 3, "Input must be 3D tensor."
+        if y.dim() != 3:
+            raise ValueError("Input must be 3D tensor.")
 
         B, K, T = y.shape
         check_size(K, len(self.phase_factors), "number of filters")

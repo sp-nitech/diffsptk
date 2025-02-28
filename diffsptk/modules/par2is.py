@@ -17,6 +17,7 @@
 import torch
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -35,7 +36,7 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(par_order)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, k):
         """Convert PARCOR to IS.
@@ -67,6 +68,10 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
     def _func(x):
         values = ParcorCoefficientsToInverseSine._precompute(x.size(-1) - 1)
         return ParcorCoefficientsToInverseSine._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(par_order):

@@ -41,8 +41,8 @@ def test_compatibility(
         module,
         diffsptk.PerceptualLinearPredictiveCoefficientsAnalysis,
         diffsptk.functional.plp,
-        {"fft_length": L},
         {
+            "fft_length": L,
             "plp_order": M,
             "n_channel": C,
             "sample_rate": sr,

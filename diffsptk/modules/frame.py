@@ -27,10 +27,10 @@ class Frame(BaseFunctionalModule):
     Parameters
     ----------
     frame_length : int >= 1
-        The frame length in sample, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        The frame period in sample, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     center : bool
         If True, pad the input on both sides so that the frame is centered.
@@ -84,6 +84,10 @@ class Frame(BaseFunctionalModule):
         return Frame._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(frame_length, frame_period):
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
@@ -104,9 +108,7 @@ class Frame(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(
-        x, frame_length, frame_period, center=True, zmean=False, mode="constant"
-    ):
+    def _forward(x, frame_length, frame_period, center, zmean, mode):
         if center:
             padding = (frame_length // 2, (frame_length - 1) // 2)
         else:

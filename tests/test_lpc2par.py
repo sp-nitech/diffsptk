@@ -27,8 +27,7 @@ def test_compatibility(device, module, L=32, M=9, gamma=0.9, B=2):
         module,
         diffsptk.LinearPredictiveCoefficientsToParcorCoefficients,
         diffsptk.functional.lpc2par,
-        {"lpc_order": M},
-        {"gamma": gamma},
+        {"lpc_order": M, "gamma": gamma},
     )
 
     U.check_compatibility(

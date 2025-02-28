@@ -16,40 +16,34 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
+from ..misc.utils import get_values
 from ..misc.utils import remove_gain
-from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class GroupDelay(nn.Module):
+class GroupDelay(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/grpdelay.html>`_
     for details.
 
     Parameters
     ----------
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     alpha : float > 0
-        Tuning parameter, :math:`\\alpha`.
+        The tuning parameter, :math:`\\alpha`.
 
     gamma : float > 0
-        Tuning parameter, :math:`\\gamma`.
+        The tuning parameter, :math:`\\gamma`.
 
     """
 
-    def __init__(self, fft_length, alpha=1, gamma=1):
+    def __init__(self, fft_length, alpha=1, gamma=1, device=None, dtype=None):
         super().__init__()
 
-        assert 2 <= fft_length
-        assert 0 < alpha
-        assert 0 < gamma
-
-        self.fft_length = fft_length
-        self.alpha = alpha
-        self.gamma = gamma
-        self.register_buffer("ramp", self._precompute(self.fft_length))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("ramp", tensors[0])
 
     def forward(self, b=None, a=None):
         """Compute group delay.
@@ -57,15 +51,15 @@ class GroupDelay(nn.Module):
         Parameters
         ----------
         b : Tensor [shape=(..., M+1)] or None
-            Numerator coefficients.
+            The numerator coefficients.
 
         a : Tensor [shape=(..., N+1)] or None
-            Denominator coefficients.
+            The denominator coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., L/2+1)]
-            Group delay or modified group delay function.
+            The group delay or modified group delay function.
 
         Examples
         --------
@@ -76,14 +70,34 @@ class GroupDelay(nn.Module):
         tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])
 
         """
-        return self._forward(
-            b,
-            a,
-            self.fft_length,
-            self.alpha,
-            self.gamma,
-            self.ramp,
+        return self._forward(b, a, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(b, a, *args, **kwargs):
+        x = a if b is None else b
+        values, _, tensors = GroupDelay._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
         )
+        return GroupDelay._forward(b, a, *values, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(fft_length, alpha, gamma):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if alpha <= 0:
+            raise ValueError("alpha must be positive.")
+        if gamma <= 0:
+            raise ValueError("gamma must be positive.")
+
+    @staticmethod
+    def _precompute(fft_length, alpha, gamma, device=None, dtype=None):
+        GroupDelay._check(fft_length, alpha, gamma)
+        ramp = torch.arange(fft_length, device=device, dtype=dtype)
+        return (fft_length, alpha, gamma), None, (ramp,)
 
     @staticmethod
     def _forward(b, a, fft_length, alpha, gamma, ramp):
@@ -123,23 +137,3 @@ class GroupDelay(nn.Module):
         if alpha != 1:
             g = torch.sign(g) * torch.pow(torch.abs(g), alpha)
         return g
-
-    @staticmethod
-    def _func(b, a, fft_length, alpha, gamma):
-        if b is not None and a is not None:
-            data_length = b.size(-1) + a.size(-1) - 1
-        elif b is not None:
-            data_length = b.size(-1)
-        else:
-            data_length = a.size(-1)
-        ramp = GroupDelay._precompute(
-            data_length,
-            dtype=a.dtype if b is None else b.dtype,
-            device=a.device if b is None else b.device,
-        )
-        return GroupDelay._forward(b, a, fft_length, alpha, gamma, ramp)
-
-    @staticmethod
-    def _precompute(length, dtype=None, device=None):
-        ramp = torch.arange(length, device=device)
-        return to(ramp, dtype=dtype)

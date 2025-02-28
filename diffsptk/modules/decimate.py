@@ -70,6 +70,10 @@ class Decimation(BaseFunctionalModule):
         return Decimation._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(period, start, dim):
         if period <= 0:
             raise ValueError("period must be positive.")

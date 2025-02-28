@@ -15,41 +15,35 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
-class SignalToNoiseRatio(nn.Module):
+class SignalToNoiseRatio(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/snr.html>`_
     for details.
 
     Parameters
     ----------
     frame_length : int >= 1 or None
-        Frame length, :math:`L`. If given, calculate segmental SNR.
+        The frame length in samples, :math:`L`. If given, calculate the segmental SNR.
 
     full : bool
         If True, include the constant term in the SNR calculation.
 
     reduction : ['none', 'mean', 'sum']
-        Reduction type.
+        The reduction type.
 
     eps : float >= 0
-        A small value to prevent NaN.
+        A small value to avoid NaN.
 
     """
 
     def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
         super().__init__()
 
-        if frame_length is not None:
-            assert 1 <= frame_length
-        assert reduction in ("none", "mean", "sum")
-        assert 0 <= eps
-
-        self.frame_length = frame_length
-        self.full = full
-        self.reduction = reduction
-        self.eps = eps
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, s, sn):
         """Calculate SNR.
@@ -57,15 +51,15 @@ class SignalToNoiseRatio(nn.Module):
         Parameters
         ----------
         s : Tensor [shape=(..., T)]
-            Signal.
+            The signal.
 
         sn : Tensor [shape=(..., T)]
-            Signal plus noise.
+            The signal with noise.
 
         Returns
         -------
         out : Tensor [shape=(...,) or scalar]
-            Signal-to-noise ratio.
+            The SNR.
 
         Examples
         --------
@@ -81,12 +75,32 @@ class SignalToNoiseRatio(nn.Module):
         tensor(16.0614)
 
         """
-        return self._forward(
-            s, sn, self.frame_length, self.full, self.reduction, self.eps
-        )
+        return self._forward(s, sn, *self.values)
 
     @staticmethod
-    def _forward(s, sn, frame_length, full, reduction, eps):
+    def _func(s, sn, *args, **kwargs):
+        values = SignalToNoiseRatio._precompute(*args, **kwargs)
+        return SignalToNoiseRatio._forward(s, sn, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(frame_length, eps):
+        if frame_length is not None and frame_length <= 0:
+            raise ValueError("frame_length must be positive.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
+
+    @staticmethod
+    def _precompute(frame_length, full, reduction, eps):
+        SignalToNoiseRatio._check(frame_length, eps)
+        const = 10 if full else 1
+        return (frame_length, reduction, eps, const)
+
+    @staticmethod
+    def _forward(s, sn, frame_length, reduction, eps, const):
         if frame_length is not None:
             s = s.unfold(-1, frame_length, frame_length)
             sn = sn.unfold(-1, frame_length, frame_length)
@@ -94,7 +108,6 @@ class SignalToNoiseRatio(nn.Module):
         s2 = torch.square(s).sum(-1)
         n2 = torch.square(sn - s).sum(-1)
         snr = torch.log10((s2 + eps) / (n2 + eps))
-
         if frame_length is not None:
             snr = snr.squeeze(-1)
 
@@ -107,8 +120,4 @@ class SignalToNoiseRatio(nn.Module):
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
 
-        if full:
-            snr = 10 * snr
-        return snr
-
-    _func = _forward
+        return const * snr

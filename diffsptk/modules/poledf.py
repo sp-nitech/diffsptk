@@ -15,27 +15,28 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 from torchlpc import sample_wise_lpc
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
 
-class AllPoleDigitalFilter(nn.Module):
+class AllPoleDigitalFilter(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/poledf.html>`_
     for details.
 
     Parameters
     ----------
     filter_order : int >= 0
-        Order of filter coefficients, :math:`M`.
+        The order of the filter, :math:`M`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     ignore_gain : bool
-        If True, perform filtering without gain.
+        If True, perform filtering without the gain.
 
     References
     ----------
@@ -48,12 +49,9 @@ class AllPoleDigitalFilter(nn.Module):
     def __init__(self, filter_order, frame_period, ignore_gain=False):
         super().__init__()
 
-        assert 0 <= filter_order
-        assert 1 <= frame_period
+        self.in_dim = filter_order + 1
 
-        self.filter_order = filter_order
-        self.frame_period = frame_period
-        self.ignore_gain = ignore_gain
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x, a):
         """Apply an all-pole digital filter.
@@ -61,15 +59,15 @@ class AllPoleDigitalFilter(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Excitation signal.
+            The excitation signal.
 
         a : Tensor [shape=(..., T/P, M+1)]
-            Filter coefficients.
+            The filter coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Output signal.
+            The output signal.
 
         Examples
         --------
@@ -81,12 +79,34 @@ class AllPoleDigitalFilter(nn.Module):
         tensor([[0., 1., 2., 3., 4.]])
 
         """
-        check_size(a.size(-1), self.filter_order + 1, "dimension of LPC coefficients")
-        check_size(x.size(-1), a.size(-2) * self.frame_period, "sequence length")
-        return self._forward(x, a, self.frame_period, self.ignore_gain)
+        check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")
+        return self._forward(x, a, *self.values)
 
     @staticmethod
-    def _forward(x, a, frame_period, ignore_gain=False):
+    def _func(x, a, *args, **kwargs):
+        values = AllPoleDigitalFilter._precompute(a.size(-1) - 1, *args, **kwargs)
+        return AllPoleDigitalFilter._forward(x, a, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(filter_order, frame_period):
+        if filter_order < 0:
+            raise ValueError("filter_order must be non-negative.")
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+
+    @staticmethod
+    def _precompute(filter_order, frame_period, ignore_gain=False):
+        AllPoleDigitalFilter._check(filter_order, frame_period)
+        return (frame_period, ignore_gain)
+
+    @staticmethod
+    def _forward(x, a, frame_period, ignore_gain):
+        check_size(x.size(-1), a.size(-2) * frame_period, "sequence length")
+
         d = x.dim()
         if d == 1:
             a = a.unsqueeze(0)
@@ -101,5 +121,3 @@ class AllPoleDigitalFilter(nn.Module):
         if d == 1:
             y = y.squeeze(0)
         return y
-
-    _func = _forward

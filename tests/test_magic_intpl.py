@@ -37,7 +37,6 @@ def test_compatibility(device, module, data, L, N=10, magic_number=0):
         module,
         diffsptk.MagicNumberInterpolation,
         diffsptk.functional.magic_intpl,
-        {},
         {"magic_number": magic_number},
     )
 

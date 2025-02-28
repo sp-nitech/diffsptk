@@ -120,6 +120,10 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         return MelFilterBankAnalysis._forward(x, *values, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(fft_length, n_channel, sample_rate, f_min, f_max, floor):
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
@@ -128,9 +132,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         if sample_rate <= 0:
             raise ValueError("sample_rate must be positive.")
         if f_min < 0 or sample_rate / 2 <= f_min:
-            raise ValueError("invalid f_min.")
+            raise ValueError("Invalid f_min.")
         if f_max is not None and not (f_min < f_max <= sample_rate / 2):
-            raise ValueError("invalid f_min and f_max.")
+            raise ValueError("Invalid f_min and f_max.")
         if floor <= 0:
             raise ValueError("floor must be positive.")
 

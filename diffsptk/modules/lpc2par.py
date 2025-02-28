@@ -87,6 +87,10 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
         return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(lpc_order, gamma, c):
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")

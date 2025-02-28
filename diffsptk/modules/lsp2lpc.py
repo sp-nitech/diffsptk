@@ -45,15 +45,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(
-        self,
-        lpc_order,
-        log_gain=False,
-        sample_rate=None,
-        in_format="radian",
-        device=None,
-        dtype=None,
-    ):
+    def __init__(self, lpc_order, log_gain=False, sample_rate=None, in_format="radian"):
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -99,6 +91,10 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         )
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(lpc_order, log_gain, sample_rate, in_format):
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
@@ -126,13 +122,13 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         else:
             ValueError(f"in_format {in_format} is not supported.")
 
-        param = {"device": device, "dtype": dtype}
+        params = {"device": device, "dtype": dtype}
         if lpc_order % 2 == 0:
-            kernel_p = torch.tensor([-1.0, 1.0], **param)
-            kernel_q = torch.tensor([1.0, 1.0], **param)
+            kernel_p = torch.tensor([-1.0, 1.0], **params)
+            kernel_q = torch.tensor([1.0, 1.0], **params)
         else:
-            kernel_p = torch.tensor([-1.0, 0.0, 1.0], **param)
-            kernel_q = torch.tensor([0.0, 1.0, 0.0], **param)
+            kernel_p = torch.tensor([-1.0, 0.0, 1.0], **params)
+            kernel_q = torch.tensor([0.0, 1.0, 0.0], **params)
         kernel_p = kernel_p.view(1, 1, -1)
         kernel_q = kernel_q.view(1, 1, -1)
 

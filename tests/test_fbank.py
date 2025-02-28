@@ -31,8 +31,8 @@ def test_compatibility(
         module,
         diffsptk.MelFilterBankAnalysis,
         diffsptk.functional.fbank,
-        {"fft_length": L},
         {
+            "fft_length": L,
             "n_channel": C,
             "sample_rate": sr,
             "f_min": f_min,

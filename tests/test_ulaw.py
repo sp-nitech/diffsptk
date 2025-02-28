@@ -27,7 +27,6 @@ def test_compatibility(device, module, v=10, u=255, L=10):
         module,
         diffsptk.MuLawCompression,
         diffsptk.functional.ulaw,
-        {},
         {"abs_max": v, "mu": u},
     )
 

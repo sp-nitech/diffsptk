@@ -28,8 +28,7 @@ def test_compatibility(device, module, M=19, N=30, L=512, B=2):
         module,
         diffsptk.MinimumPhaseImpulseResponseToCepstrum,
         diffsptk.functional.mpir2c,
-        {"ir_length": N},
-        {"cep_order": M, "n_fft": L},
+        {"ir_length": N, "cep_order": M, "n_fft": L},
     )
 
     U.check_compatibility(

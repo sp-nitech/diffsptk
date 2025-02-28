@@ -15,44 +15,35 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
-class Autocorrelation(nn.Module):
+class Autocorrelation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/acorr.html>`_
     for details.
 
     Parameters
     ----------
     frame_length : int > M
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     acr_order : int >= 0
-        Order of autocorrelation, :math:`M`.
+        The order of the autocorrelation, :math:`M`.
 
-    norm : bool
-        If True, normalize the autocorrelation.
-
-    estimator : ['none', 'biased', 'unbiased']
-        Estimator of autocorrelation.
+    out_format : ['naive', 'normalized', 'biased', 'unbiased']
+        The type of the autocorrelation.
 
     """
 
-    def __init__(self, frame_length, acr_order, norm=False, estimator="none"):
+    def __init__(self, frame_length, acr_order, out_format="naive"):
         super().__init__()
 
-        assert 0 <= acr_order < frame_length
+        self.in_dim = frame_length
 
-        self.frame_length = frame_length
-        self.acr_order = acr_order
-        self.norm = norm
-        const = self._precompute(frame_length, acr_order, estimator)
-        if torch.is_tensor(const):
-            self.register_buffer("const", const)
-        else:
-            self.const = const
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Estimate autocorrelation of input.
@@ -60,12 +51,12 @@ class Autocorrelation(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Framed waveform.
+            The framed waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Autocorrelation.
+            The autocorrelation.
 
         Examples
         --------
@@ -76,35 +67,49 @@ class Autocorrelation(nn.Module):
         tensor([30.0000, 20.0000, 11.0000,  4.0000])
 
         """
-        check_size(x.size(-1), self.frame_length, "length of waveform")
-        return self._forward(x, self.acr_order, self.norm, self.const)
+        check_size(x.size(-1), self.in_dim, "length of waveform")
+        return self._forward(x, *self.values)
 
     @staticmethod
-    def _forward(x, acr_order, norm, const):
+    def _func(x, *args, **kwargs):
+        values = Autocorrelation._precompute(x.size(-1), *args, **kwargs)
+        return Autocorrelation._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(frame_length, acr_order):
+        if frame_length <= 0:
+            raise ValueError("frame_length must be positive.")
+        if frame_length <= acr_order:
+            raise ValueError("acr_order must be less than frame_length.")
+
+    @staticmethod
+    def _precompute(frame_length, acr_order, out_format="naive"):
+        if out_format in (0, "naive"):
+            formatter = lambda x: x
+        elif out_format in (1, "normalized"):
+            formatter = lambda x: x / x[..., :1]
+        elif out_format in (2, "biased"):
+            formatter = lambda x: x / frame_length
+        elif out_format in (3, "unbiased"):
+            formatter = lambda x: x / (
+                torch.arange(
+                    frame_length, frame_length - acr_order - 1, -1, device=x.device
+                )
+            )
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+        return (acr_order, formatter)
+
+    @staticmethod
+    def _forward(x, acr_order, formatter):
         fft_length = x.size(-1) + acr_order
         if fft_length % 2 == 1:
             fft_length += 1
         X = torch.fft.rfft(x, n=fft_length).abs().square()
-        r = torch.fft.irfft(X)[..., : acr_order + 1] * const
-        if norm:
-            r = r / r[..., :1]
+        r = torch.fft.irfft(X)[..., : acr_order + 1]
+        r = formatter(r)
         return r
-
-    @staticmethod
-    def _func(x, acr_order, norm=False, estimator="none"):
-        const = Autocorrelation._precompute(
-            x.size(-1), acr_order, estimator, device=x.device
-        )
-        return Autocorrelation._forward(x, acr_order, norm, const)
-
-    @staticmethod
-    def _precompute(frame_length, acr_order, estimator, device=None):
-        if estimator in (0, 1, "none"):
-            return 1
-        elif estimator in (2, "biased"):
-            return 1 / frame_length
-        elif estimator in (3, "unbiased"):
-            return torch.arange(
-                frame_length, frame_length - acr_order - 1, -1, device=device
-            ).reciprocal()
-        raise ValueError(f"estimator {estimator} is not supported.")

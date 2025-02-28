@@ -29,14 +29,12 @@ def test_compatibility(device, module, relative_floor, out_format, eps=0.01, L=1
         module,
         diffsptk.Spectrum,
         diffsptk.functional.spec,
-        {},
         {
             "fft_length": L,
             "eps": eps,
             "relative_floor": relative_floor,
             "out_format": out_format,
         },
-        n_input=2,
     )
 
     opt = f"-e {eps} -o {out_format} "
@@ -80,11 +78,12 @@ def test_compatibility_a(device, L=16, B=2):
     tmp = "spec.tmp"
     U.check_compatibility(
         device,
-        lambda x: spec(b=None, a=x),
+        spec,
         [f"nrand -s 2 -l {B * L} > {tmp}"],
         [f"cat {tmp}"],
         f"spec -o 3 -l {L} -n {L - 1} -p {tmp}",
         [f"rm {tmp}"],
         dx=L,
         dy=L // 2 + 1,
+        key=["a"],
     )

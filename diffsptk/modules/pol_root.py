@@ -16,13 +16,13 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.utils import check_size
 from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
-class RootsToPolynomial(nn.Module):
+class RootsToPolynomial(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.PolynomialToRoots`.
 
     Parameters
@@ -31,12 +31,15 @@ class RootsToPolynomial(nn.Module):
         The order of the polynomial.
 
     eps : float >= 0 or None
-        If the absolute value of the imaginary part of the roots is less than this
-        value, it is considered as a real root.
+        If the absolute values of the imaginary parts of the polynomial coefficients are
+        all less than this value, they are considered as real numbers.
+
+    in_format : ['rectangular', 'polar']
+        The input format.
 
     """
 
-    def __init__(self, order, eps=None):
+    def __init__(self, order, *, eps=None, in_format="rectangular"):
         super().__init__()
 
         self.in_dim = order
@@ -74,6 +77,10 @@ class RootsToPolynomial(nn.Module):
         return RootsToPolynomial._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(order, eps):
         if order <= 0:
             raise ValueError("order must be positive.")
@@ -81,14 +88,23 @@ class RootsToPolynomial(nn.Module):
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(order, eps=None):
+    def _precompute(order, eps=None, in_format="rectangular"):
         RootsToPolynomial._check(order, eps)
+
         if eps is None:
             eps = 1e-5 if torch.get_default_dtype() == torch.float else 1e-8
-        return (eps,)
+        if in_format in (0, "rectangular"):
+            formatter = lambda x: x
+        elif in_format in (1, "polar"):
+            formatter = lambda x: torch.polar(x.real, x.imag)
+        else:
+            raise ValueError(f"in_format {in_format} is not supported.")
+
+        return (eps, formatter)
 
     @staticmethod
-    def _forward(x, eps):
+    def _forward(x, eps, formatter):
+        x = formatter(x)
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)
         for m in range(M):

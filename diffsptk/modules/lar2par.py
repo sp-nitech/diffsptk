@@ -72,6 +72,10 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
         return LogAreaRatioToParcorCoefficients._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(par_order):
         if par_order < 0:
             raise ValueError("par_order must be non-negative.")

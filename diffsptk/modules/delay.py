@@ -72,8 +72,12 @@ class Delay(BaseFunctionalModule):
         return Delay._forward(x, *values)
 
     @staticmethod
-    def _check(*args, **kwargs):
-        raise NotImplementedError
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
 
     @staticmethod
     def _precompute(start, keeplen, dim):

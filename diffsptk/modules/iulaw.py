@@ -71,6 +71,10 @@ class MuLawExpansion(BaseFunctionalModule):
         return MuLawExpansion._forward(y, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(*args, **kwargs):
         MuLawCompression._check(*args, **kwargs)
 

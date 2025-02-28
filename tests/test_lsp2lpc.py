@@ -29,8 +29,7 @@ def test_compatibility(device, module, M, in_format, sr=8000, L=32, B=2):
         module,
         diffsptk.LineSpectralPairsToLinearPredictiveCoefficients,
         diffsptk.functional.lsp2lpc,
-        {"lpc_order": M},
-        {"log_gain": True, "sample_rate": sr, "in_format": in_format},
+        {"lpc_order": M, "log_gain": True, "sample_rate": sr, "in_format": in_format},
     )
 
     s = sr // 1000

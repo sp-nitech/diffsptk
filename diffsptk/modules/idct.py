@@ -36,7 +36,7 @@ class InverseDiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dct_length, dct_type=2, device=None, dtype=None):
+    def __init__(self, dct_length, dct_type=2):
         super().__init__()
 
         self.in_dim = dct_length
@@ -76,6 +76,10 @@ class InverseDiscreteCosineTransform(BaseFunctionalModule):
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
         return InverseDiscreteCosineTransform._forward(y, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(*args, **kwargs):

@@ -27,8 +27,7 @@ def test_compatibility(device, module, M=8, L=16, B=2):
         module,
         diffsptk.NegativeDerivativeOfPhaseSpectrumToCepstrum,
         diffsptk.functional.ndps2c,
-        {"fft_length": L},
-        {"cep_order": M},
+        {"fft_length": L, "cep_order": M},
     )
 
     H = L // 2 + 1

@@ -71,6 +71,10 @@ class LinearInterpolation(BaseFunctionalModule):
         return LinearInterpolation._forward(x, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(upsampling_factor):
         if upsampling_factor <= 0:
             raise ValueError("The upsampling factor must be positive.")

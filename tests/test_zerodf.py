@@ -28,9 +28,7 @@ def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
         module,
         diffsptk.AllZeroDigitalFilter,
         diffsptk.functional.zerodf,
-        {"filter_order": M},
-        {"frame_period": P, "ignore_gain": ignore_gain},
-        n_input=2,
+        {"filter_order": M, "frame_period": P, "ignore_gain": ignore_gain},
     )
 
     tmp1 = "zerodf.tmp1"

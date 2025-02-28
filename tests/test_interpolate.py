@@ -28,7 +28,6 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
         module,
         diffsptk.Interpolation,
         diffsptk.functional.interpolate,
-        {},
         {"period": P, "start": S, "dim": 0},
     )
 

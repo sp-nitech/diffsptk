@@ -36,7 +36,7 @@ class DiscreteSineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dst_length, dst_type=2, device=None, dtype=None):
+    def __init__(self, dst_length, dst_type=2):
         super().__init__()
 
         self.in_dim = dst_length
@@ -77,6 +77,10 @@ class DiscreteSineTransform(BaseFunctionalModule):
         return DiscreteSineTransform._forward(x, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(dst_length, dst_type):
         if dst_length <= 0:
             raise ValueError("dst_length must be positive.")
@@ -86,10 +90,10 @@ class DiscreteSineTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(dst_length, dst_type, device=None, dtype=None):
         DiscreteSineTransform._check(dst_length, dst_type)
-        param = {"device": device, "dtype": torch.double}
+        params = {"device": device, "dtype": torch.double}
         L = dst_length
-        n = torch.arange(1, L + 1, **param)
-        k = torch.arange(1, L + 1, **param)
+        n = torch.arange(1, L + 1, **params)
+        k = torch.arange(1, L + 1, **params)
         if dst_type == 2 or dst_type == 4:
             n -= 0.5
         if dst_type == 3 or dst_type == 4:
@@ -99,10 +103,10 @@ class DiscreteSineTransform(BaseFunctionalModule):
         if dst_type == 1:
             z = (2 / (L + 1)) ** 0.5
         elif dst_type == 2:
-            z = plateau(L, 2, 2, 1, **param)
+            z = plateau(L, 2, 2, 1, **params)
             z = torch.sqrt(z / L).unsqueeze(0)
         elif dst_type == 3:
-            z = plateau(L, 2, 2, 1, **param)
+            z = plateau(L, 2, 2, 1, **params)
             z = torch.sqrt(z / L).unsqueeze(1)
         elif dst_type == 4:
             z = (2 / L) ** 0.5

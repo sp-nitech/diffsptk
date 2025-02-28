@@ -14,7 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
 import torch
 import torch.nn.functional as F
 
@@ -53,8 +52,6 @@ class Window(BaseFunctionalModule):
         *,
         window="blackman",
         norm="power",
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -96,6 +93,10 @@ class Window(BaseFunctionalModule):
         return Window._forward(x, *values, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(in_length, out_length):
         if in_length <= 0:
             raise ValueError("in_length must be positive.")
@@ -107,32 +108,32 @@ class Window(BaseFunctionalModule):
         Window._check(in_length, out_length)
 
         L = in_length
-        param = {"dtype": dtype, "device": device}
+        params = {"dtype": dtype, "device": device}
         if window in (0, "blackman"):
-            w = torch.blackman_window(L, periodic=False, **param)
+            w = torch.blackman_window(L, periodic=False, **params)
         elif window in (1, "hamming"):
-            w = torch.hamming_window(L, periodic=False, **param)
+            w = torch.hamming_window(L, periodic=False, **params)
         elif window in (2, "hanning"):
-            w = torch.hann_window(L, periodic=False, **param)
+            w = torch.hann_window(L, periodic=False, **params)
         elif window in (3, "bartlett"):
-            w = torch.bartlett_window(L, periodic=False, **param)
+            w = torch.bartlett_window(L, periodic=False, **params)
         elif window in (4, "trapezoidal"):
-            slope = torch.linspace(0, 4, L, **param)
+            slope = torch.linspace(0, 4, L, **params)
             w = torch.minimum(torch.clip(slope, min=0, max=1), slope.flip(0))
         elif window in (5, "rectangular"):
-            w = torch.ones(L, **param)
+            w = torch.ones(L, **params)
         elif window in (6, "nuttall"):
-            c1 = torch.tensor([0.355768, -0.487396, 0.144232, -0.012604], **param)
-            c2 = torch.arange(0, 8, 2, **param) * (torch.pi / (L - 1))
-            seed = torch.arange(L, **param)
+            c1 = torch.tensor([0.355768, -0.487396, 0.144232, -0.012604], **params)
+            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / (L - 1))
+            seed = torch.arange(L, **params)
             w = torch.sum(c1 * torch.cos(torch.outer(seed, c2)), dim=1)
         elif window == "sine":
-            w = torch.signal.windows.cosine(L, **param)
+            w = torch.signal.windows.cosine(L, **params)
         elif window == "vorbis":
-            seed = torch.signal.windows.cosine(L, **param)
+            seed = torch.signal.windows.cosine(L, **params)
             w = torch.sin(torch.pi * 0.5 * seed**2)
         elif window == "kbd":
-            seed = torch.kaiser_window(L // 2 + 1, periodic=False, **param)
+            seed = torch.kaiser_window(L // 2 + 1, periodic=False, **params)
             cumsum = torch.cumsum(seed, dim=0)
             half = torch.sqrt(cumsum[:-1] / cumsum[-1])
             w = torch.cat([half, half.flip(0)])

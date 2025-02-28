@@ -16,6 +16,7 @@
 
 import logging
 import math
+from itertools import islice
 
 import numpy as np
 import soundfile as sf
@@ -36,6 +37,19 @@ class Lambda(nn.Module):
 
     def forward(self, x):
         return self.func(x, **self.opt)
+
+
+def get_layer(is_module, module, params):
+    if is_module:
+        return module(**params)
+
+    if module._takes_input_size():
+        params = dict(islice(params.items(), 1, None))
+
+    def layer(*args, **kwargs):
+        return module._func(*args, **params, **kwargs)
+
+    return layer
 
 
 def get_values(dictionary, begin=1, end=-1):
@@ -362,7 +376,8 @@ def deconv1d(x, weight):
 
 
 def check_size(x, y, cause):
-    assert x == y, f"Unexpected {cause} (input {x} vs target {y})."
+    if x != y:
+        raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")
 
 
 def read(filename, double=False, device=None, **kwargs):

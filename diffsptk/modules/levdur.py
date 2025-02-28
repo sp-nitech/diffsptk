@@ -36,7 +36,7 @@ class LevinsonDurbin(BaseFunctionalModule):
 
     """
 
-    def __init__(self, lpc_order, eps=0, device=None, dtype=None):
+    def __init__(self, lpc_order, eps=0):
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -78,6 +78,10 @@ class LevinsonDurbin(BaseFunctionalModule):
             r.size(-1) - 1, *args, **kwargs, device=r.device, dtype=r.dtype
         )
         return LevinsonDurbin._forward(r, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(lpc_order, eps):

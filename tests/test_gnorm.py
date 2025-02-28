@@ -28,8 +28,7 @@ def test_compatibility(device, module, gamma, c, M=4, B=2):
         module,
         diffsptk.GeneralizedCepstrumGainNormalization,
         diffsptk.functional.gnorm,
-        {"cep_order": M},
-        {"gamma": gamma, "c": c},
+        {"cep_order": M, "gamma": gamma, "c": c},
     )
 
     opt = f"-g {gamma}" if c is None else f"-c {c}"

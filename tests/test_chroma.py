@@ -40,8 +40,7 @@ def test_compatibility(device, module, C=12):
         module,
         diffsptk.ChromaFilterBankAnalysis,
         diffsptk.functional.chroma,
-        {"fft_length": 2 * X.size(-1) - 2},
-        {"n_channel": C, "sample_rate": sr},
+        {"fft_length": 2 * X.size(-1) - 2, "n_channel": C, "sample_rate": sr},
     )
     if hasattr(chroma, "to"):
         chroma.to(device)

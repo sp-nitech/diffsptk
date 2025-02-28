@@ -31,8 +31,8 @@ def test_compatibility(
         module,
         diffsptk.MelFrequencyCepstralCoefficientsAnalysis,
         diffsptk.functional.mfcc,
-        {"fft_length": L},
         {
+            "fft_length": L,
             "mfcc_order": M,
             "n_channel": C,
             "sample_rate": sr,

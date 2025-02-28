@@ -27,8 +27,7 @@ def test_compatibility(device, module, m=19, M=29, alpha=0.1, B=2):
         module,
         diffsptk.FrequencyTransform,
         diffsptk.functional.freqt,
-        {"in_order": m},
-        {"out_order": M, "alpha": alpha},
+        {"in_order": m, "out_order": M, "alpha": alpha},
     )
 
     U.check_compatibility(

@@ -14,7 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
 from ..misc.utils import check_size
 from ..misc.utils import get_values
 from .base import BaseFunctionalModule
@@ -85,6 +84,10 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
             k.size(-1) - 1, *args, **kwargs
         )
         return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(*args, **kwargs):

@@ -15,38 +15,36 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
 
-class AllZeroDigitalFilter(nn.Module):
+class AllZeroDigitalFilter(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/zerodf.html>`_
     for details.
 
     Parameters
     ----------
     filter_order : int >= 0
-        Order of filter coefficients, :math:`M`.
+        The order of the filter, :math:`M`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     ignore_gain : bool
-        If True, perform filtering without gain.
+        If True, perform filtering without the gain.
 
     """
 
     def __init__(self, filter_order, frame_period, ignore_gain=False):
         super().__init__()
 
-        assert 0 <= filter_order
-        assert 1 <= frame_period
+        self.in_dim = filter_order + 1
 
-        self.filter_order = filter_order
-        self.frame_period = frame_period
-        self.ignore_gain = ignore_gain
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x, b):
         """Apply an all-zero digital filter.
@@ -54,15 +52,15 @@ class AllZeroDigitalFilter(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Excitation signal.
+            The excitation signal.
 
         b : Tensor [shape=(..., T/P, M+1)]
-            Filter coefficients.
+            The filter coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Output signal.
+            The output signal.
 
         Examples
         --------
@@ -74,12 +72,34 @@ class AllZeroDigitalFilter(nn.Module):
         tensor([[0., 1., 2., 3., 4.]])
 
         """
-        check_size(b.size(-1), self.filter_order + 1, "dimension of impulse response")
-        check_size(x.size(-1), b.size(-2) * self.frame_period, "sequence length")
-        return self._forward(x, b, self.frame_period, self.ignore_gain)
+        check_size(b.size(-1), self.in_dim, "dimension of impulse response")
+        return self._forward(x, b, *self.values)
 
     @staticmethod
-    def _forward(x, b, frame_period, ignore_gain=False):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _func(x, b, *args, **kwargs):
+        values = AllZeroDigitalFilter._precompute(b.size(-1) - 1, *args, **kwargs)
+        return AllZeroDigitalFilter._forward(x, b, *values)
+
+    @staticmethod
+    def _check(filter_order, frame_period):
+        if filter_order < 0:
+            raise ValueError("filter_order must be non-negative.")
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+
+    @staticmethod
+    def _precompute(filter_order, frame_period, ignore_gain=False):
+        AllZeroDigitalFilter._check(filter_order, frame_period)
+        return (frame_period, ignore_gain)
+
+    @staticmethod
+    def _forward(x, b, frame_period, ignore_gain):
+        check_size(x.size(-1), b.size(-2) * frame_period, "sequence length")
+
         M = b.size(-1) - 1
         x = F.pad(x, (M, 0))
         x = x.unfold(-1, M + 1, 1)
@@ -88,5 +108,3 @@ class AllZeroDigitalFilter(nn.Module):
             h = h / h[..., -1:]
         y = (x * h).sum(-1)
         return y
-
-    _func = _forward

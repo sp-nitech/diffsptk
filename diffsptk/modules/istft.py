@@ -14,10 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
 from ..misc.utils import Lambda
+from ..misc.utils import get_layer
 from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 from .unframe import Unframe
@@ -29,10 +32,10 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
     Parameters
     ----------
     frame_length : int >= 1
-        The frame length in sample, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        The frame period in sample, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     fft_length : int >= L
         The number of FFT bins, :math:`N`.
@@ -58,8 +61,6 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         center=True,
         window="blackman",
         norm="power",
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -108,7 +109,11 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         return InverseShortTimeFourierTransform._forward(x, out_length, *layers)
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
         pass
 
     @staticmethod
@@ -123,15 +128,19 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         dtype=None,
     ):
         InverseShortTimeFourierTransform._check()
+        module = inspect.stack()[1].function == "__init__"
+
         ifft = Lambda(lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length])
-        unframe = Unframe(
-            frame_length,
-            frame_period,
-            center=center,
-            norm=norm,
-            window=window,
-            device=device,
-            dtype=dtype,
+        unframe = get_layer(
+            module,
+            Unframe,
+            dict(
+                frame_length=frame_length,
+                frame_period=frame_period,
+                center=center,
+                norm=norm,
+                window=window,
+            ),
         )
         return None, (ifft, unframe), None
 

@@ -80,6 +80,10 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         return ReverseLevinsonDurbin._forward(a, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(lpc_order):
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")

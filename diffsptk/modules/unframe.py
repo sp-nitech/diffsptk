@@ -27,10 +27,10 @@ class Unframe(BaseFunctionalModule):
     Parameters
     ----------
     frame_length : int >= 1
-        The frame length in sample, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        The frame period in sample, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     center : bool
         If True, pad the input on both sides so that the frame is centered.
@@ -52,8 +52,6 @@ class Unframe(BaseFunctionalModule):
         center=True,
         window="rectangular",
         norm="none",
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -93,22 +91,21 @@ class Unframe(BaseFunctionalModule):
         tensor([1., 2., 3., 4., 5., 6., 7., 8., 9.])
 
         """
-        return self._forward(
-            y,
-            out_length,
-            *self.values,
-            **self._buffers,
-        )
+        return self._forward(y, out_length, *self.values, **self._buffers)
 
     @staticmethod
     def _func(y, out_length, *args, **kwargs):
         values, _, tensors = Unframe._precompute(
-            *args, **kwargs, device=y.device, dtype=y.dtype
+            y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
         return Unframe._forward(y, out_length, *values, *tensors)
 
     @staticmethod
-    def _check(frame_length, frame_period, center, window, norm):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(frame_length, frame_period):
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if frame_length < frame_period:
@@ -118,7 +115,7 @@ class Unframe(BaseFunctionalModule):
     def _precompute(
         frame_length, frame_period, center, window, norm, device=None, dtype=None
     ):
-        Unframe._check(frame_length, frame_period, center, window, norm)
+        Unframe._check(frame_length, frame_period)
         window_ = Window._precompute(
             frame_length, None, window, norm, device=device, dtype=dtype
         )[-1][0].view(1, -1, 1)

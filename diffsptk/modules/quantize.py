@@ -16,6 +16,7 @@
 
 import torch
 
+from ..misc.utils import get_values
 from .base import BaseFunctionalModule
 
 
@@ -59,7 +60,7 @@ class UniformQuantization(BaseFunctionalModule):
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super().__init__()
 
-        self.values = self._precompute(abs_max, n_bit, quantizer)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Quantize the input waveform.
@@ -89,6 +90,10 @@ class UniformQuantization(BaseFunctionalModule):
     def _func(x, *args, **kwargs):
         values = UniformQuantization._precompute(*args, **kwargs)
         return UniformQuantization._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
 
     @staticmethod
     def _check(abs_max, n_bit):

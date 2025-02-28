@@ -73,6 +73,10 @@ class ALawExpansion(BaseFunctionalModule):
         return ALawExpansion._forward(y, *values)
 
     @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
     def _check(*args, **kwargs):
         ALawCompression._check(*args, **kwargs)
 

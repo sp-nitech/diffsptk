@@ -36,7 +36,7 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dht_length, dht_type=2, device=None, dtype=None):
+    def __init__(self, dht_length, dht_type=2):
         super().__init__()
 
         self.in_dim = dht_length
@@ -77,6 +77,10 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
         return DiscreteHartleyTransform._forward(x, *tensors)
 
     @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
     def _check(dht_length, dht_type):
         if dht_length <= 0:
             raise ValueError("dht_length must be positive.")
@@ -86,10 +90,10 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(dht_length, dht_type, device=None, dtype=None):
         DiscreteHartleyTransform._check(dht_length, dht_type)
-        param = {"device": device, "dtype": torch.double}
+        params = {"device": device, "dtype": torch.double}
         L = dht_length
-        n = torch.arange(L, **param)
-        k = torch.arange(L, **param)
+        n = torch.arange(L, **params)
+        k = torch.arange(L, **params)
         if dht_type == 2 or dht_type == 4:
             n += 0.5
         if dht_type == 3 or dht_type == 4:
