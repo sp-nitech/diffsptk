@@ -15,44 +15,44 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 from tqdm import tqdm
 
 from ..misc.utils import get_generator
 from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
+from .base import BaseLearnerModule
 from .pca import PrincipalComponentAnalysis
 
 
-class IndependentComponentAnalysis(nn.Module):
+class IndependentComponentAnalysis(BaseLearnerModule):
     """Independent component analysis module. Note that the forward method is not
     differentiable.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the vector, :math:`M`.
 
     n_comp : int >= 1
-        Number of components, :math:`K`.
+        The number of components, :math:`K`.
 
     func : ['logcosh', 'gauss']
         The nonquadratic function used in the approximation of negentropy.
 
     n_iter : int >= 1
-        Number of iterations.
+        The number of iterations.
 
     eps : float >= 0
-        Convergence threshold.
+        The convergence threshold.
 
     batch_size : int >= 1 or None
-        Batch size.
+        The batch size.
 
     seed : int or None
-        Random seed.
+        The random seed.
 
     verbose : bool
-        If True, show progress bar.
+        If True, shows progress bars.
 
     References
     ----------
@@ -65,6 +65,7 @@ class IndependentComponentAnalysis(nn.Module):
         self,
         order,
         n_comp,
+        *,
         func="logcosh",
         n_iter=100,
         eps=1e-4,
@@ -74,9 +75,14 @@ class IndependentComponentAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= n_comp <= order + 1
-        assert 1 <= n_iter
-        assert 0 <= eps
+        if order <= 0:
+            raise ValueError("order must be positive.")
+        if order + 1 < n_comp:
+            raise ValueError("n_comp must be less than or equal to input dimension.")
+        if n_iter <= 0:
+            raise ValueError("n_iter must be positive.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
 
         self.n_iter = n_iter
         self.eps = eps
@@ -103,17 +109,17 @@ class IndependentComponentAnalysis(nn.Module):
 
     @torch.inference_mode()
     def forward(self, x):
-        """Estimate separating matrix.
+        """Perform independent component analysis.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Input vectors or dataloder yielding input vectors.
+            The input vectors or a DataLoader that yields the input vectors.
 
         Returns
         -------
         W : Tensor [shape=(K, K)]
-            Separating matrix.
+            The separating matrix.
 
         """
         x = to_dataloader(x, self.batch_size)
@@ -165,17 +171,17 @@ class IndependentComponentAnalysis(nn.Module):
         return self.W
 
     def transform(self, x):
-        """Separate input vectors into independent components.
+        """Separate the input vectors into independent components.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         out : Tensor [shape=(..., K)]
-            Estimated independent components.
+            The estimated independent components.
 
         """
         return torch.matmul(self.pca.whiten(self.pca.center(x)), self.W.T)

@@ -16,42 +16,44 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class Delta(nn.Module):
+class Delta(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/delta.html>`_
     for details.
 
     Parameters
     ----------
     seed : list[list[float]] or list[int]
-        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+        The delta coefficients or the width(s) of 1st (and 2nd) regression coefficients.
 
     static_out : bool
-        If False, output only delta components.
+        If False, outputs only the delta components.
 
     """
 
     def __init__(self, seed=[[-0.5, 0, 0.5], [1, -2, 1]], static_out=True):
         super().__init__()
 
-        self.register_buffer("window", self._precompute(seed, static_out))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("window", tensors[0])
 
     def forward(self, x):
-        """Compute delta components.
+        """Compute the delta components.
 
         Parameters
         ----------
         x : Tensor [shape=(B, T, D) or (T, D)]
-            Static components.
+            The static components.
 
         Returns
         -------
         out : Tensor [shape=(B, T, DxH) or (T, DxH)]
-            Delta (and static) components.
+            The delta (and static) components.
 
         Examples
         --------
@@ -73,36 +75,24 @@ class Delta(nn.Module):
         return self._forward(x, self.window)
 
     @staticmethod
-    def _forward(x, window):
-        d = x.dim()
-        if d == 2:
-            x = x.unsqueeze(0)
-        assert x.dim() == 3, "Input must be 3D tensor."
-
-        B, T, _ = x.shape
-        W = window.size(-1)
-        pad_width = (W - 1) // 2
-
-        x = x.unsqueeze(1)
-        x = F.pad(x, (0, 0, pad_width, pad_width), mode="replicate")
-        w = window.view(-1, 1, W, 1)
-        y = F.conv2d(x, w, padding="valid")  # (B, H, T, D)
-        y = y.permute(0, 2, 1, 3)
-        y = y.reshape(B, T, -1)
-
-        if d == 2:
-            y = y.squeeze(0)
-        return y
+    def _func(x, *args, **kwargs):
+        _, _, tensors = Delta._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return Delta._forward(x, *tensors)
 
     @staticmethod
-    def _func(x, seed, static_out):
-        window = Delta._precompute(seed, static_out, dtype=x.dtype, device=x.device)
-        return Delta._forward(x, window)
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(seed):
+        if not isinstance(seed, (tuple, list)):
+            raise ValueError("seed must be tuple or list.")
 
     @staticmethod
     def _precompute(seed, static_out, dtype=None, device=None):
-        if not isinstance(seed, (tuple, list)):
-            raise ValueError("seed must be tuple or list.")
+        Delta._check(seed)
 
         if isinstance(seed[0], (tuple, list)):
             # Make window from delta coefficients.
@@ -162,4 +152,27 @@ class Delta(nn.Module):
                 raise ValueError("3rd order regression is not supported.")
 
         window = torch.stack(window)  # (H, W)
-        return to(window, dtype=dtype)
+        return None, None, (to(window, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, window):
+        d = x.dim()
+        if d == 2:
+            x = x.unsqueeze(0)
+        if x.dim() != 3:
+            raise ValueError("Input must be 2D or 3D tensor.")
+
+        B, T, _ = x.shape
+        W = window.size(-1)
+        pad_width = (W - 1) // 2
+
+        x = x.unsqueeze(1)
+        x = F.pad(x, (0, 0, pad_width, pad_width), mode="replicate")
+        w = window.view(-1, 1, W, 1)
+        y = F.conv2d(x, w, padding="valid")  # (B, H, T, D)
+        y = y.permute(0, 2, 1, 3)
+        y = y.reshape(B, T, -1)
+
+        if d == 2:
+            y = y.squeeze(0)
+        return y

@@ -17,7 +17,6 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from pylstraight.core.sp import optimumsmoothing as optimum_smoothing
 from scipy import signal
 from torch import nn
 
@@ -298,6 +297,8 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             ((self.ramp[:fft_length] - fft_length // 2).abs() - fft_length / 30) / 2
         )
         self.register_buffer("lft", lft)
+
+        from pylstraight.core.sp import optimumsmoothing as optimum_smoothing
 
         ovc = optimum_smoothing(eta, self.pc)
         self.register_buffer("ovc", numpy_to_torch(ovc))

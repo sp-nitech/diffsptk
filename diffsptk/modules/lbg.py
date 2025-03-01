@@ -64,7 +64,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         The random seed.
 
     verbose : bool or int
-        If 1, shows the distance at each iteration; if 2, shows a progress bar.
+        If 1, shows the distance at each iteration; if 2, shows progress bars.
 
     References
     ----------

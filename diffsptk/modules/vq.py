@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from vector_quantize_pytorch import VectorQuantize
-
 from .base import BaseNonFunctionalModule
 
 
@@ -48,6 +46,8 @@ class VectorQuantization(BaseNonFunctionalModule):
             raise ValueError("order must be non-negative.")
         if codebook_size <= 0:
             raise ValueError("codebook_size must be positive.")
+
+        from vector_quantize_pytorch import VectorQuantize
 
         self.vq = VectorQuantize(
             dim=order + 1, codebook_size=codebook_size, **kwargs

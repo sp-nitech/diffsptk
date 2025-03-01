@@ -15,36 +15,36 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 from tqdm import tqdm
 
 from ..misc.utils import outer
 from ..misc.utils import to_dataloader
+from .base import BaseLearnerModule
 
 
-class PrincipalComponentAnalysis(nn.Module):
+class PrincipalComponentAnalysis(BaseLearnerModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pca.html>`_
     for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector.
+        The order of the vector, :math:`M`.
 
     n_comp : int >= 1
-        Number of principal components, :math:`K`.
+        The number of principal components, :math:`K`.
 
     cov_type : ['sample', 'unbiased', 'correlation']
-        Type of covariance.
+        The type of covariance matrix.
 
     sort : ['ascending', 'descending']
-        Order of eigenvalues and eigenvectors.
+        The order of eigenvalues.
 
     batch_size : int >= 1 or None
-        Batch size.
+        The batch size.
 
     verbose : bool
-        If True, show progress bar.
+        If True, shows progress bars.
 
     """
 
@@ -60,8 +60,12 @@ class PrincipalComponentAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= n_comp <= order + 1
-        assert sort in ["ascending", "descending"]
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if order + 1 < n_comp:
+            raise ValueError("n_comp must be less than or equal to input dimension.")
+        if sort not in ["ascending", "descending"]:
+            raise ValueError("sort must be 'ascending' or 'descending'.")
 
         self.n_comp = n_comp
         self.sort = sort
@@ -95,23 +99,23 @@ class PrincipalComponentAnalysis(nn.Module):
         self.register_buffer("m", torch.zeros(order + 1))
 
     def forward(self, x):
-        """Perform PCA.
+        """Perform principal component analysis.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Input vectors or dataloader yielding input vectors.
+            The input vectors or a DataLoader that yields the input vectors.
 
         Returns
         -------
         s : Tensor [shape=(K,)]
-            Eigenvalues.
+            The eigenvalues.
 
         V : Tensor [shape=(K, M+1)]
-            Eigenvectors.
+            The eigenvectors.
 
         m : Tensor [shape=(M+1,)]
-            Mean vector.
+            The mean vector.
 
         Examples
         --------
@@ -159,50 +163,50 @@ class PrincipalComponentAnalysis(nn.Module):
         return self.s, self.V, self.m
 
     def transform(self, x):
-        """Transform input vectors using estimated eigenvectors.
+        """Transform the input vectors using the estimated eigenvectors.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         out : Tensor [shape=(..., K)]
-            Transformed vectors.
+            The transformed vectors.
 
         """
         V = self.V.T.flip(-1) if self.sort == "ascending" else self.V.T
         return torch.matmul(self.center(x), V)
 
     def center(self, x):
-        """Center input vectors using estimated mean.
+        """Center the input vectors using the estimated mean.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Centered vectors.
+            The centered vectors.
 
         """
         return x - self.m
 
     def whiten(self, x):
-        """Whiten input vectors using estimated parameters.
+        """Whiten the input vectors using the estimated parameters.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         out : Tensor [shape=(..., K)]
-            Whitened vectors.
+            The whitened vectors.
 
         """
         V = self.V.T.flip(-1) if self.sort == "ascending" else self.V.T

@@ -28,7 +28,6 @@ def test_compatibility(device, module, seed, T=10, L=2):
         module,
         diffsptk.Delta,
         diffsptk.functional.delta,
-        {},
         {"seed": seed},
     )
 

@@ -64,7 +64,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
         The batch size.
 
     verbose : bool
-        If 1, shows the likelihood at each iteration; if 2, shows a progress bar.
+        If 1, shows the likelihood at each iteration; if 2, shows progress bars.
 
     References
     ----------

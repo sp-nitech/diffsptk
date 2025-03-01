@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from torch import nn
-from vector_quantize_pytorch import ResidualVQ
+from .base import BaseNonFunctionalModule
 
 
-class MultiStageVectorQuantization(nn.Module):
+class MultiStageVectorQuantization(BaseNonFunctionalModule):
     """See `this page <https://github.com/lucidrains/vector-quantize-pytorch>`_
     for details.
 
@@ -52,6 +51,8 @@ class MultiStageVectorQuantization(nn.Module):
             raise ValueError("codebook_size must be positive.")
         if n_stage <= 0:
             raise ValueError("n_stage must be positive.")
+
+        from vector_quantize_pytorch import ResidualVQ
 
         self.vq = ResidualVQ(
             dim=order + 1, codebook_size=codebook_size, num_quantizers=n_stage, **kwargs
