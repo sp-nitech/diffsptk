@@ -16,37 +16,38 @@
 
 import numpy as np
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 LOG_ZERO = -1.0e10
 
 
-class LineSpectralPairsToSpectrum(nn.Module):
+class LineSpectralPairsToSpectrum(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mglsp2sp.html>`_
     for details.
 
     Parameters
     ----------
     lsp_order : int >= 0
-        Order of line spectral pairs, :math:`M`.
+        The order of the line spectral pairs, :math:`M`.
 
-    fft_length : int >= 1
-        Number of FFT bins, :math:`L`.
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
 
     alpha : float in (-1, 1)
-        Warping factor, :math:`\\alpha`.
+        The warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 0)
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     log_gain : bool
-        If True, assume input gain is in log scale.
+        If True, assume the input gain is in logarithmic scale.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
-        Output format.
+        The output format.
 
     References
     ----------
@@ -69,21 +70,12 @@ class LineSpectralPairsToSpectrum(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= lsp_order
-        assert 1 <= fft_length
-        assert abs(alpha) < 1
-        assert -1 <= gamma < 0
+        self.in_dim = lsp_order + 1
 
-        self.lsp_order = lsp_order
-        self.log_gain = log_gain
-        self.formatter = self._formatter(out_format)
-
-        cos_omega, p_bias, q_bias, self.c1, self.c2 = self._precompute(
-            lsp_order, fft_length, alpha, gamma
-        )
-        self.register_buffer("cos_omega", cos_omega)
-        self.register_buffer("p_bias", p_bias)
-        self.register_buffer("q_bias", q_bias)
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("cos_omega", tensors[0])
+        self.register_buffer("p_bias", tensors[1])
+        self.register_buffer("q_bias", tensors[2])
 
     def forward(self, w):
         """Convert line spectral pairs to spectrum.
@@ -91,12 +83,12 @@ class LineSpectralPairsToSpectrum(nn.Module):
         Parameters
         ----------
         w : Tensor [shape=(..., M+1)]
-            Line spectral pairs in radians.
+            The line spectral pairs in radians.
 
         Returns
         -------
         out : Tensor [shape=(..., L/2+1)]
-            Spectrum.
+            The spectrum.
 
         Examples
         --------
@@ -113,50 +105,58 @@ class LineSpectralPairsToSpectrum(nn.Module):
         tensor([31.3541, 13.7932, 14.7454, 16.9510, 10.4759])
 
         """
-        check_size(w.size(-1), self.lsp_order + 1, "dimension of LSP")
-        return self._forward(
-            w,
-            self.log_gain,
-            self.formatter,
-            self.cos_omega,
-            self.p_bias,
-            self.q_bias,
-            self.c1,
-            self.c2,
-        )
+        check_size(w.size(-1), self.in_dim, "dimension of LSP")
+        return self._forward(w, *self.values, **self._buffers)
 
     @staticmethod
-    def _forward(w, log_gain, formatter, cos_omega, p_bias, q_bias, c1, c2):
-        def floor_log(x):
-            return torch.clip(torch.log(x), min=LOG_ZERO)
-
-        K, w = torch.split(w, [1, w.size(-1) - 1], dim=-1)
-        if not log_gain:
-            K = floor_log(K)
-
-        cos_w = torch.cos(w).unsqueeze(-2)
-        pq = floor_log(torch.abs(cos_omega - cos_w))  # [..., L/2+1, M]
-        p = pq[..., 1::2].sum(-1)
-        q = pq[..., 0::2].sum(-1)
-        r = torch.logsumexp(2 * torch.stack([p + p_bias, q + q_bias], dim=-1), dim=-1)
-        sp = K + c1 * (c2 + r)
-        sp = formatter(sp)
-        return sp
+    def _func(w, *args, **kwargs):
+        values, _, tensors = LineSpectralPairsToSpectrum._precompute(
+            w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
+        )
+        return LineSpectralPairsToSpectrum._forward(w, *values, *tensors)
 
     @staticmethod
-    def _func(w, fft_length, alpha, gamma, log_gain, out_format):
-        formatter = LineSpectralPairsToSpectrum._formatter(out_format)
-        precomputes = LineSpectralPairsToSpectrum._precompute(
-            w.size(-1) - 1, fft_length, alpha, gamma, dtype=w.dtype, device=w.device
-        )
-        return LineSpectralPairsToSpectrum._forward(
-            w, log_gain, formatter, *precomputes
-        )
+    def _takes_input_size():
+        return True
 
     @staticmethod
-    def _precompute(lsp_order, fft_length, alpha, gamma, dtype=None, device=None):
+    def _check(lsp_order, fft_length, alpha, gamma):
+        if lsp_order < 0:
+            raise ValueError("lsp_order must be non-negative.")
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if not (-1 <= gamma < 0):
+            raise ValueError("gamma must be in [-1, 0).")
+
+    @staticmethod
+    def _precompute(
+        lsp_order,
+        fft_length,
+        alpha,
+        gamma,
+        log_gain,
+        out_format,
+        dtype=None,
+        device=None,
+    ):
+        if out_format in (0, "db"):
+            formatter = lambda x: x * (20 / np.log(10))
+        elif out_format in (1, "log-magnitude"):
+            formatter = lambda x: x
+        elif out_format in (2, "magnitude"):
+            formatter = lambda x: torch.exp(x)
+        elif out_format in (3, "power"):
+            formatter = lambda x: torch.exp(2 * x)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        c1 = 0.5 / gamma
+        c2 = np.log(2) * (lsp_order if lsp_order % 2 == 0 else (lsp_order - 1))
+
         omega = torch.linspace(
-            0, torch.pi, fft_length // 2 + 1, dtype=torch.double, device=device
+            0, torch.pi, fft_length // 2 + 1, device=device, dtype=torch.double
         )
         warped_omega = omega + 2 * torch.atan(
             alpha * torch.sin(omega) / (1 - alpha * torch.cos(omega))
@@ -176,19 +176,22 @@ class LineSpectralPairsToSpectrum(nn.Module):
         p_bias = to(p, dtype=dtype)
         q_bias = to(q, dtype=dtype)
 
-        c1 = 0.5 / gamma
-        c2 = np.log(2) * (lsp_order if lsp_order % 2 == 0 else (lsp_order - 1))
-        return cos_omega, p_bias, q_bias, c1, c2
+        return (log_gain, formatter, c1, c2), None, (cos_omega, p_bias, q_bias)
 
     @staticmethod
-    def _formatter(out_format):
-        if out_format in (0, "db"):
-            c = 20 / np.log(10)
-            return lambda x: x * c
-        elif out_format in (1, "log-magnitude"):
-            return lambda x: x
-        elif out_format in (2, "magnitude"):
-            return lambda x: torch.exp(x)
-        elif out_format in (3, "power"):
-            return lambda x: torch.exp(2 * x)
-        raise ValueError(f"out_format {out_format} is not supported.")
+    def _forward(w, log_gain, formatter, c1, c2, cos_omega, p_bias, q_bias):
+        def floor_log(x):
+            return torch.clip(torch.log(x), min=LOG_ZERO)
+
+        K, w = torch.split(w, [1, w.size(-1) - 1], dim=-1)
+        if not log_gain:
+            K = floor_log(K)
+
+        cos_w = torch.cos(w).unsqueeze(-2)
+        pq = floor_log(torch.abs(cos_omega - cos_w))  # [..., L/2+1, M]
+        p = pq[..., 1::2].sum(-1)
+        q = pq[..., 0::2].sum(-1)
+        r = torch.logsumexp(2 * torch.stack([p + p_bias, q + q_bias], dim=-1), dim=-1)
+        sp = K + c1 * (c2 + r)
+        sp = formatter(sp)
+        return sp

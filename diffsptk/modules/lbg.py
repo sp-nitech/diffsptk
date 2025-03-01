@@ -17,54 +17,54 @@
 import math
 
 import torch
-from torch import nn
 from tqdm import tqdm
 
 from ..misc.utils import get_generator
 from ..misc.utils import get_logger
 from ..misc.utils import to_dataloader
+from .base import BaseLearnerModule
 from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
 
 
-class LindeBuzoGrayAlgorithm(nn.Module):
+class LindeBuzoGrayAlgorithm(BaseLearnerModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lbg.html>`_
     for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the vector, :math:`M`.
 
     codebook_size : int >= 1
-        Target codebook size, :math:`K`.
+        The target codebook size, :math:`K`.
 
     min_data_per_cluster : int >= 1
-        Minimum number of data points in a cluster.
+        The minimum number of data points required in each cluster.
 
     n_iter : int >= 1
-        Number of iterations.
+        The number of iterations.
 
     eps : float >= 0
-        Convergence threshold.
+        The convergence threshold.
 
     perturb_factor : float > 0
-        Perturbation factor.
+        The perturbation factor.
 
     init : ['none', 'mean'] or torch.Tensor [shape=(1~K, M+1)]
-        Initialization type.
+        The initialization method for the codebook.
 
     metric : ['none, 'aic', 'bic']
-        Metric used as a reference for model selection.
+        The metric used for model selection.
 
     batch_size : int >= 1 or None
-        Batch size.
+        The batch size.
 
     seed : int or None
-        Random seed.
+        The random seed.
 
     verbose : bool or int
-        If 1, show distance at each iteration; if 2, show progress bar.
+        If 1, shows the distance at each iteration; if 2, shows a progress bar.
 
     References
     ----------
@@ -90,12 +90,18 @@ class LindeBuzoGrayAlgorithm(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= order
-        assert 1 <= codebook_size
-        assert 1 <= min_data_per_cluster
-        assert 1 <= n_iter
-        assert 0 <= eps
-        assert 0 < perturb_factor
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if codebook_size <= 0:
+            raise ValueError("codebook_size must be positive.")
+        if min_data_per_cluster <= 0:
+            raise ValueError("min_data_per_cluster must be positive.")
+        if n_iter <= 0:
+            raise ValueError("n_iter must be positive.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
+        if perturb_factor <= 0:
+            raise ValueError("perturb_factor must be positive.")
 
         self.order = order
         self.codebook_size = codebook_size
@@ -135,26 +141,26 @@ class LindeBuzoGrayAlgorithm(nn.Module):
 
     @torch.inference_mode()
     def forward(self, x, return_indices=False):
-        """Design a codebook.
+        """Design a codebook using the Linde-Buzo-Gray algorithm.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Input vectors or dataloder yielding input vectors.
+            The input vectors or a DataLoader that yields the input vectors.
 
         return_indices : bool
-            If True, return indices.
+            If True, return the codebook indices.
 
         Returns
         -------
         codebook : Tensor [shape=(K, M+1)]
-            Codebook.
+            The generated codebook.
 
         indices : Tensor [shape=(T,)] (optional)
-            Codebook indices.
+            The codebook indices.
 
         distance : Tensor [scalar]
-            Distance.
+            The distance between the input vectors and the codebook.
 
         Examples
         --------
@@ -300,20 +306,20 @@ class LindeBuzoGrayAlgorithm(nn.Module):
         return ret
 
     def transform(self, x):
-        """Transform input vectors using the codebook.
+        """Transform the input vectors using the codebook.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         xq : Tensor [shape=(T, M+1)]
-            Quantized vectors.
+            The quantized vectors.
 
         indices : Tensor [shape=(T,)]
-            Codebook indices.
+            The codebook indices.
 
         Examples
         --------

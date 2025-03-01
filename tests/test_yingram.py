@@ -38,8 +38,7 @@ def test_compatibility(
         module,
         diffsptk.Yingram,
         diffsptk.functional.yingram,
-        {"frame_length": fl},
-        {"sample_rate": sr, "lag_min": lag_min, "n_bin": n_bin},
+        {"frame_length": fl, "sample_rate": sr, "lag_min": lag_min, "n_bin": n_bin},
     )
     if module:
         yingram = yingram.to(device)

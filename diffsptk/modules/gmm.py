@@ -16,55 +16,55 @@
 
 import numpy as np
 import torch
-from torch import nn
 from tqdm import tqdm
 
 from ..misc.utils import get_logger
 from ..misc.utils import outer
 from ..misc.utils import to_dataloader
+from .base import BaseLearnerModule
 
 
-class GaussianMixtureModeling(nn.Module):
+class GaussianMixtureModeling(BaseLearnerModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/gmm.html>`_
     for details. Note that the forward method is not differentiable.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the vector, :math:`M`.
 
     n_mixture : int >= 1
-        Number of mixture components, :math:`K`.
+        The number of mixture components, :math:`K`.
 
     n_iter : int >= 1
-        Number of iterations.
+        The number of iterations.
 
     eps : float >= 0
-        Convergence threshold.
+        The convergence threshold.
 
     weight_floor : float >= 0
-        Floor value for mixture weights.
+        The floor value for mixture weights.
 
     var_floor : float >= 0
-        Floor value for variance.
+        The floor value for variance.
 
     var_type : ['diag', 'full']
-        Type of covariance.
+        The type of covariance matrix.
 
     block_size : list[int]
-        Block size of covariance matrix.
+        The block size of covariance matrix.
 
     ubm : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
-        Parameters of universal background model.
+        The GMM parameters of a universal background model.
 
     alpha : float in [0, 1]
-        Smoothing parameter.
+        The smoothing parameter.
 
     batch_size : int >= 1 or None
-        Batch size.
+        The batch size.
 
     verbose : bool
-        If 1, show distance at each iteration; if 2, show progress bar.
+        If 1, shows the likelihood at each iteration; if 2, shows a progress bar.
 
     References
     ----------
@@ -92,13 +92,20 @@ class GaussianMixtureModeling(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= order
-        assert 1 <= n_mixture
-        assert 1 <= n_iter
-        assert 0 <= eps
-        assert 0 <= weight_floor <= 1 / n_mixture
-        assert 0 <= var_floor
-        assert 0 <= alpha <= 1
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if n_mixture <= 0:
+            raise ValueError("n_mixture must be positive.")
+        if n_iter <= 0:
+            raise ValueError("n_iter must be positive.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
+        if not 0 <= weight_floor <= 1 / n_mixture:
+            raise ValueError("weight_floor must be in [0, 1 / K].")
+        if var_floor < 0:
+            raise ValueError("var_floor must be non-negative.")
+        if not 0 <= alpha <= 1:
+            raise ValueError("alpha must be in [0, 1].")
 
         self.order = order
         self.n_mixture = n_mixture
@@ -159,7 +166,7 @@ class GaussianMixtureModeling(nn.Module):
         Parameters
         ----------
         params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
-            Parameters of Gaussian mixture model.
+            The GMM parameters.
 
         """
         w, mu, sigma = params
@@ -171,15 +178,15 @@ class GaussianMixtureModeling(nn.Module):
             self.sigma[:] = sigma
 
     def warmup(self, x, **lbg_params):
-        """Initialize model parameters by K-means clustering.
+        """Initialize the model parameters by K-means clustering.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Training data.
+            The training data.
 
         lbg_params : additional keyword arguments
-            Parameters for Linde-Buzo-Gray algorithm.
+            The parameters for the Linde-Buzo-Gray algorithm.
 
         """
         x = to_dataloader(x, batch_size=self.batch_size)
@@ -218,21 +225,21 @@ class GaussianMixtureModeling(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Input vectors or dataloder yielding input vectors.
+            The input vectors or a DataLoader that yields the input vectors.
 
         return_posterior : bool
-            If True, return posterior probabilities.
+            If True, return the posterior probabilities.
 
         Returns
         -------
         params : tuple of Tensors [shape=((K,), (K, M+1), (K, M+1, M+1))]
-            GMM parameters.
+            The estimated GMM parameters.
 
         posterior : Tensor [shape=(T, K)] (optional)
-            Posterior probabilities.
+            The posterior probabilities.
 
         log_likelihood : Tensor [scalar]
-            Total log-likelihood.
+            The total log-likelihood.
 
         Examples
         --------
@@ -355,23 +362,23 @@ class GaussianMixtureModeling(nn.Module):
         return ret
 
     def transform(self, x):
-        """Transform input vectors based on a single mixture sequence.
+        """Transform the input vectors based on a single mixture sequence.
 
         Parameters
         ----------
         x : Tensor [shape=(T, N+1)]
-            Input vectors.
+            The input vectors.
 
         Returns
         -------
         y : Tensor [shape=(T, M-N)]
-            Output vectors.
+            The output vectors.
 
         indices : Tensor [shape=(T,)]
-            Selected mixture indices.
+            The selected mixture indices.
 
         log_prob : Tensor [shape=(T,)]
-            Log probabilities.
+            The log probabilities.
 
         """
         N = x.size(-1) - 1
@@ -393,28 +400,6 @@ class GaussianMixtureModeling(nn.Module):
         return y, indices, log_prob
 
     def _e_step(self, x, reduction="sum", in_order=None):
-        """Expectation step.
-
-        Parameters
-        ----------
-        x : Tensor [shape=(T, M+1)]
-            Input vectors.
-
-        reduction : ['none', 'sum']
-            Reduction type.
-
-        in_order : int >= 0
-            Order of input vectors.
-
-        Returns
-        -------
-        posterior : Tensor [shape=(T, K)]
-            Posterior probabilities.
-
-        log_prob : Tensor [shape=(T,) or scalar]
-            Log probabilities.
-
-        """
         x = to_dataloader(x, self.batch_size)
         device = self.w.device
 

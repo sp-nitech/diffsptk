@@ -1528,6 +1528,34 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
+def mcep(x, cep_order, n_iter=0, alpha=0):
+    """Perform mel-cepstral analysis.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    n_iter : int >= 0
+        The number of iterations.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The mel-cepstrum.
+
+    """
+    return nn.MelCepstralAnalysis._func(
+        x, cep_order=cep_order, n_iter=n_iter, alpha=alpha
+    )
+
+
 def mdct(x, frame_length=400, window="sine"):
     """Compute modified discrete cosine transform.
 

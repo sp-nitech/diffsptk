@@ -49,3 +49,9 @@ class BaseFunctionalModule(ABC, nn.Module):
     @abstractmethod
     def _forward(*args, **kwargs):
         raise NotImplementedError
+
+
+class BaseLearnerModule(ABC, nn.Module):
+    @abstractmethod
+    def transform(self, *args, **kwargs):
+        raise NotImplementedError
