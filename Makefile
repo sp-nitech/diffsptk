@@ -48,7 +48,7 @@ doc-clean:
 
 check: tool
 	. .venv/bin/activate && python -m ruff check $(PROJECT) tests
-	. .venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs
+	. .venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs/source
 	. .venv/bin/activate && python -m mdformat --check *.md
 	.venv/bin/codespell
 	./tools/taplo/taplo fmt --check *.toml
@@ -56,7 +56,7 @@ check: tool
 
 format: tool
 	. .venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
-	. .venv/bin/activate && python -m ruff format $(PROJECT) tests docs
+	. .venv/bin/activate && python -m ruff format $(PROJECT) tests docs/source
 	. .venv/bin/activate && python -m mdformat *.md
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml

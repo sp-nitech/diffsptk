@@ -7,7 +7,7 @@ dist/
 coverage.xml
 
 # docs
-_build/
+build/
 
 # tools
 tools/**/
