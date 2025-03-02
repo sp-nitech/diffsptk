@@ -187,7 +187,8 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
                 self.logger.info("K = 1")
             s = T = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
-                assert batch_x.dim() == 2
+                if batch_x.dim() != 2:
+                    raise ValueError("Input vectors must be 2D.")
                 batch_xp = batch_x.to(device)
                 s += batch_xp.sum(0)
                 T += batch_xp.size(0)

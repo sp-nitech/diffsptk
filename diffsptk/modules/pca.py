@@ -137,7 +137,8 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         # Compute statistics.
         x0 = x1 = x2 = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
-            assert batch_x.dim() == 2
+            if batch_x.dim() != 2:
+                raise ValueError("Input vectors must be 2D.")
             xp = batch_x.to(device)
             x0 += xp.size(0)
             x1 += xp.sum(0)

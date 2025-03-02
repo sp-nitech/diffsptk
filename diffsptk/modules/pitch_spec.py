@@ -27,33 +27,35 @@ from ..misc.utils import numpy_to_torch
 from ..misc.world import dc_correction
 from ..misc.world import get_windowed_waveform
 from ..misc.world import linear_smoothing
+from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
 
 
-class PitchAdaptiveSpectralAnalysis(nn.Module):
+class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pitch_spec.html>`_
-    for details.
+    for details. Note that the gradients do not propagated through F0.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period in samples, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     sample_rate : int >= 8000
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     fft_length : int >= 1024
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     algorithm : ['cheap-trick', 'straight']
-        Algorithm. STRAIGHT supports only double precision.
+        The algorithm to estimate spectral envelpe. The STRAIGHT supports only double
+        precision.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
-        Output format.
+        The output format.
 
     default_f0 : float > 0
-        F0 value used when the input F0 is unvoiced.
+        The F0 value used when the input F0 is unvoiced.
 
     References
     ----------
@@ -78,8 +80,12 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert 8000 <= sample_rate
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+        if sample_rate < 8000:
+            raise ValueError("sample_rate must be at least 8000 Hz.")
+        if fft_length < 1024:
+            raise ValueError("fft_length must be at least 1024.")
 
         if algorithm == "cheap-trick":
             self.extractor = SpectrumExtractionByCheapTrick(
@@ -100,15 +106,15 @@ class PitchAdaptiveSpectralAnalysis(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         f0 : Tensor [shape=(..., T/P)]
-            F0 in Hz.
+            The F0 in Hz.
 
         Returns
         -------
         out : Tensor [shape=(..., T/P, L/2+1)]
-            Spectral envelope.
+            The spectral envelope.
 
         Examples
         --------
@@ -160,13 +166,15 @@ class SpectrumExtractionByCheapTrick(nn.Module):
 
         # GetF0FloorForCheapTrick()
         self.f_min = 3 * sample_rate / (fft_length - 3)
-        assert self.f_min <= default_f0
+        if default_f0 < self.f_min:
+            raise ValueError(f"default_f0 must be at least {self.f_min}.")
 
         # GetFFTSizeForCheapTrick()
         min_fft_length = 2 ** (
             1 + int(np.log(3 * sample_rate / self.f_min + 1) / np.log(2))
         )
-        assert min_fft_length <= fft_length
+        if fft_length < min_fft_length:
+            raise ValueError(f"fft_length must be at least {min_fft_length}.")
 
         # Set WORLD constants.
         self.q1 = q1
@@ -257,7 +265,8 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         frame_length_in_msec = 80
         frame_length = sample_rate * frame_length_in_msec // 1000
-        assert frame_length <= fft_length
+        if fft_length < frame_length:
+            raise ValueError(f"fft_length must be at least {frame_length}.")
         self.frame = Frame(frame_length, frame_period, zmean=True)
 
         self.register_buffer("ramp", torch.arange(max(frame_length * 2, fft_length)))
@@ -342,7 +351,9 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         return y.real
 
     def forward(self, x, f0):
-        assert x.dtype == torch.double
+        if x.dtype != torch.double or self.a.dtype != torch.double:
+            raise ValueError("Only double precision is supported.")
+
         xamp = torch.std(x, dim=-1, keepdim=True)
         scaleconst = 2200
         x = torch.where(xamp < 1e-10, x, x * (scaleconst / xamp))

@@ -120,7 +120,10 @@ class Delta(BaseFunctionalModule):
                 window.append(w)
         else:
             # Make window from width of regression coefficients.
-            assert 1 <= min(seed)
+            if min(seed) <= 0:
+                raise ValueError(
+                    "The width of regression coefficients must be positive."
+                )
             max_len = max(seed) * 2 + 1
 
             window = []

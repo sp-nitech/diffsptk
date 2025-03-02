@@ -120,14 +120,17 @@ class GaussianMixtureModeling(BaseLearnerModule):
         self.logger = get_logger("gmm")
         self.hide_progress_bar = self.verbose <= 1
 
-        if self.alpha != 0:
-            assert ubm is not None
+        if self.alpha != 0 and ubm is None:
+            raise ValueError("ubm must be provided when alpha is not 0.")
 
         # Check block size.
         L = self.order + 1
         if block_size is None:
             block_size = [L]
-        assert sum(block_size) == L
+        if sum(block_size) != L:
+            raise ValueError("The sum of block_size must be equal to order + 1.")
+        if not all(0 < b for b in block_size):
+            raise ValueError("All elements of block_size must be positive.")
 
         self.is_diag = var_type == "diag" and len(block_size) == 1
 
@@ -135,7 +138,6 @@ class GaussianMixtureModeling(BaseLearnerModule):
         mask = torch.zeros((L, L))
         cumsum = np.cumsum(np.insert(block_size, 0, 0))
         for b1, s1, e1 in zip(block_size, cumsum[:-1], cumsum[1:]):
-            assert 0 < b1
             if var_type == "diag":
                 for b2, s2, e2 in zip(block_size, cumsum[:-1], cumsum[1:]):
                     if b1 == b2:
