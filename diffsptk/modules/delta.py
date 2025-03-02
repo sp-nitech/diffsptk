@@ -91,7 +91,7 @@ class Delta(BaseFunctionalModule):
             raise ValueError("seed must be tuple or list.")
 
     @staticmethod
-    def _precompute(seed, static_out, dtype=None, device=None):
+    def _precompute(seed, static_out, device=None, dtype=None):
         Delta._check(seed)
 
         if isinstance(seed[0], (tuple, list)):
@@ -114,8 +114,8 @@ class Delta(BaseFunctionalModule):
                     right_pad = (diff + 1) // 2
                 w = torch.tensor(
                     [0] * left_pad + coefficients + [0] * right_pad,
-                    dtype=torch.double,
                     device=device,
+                    dtype=torch.double,
                 )
                 window.append(w)
         else:
@@ -125,7 +125,7 @@ class Delta(BaseFunctionalModule):
 
             window = []
             if static_out:
-                w = torch.zeros(max_len, dtype=torch.double, device=device)
+                w = torch.zeros(max_len, device=device, dtype=torch.double)
                 w[(max_len - 1) // 2] = 1
                 window.append(w)
 
@@ -133,7 +133,7 @@ class Delta(BaseFunctionalModule):
             if True:
                 n = seed[0]
                 z = 1 / (n * (n + 1) * (2 * n + 1) / 3)
-                j = torch.arange(-n, n + 1, dtype=torch.double, device=device)
+                j = torch.arange(-n, n + 1, device=device, dtype=torch.double)
                 pad_width = (max_len - (n * 2 + 1)) // 2
                 window.append(F.pad(j * z, (pad_width, pad_width)))
 
@@ -144,7 +144,7 @@ class Delta(BaseFunctionalModule):
                 a1 = a0 * n * (n + 1) / 3
                 a2 = a1 * (3 * n * n + 3 * n - 1) / 5
                 z = 1 / (2 * (a2 * a0 - a1 * a1))
-                j = torch.arange(-n, n + 1, dtype=torch.double, device=device)
+                j = torch.arange(-n, n + 1, device=device, dtype=torch.double)
                 pad_width = (max_len - (n * 2 + 1)) // 2
                 window.append(F.pad((a0 * j * j - a1) * z, (pad_width, pad_width)))
 

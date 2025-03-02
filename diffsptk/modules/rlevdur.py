@@ -89,7 +89,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
             raise ValueError("lpc_order must be non-negative.")
 
     @staticmethod
-    def _precompute(lpc_order, dtype=None, device=None):
+    def _precompute(lpc_order, device=None, dtype=None):
         ReverseLevinsonDurbin._check(lpc_order)
         eye = torch.eye(lpc_order + 1, device=device, dtype=dtype)
         return None, None, (eye,)

@@ -15,43 +15,44 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class HilbertTransform(nn.Module):
+class HilbertTransform(BaseFunctionalModule):
     """Hilbert transform module.
 
     Parameters
     ----------
     fft_length : int >= 1
-        Number of FFT bins, should be :math:`T`.
+        The number of FFT bins.
 
     dim : int
-        Dimension along which to take the Hilbert transform.
+        The dimension along which to take the Hilbert transform.
 
     """
 
     def __init__(self, fft_length, dim=-1):
         super().__init__()
 
-        self.dim = dim
-        self.register_buffer("h", self._precompute(fft_length))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("h", tensors[0])
 
     def forward(self, x):
-        """Compute analytic signal using the Hilbert transform.
+        """Compute the analytic signal using the Hilbert transform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
-            Input signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., T, ...)]
-            Analytic signal, where real part is the input signal and imaginary part is
-            the Hilbert transform of the input signal.
+            The analytic signal, where the real part is the input signal and the
+            imaginary part is the Hilbert transform of the input signal.
 
         Examples
         --------
@@ -66,10 +67,40 @@ class HilbertTransform(nn.Module):
         tensor([ 0.3358,  0.7989, -0.3358, -0.7989])
 
         """
-        return self._forward(x, self.h, self.dim)
+        return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _forward(x, h, dim):
+    def _func(x, fft_length, dim):
+        values, _, tensors = HilbertTransform._precompute(
+            x.size(dim) if fft_length is None else fft_length,
+            dim,
+            device=x.device,
+            dtype=x.dtype,
+        )
+        return HilbertTransform._forward(x, *values, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(fft_length):
+        if fft_length <= 0:
+            raise ValueError("fft_length must be positive.")
+
+    @staticmethod
+    def _precompute(fft_length, dim, device=None, dtype=None):
+        HilbertTransform._check(fft_length)
+        h = torch.zeros(fft_length, device=device, dtype=torch.double)
+        center = (fft_length + 1) // 2
+        h[0] = 1
+        h[1:center] = 2
+        if fft_length % 2 == 0:
+            h[center] = 1
+        return (dim,), None, (to(h, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, dim, h):
         L = len(h)
         target_shape = [1] * x.dim()
         target_shape[dim] = L
@@ -77,20 +108,3 @@ class HilbertTransform(nn.Module):
         X = torch.fft.fft(x, n=L, dim=dim)
         z = torch.fft.ifft(X * h, n=L, dim=dim)
         return z
-
-    @staticmethod
-    def _func(x, fft_length, dim):
-        if fft_length is None:
-            fft_length = x.size(dim)
-        h = HilbertTransform._precompute(fft_length, dtype=x.dtype, device=x.device)
-        return HilbertTransform._forward(x, h, dim)
-
-    @staticmethod
-    def _precompute(fft_length, dtype=None, device=None):
-        h = torch.zeros(fft_length, dtype=torch.double, device=device)
-        center = (fft_length + 1) // 2
-        h[0] = 1
-        h[1:center] = 2
-        if fft_length % 2 == 0:
-            h[center] = 1
-        return to(h, dtype=dtype)

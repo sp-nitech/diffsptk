@@ -67,7 +67,7 @@ class MagicNumberInterpolation(BaseFunctionalModule):
     @staticmethod
     def _func(x, *args, **kwargs):
         _, _, tensors = MagicNumberInterpolation._precompute(
-            *args, **kwargs, dtype=x.dtype, device=x.device
+            *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return MagicNumberInterpolation._forward(x, *tensors)
 
@@ -80,9 +80,9 @@ class MagicNumberInterpolation(BaseFunctionalModule):
         pass
 
     @staticmethod
-    def _precompute(magic_number, dtype=None, device=None):
+    def _precompute(magic_number, device=None, dtype=None):
         MagicNumberInterpolation._check()
-        magic_number = torch.tensor(magic_number, dtype=dtype, device=device)
+        magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
         return None, None, (magic_number,)
 
     @staticmethod

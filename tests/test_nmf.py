@@ -43,7 +43,10 @@ def test_convergence(
         verbose=verbose,
     ).to(device)
     nmf.warmup(x)
-    (U, H), _ = nmf.forward(x)
+    (U, H), _ = nmf(x)
     y = torch.matmul(U, H)
     error = (x - y).abs().mean()
     assert error < 1
+
+    y = nmf.transform(x)
+    assert y.shape == (T, K)

@@ -91,7 +91,7 @@ class PolynomialToRoots(BaseFunctionalModule):
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(order, eps=None, out_format="rectangular", dtype=None, device=None):
+    def _precompute(order, eps=None, out_format="rectangular", device=None, dtype=None):
         PolynomialToRoots._check(order, eps)
 
         if eps is None:
@@ -103,7 +103,7 @@ class PolynomialToRoots(BaseFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-        eye = torch.eye(order - 1, order, dtype=dtype, device=device)
+        eye = torch.eye(order - 1, order, device=device, dtype=dtype)
         return (eps, formatter), None, (eye,)
 
     @staticmethod

@@ -341,8 +341,8 @@ def iir(x, b=None, a=None, batching=True):
     return y
 
 
-def plateau(length, first, middle, last=None, dtype=None, device=None):
-    x = torch.full((length,), middle, dtype=dtype, device=device)
+def plateau(length, first, middle, last=None, device=None, dtype=None):
+    x = torch.full((length,), middle, device=device, dtype=dtype)
     x[0] = first
     if last is not None:
         x[-1] = last

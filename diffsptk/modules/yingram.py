@@ -116,13 +116,13 @@ class Yingram(BaseFunctionalModule):
     @staticmethod
     def _func(x, *args, **kwargs):
         _, _, tensors = Yingram._precompute(
-            x.size(-1), *args, **kwargs, dtype=x.dtype, device=x.device
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return Yingram._forward(x, *tensors)
 
     @staticmethod
     def _precompute(
-        frame_length, sample_rate, lag_min, lag_max, n_bin, dtype=None, device=None
+        frame_length, sample_rate, lag_min, lag_max, n_bin, device=None, dtype=None
     ):
         if lag_max is None:
             lag_max = frame_length - 1
