@@ -15,28 +15,29 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
-class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
+class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/norm0.html>`_
     for details.
 
     Parameters
     ----------
     filter_order : int >= 0
-        Order of filter coefficients, :math:`M`.
+        The order of the filter coefficients, :math:`M`.
 
     """
 
     def __init__(self, filter_order):
         super().__init__()
 
-        assert 0 <= filter_order
+        self.in_dim = filter_order + 1
 
-        self.filter_order = filter_order
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, a):
         """Convert all-pole to all-zero filter coefficients vice versa.
@@ -44,12 +45,12 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            All-pole or all-zero filter coefficients.
+            The all-pole or all-zero filter coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            All-zero or all-pole filter coefficients.
+            The all-zero or all-pole filter coefficients.
 
         Examples
         --------
@@ -60,8 +61,28 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         tensor([0.2500, 0.7500, 0.5000, 0.2500])
 
         """
-        check_size(a.size(-1), self.filter_order + 1, "dimension of coefficients")
+        check_size(a.size(-1), self.in_dim, "dimension of coefficients")
         return self._forward(a)
+
+    @staticmethod
+    def _func(a, *args, **kwargs):
+        AllPoleToAllZeroDigitalFilterCoefficients._precompute(
+            a.size(-1) - 1, *args, **kwargs
+        )
+        return AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(filter_order):
+        if filter_order < 0:
+            raise ValueError("filter_order must be non-negative.")
+
+    @staticmethod
+    def _precompute(filter_order):
+        AllPoleToAllZeroDigitalFilterCoefficients._check(filter_order)
 
     @staticmethod
     def _forward(a):
@@ -70,5 +91,3 @@ class AllPoleToAllZeroDigitalFilterCoefficients(nn.Module):
         b1 = a1 * b0
         b = torch.cat((b0, b1), dim=-1)
         return b
-
-    _func = _forward
