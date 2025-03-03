@@ -1556,6 +1556,37 @@ def mcep(x, cep_order, n_iter=0, alpha=0):
     )
 
 
+def mcpf(mc, alpha=0, beta=0, onset=2, ir_length=128):
+    """Perform mel-cesptrum postfiltering.
+
+    Parameters
+    ----------
+    mc : Tensor [shape=(..., M+1)]
+        The input mel-cepstral coefficients.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    beta : float
+        The intensity parameter, :math:`\\beta`.
+
+    onset : int >= 0
+        The onset index.
+
+    ir_length : int >= 1
+        The length of the impulse response.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The postfiltered mel-cepstral coefficients.
+
+    """
+    return nn.MelCepstrumPostfiltering._func(
+        mc, alpha=alpha, beta=beta, onset=onset, ir_length=ir_length
+    )
+
+
 def mdct(x, frame_length=400, window="sine"):
     """Compute modified discrete cosine transform.
 

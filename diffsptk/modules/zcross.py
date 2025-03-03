@@ -18,6 +18,8 @@ import torch
 from torch import nn
 
 from ..misc.utils import replicate1
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 
 
 class ZeroCrossingAnalysis(nn.Module):
@@ -27,10 +29,10 @@ class ZeroCrossingAnalysis(nn.Module):
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     norm : bool
-        If True, divide zero-crossing rate by frame length.
+        If True, divide the zero-crossing rate by the frame length.
 
     softness : float > 0
         A smoothing parameter. The smaller value makes the output closer to the true
@@ -41,12 +43,7 @@ class ZeroCrossingAnalysis(nn.Module):
     def __init__(self, frame_length, norm=False, softness=1e-3):
         super().__init__()
 
-        assert 1 <= frame_length
-        assert 0 < softness
-
-        self.frame_length = frame_length
-        self.norm = norm
-        self.softness = softness
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Compute zero-crossing rate.
@@ -72,7 +69,28 @@ class ZeroCrossingAnalysis(nn.Module):
         tensor([2., 1.])
 
         """
-        return self._forward(x, self.frame_length, self.norm, self.softness)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = ZeroCrossingAnalysis._precompute(*args, **kwargs)
+        return ZeroCrossingAnalysis._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(frame_length, softness):
+        if frame_length <= 0:
+            raise ValueError("frame_length must be positive.")
+        if softness <= 0:
+            raise ValueError("softness must be positive.")
+
+    @staticmethod
+    def _precompute(frame_length, norm, softness):
+        ZeroCrossingAnalysis._check(frame_length, softness)
+        return (frame_length, norm, softness)
 
     @staticmethod
     def _forward(x, frame_length, norm, softness):
@@ -83,5 +101,3 @@ class ZeroCrossingAnalysis(nn.Module):
         if norm:
             z /= frame_length
         return z
-
-    _func = _forward

@@ -15,31 +15,32 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 
 
-class SecondOrderAllPassFrequencyTransform(nn.Module):
+class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
     """Second-order all-pass frequency transform module.
 
     Parameters
     ----------
     in_order : int >= 0
-        Order of input sequence, :math:`M_1`.
+        The order of the input sequence, :math:`M_1`.
 
     out_order : int >= 0
-        Order of output sequence, :math:`M_2`.
+        The order of the output sequence, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     theta : float in [0, 1]
-        Emphasis frequency, :math:`\\theta`.
+        The emphasis frequency, :math:`\\theta`.
 
     n_fft : int >> M2
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins. The accurate conversion requires the large value.
 
     References
     ----------
@@ -52,16 +53,10 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):
         super().__init__()
 
-        assert 0 <= in_order
-        assert 0 <= out_order < n_fft
-        assert abs(alpha) < 1
-        assert 0 <= theta <= 1
+        self.in_dim = in_order + 1
 
-        self.in_order = in_order
-        self.out_order = out_order
-        self.register_buffer(
-            "A", self._precompute(self.in_order, self.out_order, alpha, theta, n_fft)
-        )
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("A", tensors[0])
 
     def forward(self, c):
         """Perform second-order all-pass frequency transform.
@@ -69,12 +64,12 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M1+1)]
-            Input sequence.
+            The input sequence.
 
         Returns
         -------
         out : Tensor [shape=(..., M2+1)]
-            Warped sequence.
+            The warped sequence.
 
         Examples
         --------
@@ -91,26 +86,36 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
 
         """
-        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.A)
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, **self._buffers)
 
     @staticmethod
-    def _forward(c, A):
-        return torch.matmul(c, A)
-
-    @staticmethod
-    def _func(c, out_order, alpha, theta, n_fft):
-        in_order = c.size(-1) - 1
-        A = SecondOrderAllPassFrequencyTransform._precompute(
-            in_order, out_order, alpha, theta, n_fft, dtype=c.dtype, device=c.device
+    def _func(c, *args, **kwargs):
+        _, _, tensors = SecondOrderAllPassFrequencyTransform._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
-        return SecondOrderAllPassFrequencyTransform._forward(c, A)
+        return SecondOrderAllPassFrequencyTransform._forward(c, *tensors)
 
     @staticmethod
-    def _precompute(in_order, out_order, alpha, theta, n_fft, dtype=None, device=None):
-        theta *= torch.pi
+    def _takes_input_size():
+        return True
 
-        k = torch.arange(n_fft, dtype=torch.double, device=device)
+    @staticmethod
+    def _check(in_order, out_order, alpha, theta):
+        if in_order < 0:
+            raise ValueError("in_order must be non-negative.")
+        if out_order < 0:
+            raise ValueError("out_order must be non-negative.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if not 0 <= theta <= 1:
+            raise ValueError("theta must be in [0, 1].")
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, theta, n_fft, device=None, dtype=None):
+        SecondOrderAllPassFrequencyTransform._check(in_order, out_order, alpha, theta)
+        theta *= torch.pi
+        k = torch.arange(n_fft, device=device, dtype=torch.double)
         omega = k * (2 * torch.pi / n_fft)
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
         dw = SecondOrderAllPassFrequencyTransform.diff_warp(omega, alpha, theta)
@@ -127,7 +132,11 @@ class SecondOrderAllPassFrequencyTransform(nn.Module):
         A = A[:L]
         A[1:, 0] /= 2
         A[0, 1:] *= 2
-        return to(A, dtype=dtype)
+        return None, None, (to(A, dtype=dtype),)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)
 
     @staticmethod
     def warp(omega, alpha, theta):
