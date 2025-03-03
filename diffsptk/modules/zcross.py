@@ -17,9 +17,8 @@
 import torch
 from torch import nn
 
-from ..misc.utils import replicate1
 from ..misc.utils import get_values
-from .base import BaseFunctionalModule
+from ..misc.utils import replicate1
 
 
 class ZeroCrossingAnalysis(nn.Module):

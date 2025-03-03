@@ -28,8 +28,7 @@ def test_compatibility(device, module, L=32, M=9, rate=0.8, B=2):
         module,
         diffsptk.LineSpectralPairsStabilityCheck,
         diffsptk.functional.lspcheck,
-        {"lsp_order": M},
-        {"rate": rate, "n_iter": 1, "warn_type": "ignore"},
+        {"lsp_order": M, "rate": rate, "n_iter": 1, "warn_type": "ignore"},
     )
 
     U.check_compatibility(
