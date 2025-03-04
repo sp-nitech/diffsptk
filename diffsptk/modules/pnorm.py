@@ -19,8 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..misc.utils import get_layer
-from ..misc.utils import get_values
+from ..utils.private import get_layer
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform

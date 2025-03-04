@@ -18,10 +18,10 @@ import numpy as np
 import torch
 from scipy.linalg import hadamard
 
-from ..misc.utils import check_size
-from ..misc.utils import get_values
-from ..misc.utils import is_power_of_two
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import is_power_of_two
+from ..utils.private import to
 from .base import BaseFunctionalModule
 
 

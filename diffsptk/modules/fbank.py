@@ -17,9 +17,9 @@
 import numpy as np
 import torch
 
-from ..misc.utils import check_size
-from ..misc.utils import get_values
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
 from .base import BaseFunctionalModule
 
 

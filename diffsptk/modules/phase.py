@@ -16,8 +16,8 @@
 
 import torch
 
-from ..misc.utils import get_values
-from ..misc.utils import remove_gain
+from ..utils.private import get_values
+from ..utils.private import remove_gain
 from .base import BaseFunctionalModule
 
 

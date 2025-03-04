@@ -17,9 +17,9 @@
 import torch
 import torch.nn.functional as F
 
-from ..misc.utils import TAU
-from ..misc.utils import UNVOICED_SYMBOL
-from ..misc.utils import get_values
+from ..utils.private import TAU
+from ..utils.private import UNVOICED_SYMBOL
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 

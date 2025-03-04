@@ -17,7 +17,7 @@
 import torch
 from torch import nn
 
-from ..misc.utils import to
+from ..utils.private import to
 
 
 class Histogram(nn.Module):

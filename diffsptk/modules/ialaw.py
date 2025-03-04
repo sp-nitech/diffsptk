@@ -18,7 +18,7 @@ import math
 
 import torch
 
-from ..misc.utils import get_values
+from ..utils.private import get_values
 from .alaw import ALawCompression
 from .base import BaseFunctionalModule
 

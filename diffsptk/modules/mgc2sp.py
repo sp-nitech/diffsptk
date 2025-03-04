@@ -19,7 +19,7 @@ import math
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 

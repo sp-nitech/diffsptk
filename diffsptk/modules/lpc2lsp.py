@@ -17,10 +17,10 @@
 import torch
 import torch.nn.functional as F
 
-from ..misc.utils import TAU
-from ..misc.utils import check_size
-from ..misc.utils import deconv1d
-from ..misc.utils import get_values
+from ..utils.private import TAU
+from ..utils.private import check_size
+from ..utils.private import deconv1d
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 

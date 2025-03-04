@@ -18,10 +18,10 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import Lambda
-from ..misc.utils import check_size
-from ..misc.utils import get_gamma
-from ..misc.utils import remove_gain
+from ..utils.private import Lambda
+from ..utils.private import check_size
+from ..utils.private import get_gamma
+from ..utils.private import remove_gain
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .gnorm import GeneralizedCepstrumGainNormalization

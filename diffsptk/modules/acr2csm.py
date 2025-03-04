@@ -18,11 +18,11 @@ import torch
 import torch.nn.functional as F
 from scipy.special import comb
 
-from ..misc.utils import check_size
-from ..misc.utils import get_values
-from ..misc.utils import hankel
-from ..misc.utils import to
-from ..misc.utils import vander
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import hankel
+from ..utils.private import to
+from ..utils.private import vander
 from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 

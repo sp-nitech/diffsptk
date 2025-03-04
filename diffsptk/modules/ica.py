@@ -17,9 +17,9 @@
 import torch
 from tqdm import tqdm
 
-from ..misc.utils import get_generator
-from ..misc.utils import get_logger
-from ..misc.utils import to_dataloader
+from ..utils.private import get_generator
+from ..utils.private import get_logger
+from ..utils.private import to_dataloader
 from .base import BaseLearnerModule
 from .pca import PrincipalComponentAnalysis
 

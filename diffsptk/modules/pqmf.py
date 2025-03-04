@@ -20,8 +20,8 @@ import numpy as np
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import next_power_of_two
-from ..misc.utils import numpy_to_torch
+from ..utils.private import next_power_of_two
+from ..utils.private import numpy_to_torch
 from .base import BaseNonFunctionalModule
 
 

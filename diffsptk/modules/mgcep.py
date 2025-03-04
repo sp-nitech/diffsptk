@@ -17,10 +17,10 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import hankel
-from ..misc.utils import symmetric_toeplitz
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import hankel
+from ..utils.private import symmetric_toeplitz
+from ..utils.private import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .ignorm import GeneralizedCepstrumInverseGainNormalization

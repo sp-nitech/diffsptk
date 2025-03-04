@@ -16,8 +16,8 @@
 
 import torch
 
-from ..misc.utils import UNVOICED_SYMBOL
-from ..misc.utils import get_values
+from ..utils.private import UNVOICED_SYMBOL
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
 

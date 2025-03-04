@@ -19,9 +19,9 @@ import inspect
 import torch
 from torch import nn
 
-from ..misc.utils import Lambda
-from ..misc.utils import get_layer
-from ..misc.utils import get_values
+from ..utils.private import Lambda
+from ..utils.private import get_layer
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .unframe import Unframe
 

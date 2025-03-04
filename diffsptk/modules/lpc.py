@@ -18,8 +18,8 @@ import inspect
 
 from torch import nn
 
-from ..misc.utils import get_layer
-from ..misc.utils import get_values
+from ..utils.private import get_layer
+from ..utils.private import get_values
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 from .levdur import LevinsonDurbin

@@ -18,10 +18,10 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..misc.utils import check_size
-from ..misc.utils import get_values
-from ..misc.utils import to
 from ..third_party.librosa import chroma
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
 from .base import BaseFunctionalModule
 
 

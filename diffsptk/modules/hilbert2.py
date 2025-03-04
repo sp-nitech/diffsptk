@@ -16,8 +16,8 @@
 
 import torch
 
-from ..misc.utils import get_values
-from ..misc.utils import to
+from ..utils.private import get_values
+from ..utils.private import to
 from .base import BaseFunctionalModule
 from .hilbert import HilbertTransform
 

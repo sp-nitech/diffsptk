@@ -18,8 +18,8 @@ import warnings
 
 import torch
 
-from ..misc.utils import check_size
-from ..misc.utils import get_values
+from ..utils.private import check_size
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients

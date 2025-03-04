@@ -35,15 +35,15 @@ import torch
 import torchaudio
 from torch import nn
 
-from ..misc.utils import Lambda
-from ..misc.utils import get_resample_params
-from ..misc.utils import numpy_to_torch
 from ..third_party.librosa import cqt_frequencies
 from ..third_party.librosa import early_downsample_count
 from ..third_party.librosa import et_relative_bw
 from ..third_party.librosa import relative_bandwidth
 from ..third_party.librosa import vqt_filter_fft
 from ..third_party.librosa import wavelet_lengths
+from ..utils.private import Lambda
+from ..utils.private import get_resample_params
+from ..utils.private import numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .stft import ShortTimeFourierTransform as STFT
 

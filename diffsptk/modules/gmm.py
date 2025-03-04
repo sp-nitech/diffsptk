@@ -18,9 +18,9 @@ import numpy as np
 import torch
 from tqdm import tqdm
 
-from ..misc.utils import get_logger
-from ..misc.utils import outer
-from ..misc.utils import to_dataloader
+from ..utils.private import get_logger
+from ..utils.private import outer
+from ..utils.private import to_dataloader
 from .base import BaseLearnerModule
 
 

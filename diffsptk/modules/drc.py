@@ -19,7 +19,7 @@ import torch
 import torchcomp
 from torch import nn
 
-from ..misc.utils import to_2d
+from ..utils.private import to_2d
 
 
 class DynamicRangeCompression(nn.Module):

@@ -21,13 +21,13 @@ import torch.nn.functional as F
 from scipy import signal
 from torch import nn
 
-from ..misc.utils import TAU
-from ..misc.utils import iir
-from ..misc.utils import next_power_of_two
-from ..misc.utils import numpy_to_torch
 from ..third_party.world import dc_correction
 from ..third_party.world import get_windowed_waveform
 from ..third_party.world import linear_smoothing
+from ..utils.private import TAU
+from ..utils.private import iir
+from ..utils.private import next_power_of_two
+from ..utils.private import numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .spec import Spectrum

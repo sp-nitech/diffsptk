@@ -18,9 +18,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import iir
-from ..misc.utils import to
-from ..misc.utils import to_3d
+from ..utils.private import iir
+from ..utils.private import to
+from ..utils.private import to_3d
 
 
 class InfiniteImpulseResponseDigitalFilter(nn.Module):

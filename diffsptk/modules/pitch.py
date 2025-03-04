@@ -22,8 +22,8 @@ import torch
 import torchaudio
 from torch import nn
 
-from ..misc.utils import UNVOICED_SYMBOL
-from ..misc.utils import numpy_to_torch
+from ..utils.private import UNVOICED_SYMBOL
+from ..utils.private import numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .stft import ShortTimeFourierTransform

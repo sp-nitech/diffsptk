@@ -16,9 +16,9 @@
 
 import torch
 
-from ..misc.utils import check_size
-from ..misc.utils import clog
-from ..misc.utils import get_values
+from ..utils.private import check_size
+from ..utils.private import clog
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
 

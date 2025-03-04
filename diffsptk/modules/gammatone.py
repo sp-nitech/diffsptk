@@ -19,7 +19,7 @@ import math
 import numpy as np
 import torch
 
-from ..misc.utils import TAU
+from ..utils.private import TAU
 from .base import BaseNonFunctionalModule
 from .poledf import AllPoleDigitalFilter
 from .zerodf import AllZeroDigitalFilter
