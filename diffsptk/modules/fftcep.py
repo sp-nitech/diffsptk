@@ -71,7 +71,7 @@ class CepstralAnalysis(BaseFunctionalModule):
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> fftcep = diffsptk.CepstralAnalysis(3, 16)
+        >>> fftcep = diffsptk.CepstralAnalysis(fft_length=16, cep_order=3)
         >>> c = fftcep(stft(x))
         >>> c
         tensor([[-0.9663,  0.8190, -0.0932, -0.0152],

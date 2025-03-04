@@ -87,15 +87,15 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values, *self.layers, **self._buffers)
 
     @staticmethod
-    def _takes_input_size():
-        return True
-
-    @staticmethod
     def _func(x, *args, **kwargs):
         values, layers, tensors = MelCepstralAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, dtype=x.dtype, device=x.device
         )
         return MelCepstralAnalysis._forward(x, *values, *layers, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
 
     @staticmethod
     def _check(fft_length, cep_order, alpha, n_iter):

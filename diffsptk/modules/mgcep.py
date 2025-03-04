@@ -176,7 +176,9 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> mgcep = diffsptk.MelGeneralizedCepstralAnalysis(3, 16, 0.1, n_iter=1)
+        >>> mgcep = diffsptk.MelGeneralizedCepstralAnalysis(
+        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ... )
         >>> mc = mgcep(stft(x))
         >>> mc
         tensor([[-0.8851,  0.7917, -0.1737,  0.0175],

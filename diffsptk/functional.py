@@ -18,15 +18,15 @@ from . import modules as nn
 
 
 def acorr(x, acr_order, out_format="naive"):
-    """Compute autocorrelation.
+    """Estimate the autocorrelation of the input waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Framed waveform.
+        The framed waveform.
 
     acr_order : int >= 0
-        Order of autocorrelation, :math:`M`.
+        The order of the autocorrelation, :math:`M`.
 
     out_format : ['naive', 'normalized', 'biased']
         The type of the autocorrelation.
@@ -34,7 +34,7 @@ def acorr(x, acr_order, out_format="naive"):
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     """
     return nn.Autocorrelation._func(x, acr_order=acr_order, out_format=out_format)
@@ -58,23 +58,23 @@ def acr2csm(r):
 
 
 def alaw(x, abs_max=1, a=87.6):
-    """Compress waveform by A-law algorithm.
+    """Compress the input waveform using the A-law algorithm.
 
     Parameters
     ----------
     x : Tensor [shape=(...,)]
-        Waveform.
+        The input waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     a : float >= 1
-        Compression factor, :math:`A`.
+        The compression factor, :math:`A`.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Compressed waveform.
+        The compressed waveform.
 
     """
     return nn.ALawCompression._func(x, abs_max=abs_max, a=a)
@@ -603,30 +603,30 @@ def fbank(x, n_channel, sample_rate, f_min=0, f_max=None, floor=1e-5, out_format
     )
 
 
-def fftcep(x, cep_order, n_iter=0, accel=0):
-    """Estimate cepstrum from spectrum.
+def fftcep(x, cep_order, accel=0, n_iter=0):
+    """Perform cepstral analysis.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L/2+1)]
-        Power spectrum.
+        The power spectrum.
 
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
-
-    n_iter : int >= 0
-        Number of iterations.
+        The order of the cepstrum, :math:`M`.
 
     accel : float >= 0
-        Acceleration factor.
+        The acceleration factor.
+
+    n_iter : int >= 0
+        The number of iterations.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Cepstrum.
+        The cepstrum.
 
     """
-    return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
+    return nn.CepstralAnalysis._func(x, cep_order=cep_order, accel=accel, n_iter=n_iter)
 
 
 def flux(x, y=None, lag=1, norm=2, reduction="mean"):
@@ -1528,7 +1528,7 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
-def mcep(x, cep_order, n_iter=0, alpha=0):
+def mcep(x, cep_order, alpha=0, n_iter=0):
     """Perform mel-cepstral analysis.
 
     Parameters
@@ -1552,7 +1552,7 @@ def mcep(x, cep_order, n_iter=0, alpha=0):
 
     """
     return nn.MelCepstralAnalysis._func(
-        x, cep_order=cep_order, n_iter=n_iter, alpha=alpha
+        x, cep_order=cep_order, alpha=alpha, n_iter=n_iter
     )
 
 
@@ -2308,6 +2308,45 @@ def root_pol(a, *, eps=None, out_format="rectangular"):
         a,
         eps=eps,
         out_format=out_format,
+    )
+
+
+def smcep(x, cep_order, alpha=0, theta=0, n_iter=0, accuracy_factor=4):
+    """Perform mel-cepstral analysis.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    theta : float in [0, 1]
+        The emphasis frequency, :math:`\\theta`.
+
+    n_iter : int >= 0
+        The number of iterations.
+
+    accuracy_factor : int >= 1
+        The accuracy factor multiplied by the FFT length.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The mel-cepstrum.
+
+    """
+    return nn.SecondOrderAllPassMelCepstralAnalysis._func(
+        x,
+        cep_order=cep_order,
+        alpha=alpha,
+        theta=theta,
+        n_iter=n_iter,
+        accuracy_factor=accuracy_factor,
     )
 
 

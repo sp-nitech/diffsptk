@@ -46,7 +46,7 @@ class Autocorrelation(BaseFunctionalModule):
         self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
-        """Estimate autocorrelation of input.
+        """Estimate the autocorrelation of the input waveform.
 
         Parameters
         ----------

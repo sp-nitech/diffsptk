@@ -21,12 +21,23 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("n_iter", [0, 3])
 @pytest.mark.parametrize("theta", [0, 0.5, 1])
-def test_compatibility(device, n_iter, theta, M=8, L=32, F=4, B=2, alpha=0.1):
+def test_compatibility(device, module, n_iter, theta, M=8, L=32, F=4, B=2, alpha=0.1):
     spec = diffsptk.Spectrum(L, eps=0)
-    smcep = diffsptk.SecondOrderAllPassMelCepstralAnalysis(
-        M, L, alpha=alpha, theta=theta, n_iter=n_iter, accuracy_factor=F
+    smcep = U.choice(
+        module,
+        diffsptk.SecondOrderAllPassMelCepstralAnalysis,
+        diffsptk.functional.smcep,
+        {
+            "fft_length": L,
+            "cep_order": M,
+            "n_iter": n_iter,
+            "alpha": alpha,
+            "theta": theta,
+            "accuracy_factor": F,
+        },
     )
 
     U.check_compatibility(
