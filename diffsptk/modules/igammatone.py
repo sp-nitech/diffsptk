@@ -17,10 +17,10 @@
 import torch
 import torch.nn.functional as F
 
-from ..misc.signals import impulse
 from ..misc.utils import TAU
 from ..misc.utils import check_size
 from ..misc.utils import to
+from ..signals import impulse
 from .base import BaseNonFunctionalModule
 from .gammatone import GammatoneFilterBankAnalysis
 

@@ -31,7 +31,7 @@ def test_compatibility(device, module, M=25, L=100, B=2):
         module,
         diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients,
         diffsptk.functional.acr2csm,
-        {"csm_order": M},
+        {"acr_order": M},
     )
 
     U.check_compatibility(

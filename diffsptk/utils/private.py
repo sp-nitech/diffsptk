@@ -19,7 +19,6 @@ import math
 from itertools import islice
 
 import numpy as np
-import soundfile as sf
 import torch
 import torch.nn.functional as F
 import torchaudio
@@ -200,88 +199,6 @@ def get_resample_params(mode="kaiser_best"):
     return params
 
 
-def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
-    """Compute an appropriate frequency warping factor under given sample rate.
-
-    Parameters
-    ----------
-    sr : int >= 1
-        Sample rate in Hz.
-
-    mode : ['hts', 'auto']
-        'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
-        alpha in L2 sense.
-
-    n_freq : int >= 2
-        Number of sample points in the frequency domain.
-
-    n_alpha : int >= 1
-        Number of sample points to search alpha.
-
-    Returns
-    -------
-    out : float in [0, 1)
-        Frequency warping factor, :math:`\\alpha`.
-
-    Examples
-    --------
-    >>> _, sr = diffsptk.read("assets/data.wav")
-    >>> alpha = diffsptk.get_alpha(sr)
-    >>> alpha
-    0.42
-
-    """
-
-    def get_hts_alpha(sr):
-        sr_to_alpha = {
-            "8000": 0.31,
-            "10000": 0.35,
-            "12000": 0.37,
-            "16000": 0.42,
-            "22050": 0.45,
-            "32000": 0.50,
-            "44100": 0.53,
-            "48000": 0.55,
-        }
-        key = str(int(sr))
-        if key not in sr_to_alpha:
-            raise ValueError(f"Unsupported sample rate: {sr}.")
-        selected_alpha = sr_to_alpha[key]
-        return selected_alpha
-
-    def get_auto_alpha(sr, n_freq, n_alpha):
-        # Compute target mel-frequencies.
-        freq = np.arange(n_freq) * (0.5 * sr / (n_freq - 1))
-        mel_freq = np.log1p(freq / 1000)
-        mel_freq = mel_freq * (np.pi / mel_freq[-1])
-        mel_freq = np.expand_dims(mel_freq, 0)
-
-        # Compute phase characteristic of the 1st order all-pass filter.
-        alpha = np.linspace(0, 1, n_alpha, endpoint=False)
-        alpha = np.expand_dims(alpha, 1)
-        alpha2 = alpha * alpha
-        omega = np.arange(n_freq) * (np.pi / (n_freq - 1))
-        omega = np.expand_dims(omega, 0)
-        numer = (1 - alpha2) * np.sin(omega)
-        denom = (1 + alpha2) * np.cos(omega) - 2 * alpha
-        warped_omega = np.arctan(numer / denom)
-        warped_omega[warped_omega < 0] += np.pi
-
-        # Select an appropriate alpha in terms of L2 distance.
-        distance = np.square(mel_freq - warped_omega).sum(axis=1)
-        selected_alpha = float(np.squeeze(alpha[np.argmin(distance)]))
-        return selected_alpha
-
-    if mode == "hts":
-        alpha = get_hts_alpha(sr)
-    elif mode == "auto":
-        alpha = get_auto_alpha(sr, n_freq, n_alpha)
-    else:
-        raise ValueError("Only hts and auto are supported.")
-
-    return alpha
-
-
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
@@ -378,76 +295,3 @@ def deconv1d(x, weight):
 def check_size(x, y, cause):
     if x != y:
         raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")
-
-
-def read(filename, double=False, device=None, **kwargs):
-    """Read waveform from file.
-
-    Parameters
-    ----------
-    filename : str
-        Path of wav file.
-
-    double : bool
-        If True, return double-type tensor.
-
-    device : torch.device or None
-        Device of returned tensor.
-
-    **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.read
-        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.read>`_.
-
-    Returns
-    -------
-    x : Tensor
-        Waveform.
-
-    sr : int
-        Sample rate in Hz.
-
-    Examples
-    --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> x
-    tensor([ 0.0002,  0.0004,  0.0006,  ...,  0.0006, -0.0006, -0.0007])
-    >>> sr
-    16000
-
-    """
-    x, sr = sf.read(filename, **kwargs)
-    if double:
-        x = torch.DoubleTensor(x)
-    else:
-        x = torch.FloatTensor(x)
-    if device is not None:
-        x = x.to(device)
-    return x, sr
-
-
-def write(filename, x, sr, **kwargs):
-    """Write waveform to file.
-
-    Parameters
-    ----------
-    filename : str
-        Path of wav file.
-
-    x : Tensor
-        Waveform.
-
-    sr : int
-        Sample rate in Hz.
-
-    **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.write
-        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.write>`_.
-
-    Examples
-    --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> diffsptk.write("out.wav", x, sr)
-
-    """
-    x = x.cpu().numpy() if torch.is_tensor(x) else x
-    sf.write(filename, x, sr, **kwargs)
