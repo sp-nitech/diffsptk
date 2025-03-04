@@ -51,7 +51,7 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
         self.values = self._precompute(*get_values(locals()))
 
     def forward(self, w):
-        """Check stability of LSP.
+        """Check the stability of the input LSP coefficients.
 
         Parameters
         ----------

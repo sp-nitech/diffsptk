@@ -15,48 +15,48 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..misc.utils import check_size
+from ..misc.utils import get_values
 from ..misc.utils import to
+from .base import BaseFunctionalModule
 from .delta import Delta
 
 
-class MaximumLikelihoodParameterGeneration(nn.Module):
+class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mlpg.html>`_
     for details. Currently, only global unit variance is supported.
 
     Parameters
     ----------
     size : int >= 1
-        Length of input, :math:`T`.
+        The length of the input sequence, :math:`T`.
 
     seed : list[list[float]] or list[int]
-        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+        The delta coefficients or the width(s) of 1st (and 2nd) regression coefficients.
 
     """
 
     def __init__(self, size, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
         super().__init__()
 
-        assert 1 <= size
+        self.in_length = size
 
-        self.size = size
-
-        self.register_buffer("M", self._precompute(size, seed))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("M", tensors[0])
 
     def forward(self, u):
-        """Perform MLPG to obtain smoothed static sequence.
+        """Perform MLPG given the mean vectors with delta components.
 
         Parameters
         ----------
         u : Tensor [shape=(..., T, DxH)]
-            Time-variant mean vectors with delta components.
+            The time-variant mean vectors with delta components.
 
         Returns
         -------
         out : Tensor [shape=(..., T, D)]
-            Static components.
+            The smoothed static components.
 
         Examples
         --------
@@ -82,40 +82,42 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
                  [7., 8.]]])
 
         """
-        check_size(u.size(-2), self.size, "length of input")
-        return self._forward(u, self.M)
+        check_size(u.size(-2), self.in_length, "length of input")
+        return self._forward(u, **self._buffers)
 
     @staticmethod
-    def _forward(mean, M):
-        T = mean.size(-2)
-        H = M.size(-1) // T
-        u = mean.reshape(*mean.shape[:-2], T * H, -1)
-        c = torch.einsum("...Td,tT->...td", u, M)
-        return c
-
-    @staticmethod
-    def _func(u, seed):
-        M = MaximumLikelihoodParameterGeneration._precompute(
-            u.size(-2), seed, dtype=u.dtype, device=u.device
+    def _func(u, *args, **kwargs):
+        _, _, tensors = MaximumLikelihoodParameterGeneration._precompute(
+            u.size(-2), *args, **kwargs, device=u.device, dtype=u.dtype
         )
-        return MaximumLikelihoodParameterGeneration._forward(u, M)
+        return MaximumLikelihoodParameterGeneration._forward(u, *tensors)
 
     @staticmethod
-    def _precompute(size, seed, dtype=None, device=None):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(size, seed, device=None, dtype=None):
+        MaximumLikelihoodParameterGeneration._check()
+
         # Make window.
-        window = Delta._precompute(seed, True, dtype=torch.double, device=device)
+        window = Delta._precompute(seed, True, device=device, dtype=torch.double)[-1][0]
 
         # Compute threshold.
         if isinstance(seed[0], (tuple, list)):
             th = [0] + [len(coefficients) // 2 for coefficients in seed]
         else:
             th = [0] + list(seed)
-        th = torch.tensor(th, dtype=torch.double, device=device).unsqueeze(1)
+        th = torch.tensor(th, device=device, dtype=torch.double).unsqueeze(1)
 
         H, L = window.shape
         N = (L - 1) // 2
         T = size
-        W = torch.zeros((T * H, T), dtype=torch.double, device=device)
+        W = torch.zeros((T * H, T), device=device, dtype=torch.double)
 
         # Make window matrix.
         # codespell:ignore-begin
@@ -136,4 +138,12 @@ class MaximumLikelihoodParameterGeneration(nn.Module):
         WSW = torch.matmul(WS, W)
         WSW = torch.linalg.inv(WSW)
         M = torch.matmul(WSW, WS)  # (T, TxH)
-        return to(M, dtype=dtype)
+        return None, None, (to(M, dtype=dtype),)
+
+    @staticmethod
+    def _forward(mean, M):
+        T = mean.size(-2)
+        H = M.size(-1) // T
+        u = mean.reshape(*mean.shape[:-2], T * H, -1)
+        c = torch.einsum("...Td,tT->...td", u, M)
+        return c

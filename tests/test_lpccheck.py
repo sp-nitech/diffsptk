@@ -27,8 +27,7 @@ def test_compatibility(device, module, L=32, M=9, margin=0.01, B=2):
         module,
         diffsptk.LinearPredictiveCoefficientsStabilityCheck,
         diffsptk.functional.lpccheck,
-        {"lpc_order": M},
-        {"margin": margin, "warn_type": "ignore"},
+        {"lpc_order": M, "margin": margin, "warn_type": "ignore"},
     )
 
     U.check_compatibility(

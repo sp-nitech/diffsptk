@@ -35,8 +35,7 @@ def test_compatibility(device, module, seed, T=100, D=2):
         module,
         diffsptk.MaximumLikelihoodParameterGeneration,
         diffsptk.functional.mlpg,
-        {"size": T},
-        {"seed": seed},
+        {"size": T, "seed": seed},
     )
 
     if U.is_array(seed[0]):

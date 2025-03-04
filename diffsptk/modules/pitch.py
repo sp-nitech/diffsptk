@@ -24,35 +24,36 @@ from torch import nn
 
 from ..misc.utils import UNVOICED_SYMBOL
 from ..misc.utils import numpy_to_torch
+from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .stft import ShortTimeFourierTransform
 
 
-class Pitch(nn.Module):
+class Pitch(BaseNonFunctionalModule):
     """Pitch extraction module using external neural models.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
-    sample_rate : int >= 1
-        Sample rate in Hz.
+    sample_rate : int >= 8000
+        The sample rate in Hz.
 
     algorithm : ['crepe', 'fcnf0']
-        Algorithm.
+        The algorithm to estimate pitch.
 
     out_format : ['pitch', 'f0', 'log-f0', 'prob', 'embed']
-        Output format.
+        The output format.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     voicing_threshold : float
-        Voiced/unvoiced threshold.
+        The voiced/unvoiced threshold.
 
     References
     ----------
@@ -74,8 +75,10 @@ class Pitch(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert 1 <= sample_rate
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+        if sample_rate < 8000:
+            raise ValueError("sample_rate must be at least 8000 Hz.")
 
         if algorithm == "crepe":
             self.extractor = PitchExtractionByCREPE(frame_period, sample_rate, **kwargs)
@@ -112,12 +115,12 @@ class Pitch(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(B, T) or (T,)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(B, N, C) or (N, C) or (B, N) or (N,)]
-            Pitch probability, embedding, or pitch, where N is the number of frames
+            The pitch probability, embedding, or pitch, where N is the number of frames
             and C is the number of pitch classes or the dimension of embedding.
 
         Examples
@@ -132,7 +135,8 @@ class Pitch(nn.Module):
         d = x.dim()
         if d == 1:
             x = x.unsqueeze(0)
-        assert x.dim() == 2
+        if x.dim() != 2:
+            raise ValueError("Input must be 1D or 2D tensor.")
 
         y = self.convert(x)
 
@@ -141,65 +145,69 @@ class Pitch(nn.Module):
         return y
 
 
-class PitchExtractionInterface(ABC):
+class PitchExtractionInterface(ABC, nn.Module):
     """Abstract class for pitch extraction."""
 
     @abstractmethod
     def calc_prob(self, x):
-        """Calculate pitch probability.
+        """Calculate the pitch probability.
 
         Parameters
         ----------
         x : Tensor [shape=(B, T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(B, N, C)]
-            Probability, where C is the number of pitch classes.
+            The pitch probability, where C is the number of pitch classes.
 
         """
+        raise NotImplementedError
 
     @abstractmethod
     def calc_embed(self, x):
-        """Calculate embedding.
+        """Calculate the pitch embedding.
 
         Parameters
         ----------
         x : Tensor [shape=(B, T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(B, N, D)]
-            Embedding, where D is the dimension of embedding.
+            The pitch embedding, where D is the dimension of embedding.
 
         """
+        raise NotImplementedError
 
     @abstractmethod
     def calc_pitch(self, x):
-        """Calculate pitch sequence.
+        """Calculate the pitch sequence.
 
         Parameters
         ----------
         x : Tensor [shape=(B, T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(B, N)]
-            F0 sequence.
+            The pitch sequence.
 
         """
+        raise NotImplementedError
 
 
-class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
+class PitchExtractionByCREPE(PitchExtractionInterface):
     """Pitch extraction by CREPE."""
 
     def __init__(
         self,
         frame_period,
         sample_rate,
+        *,
         f_min=None,
         f_max=None,
         voicing_threshold=1e-2,
@@ -216,14 +224,16 @@ class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
 
         self.f_min = 50 if f_min is None else f_min
         self.f_max = self.torchcrepe.MAX_FMAX if f_max is None else f_max
-        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+        if not 0 <= self.f_min < self.f_max <= sample_rate / 2:
+            raise ValueError("Invalid f_min and f_max.")
 
         self.voicing_threshold = voicing_threshold
         self.silence_threshold = silence_threshold
         self.filter_length = filter_length
 
         self.model = model
-        assert self.model in ("tiny", "full")
+        if self.model not in ("tiny", "full"):
+            raise ValueError("model must be 'tiny' or 'full'.")
 
         self.frame = Frame(
             self.torchcrepe.WINDOW_SIZE,
@@ -292,13 +302,14 @@ class PitchExtractionByCREPE(PitchExtractionInterface, nn.Module):
         return pitch
 
 
-class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
+class PitchExtractionByFCNF0(PitchExtractionInterface):
     """Pitch extraction by FCNF0."""
 
     def __init__(
         self,
         frame_period,
         sample_rate,
+        *,
         f_min=None,
         f_max=None,
         voicing_threshold=0.5,
@@ -308,11 +319,12 @@ class PitchExtractionByFCNF0(PitchExtractionInterface, nn.Module):
         try:
             self.penn = importlib.import_module("penn")
         except ImportError:
-            raise ImportError("Please install torchcrepe by `pip install penn`.")
+            raise ImportError("Please install penn by `pip install penn`.")
 
         self.f_min = self.penn.FMIN if f_min is None else f_min
         self.f_max = self.penn.FMAX if f_max is None else f_max
-        assert 0 <= self.f_min < self.f_max <= sample_rate / 2
+        if not 0 <= self.f_min < self.f_max <= sample_rate / 2:
+            raise ValueError("Invalid f_min and f_max.")
 
         self.voicing_threshold = voicing_threshold
 

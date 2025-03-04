@@ -16,34 +16,35 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from ..misc.utils import TAU
 from ..misc.utils import UNVOICED_SYMBOL
+from ..misc.utils import get_values
+from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
 
-class ExcitationGeneration(nn.Module):
+class ExcitationGeneration(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/excite.html>`_
     for details.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period in samples, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
                      'triangle', 'square']
-        Value on voiced region.
+        The type of voiced region.
 
     unvoiced_region : ['zeros', 'gauss']
-        Value on unvoiced region.
+        The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
-        Polarity.
+        The polarity.
 
     init_phase : ['zeros', 'random']
-        Initial phase.
+        The initial phase.
 
     """
 
@@ -58,24 +59,7 @@ class ExcitationGeneration(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert voiced_region in (
-            "pulse",
-            "sinusoidal",
-            "sawtooth",
-            "inverted-sawtooth",
-            "triangle",
-            "square",
-        )
-        assert unvoiced_region in ("zeros", "gauss")
-        assert polarity in ("auto", "unipolar", "bipolar")
-        assert init_phase in ("zeros", "random")
-
-        self.frame_period = frame_period
-        self.voiced_region = voiced_region
-        self.unvoiced_region = unvoiced_region
-        self.polarity = polarity
-        self.init_phase = init_phase
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, p):
         """Generate a simple excitation signal.
@@ -99,14 +83,26 @@ class ExcitationGeneration(nn.Module):
         tensor([1.4142, 0.0000, 1.6330, 0.0000, 0.0000, 1.7321])
 
         """
-        return self._forward(
-            p,
-            self.frame_period,
-            self.voiced_region,
-            self.unvoiced_region,
-            self.polarity,
-            self.init_phase,
-        )
+        return self._forward(p, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = ExcitationGeneration._precompute(*args, **kwargs)
+        return ExcitationGeneration._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(frame_period):
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+
+    @staticmethod
+    def _precompute(frame_period, voiced_region, unvoiced_region, polarity, init_phase):
+        ExcitationGeneration._check(frame_period)
+        return (frame_period, voiced_region, unvoiced_region, polarity, init_phase)
 
     @staticmethod
     @torch.inference_mode()
@@ -146,8 +142,10 @@ class ExcitationGeneration(nn.Module):
         # Generate excitation signal using phase.
         if polarity == "auto":
             unipolar = voiced_region == "pulse"
-        else:
+        elif polarity in ("unipolar", "bipolar"):
             unipolar = polarity == "unipolar"
+        else:
+            raise ValueError(f"polarity {polarity} is not supported.")
         e = torch.zeros_like(p)
         if voiced_region == "pulse":
 
@@ -199,5 +197,3 @@ class ExcitationGeneration(nn.Module):
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
         return e
-
-    _func = _forward
