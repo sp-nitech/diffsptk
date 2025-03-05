@@ -15,13 +15,13 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
 from ..utils.private import get_values
 from ..utils.private import replicate1
+from .base import BaseFunctionalModule
 
 
-class ZeroCrossingAnalysis(nn.Module):
+class ZeroCrossingAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/zcross.html>`_
     for details.
 

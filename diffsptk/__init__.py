@@ -3,5 +3,6 @@ from . import modules
 from . import signals
 from . import utils
 from .modules import *
+from .signals import *
 from .utils import *
 from .version import __version__

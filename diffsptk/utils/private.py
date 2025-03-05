@@ -75,6 +75,11 @@ def get_generator(seed=None):
     return generator
 
 
+def check_size(x, y, cause):
+    if x != y:
+        raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")
+
+
 def is_power_of_two(n):
     return (n != 0) and (n & (n - 1) == 0)
 
@@ -148,8 +153,7 @@ def to_dataloader(x, batch_size=None):
         return data_loader
     elif isinstance(x, torch.utils.data.DataLoader):
         return x
-    else:
-        raise ValueError(f"Unsupported input type: {type(x)}.")
+    raise ValueError(f"Unsupported input type: {type(x)}.")
 
 
 def reflect(x):
@@ -202,7 +206,8 @@ def get_resample_params(mode="kaiser_best"):
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
-    assert 1 <= c
+    if not 1 <= c:
+        raise ValueError("c must be an integer greater than or equal to 1.")
     return -1 / c
 
 
@@ -245,9 +250,9 @@ def outer(x, y=None):
 
 def iir(x, b=None, a=None, batching=True):
     if b is None:
-        b = torch.ones(1, dtype=x.dtype, device=x.device)
+        b = torch.ones(1, device=x.device, dtype=x.dtype)
     if a is None:
-        a = torch.ones(1, dtype=x.dtype, device=x.device)
+        a = torch.ones(1, device=x.device, dtype=x.dtype)
 
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
@@ -267,31 +272,27 @@ def plateau(length, first, middle, last=None, device=None, dtype=None):
 
 
 def deconv1d(x, weight):
-    """Deconvolve input. This is not transposed convolution.
+    """Deconvolve the input signal. Note that this is not transposed convolution.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Input signal.
+        The input signal.
 
     weight : Tensor [shape=(M+1,)]
-        Filter coefficients.
+        The filter coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., T-M)]
-        Output signal.
+        The output signal.
 
     """
-    assert weight.dim() == 1
+    if weight.dim() != 1:
+        raise ValueError("The weight must be 1D.")
     b = x.view(-1, x.size(-1))
     a = weight.view(1, -1).expand(b.size(0), -1)
     impulse = F.pad(torch.ones_like(b[..., :1]), (0, b.size(-1) - a.size(-1)))
     y = iir(impulse, b, a)
     y = y.view(x.size()[:-1] + y.size()[-1:])
     return y
-
-
-def check_size(x, y, cause):
-    if x != y:
-        raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")

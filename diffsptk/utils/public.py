@@ -14,34 +14,33 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
 import numpy as np
 import soundfile as sf
 import torch
 
 
 def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
-    """Compute an appropriate frequency warping factor under given sample rate.
+    """Compute an appropriate frequency warping factor given the sample rate.
 
     Parameters
     ----------
     sr : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     mode : ['hts', 'auto']
-        'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
-        alpha in L2 sense.
+        'hts' returns a traditional alpha used in HTS. 'auto' computes an appropriate
+        alpha in the L2 sense.
 
     n_freq : int >= 2
-        Number of sample points in the frequency domain.
+        The number of sample points in the frequency domain.
 
     n_alpha : int >= 1
-        Number of sample points to search alpha.
+        The number of sample points to search alpha.
 
     Returns
     -------
     out : float in [0, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     Examples
     --------
@@ -59,13 +58,14 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
             "12000": 0.37,
             "16000": 0.42,
             "22050": 0.45,
+            "24000": 0.47,  # Added
             "32000": 0.50,
             "44100": 0.53,
             "48000": 0.55,
         }
         key = str(int(sr))
         if key not in sr_to_alpha:
-            raise ValueError(f"Unsupported sample rate: {sr}.")
+            raise ValueError(f"Unsupported sample rate: {sr}. Please use mode='auto'.")
         selected_alpha = sr_to_alpha[key]
         return selected_alpha
 
@@ -103,18 +103,18 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
 
 
 def read(filename, double=False, device=None, **kwargs):
-    """Read waveform from file.
+    """Read a waveform from the given file.
 
     Parameters
     ----------
     filename : str
-        Path of wav file.
+        The path of the wav file.
 
     double : bool
-        If True, return double-type tensor.
+        If True, returns a double tensor instead of a float tensor.
 
     device : torch.device or None
-        Device of returned tensor.
+        The device of the returned tensor.
 
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read
@@ -123,10 +123,10 @@ def read(filename, double=False, device=None, **kwargs):
     Returns
     -------
     x : Tensor
-        Waveform.
+        The waveform.
 
     sr : int
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     Examples
     --------
@@ -148,18 +148,18 @@ def read(filename, double=False, device=None, **kwargs):
 
 
 def write(filename, x, sr, **kwargs):
-    """Write waveform to file.
+    """Write the given waveform to a file.
 
     Parameters
     ----------
     filename : str
-        Path of wav file.
+        The path of the wav file.
 
     x : Tensor
-        Waveform.
+        The waveform.
 
     sr : int
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.write

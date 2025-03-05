@@ -30,7 +30,6 @@ def test_compatibility(
         module,
         diffsptk.Histogram,
         diffsptk.functional.histogram,
-        {},
         {
             "n_bin": K,
             "lower_bound": lower_bound,
