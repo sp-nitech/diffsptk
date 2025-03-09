@@ -18,25 +18,28 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+from ..utils.private import get_values
 from ..utils.private import iir
 from ..utils.private import to
 from ..utils.private import to_3d
+from .base import BaseFunctionalModule
 
 
-class InfiniteImpulseResponseDigitalFilter(nn.Module):
+class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/dfs.html>`_
     for details.
 
     Parameters
     ----------
     b : List [shape=(M+1,)] or None
-        Numerator coefficients.
+        The numerator coefficients.
 
     a : List [shape=(N+1,)] or None
-        Denominator coefficients.
+        The denominator coefficients.
 
-    ir_length : int >= 1
-        Length of impulse response.
+    ir_length : int >= 1 or None
+        The length of the truncated impulse response. If given, the filter is
+        approximated by an FIR filter.
 
     learnable : bool
         If True, the filter coefficients are learnable.
@@ -46,47 +49,28 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
     def __init__(self, b=None, a=None, ir_length=None, learnable=False):
         super().__init__()
 
-        if b is None:
-            b = [1]
-        if a is None:
-            a = [1]
-        b = torch.tensor(b)
-        a = torch.tensor(a)
-
-        if ir_length is None:
-            ir_length = len(b)
-        assert 1 <= ir_length
-
-        # Pre-compute impulse response.
-        d = torch.zeros(max(len(b), len(a)), dtype=torch.double)
-        h = torch.empty(ir_length, dtype=torch.double)
-        a0 = a[0]
-        a1 = a[1:]
-        for t in range(ir_length):
-            x = a0 if t == 0 else 0
-            y = x - torch.sum(d[: len(a1)] * a1)
-            d = torch.roll(d, 1)
-            d[0] = y
-            y = torch.sum(d[: len(b)] * b)
-            h[t] = y
-        h = to(h.reshape(1, 1, -1).flip(-1))
-        if learnable:
-            self.h = nn.Parameter(h)
+        _, _, tensors = self._precompute(*get_values(locals(), end=-2))
+        if learnable and b is not None:
+            self.b = nn.Parameter(tensors[0])
         else:
-            self.register_buffer("h", h)
+            self.register_buffer("b", tensors[0])
+        if learnable and a is not None:
+            self.a = nn.Parameter(tensors[1])
+        else:
+            self.register_buffer("a", tensors[1])
 
     def forward(self, x):
-        """Apply an IIR digital filter.
+        """Apply an IIR digital filter to the input waveform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Input waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Filtered waveform.
+            The filtered waveform.
 
         Examples
         --------
@@ -97,16 +81,67 @@ class InfiniteImpulseResponseDigitalFilter(nn.Module):
         tensor([0.0000, 1.0000, 1.0300, 1.0600, 1.0900])
 
         """
-        return self._forward(x, self.h)
+        return self._forward(x, **self._buffers, **self._parameters)
 
     @staticmethod
-    def _forward(x, h):
-        y = to_3d(x)
-        y = F.pad(y, (h.size(-1) - 1, 0))
-        y = F.conv1d(y, h)
-        y = y.view_as(x)
+    def _func(x, *args, **kwargs):
+        _, _, tensors = InfiniteImpulseResponseDigitalFilter._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return InfiniteImpulseResponseDigitalFilter._forward(x, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(ir_length):
+        if ir_length is not None and ir_length <= 0:
+            raise ValueError("ir_length must be positive.")
+
+    @staticmethod
+    def _precompute(b, a, ir_length=None, device=None, dtype=None):
+        InfiniteImpulseResponseDigitalFilter._check(ir_length)
+
+        fir = a is None
+
+        if b is None:
+            b = [1]
+        if a is None:
+            a = [1]
+        if not torch.is_tensor(b):
+            b = to(torch.tensor(b, device=device), dtype=dtype)
+        if not torch.is_tensor(a):
+            a = to(torch.tensor(a, device=device), dtype=dtype)
+
+        if fir:
+            b = b.reshape(1, 1, -1).flip(-1)
+            a = torch.empty(0)
+        elif ir_length is not None:
+            # Pre-compute the truncated impulse response.
+            d = torch.zeros(max(len(b), len(a)), device=device, dtype=torch.double)
+            h = torch.empty(ir_length, device=device, dtype=torch.double)
+            a0 = a[0]
+            a1 = a[1:]
+            for t in range(ir_length):
+                x = a0 if t == 0 else 0
+                y = x - torch.sum(d[: len(a1)] * a1)
+                d = torch.roll(d, 1)
+                d[0] = y
+                y = torch.sum(d[: len(b)] * b)
+                h[t] = y
+            h = h.reshape(1, 1, -1).flip(-1)
+            b = to(h, dtype=dtype)
+            a = torch.empty(0)
+        return None, None, (b, a)
+
+    @staticmethod
+    def _forward(x, b, a):
+        if len(a) == 0:
+            y = to_3d(x)
+            y = F.pad(y, (b.size(-1) - 1, 0))
+            y = F.conv1d(y, b)
+            y = y.view_as(x)
+        else:
+            y = iir(x, b, a)
         return y
-
-    @staticmethod
-    def _func(x, b=None, a=None):
-        return iir(x, b, a)

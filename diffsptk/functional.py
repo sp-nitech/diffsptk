@@ -368,7 +368,59 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
-def dfs(x, b=None, a=None):
+def df2(
+    x,
+    sample_rate,
+    pole_frequency=None,
+    pole_bandwidth=None,
+    zero_frequency=None,
+    zero_bandwidth=None,
+    ir_length=None,
+):
+    """Apply a second order digital filter to the input waveform.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        The input waveform.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    pole_frequency : float > 0
+        The pole frequency in Hz.
+
+    pole_bandwidth : float > 0
+        The pole bandwidth in Hz.
+
+    zero_frequency : float > 0
+        The zero frequency in Hz.
+
+    zero_bandwidth : float > 0
+        The zero bandwidth in Hz.
+
+    ir_length : int >= 1 or None
+        The length of the truncated impulse response. If given, the filter is
+        approximated by an FIR filter.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        The filtered waveform.
+
+    """
+    return nn.SecondOrderDigitalFilter._func(
+        x,
+        sample_rate=sample_rate,
+        pole_frequency=pole_frequency,
+        pole_bandwidth=pole_bandwidth,
+        zero_frequency=zero_frequency,
+        zero_bandwidth=zero_bandwidth,
+        ir_length=ir_length,
+    )
+
+
+def dfs(x, b=None, a=None, ir_length=None):
     """Apply an IIR digital filter.
 
     Parameters
@@ -382,13 +434,19 @@ def dfs(x, b=None, a=None):
     a : Tensor [shape=(N+1,)] or None
         Denominator coefficients.
 
+    ir_length : int >= 1 or None
+        The length of the truncated impulse response. If given, the filter is
+        approximated by an FIR filter.
+
     Returns
     -------
     out : Tensor [shape=(..., T)]
         Filtered waveform.
 
     """
-    return nn.InfiniteImpulseResponseDigitalFilter._func(x, b=b, a=a)
+    return nn.InfiniteImpulseResponseDigitalFilter._func(
+        x, b=b, a=a, ir_length=ir_length
+    )
 
 
 def dht(x, dht_type=2):

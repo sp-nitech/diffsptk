@@ -119,10 +119,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x, *args, **kwargs):
-        _, layers, _ = ShortTimeFourierTransform._precompute(
-            *args,
-            **kwargs,
-        )
+        _, layers, _ = ShortTimeFourierTransform._precompute(*args, **kwargs)
         return ShortTimeFourierTransform._forward(x, *layers)
 
     @staticmethod
