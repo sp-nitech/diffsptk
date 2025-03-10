@@ -113,7 +113,13 @@ class Unframe(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        frame_length, frame_period, center, window, norm, device=None, dtype=None
+        frame_length,
+        frame_period,
+        center=True,
+        window="rectangular",
+        norm="none",
+        device=None,
+        dtype=None,
     ):
         Unframe._check(frame_length, frame_period)
         window_ = Window._precompute(

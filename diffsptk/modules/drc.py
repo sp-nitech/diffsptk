@@ -19,35 +19,38 @@ import torch
 import torchcomp
 from torch import nn
 
+from ..utils.private import get_values
+from ..utils.private import to
 from ..utils.private import to_2d
+from .base import BaseFunctionalModule
 
 
-class DynamicRangeCompression(nn.Module):
+class DynamicRangeCompression(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/drc.html>`_
     for details.
 
     Parameters
     ----------
     threshold : float <= 0
-        Threshold in dB.
+        The threshold in dB.
 
     ratio : float > 1
-        Input/output ratio.
+        The input/output ratio.
 
     attack_time : float > 0
-        Attack time in msec.
+        The attack time in msec.
 
     release_time : float > 0
-        Release time in msec.
+        The release time in msec.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     makeup_gain : float >= 0
-        Make-up gain in dB.
+        The make-up gain in dB.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of input.
 
     learnable : bool
         Whether to make the DRC parameters learnable.
@@ -72,22 +75,11 @@ class DynamicRangeCompression(nn.Module):
     ):
         super().__init__()
 
-        assert threshold <= 0
-        assert 1 < ratio
-        assert 0 < attack_time
-        assert 0 < release_time
-        assert 1 <= sample_rate
-        assert 0 <= makeup_gain
-        assert 0 < abs_max
-
-        self.abs_max = abs_max
-        params = self._precompute(
-            threshold, ratio, attack_time, release_time, sample_rate, makeup_gain
-        )
+        self.values, _, tensors = self._precompute(*get_values(locals(), end=-2))
         if learnable:
-            self.params = nn.Parameter(params)
+            self.params = nn.Parameter(tensors[0])
         else:
-            self.register_buffer("params", params)
+            self.register_buffer("params", tensors[0])
 
     def forward(self, x):
         """Perform dynamic range compression.
@@ -95,12 +87,12 @@ class DynamicRangeCompression(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Input signal.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Compressed signal.
+            The compressed waveform.
 
         Examples
         --------
@@ -113,7 +105,65 @@ class DynamicRangeCompression(nn.Module):
         tensor(2.5779)
 
         """
-        return self._forward(x, self.abs_max, self.params)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values, _, tensors = DynamicRangeCompression._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return DynamicRangeCompression._forward(x, *values, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max):
+        if ratio <= 1:
+            raise ValueError("ratio must be greater than 1.")
+        if attack_time <= 0:
+            raise ValueError("attack_time must be positive.")
+        if release_time <= 0:
+            raise ValueError("release_time must be positive.")
+        if sample_rate <= 0:
+            raise ValueError("sample_rate must be positive.")
+        if makeup_gain < 0:
+            raise ValueError("makeup_gain must be non-negative.")
+        if abs_max <= 0:
+            raise ValueError("abs_max must be positive.")
+
+    @staticmethod
+    def _precompute(
+        threshold,
+        ratio,
+        attack_time,
+        release_time,
+        sample_rate,
+        makeup_gain,
+        abs_max,
+        device=None,
+        dtype=None,
+    ):
+        DynamicRangeCompression._check(
+            ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max
+        )
+        c = round(np.log(9), 1)
+        if not torch.is_tensor(threshold):
+            threshold = to(torch.tensor(threshold, device=device), dtype=dtype)
+        if not torch.is_tensor(ratio):
+            ratio = to(torch.tensor(ratio, device=device), dtype=dtype)
+        if not torch.is_tensor(attack_time):
+            attack_time = to(torch.tensor(attack_time, device=device), dtype=dtype)
+        attack_time = torchcomp.ms2coef(attack_time * c, sample_rate)
+        if not torch.is_tensor(release_time):
+            release_time = to(torch.tensor(release_time, device=device), dtype=dtype)
+        release_time = torchcomp.ms2coef(release_time * c, sample_rate)
+        if not torch.is_tensor(makeup_gain):
+            makeup_gain = to(torch.tensor(makeup_gain, device=device), dtype=dtype)
+        makeup_gain = 10 ** (makeup_gain / 20)
+        params = torch.stack([threshold, ratio, attack_time, release_time, makeup_gain])
+        return (abs_max,), None, (params,)
 
     @staticmethod
     def _forward(x, abs_max, params):
@@ -132,52 +182,7 @@ class DynamicRangeCompression(nn.Module):
             params[3],
         )
 
-        makeup_gain = params[-1]
+        makeup_gain = params[4]
         y = y * g * makeup_gain
         y = y.view_as(x)
         return y
-
-    @staticmethod
-    def _func(
-        x,
-        threshold,
-        ratio,
-        attack_time,
-        release_time,
-        sample_rate,
-        makeup_gain,
-        abs_max,
-    ):
-        params = DynamicRangeCompression._precompute(
-            threshold,
-            ratio,
-            attack_time,
-            release_time,
-            sample_rate,
-            makeup_gain,
-            dtype=x.dtype,
-            device=x.device,
-        )
-        return DynamicRangeCompression._forward(x, abs_max, params)
-
-    @staticmethod
-    def _precompute(
-        threshold,
-        ratio,
-        attack_time,
-        release_time,
-        sample_rate,
-        makeup_gain,
-        dtype=None,
-        device=None,
-    ):
-        c = round(np.log(9), 1)
-        attack_time = (
-            torchcomp.ms2coef(torch.tensor(attack_time * c), sample_rate).cpu().numpy()
-        )
-        release_time = (
-            torchcomp.ms2coef(torch.tensor(release_time * c), sample_rate).cpu().numpy()
-        )
-        makeup_gain = 10 ** (makeup_gain / 20)
-        params = np.array([threshold, ratio, attack_time, release_time, makeup_gain])
-        return torch.tensor(params, dtype=dtype, device=device)

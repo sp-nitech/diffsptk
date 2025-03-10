@@ -29,7 +29,6 @@ def test_compatibility(device, module, window, L=512):
         module,
         diffsptk.MDST,
         diffsptk.functional.mdst,
-        {},
         mdst_params,
     )
     imdst = diffsptk.IMDST(**mdst_params)

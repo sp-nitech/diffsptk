@@ -16,26 +16,29 @@
 
 from torch import nn
 
-from .mdct import ModifiedDiscreteCosineTransform as MDST
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
+from .mdct import ModifiedDiscreteCosineTransform as MDCT
 
 
-class ModifiedDiscreteSineTransform(nn.Module):
+class ModifiedDiscreteSineTransform(BaseFunctionalModule):
     """This module is a simple cascade of framing, windowing, and modified DST.
 
     Parameters
     ----------
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     """
 
     def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        self.mdst = MDST(frame_length, window, transform="sine")
+        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
         """Compute modified discrete sine transform.
@@ -43,12 +46,12 @@ class ModifiedDiscreteSineTransform(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., 2T/L, L/2)]
-            Spectrum.
+            The spectrum.
 
         Examples
         --------
@@ -63,8 +66,24 @@ class ModifiedDiscreteSineTransform(nn.Module):
                 [ 4.6213, -1.9142]])
 
         """
-        return self.mdst(x)
+        return self._forward(x, *self.values, *self.layers)
 
     @staticmethod
-    def _func(x, frame_length, window):
-        return MDST._func(x, frame_length, window, transform="sine")
+    def _func(*args, **kwargs):
+        return MDCT._func(*args, **kwargs, transform="sine")
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(frame_length, window):
+        return MDCT._precompute(frame_length, window, transform="sine")
+
+    @staticmethod
+    def _forward(*args, **kwargs):
+        return MDCT._forward(*args, **kwargs)
