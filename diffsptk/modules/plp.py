@@ -214,15 +214,33 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
             MelGeneralizedCepstrumToMelGeneralizedCepstrum,
             dict(
                 in_order=plp_order,
-                out_order=plp_order,
+                in_alpha=0,
                 in_gamma=-1,
                 in_norm=True,
                 in_mul=True,
+                out_order=plp_order,
+                out_alpha=0,
+                out_gamma=0,
+                out_norm=False,
+                out_mul=False,
                 n_fft=n_fft,
             ),
         )
 
-        f = fbank.center_frequencies[:-1] ** 2
+        if module:
+            f = fbank.center_frequencies[:-1] ** 2
+        else:
+            f = (
+                MelFilterBankAnalysis(
+                    fft_length=fft_length,
+                    n_channel=n_channel,
+                    sample_rate=sample_rate,
+                    f_min=f_min,
+                    f_max=f_max,
+                    floor=floor,
+                ).center_frequencies[:-1]
+                ** 2
+            )
         e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
         equal_loudness_curve = numpy_to_torch(e)
 

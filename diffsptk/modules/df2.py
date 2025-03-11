@@ -19,11 +19,11 @@ import math
 from torch import nn
 
 from ..utils.private import get_values
-from .base import BaseFunctionalModule
+from .base import BaseNonFunctionalModule
 from .dfs import InfiniteImpulseResponseDigitalFilter
 
 
-class SecondOrderDigitalFilter(BaseFunctionalModule):
+class SecondOrderDigitalFilter(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/df2.html>`_
     for details.
 

@@ -14,45 +14,49 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
 import math
 
 import torch
 from torch import nn
 
 from ..utils.private import check_size
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
-class MelGeneralizedCepstrumToSpectrum(nn.Module):
+class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgc2sp.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of mel-cepstrum, :math:`M`.
+        The order of the mel-cepstrum, :math:`M`.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     alpha : float in (-1, 1)
-        Warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     norm : bool
-        If True, assume normalized cepstrum.
+        If True, the input is assumed to be normalized.
 
     mul : bool
-        If True, assume gamma-multiplied cepstrum.
+        If True, the input is assumed to be gamma-multiplied.
 
     n_fft : int >> L
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins. Accurate conversion requires a large value.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
                   'cycle', 'radian', 'degree', 'complex']
-        Output format.
+        The output format.
 
     """
 
@@ -70,18 +74,10 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
     ):
         super().__init__()
 
-        self.cep_order = cep_order
+        self.in_dim = cep_order + 1
 
-        self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-            cep_order,
-            fft_length // 2,
-            in_alpha=alpha,
-            in_gamma=gamma,
-            in_norm=norm,
-            in_mul=mul,
-            n_fft=n_fft,
-        )
-        self.formatter = self._formatter(out_format)
+        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, mc):
         """Convert mel-cepstrum to spectrum.
@@ -112,51 +108,69 @@ class MelGeneralizedCepstrumToSpectrum(nn.Module):
                 [3.5677e+02, 1.9435e+02, 6.0078e-01, 2.4278e-04, 8.8537e-06]])
 
         """
-        check_size(mc.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(self.mgc2c(mc), self.formatter)
+        check_size(mc.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(mc, *self.values, *self.layers)
 
     @staticmethod
-    def _forward(c, formatter):
+    def _func(mc, *args, **kwargs):
+        values, layers, _ = MelGeneralizedCepstrumToSpectrum._precompute(
+            mc.size(-1) - 1, *args, **kwargs
+        )
+        return MelGeneralizedCepstrumToSpectrum._forward(mc, *values, *layers)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(cep_order, fft_length, alpha, gamma, norm, mul, n_fft, out_format):
+        MelGeneralizedCepstrumToSpectrum._check()
+
+        if out_format in (0, "db"):
+            formatter = lambda x: x.real * (20 / math.log(10))
+        elif out_format in (1, "log-magnitude"):
+            formatter = lambda x: x.real
+        elif out_format in (2, "magnitude"):
+            formatter = lambda x: torch.exp(x.real)
+        elif out_format in (3, "power"):
+            formatter = lambda x: torch.exp(2 * x.real)
+        elif out_format in (4, "cycle"):
+            formatter = lambda x: x.imag / torch.pi
+        elif out_format in (5, "radian"):
+            formatter = lambda x: x.imag
+        elif out_format in (6, "degree"):
+            formatter = lambda x: x.imag * (180 / torch.pi)
+        elif out_format == "complex":
+            formatter = lambda x: torch.polar(torch.exp(x.real), x.imag)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        mgc2c = get_layer(
+            inspect.stack()[1].function == "__init__",
+            MelGeneralizedCepstrumToMelGeneralizedCepstrum,
+            dict(
+                in_order=cep_order,
+                in_alpha=alpha,
+                in_gamma=gamma,
+                in_norm=norm,
+                in_mul=mul,
+                out_order=fft_length // 2,
+                out_alpha=0,
+                out_gamma=0,
+                out_norm=False,
+                out_mul=False,
+                n_fft=n_fft,
+            ),
+        )
+        return (formatter,), (mgc2c,), None
+
+    @staticmethod
+    def _forward(mc, formatter, mgc2c):
+        c = mgc2c(mc)
         sp = torch.fft.rfft(c, n=(c.size(-1) - 1) * 2)
         sp = formatter(sp)
         return sp
-
-    @staticmethod
-    def _func(mc, fft_length, alpha, gamma, norm, mul, n_fft, out_format):
-        c = MelGeneralizedCepstrumToMelGeneralizedCepstrum._func(
-            mc,
-            fft_length // 2,
-            in_alpha=alpha,
-            in_gamma=gamma,
-            in_norm=norm,
-            in_mul=mul,
-            out_alpha=0,
-            out_gamma=0,
-            out_norm=False,
-            out_mul=False,
-            n_fft=n_fft,
-        )
-        formatter = MelGeneralizedCepstrumToSpectrum._formatter(out_format)
-        return MelGeneralizedCepstrumToSpectrum._forward(c, formatter)
-
-    @staticmethod
-    def _formatter(out_format):
-        if out_format in (0, "db"):
-            c = 20 / math.log(10)
-            return lambda x: x.real * c
-        elif out_format in (1, "log-magnitude"):
-            return lambda x: x.real
-        elif out_format in (2, "magnitude"):
-            return lambda x: torch.exp(x.real)
-        elif out_format in (3, "power"):
-            return lambda x: torch.exp(2 * x.real)
-        elif out_format in (4, "cycle"):
-            return lambda x: x.imag / torch.pi
-        elif out_format in (5, "radian"):
-            return lambda x: x.imag
-        elif out_format in (6, "degree"):
-            c = 180 / torch.pi
-            return lambda x: x.imag * c
-        elif out_format == "complex":
-            return lambda x: torch.polar(torch.exp(x.real), x.imag)
-        raise ValueError(f"out_format {out_format} is not supported.")

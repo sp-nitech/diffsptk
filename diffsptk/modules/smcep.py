@@ -183,7 +183,7 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
             ),
         )
 
-        seed = torch.ones(1, device=device, dtype=dtype)
+        seed = to(torch.ones(1, device=device), dtype=dtype)
         alpha_vector = CoefficientsFrequencyTransform._func(
             seed,
             out_order=cep_order,
@@ -251,7 +251,7 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
     def _precompute(in_order, out_order, alpha, theta, n_fft, device=None, dtype=None):
         CoefficientsFrequencyTransform._check(in_order, out_order, alpha, theta, n_fft)
         theta *= torch.pi
-        k = torch.arange(n_fft, dtype=torch.double)
+        k = torch.arange(n_fft, device=device, dtype=torch.double)
         omega = k * (2 * torch.pi / n_fft)
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 

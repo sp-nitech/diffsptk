@@ -92,7 +92,7 @@ class RootsToPolynomial(BaseFunctionalModule):
         RootsToPolynomial._check(order, eps)
 
         if eps is None:
-            eps = 1e-5 if torch.get_default_dtype() == torch.float else 1e-8
+            eps = 1e-4 if torch.get_default_dtype() == torch.float else 1e-8
         if in_format in (0, "rectangular"):
             formatter = lambda x: x
         elif in_format in (1, "polar"):

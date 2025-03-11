@@ -28,8 +28,7 @@ def test_compatibility(device, module, out_format, M=7, L=16, B=2):
         module,
         diffsptk.MelGeneralizedCepstrumToSpectrum,
         diffsptk.functional.mgc2sp,
-        {"cep_order": M},
-        {"fft_length": L, "out_format": out_format},
+        {"cep_order": M, "fft_length": L, "out_format": out_format},
     )
 
     U.check_compatibility(

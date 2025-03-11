@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 import torch.nn.functional as F
 from torch import nn
@@ -21,7 +23,9 @@ from torch import nn
 from ..utils.private import cexp
 from ..utils.private import check_size
 from ..utils.private import clog
+from ..utils.private import get_values
 from ..utils.private import to
+from .base import BaseFunctionalModule
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
 from .ignorm import (
@@ -29,15 +33,253 @@ from .ignorm import (
 )
 
 
+class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgc2mgc.html>`_
+    for details.
+
+    Parameters
+    ----------
+    in_order : int >= 0
+        The order of the input cepstrum, :math:`M_1`.
+
+    out_order : int >= 0
+        The order of the output cepstrum, :math:`M_2`.
+
+    in_alpha : float in (-1, 1)
+        The input alpha, :math:`\\alpha_1`.
+
+    out_alpha : float in (-1, 1)
+        The output alpha, :math:`\\alpha_2`.
+
+    in_gamma : float in [-1, 1]
+        The input gamma, :math:`\\gamma_1`.
+
+    out_gamma : float in [-1, 1]
+        The output gamma, :math:`\\gamma_2`.
+
+    in_norm : bool
+        If True, the input is assumed to be normalized.
+
+    out_norm : bool
+        If True, the output is assumed to be normalized.
+
+    in_mul : bool
+        If True, the input is assumed to be gamma-multiplied.
+
+    out_mul : bool
+        If True, the output is assumed to be gamma-multiplied.
+
+    n_fft : int >> M1, M2
+        The number of FFT bins. Accurate conversion requires a large value.
+
+    References
+    ----------
+    .. [1] K. Tokuda et al., "Mel-generalized cepstral analysis - A unified approach to
+           speech spectral estimation", *Proceedings of ICSLP*, pp. 1043-1046, 1996.
+
+    """
+
+    def __init__(
+        self,
+        in_order,
+        out_order,
+        in_alpha=0,
+        out_alpha=0,
+        in_gamma=0,
+        out_gamma=0,
+        in_norm=False,
+        out_norm=False,
+        in_mul=False,
+        out_mul=False,
+        n_fft=512,
+    ):
+        super().__init__()
+
+        _, layers, _ = self._precompute(*get_values(locals()))
+        self.seq = nn.Sequential(*layers[0])
+
+    def forward(self, mc):
+        """Convert mel-generalized cepstrum to mel-generalized cepstrum.
+
+        Parameters
+        ----------
+        mc : Tensor [shape=(..., M1+1)]
+            The input mel-cepstrum.
+
+        Returns
+        -------
+        out : Tensor [shape=(..., M2+1)]
+            The output mel-cepstrum.
+
+        Examples
+        --------
+        >>> c1 = diffsptk.ramp(3)
+        >>> mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(3, 4, 0.1)
+        >>> c2 = mgc2mgc(c1)
+        >>> c2
+        tensor([-0.0830,  0.6831,  1.1464,  3.1334,  0.9063])
+
+        """
+        return self._forward(mc, self.seq)
+
+    @staticmethod
+    def _func(mc, *args, **kwargs):
+        _, layers, _ = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
+            mc.size(-1) - 1, *args, **kwargs
+        )
+
+        def seq(x):
+            for layer in layers[0]:
+                x = layer(x)
+            return x
+
+        return MelGeneralizedCepstrumToMelGeneralizedCepstrum._forward(mc, seq)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(
+        in_order, out_order, in_alpha, out_alpha, in_gamma, out_gamma, in_mul, n_fft
+    ):
+        if in_order < 0:
+            raise ValueError("in_order must be non-negative.")
+        if out_order < 0:
+            raise ValueError("out_order must be non-negative.")
+        if 1 <= abs(in_alpha):
+            raise ValueError("in_alpha must be in (-1, 1).")
+        if 1 <= abs(out_alpha):
+            raise ValueError("out_alpha must be in (-1, 1).")
+        if 1 < abs(in_gamma):
+            raise ValueError("in_gamma must be in [-1, 1].")
+        if 1 < abs(out_gamma):
+            raise ValueError("out_gamma must be in [-1, 1].")
+        if n_fft <= max(in_order, out_order) + 1:
+            raise ValueError("n_fft must be much larger then order of cepstrum.")
+        if 0 == in_gamma and in_mul:
+            raise ValueError("Invalid combination of in_gamma and in_mul.")
+
+    @staticmethod
+    def _precompute(
+        in_order,
+        out_order,
+        in_alpha,
+        out_alpha,
+        in_gamma,
+        out_gamma,
+        in_norm,
+        out_norm,
+        in_mul,
+        out_mul,
+        n_fft,
+    ):
+        def choice(use_module, module, module_params, common_params):
+            if use_module:
+                return module(*module_params, *common_params)
+            else:
+                return lambda c: module._func(c, *common_params)
+
+        MelGeneralizedCepstrumToMelGeneralizedCepstrum._check(
+            in_order, out_order, in_alpha, out_alpha, in_gamma, out_gamma, in_mul, n_fft
+        )
+        module = inspect.stack()[1].function == "__init__"
+
+        seq = []
+        if not in_norm and in_mul:
+            seq.append(choice(module, ZerothGammaDivision, [in_order], [in_gamma]))
+
+        alpha = (out_alpha - in_alpha) / (1 - in_alpha * out_alpha)
+        if 0 == alpha:
+            if in_order == out_order and in_gamma == out_gamma:
+                if not in_mul and out_mul:
+                    seq.append(
+                        choice(module, GammaMultiplication, [in_order], [in_gamma])
+                    )
+                if not in_norm and out_norm:
+                    seq.append(
+                        choice(module, GainNormalization, [in_order], [in_gamma])
+                    )
+                if in_norm and not out_norm:
+                    seq.append(
+                        choice(
+                            module, InverseGainNormalization, [out_order], [out_gamma]
+                        )
+                    )
+                if in_mul and not out_mul:
+                    seq.append(choice(module, GammaDivision, [out_order], [out_gamma]))
+            else:
+                if in_mul:
+                    seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
+                if not in_norm:
+                    seq.append(
+                        choice(module, GainNormalization, [in_order], [in_gamma])
+                    )
+                if True:
+                    seq.append(
+                        choice(
+                            module,
+                            GeneralizedCepstrumToGeneralizedCepstrum,
+                            [in_order],
+                            [out_order, in_gamma, out_gamma, n_fft],
+                        )
+                    )
+                if not out_norm:
+                    seq.append(
+                        choice(
+                            module, InverseGainNormalization, [out_order], [out_gamma]
+                        )
+                    )
+                if out_mul:
+                    seq.append(
+                        choice(module, GammaMultiplication, [out_order], [out_gamma])
+                    )
+        else:
+            if in_mul:
+                seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
+            if in_norm:
+                seq.append(
+                    choice(module, InverseGainNormalization, [in_order], [in_gamma])
+                )
+            if True:
+                seq.append(
+                    choice(module, FrequencyTransform, [in_order], [out_order, alpha])
+                )
+            if out_norm or in_gamma != out_gamma:
+                seq.append(choice(module, GainNormalization, [out_order], [in_gamma]))
+            if in_gamma != out_gamma:
+                seq.append(
+                    choice(
+                        module,
+                        GeneralizedCepstrumToGeneralizedCepstrum,
+                        [out_order],
+                        [out_order, in_gamma, out_gamma, n_fft],
+                    )
+                )
+            if not out_norm and in_gamma != out_gamma:
+                seq.append(
+                    choice(module, InverseGainNormalization, [out_order], [out_gamma])
+                )
+            if out_mul:
+                seq.append(
+                    choice(module, GammaMultiplication, [out_order], [out_gamma])
+                )
+
+        if not out_norm and out_mul:
+            seq.append(
+                choice(module, ZerothGammaMultiplication, [out_order], [out_gamma])
+            )
+
+        return None, (seq,), None
+
+    @staticmethod
+    def _forward(mc, seq):
+        return seq(mc)
+
+
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
     def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
         super().__init__()
-
-        assert 0 <= in_order
-        assert 0 <= out_order
-        assert abs(in_gamma) <= 1
-        assert abs(out_gamma) <= 1
-        assert max(in_order, out_order) + 1 < n_fft
 
         self.in_order = in_order
         self.out_order = out_order
@@ -141,248 +383,3 @@ class ZerothGammaMultiplication(nn.Module):
     def _func(c, gamma):
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
         return torch.cat((c0 * gamma + 1, c1), dim=-1)
-
-
-class MelGeneralizedCepstrumToMelGeneralizedCepstrum(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgc2mgc.html>`_
-    for details. The conversion uses FFT instead of recursive formula.
-
-    Parameters
-    ----------
-    in_order : int >= 0
-        Order of input cepstrum, :math:`M_1`.
-
-    out_order : int >= 0
-        Order of output cepstrum, :math:`M_2`.
-
-    in_alpha : float in (-1, 1)
-        Input alpha, :math:`\\alpha_1`.
-
-    out_alpha : float in (-1, 1)
-        Output alpha, :math:`\\alpha_2`.
-
-    in_gamma : float in [-1, 1]
-        Input gamma, :math:`\\gamma_1`.
-
-    out_gamma : float in [-1, 1]
-        Output gamma, :math:`\\gamma_2`.
-
-    in_norm : bool
-        If True, assume normalized input.
-
-    out_norm : bool
-        If True, assume normalized output.
-
-    in_mul : bool
-        If True, assume gamma-multiplied input.
-
-    out_mul : bool
-        If True, assume gamma-multiplied output.
-
-    n_fft : int >> M1, M2
-        Number of FFT bins. Accurate conversion requires the large value.
-
-    References
-    ----------
-    .. [1] K. Tokuda et al., "Mel-generalized cepstral analysis - A unified approach to
-           speech spectral estimation", *Proceedings of ICSLP*, pp. 1043-1046, 1996.
-
-    """
-
-    def __init__(
-        self,
-        in_order,
-        out_order,
-        in_alpha=0,
-        out_alpha=0,
-        in_gamma=0,
-        out_gamma=0,
-        in_norm=False,
-        out_norm=False,
-        in_mul=False,
-        out_mul=False,
-        n_fft=512,
-    ):
-        super().__init__()
-
-        seq = self._precompute(
-            True,
-            in_order,
-            out_order,
-            in_alpha,
-            out_alpha,
-            in_gamma,
-            out_gamma,
-            in_norm,
-            out_norm,
-            in_mul,
-            out_mul,
-            n_fft,
-        )
-        self.seq = nn.Sequential(*seq)
-
-    def forward(self, mc):
-        """Convert mel-generalized cepstrum to mel-generalized cepstrum.
-
-        Parameters
-        ----------
-        mc : Tensor [shape=(..., M1+1)]
-            Input mel-cepstrum.
-
-        Returns
-        -------
-        out : Tensor [shape=(..., M2+1)]
-            Converted mel-cepstrum.
-
-        Examples
-        --------
-        >>> c1 = diffsptk.ramp(3)
-        >>> mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(3, 4, 0.1)
-        >>> c2 = mgc2mgc(c1)
-        >>> c2
-        tensor([-0.0830,  0.6831,  1.1464,  3.1334,  0.9063])
-
-        """
-        return self.seq(mc)
-
-    @staticmethod
-    def _func(
-        mc,
-        out_order,
-        in_alpha,
-        out_alpha,
-        in_gamma,
-        out_gamma,
-        in_norm,
-        out_norm,
-        in_mul,
-        out_mul,
-        n_fft,
-    ):
-        seq = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
-            False,
-            mc.size(-1) - 1,
-            out_order,
-            in_alpha,
-            out_alpha,
-            in_gamma,
-            out_gamma,
-            in_norm,
-            out_norm,
-            in_mul,
-            out_mul,
-            n_fft,
-        )
-        for func in seq:
-            mc = func(mc)
-        return mc
-
-    @staticmethod
-    def _precompute(
-        module,
-        in_order,
-        out_order,
-        in_alpha,
-        out_alpha,
-        in_gamma,
-        out_gamma,
-        in_norm,
-        out_norm,
-        in_mul,
-        out_mul,
-        n_fft,
-    ):
-        def choice(use_module, module, module_params, common_params):
-            if use_module:
-                return module(*module_params, *common_params)
-            else:
-                return lambda c: module._func(c, *common_params)
-
-        assert not (0 == in_gamma and in_mul)
-
-        seq = []
-        if not in_norm and in_mul:
-            seq.append(choice(module, ZerothGammaDivision, [in_order], [in_gamma]))
-
-        alpha = (out_alpha - in_alpha) / (1 - in_alpha * out_alpha)
-        if 0 == alpha:
-            if in_order == out_order and in_gamma == out_gamma:
-                if not in_mul and out_mul:
-                    seq.append(
-                        choice(module, GammaMultiplication, [in_order], [in_gamma])
-                    )
-                if not in_norm and out_norm:
-                    seq.append(
-                        choice(module, GainNormalization, [in_order], [in_gamma])
-                    )
-                if in_norm and not out_norm:
-                    seq.append(
-                        choice(
-                            module, InverseGainNormalization, [out_order], [out_gamma]
-                        )
-                    )
-                if in_mul and not out_mul:
-                    seq.append(choice(module, GammaDivision, [out_order], [out_gamma]))
-            else:
-                if in_mul:
-                    seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
-                if not in_norm:
-                    seq.append(
-                        choice(module, GainNormalization, [in_order], [in_gamma])
-                    )
-                if True:
-                    seq.append(
-                        choice(
-                            module,
-                            GeneralizedCepstrumToGeneralizedCepstrum,
-                            [in_order],
-                            [out_order, in_gamma, out_gamma, n_fft],
-                        )
-                    )
-                if not out_norm:
-                    seq.append(
-                        choice(
-                            module, InverseGainNormalization, [out_order], [out_gamma]
-                        )
-                    )
-                if out_mul:
-                    seq.append(
-                        choice(module, GammaMultiplication, [out_order], [out_gamma])
-                    )
-        else:
-            if in_mul:
-                seq.append(choice(module, GammaDivision, [in_order], [in_gamma]))
-            if in_norm:
-                seq.append(
-                    choice(module, InverseGainNormalization, [in_order], [in_gamma])
-                )
-            if True:
-                seq.append(
-                    choice(module, FrequencyTransform, [in_order], [out_order, alpha])
-                )
-            if out_norm or in_gamma != out_gamma:
-                seq.append(choice(module, GainNormalization, [out_order], [in_gamma]))
-            if in_gamma != out_gamma:
-                seq.append(
-                    choice(
-                        module,
-                        GeneralizedCepstrumToGeneralizedCepstrum,
-                        [out_order],
-                        [out_order, in_gamma, out_gamma, n_fft],
-                    )
-                )
-            if not out_norm and in_gamma != out_gamma:
-                seq.append(
-                    choice(module, InverseGainNormalization, [out_order], [out_gamma])
-                )
-            if out_mul:
-                seq.append(
-                    choice(module, GammaMultiplication, [out_order], [out_gamma])
-                )
-
-        if not out_norm and out_mul:
-            seq.append(
-                choice(module, ZerothGammaMultiplication, [out_order], [out_gamma])
-            )
-
-        return seq

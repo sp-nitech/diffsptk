@@ -21,21 +21,18 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("ir_length", [None, 100])
 def test_compatibility(
-    device, module, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
+    device, ir_length, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
 ):
-    df2 = U.choice(
-        module,
-        diffsptk.SecondOrderDigitalFilter,
-        diffsptk.functional.df2,
-        {
+    df2 = diffsptk.SecondOrderDigitalFilter(
+        **{
             "sample_rate": sr,
             "pole_frequency": pf,
             "pole_bandwidth": pb,
             "zero_frequency": zf,
             "zero_bandwidth": zb,
-            "ir_length": T,
+            "ir_length": ir_length,
         },
     )
 

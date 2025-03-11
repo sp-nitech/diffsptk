@@ -91,7 +91,7 @@ class LevinsonDurbin(BaseFunctionalModule):
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(lpc_order, eps, device=None, dtype=None):
+    def _precompute(lpc_order, eps=0, device=None, dtype=None):
         LevinsonDurbin._check(lpc_order, eps)
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
         return None, None, (eye,)
