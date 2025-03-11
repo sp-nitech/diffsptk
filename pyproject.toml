@@ -76,7 +76,7 @@ exclude = ["__init__.py", "*/librosa/*"]
 force-single-line = true
 
 [tool.codespell]
-skip = "./docs/_build,./tools"
+skip = "./docs/build,./tools"
 ignore-words-list = "numer"
 ignore-multiline-regex = "codespell:ignore-begin.*codespell:ignore-end"
 

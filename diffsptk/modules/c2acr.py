@@ -35,7 +35,7 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
 
     n_fft : int >> N
         The number of FFT bins used for conversion. The accurate conversion requires the
-        large vlaue.
+        large value.
 
     """
 
