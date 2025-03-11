@@ -67,12 +67,12 @@ class ExcitationGeneration(BaseFunctionalModule):
         Parameters
         ----------
         p : Tensor [shape=(..., N)]
-            Pitch in seconds.
+            The pitch in seconds.
 
         Returns
         -------
         out : Tensor [shape=(..., NxP)]
-            Excitation signal.
+            The excitation signal.
 
         Examples
         --------

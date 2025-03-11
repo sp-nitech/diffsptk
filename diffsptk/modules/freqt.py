@@ -58,12 +58,12 @@ class FrequencyTransform(BaseFunctionalModule):
         Parameters
         ----------
         c : Tensor [shape=(..., M1+1)]
-            The input sequence.
+            The input cepstral coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M2+1)]
-            The warped sequence.
+            The warped cepstral coefficients.
 
         Examples
         --------

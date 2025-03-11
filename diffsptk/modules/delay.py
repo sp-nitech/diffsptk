@@ -33,7 +33,7 @@ class Delay(BaseFunctionalModule):
         If True, the output has the same length of the input.
 
     dim : int
-        The dimension along which to shift the tensors.
+        The dimension along which to delay the tensors.
 
     """
 
@@ -43,17 +43,17 @@ class Delay(BaseFunctionalModule):
         self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
-        """Delay signal.
+        """Delay the input signal.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
-            Signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
-            Delayed signal.
+            The delayed signal.
 
         Examples
         --------

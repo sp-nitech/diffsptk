@@ -28,7 +28,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     Parameters
     ----------
     frame_length : int >= 1
-        The frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     norm : bool
         If True, divide the zero-crossing rate by the frame length.
@@ -50,12 +50,12 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T/L)]
-            Zero-crossing rate.
+            The zero-crossing rate.
 
         Examples
         --------

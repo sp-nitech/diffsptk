@@ -50,7 +50,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            The output cepstrum.
+            The cepstrum.
 
         Examples
         --------

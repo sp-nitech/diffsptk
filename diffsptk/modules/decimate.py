@@ -31,7 +31,7 @@ class Decimation(BaseFunctionalModule):
         The start point, :math:`S`.
 
     dim : int
-        The dimension along which to shift the tensors.
+        The dimension along which to decimate the tensors.
 
     """
 

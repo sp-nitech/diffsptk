@@ -34,7 +34,7 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         The number of FFT bins, :math:`L`.
 
     n_channel : int >= 1
-        The number of chroma-filter banks, :math:`C`.
+        The number of chroma filter banks, :math:`C`.
 
     sample_rate : int >= 1
         The sample rate in Hz.
@@ -55,8 +55,6 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         sample_rate,
         norm=float("inf"),
         use_power=True,
-        device=None,
-        dtype=None,
     ):
         super().__init__()
 
@@ -66,7 +64,7 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         self.register_buffer("H", tensors[0])
 
     def forward(self, x):
-        """Apply chroma-filter banks to the STFT.
+        """Apply chroma filter banks to the STFT.
 
         Parameters
         ----------

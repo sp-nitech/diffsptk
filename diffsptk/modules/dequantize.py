@@ -28,7 +28,7 @@ class InverseUniformQuantization(BaseFunctionalModule):
     Parameters
     ----------
     abs_max : float > 0
-        The absolute maximum value of the input waveform.
+        The absolute maximum value of the original waveform.
 
     n_bit : int >= 1
         The number of quantization bits.
