@@ -6,9 +6,11 @@ for PyTorch users. The package is mainly developed by the members of Tokuda, Nan
 and Hashimoto laboratory.
 
 .. toctree::
+    :maxdepth: 1
 
     Modules <modules/index>
-    Misc <misc/index>
+    Signals <signals>
+    Utils <utils>
 
 Indices and tables
 ------------------
