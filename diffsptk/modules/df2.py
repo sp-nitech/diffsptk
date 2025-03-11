@@ -89,14 +89,6 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
-        _, layers, _ = SecondOrderDigitalFilter._precompute(*args, **kwargs)
-        return SecondOrderDigitalFilter._forward(x, *layers)
-
-    @staticmethod
-    def _takes_input_size():
-        return False
-
     def _check(
         sample_rate, pole_frequency, pole_bandwidth, zero_frequency, zero_bandwidth
     ):

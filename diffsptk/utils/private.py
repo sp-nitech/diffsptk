@@ -248,12 +248,7 @@ def outer(x, y=None):
     )
 
 
-def iir(x, b=None, a=None, batching=True):
-    if b is None:
-        b = torch.ones(1, device=x.device, dtype=x.dtype)
-    if a is None:
-        a = torch.ones(1, device=x.device, dtype=x.dtype)
-
+def iir(x, b, a, batching=True):
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
