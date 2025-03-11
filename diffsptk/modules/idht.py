@@ -82,7 +82,7 @@ class InverseDiscreteHartleyTransform(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        DHT._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(dht_length, dht_type, device=None, dtype=None):

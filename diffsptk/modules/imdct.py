@@ -192,8 +192,8 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
         return True
 
     @staticmethod
-    def _check():
-        pass
+    def _check(*args, **kwargs):
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(*args, **kwargs):

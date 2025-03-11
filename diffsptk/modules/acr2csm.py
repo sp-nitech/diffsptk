@@ -103,6 +103,7 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
     @staticmethod
     def _precompute(acr_order, device=None, dtype=None):
+        AutocorrelationToCompositeSinusoidalModelCoefficients._check(acr_order)
         N = acr_order + 1
         B = torch.zeros((N, N), device=device, dtype=torch.double)
         for n in range(N):

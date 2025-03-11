@@ -91,7 +91,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        return GeneralizedCepstrumGainNormalization._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(*args, **kwargs):

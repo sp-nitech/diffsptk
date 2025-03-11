@@ -120,7 +120,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         elif in_format in (3, "hz"):
             formatter = lambda x: x * (TAU / sample_rate)
         else:
-            ValueError(f"in_format {in_format} is not supported.")
+            raise ValueError(f"in_format {in_format} is not supported.")
 
         params = {"device": device, "dtype": dtype}
         if lpc_order % 2 == 0:

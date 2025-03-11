@@ -83,7 +83,7 @@ class InverseDiscreteCosineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        DCT._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(dct_length, dct_type, device=None, dtype=None):

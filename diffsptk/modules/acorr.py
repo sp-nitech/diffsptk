@@ -88,6 +88,7 @@ class Autocorrelation(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(frame_length, acr_order, out_format="naive"):
+        Autocorrelation._check(frame_length, acr_order)
         if out_format in (0, "naive"):
             formatter = lambda x: x
         elif out_format in (1, "normalized"):

@@ -91,7 +91,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        LinearPredictiveCoefficientsToParcorCoefficients._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(*args, **kwargs):

@@ -82,7 +82,7 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        DST._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(dst_length, dst_type, device=None, dtype=None):

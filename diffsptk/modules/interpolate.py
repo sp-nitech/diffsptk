@@ -78,7 +78,7 @@ class Interpolation(BaseFunctionalModule):
 
     @staticmethod
     def _check(*args, **kwargs):
-        Decimation._check(*args, **kwargs)
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(*args, **kwargs):

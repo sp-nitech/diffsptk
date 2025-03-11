@@ -141,6 +141,8 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         dtype=None,
         device=None,
     ):
+        LineSpectralPairsToSpectrum._check(lsp_order, fft_length, alpha, gamma)
+
         if out_format in (0, "db"):
             formatter = lambda x: x * (20 / np.log(10))
         elif out_format in (1, "log-magnitude"):

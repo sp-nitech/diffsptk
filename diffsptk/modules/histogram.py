@@ -112,6 +112,7 @@ class Histogram(BaseFunctionalModule):
     def _precompute(
         n_bin, lower_bound, upper_bound, norm, softness, dtype=None, device=None
     ):
+        Histogram._check(n_bin, lower_bound, upper_bound, softness)
         width = (upper_bound - lower_bound) / n_bin
         bias = lower_bound + 0.5 * width
         centers = torch.arange(n_bin, device=device, dtype=torch.double) * width + bias

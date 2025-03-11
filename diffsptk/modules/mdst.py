@@ -77,8 +77,8 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check():
-        pass
+    def _check(*args, **kwargs):
+        raise NotImplementedError
 
     @staticmethod
     def _precompute(frame_length, window):

@@ -150,6 +150,7 @@ class Yingram(BaseFunctionalModule):
     ):
         if lag_max is None:
             lag_max = frame_length - 1
+        Yingram._check(frame_length, sample_rate, lag_min, lag_max, n_bin)
         midi_min = int(np.ceil(Yingram.lag2midi(lag_max, sample_rate)))
         midi_max = int(Yingram.lag2midi(lag_min, sample_rate))
         lags = Yingram.midi2lag(

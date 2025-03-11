@@ -81,6 +81,7 @@ class Delay(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(start, keeplen, dim):
+        Delay._check()
         return start, keeplen, dim
 
     @staticmethod
