@@ -18,6 +18,7 @@ import filecmp
 import os
 
 import pytest
+import torch
 
 import diffsptk
 
@@ -28,11 +29,11 @@ def test_get_alpha(mode):
     assert alpha == 0.55
 
 
-@pytest.mark.parametrize("double", [False, True])
-def test_read_and_write(double):
+@pytest.mark.parametrize("dtype", [torch.float, torch.double])
+def test_read_and_write(dtype):
     in_wav = "assets/data.wav"
     out_wav = "data.wav"
-    x, sr = diffsptk.read(in_wav, double=double)
+    x, sr = diffsptk.read(in_wav, dtype=dtype)
     diffsptk.write(out_wav, x, sr)
     assert filecmp.cmp(in_wav, out_wav, shallow=False)
     os.remove(out_wav)

@@ -31,11 +31,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x, sr = diffsptk.read(
-        "assets/data.wav",
-        double=torch.get_default_dtype() == torch.double,
-        device=device,
-    )
+    x, sr = diffsptk.read("assets/data.wav", device=device)
 
     gammatone = diffsptk.GammatoneFilterBankAnalysis(
         sr, filter_order=M, exact=exact

@@ -215,7 +215,15 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
             if next_codebook_size <= self.codebook_size:
                 # Double codebook.
                 codebook = self.vq.codebook[: self.curr_codebook_size]
-                r = torch.randn_like(codebook) * self.perturb_factor
+                r = (
+                    torch.randn(
+                        *codebook.size(),
+                        device=codebook.device,
+                        dtype=codebook.dtype,
+                        generator=self.generator,
+                    )
+                    * self.perturb_factor
+                )
                 self.vq.codebook[self.curr_codebook_size : next_codebook_size] = (
                     codebook - r
                 )
