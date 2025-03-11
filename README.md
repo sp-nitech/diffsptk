@@ -348,7 +348,7 @@ mdct = diffsptk.MDCT(fl)
 c = mdct(x)
 
 # Reconstruct x.
-imdct = diffpstk.IMDCT(fl)
+imdct = diffsptk.IMDCT(fl)
 x_hat = imdct(c, out_length=x.size(0))
 
 # Write reconstructed waveform.

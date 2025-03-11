@@ -102,7 +102,7 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     return alpha
 
 
-def read(filename, double=False, device=None, **kwargs):
+def read(filename, device=None, dtype=None, **kwargs):
     """Read a waveform from the given file.
 
     Parameters
@@ -110,11 +110,11 @@ def read(filename, double=False, device=None, **kwargs):
     filename : str
         The path of the wav file.
 
-    double : bool
-        If True, returns a double tensor instead of a float tensor.
-
     device : torch.device or None
         The device of the returned tensor.
+
+    dtype : torch.dtype or None
+        The data type of the returned tensor.
 
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read
@@ -138,12 +138,9 @@ def read(filename, double=False, device=None, **kwargs):
 
     """
     x, sr = sf.read(filename, **kwargs)
-    if double:
-        x = torch.DoubleTensor(x)
-    else:
-        x = torch.FloatTensor(x)
-    if device is not None:
-        x = x.to(device)
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+    x = torch.tensor(x, device=device, dtype=dtype)
     return x, sr
 
 
