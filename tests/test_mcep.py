@@ -21,23 +21,32 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("M", [0, 7, 8])
 @pytest.mark.parametrize("n_iter", [0, 3])
-@pytest.mark.parametrize("gamma", [0, -0.5, -1])
-def test_compatibility(device, n_iter, gamma, M=8, L=32, B=2, alpha=0.1):
+def test_compatibility(device, module, M, n_iter, L=32, B=2, alpha=0.1):
     spec = diffsptk.Spectrum(L, eps=0)
-    mgcep = diffsptk.MelGeneralizedCepstralAnalysis(
-        fft_length=L, cep_order=M, alpha=alpha, gamma=gamma, n_iter=n_iter
+    mcep = U.choice(
+        module,
+        diffsptk.MelCepstralAnalysis,
+        diffsptk.functional.mcep,
+        {
+            "fft_length": L,
+            "cep_order": M,
+            "n_iter": n_iter,
+            "alpha": alpha,
+        },
     )
 
     U.check_compatibility(
         device,
-        [mgcep, spec],
+        [mcep, spec],
         [],
         f"nrand -l {B * L} | sopr -SQR",
-        f"mgcep -d 0 -i {n_iter} -l {L} -m {M} -a {alpha} -g {gamma}",
+        f"mgcep -i {n_iter} -l {L} -m {M} -a {alpha}",
         [],
         dx=L,
         dy=M + 1,
     )
 
-    U.check_differentiability(device, [mgcep, spec], [B, L])
+    U.check_differentiability(device, [mcep, spec], [B, L])

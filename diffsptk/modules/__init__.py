@@ -97,8 +97,8 @@ from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 from .mgc2sp import MelGeneralizedCepstrumToSpectrum
+from .mcep import MelCepstralAnalysis
 from .mgcep import MelGeneralizedCepstralAnalysis
-from .mgcep import MelGeneralizedCepstralAnalysis as MelCepstralAnalysis
 from .mglsadf import PseudoMGLSADigitalFilter
 from .mglsadf import PseudoMGLSADigitalFilter as MLSA
 from .mlpg import MaximumLikelihoodParameterGeneration

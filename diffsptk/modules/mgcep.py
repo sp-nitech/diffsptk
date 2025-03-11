@@ -18,6 +18,7 @@ import torch
 from torch import nn
 
 from ..utils.private import check_size
+from ..utils.private import get_gamma
 from ..utils.private import hankel
 from ..utils.private import symmetric_toeplitz
 from ..utils.private import to
@@ -49,13 +50,18 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
     gamma : float in [-1, 0]
         The gamma parameter, :math:`\\gamma`.
 
+    c : int >= 1 or None
+        The number of stages.
+
     n_iter : int >= 0
         THe number of iterations.
 
     """
 
-    def __init__(self, cep_order, fft_length, alpha=0, gamma=0, n_iter=0):
+    def __init__(self, *, fft_length, cep_order, alpha=0, gamma=0, c=None, n_iter=0):
         super().__init__()
+
+        gamma = get_gamma(gamma, c)
 
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
@@ -70,13 +76,15 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
         if n_iter < 0:
             raise ValueError("n_iter must be non-negative.")
 
-        self.cep_order = cep_order
         self.fft_length = fft_length
+        self.cep_order = cep_order
         self.gamma = gamma
         self.n_iter = n_iter
 
         if gamma == 0:
-            self.mcep = MelCepstralAnalysis(cep_order, fft_length, alpha, n_iter=n_iter)
+            self.mcep = MelCepstralAnalysis(
+                fft_length=fft_length, cep_order=cep_order, alpha=alpha, n_iter=n_iter
+            )
         else:
             self.cfreqt = CoefficientsFrequencyTransform(
                 cep_order, fft_length - 1, -alpha
