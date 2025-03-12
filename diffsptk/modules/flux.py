@@ -15,49 +15,46 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from .base import BaseFunctionalModule
 
 
-class Flux(nn.Module):
+class Flux(BaseFunctionalModule):
     """Flux calculation module.
 
     Parameters
     ----------
     lag : int
-        Lag of the distance calculation, :math:`L`.
+        The lag of the distance calculation, :math:`L`.
 
     norm : int or float
-        Order of norm.
+        The order of the norm.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+        The reduction type.
 
     """
 
     def __init__(self, lag=1, norm=2, reduction="mean"):
         super().__init__()
 
-        assert reduction in ("none", "mean", "batchmean", "sum")
-
-        self.lag = lag
-        self.norm = norm
-        self.reduction = reduction
+        self.values = self._precompute(lag, norm, reduction)
 
     def forward(self, x, y=None):
-        """Calculate flux, which is the distance between adjacent frames.
+        """Calculate the flux, which is the distance between adjacent frames.
 
         Parameters
         ----------
         x : Tensor [shape=(..., N, D)]
-            Input.
+            The input.
 
         y : Tensor [shape=(..., N, D)] or None
-            Target (optional).
+            The target (optional).
 
         Returns
         -------
         out : Tensor [shape=(..., N-\\|L\\|) or scalar]
-            Flux.
+            The flux.
 
         Examples
         --------
@@ -72,7 +69,25 @@ class Flux(nn.Module):
         tensor([4., 4.])
 
         """
-        return self._forward(x, y, self.lag, self.norm, self.reduction)
+        return self._forward(x, y, *self.values)
+
+    @staticmethod
+    def _func(x, y, *args, **kwargs):
+        values = Flux._precompute(*args, **kwargs)
+        return Flux._forward(x, y, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(lag, norm, reduction):
+        Flux._check()
+        return (lag, norm, reduction)
 
     @staticmethod
     def _forward(x, y, lag, norm, reduction):
@@ -96,11 +111,10 @@ class Flux(nn.Module):
         elif reduction == "sum":
             flux = flux.sum()
         elif reduction == "mean":
-            flux = flux.mean() / x.size(-1) ** (1 / norm)
+            flux = flux.mean() / (x.size(-1) ** (1 / norm))
         elif reduction == "batchmean":
             flux = flux.mean()
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
-        return flux
 
-    _func = _forward
+        return flux

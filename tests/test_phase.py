@@ -28,9 +28,7 @@ def test_compatibility(device, module, unwrap, L=16, B=2):
         module,
         diffsptk.Phase,
         diffsptk.functional.phase,
-        {},
         {"fft_length": L, "unwrap": unwrap},
-        n_input=2,
     )
 
     opt = "-u" if unwrap else ""
@@ -73,11 +71,12 @@ def test_compatibility_a(device, L=16, B=2):
     tmp = "phase.tmp"
     U.check_compatibility(
         device,
-        lambda x: phase(b=None, a=x),
+        phase,
         [f"nrand -s 2 -l {B * L} > {tmp}"],
         [f"cat {tmp}"],
         f"phase -l {L} -n {L - 1} -p {tmp}",
         [f"rm {tmp}"],
         dx=L,
         dy=L // 2 + 1,
+        key=["a"],
     )

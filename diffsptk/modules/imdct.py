@@ -17,33 +17,33 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 from .mdct import ModifiedDiscreteTransform
 from .unframe import Unframe
 from .window import Window
 
 
-class InverseModifiedDiscreteCosineTransform(nn.Module):
+class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.ModifiedDiscreteCosineTransform`.
 
     Parameters
     ----------
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     """
 
-    def __init__(self, frame_length, window="sine", **kwargs):
+    def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        self.frame_period = frame_length // 2
-
-        self.imdct = InverseModifiedDiscreteTransform(frame_length, window, **kwargs)
-        self.window = Window(frame_length, window=window, norm="none")
-        self.unframe = Unframe(frame_length, self.frame_period)
+        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, y, out_length=None):
         """Compute inverse modified discrete cosine transform.
@@ -51,15 +51,15 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
         Parameters
         ----------
         y : Tensor [shape=(..., 2T/L, L/2)]
-            Spectrum.
+            The spectrum.
 
         out_length : int or None
-            Length of output waveform.
+            The length of the output waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------
@@ -74,87 +74,132 @@ class InverseModifiedDiscreteCosineTransform(nn.Module):
         tensor([1.0431e-07, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        x = self.imdct(y)
-        x = self.window(x)
-        x = self.unframe(x, out_length=out_length)
-        if out_length is None:
-            x = x[..., : -self.frame_period]
-        return x
+        return self._forward(y, out_length, *self.values, *self.layers)
 
     @staticmethod
-    def _func(y, out_length, frame_length, window, **kwargs):
-        frame_period = frame_length // 2
-        x = InverseModifiedDiscreteTransform._func(y, window, **kwargs)
-        x = Window._func(x, None, window=window, norm="none")
-        x = Unframe._func(
-            x,
-            out_length,
-            frame_length,
-            frame_period,
-            center=True,
-            window="rectangular",
-            norm="none",
+    def _func(y, out_length, *args, **kwargs):
+        values, layers, _ = InverseModifiedDiscreteCosineTransform._precompute(
+            *args, **kwargs, module=False
         )
+        return InverseModifiedDiscreteCosineTransform._forward(
+            y, out_length, *values, *layers
+        )
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(frame_length, window, transform="cosine", module=True):
+        InverseModifiedDiscreteCosineTransform._check()
+        frame_period = frame_length // 2
+
+        imdt = get_layer(
+            module,
+            InverseModifiedDiscreteTransform,
+            dict(
+                length=frame_length,
+                window=window,
+                transform=transform,
+            ),
+        )
+        window_ = get_layer(
+            module,
+            Window,
+            dict(
+                in_length=frame_length,
+                out_length=None,
+                window=window,
+                norm="none",
+            ),
+        )
+        unframe = get_layer(
+            module,
+            Unframe,
+            dict(
+                frame_length=frame_length,
+                frame_period=frame_period,
+            ),
+        )
+        return (frame_period,), (imdt, window_, unframe), None
+
+    @staticmethod
+    def _forward(y, out_length, frame_period, imdt, window, unframe):
+        x = unframe(window(imdt(y)), out_length=out_length)
         if out_length is None:
             x = x[..., :-frame_period]
         return x
 
 
-class InverseModifiedDiscreteTransform(nn.Module):
-    """Inverse modified discrete cosine/sine transform module.
+class InverseModifiedDiscreteTransform(BaseFunctionalModule):
+    """Oddly stacked inverse modified discrete cosine/sine transform module.
 
     Parameters
     ----------
     length : int >= 2
-        Output length, :math:`L`.
+        The output length, :math:`L`.
 
-    window : bool or str
-        If True, assume that input is windowed.
+    window : str
+        The window type used to determine whether it is rectangular or not.
 
     transform : ['cosine', 'sine']
-        Transform type.
+        The transform type.
 
     """
 
     def __init__(self, length, window, transform="cosine"):
         super().__init__()
 
-        assert 2 <= length
-        assert length % 2 == 0
+        self.in_dim = length // 2
 
-        self.length = length
-        self.register_buffer("W", self._precompute(length, window, transform))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("W", tensors[0])
 
     def forward(self, y):
-        """Apply inverse MDCT/MDST to input.
+        """Apply inverse MDCT/MDST to the input.
 
         Parameters
         ----------
         y : Tensor [shape=(..., L/2)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L)]
-            Output.
+            The output.
 
         """
-        check_size(2 * y.size(-1), self.length, "dimension of input")
-        return self._forward(y, self.W)
+        check_size(y.size(-1), self.in_dim, "dimension of input")
+        return self._forward(y, **self._buffers)
+
+    @staticmethod
+    def _func(y, *args, **kwargs):
+        _, _, tensors = InverseModifiedDiscreteTransform._precompute(
+            2 * y.size(-1),
+            *args,
+            **kwargs,
+            device=y.device,
+            dtype=y.dtype,
+        )
+        return InverseModifiedDiscreteTransform._forward(y, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    def _precompute(*args, **kwargs):
+        _, _, tensors = ModifiedDiscreteTransform._precompute(*args, **kwargs)
+        return None, None, (tensors[0].T,)
 
     @staticmethod
     def _forward(y, W):
         return torch.matmul(y, W)
-
-    @staticmethod
-    def _func(y, window, **kwargs):
-        W = InverseModifiedDiscreteTransform._precompute(
-            2 * y.size(-1), window, dtype=y.dtype, device=y.device, **kwargs
-        )
-        return InverseModifiedDiscreteTransform._forward(y, W)
-
-    @staticmethod
-    def _precompute(length, window, transform="cosine", dtype=None, device=None):
-        return ModifiedDiscreteTransform._precompute(
-            length, window, transform, dtype=dtype, device=device
-        ).T

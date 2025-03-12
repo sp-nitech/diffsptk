@@ -15,32 +15,30 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import remove_gain
+from ..utils.private import get_values
+from ..utils.private import remove_gain
+from .base import BaseFunctionalModule
 
 
-class Phase(nn.Module):
+class Phase(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/phase.html>`_
     for details.
 
     Parameters
     ----------
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     unwrap : bool
-        If True, perform phase unwrapping.
+        If True, perform the phase unwrapping.
 
     """
 
     def __init__(self, fft_length, unwrap=False):
         super().__init__()
 
-        assert 2 <= fft_length
-
-        self.fft_length = fft_length
-        self.unwrap = unwrap
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, b=None, a=None):
         """Compute phase spectrum.
@@ -48,15 +46,15 @@ class Phase(nn.Module):
         Parameters
         ----------
         b : Tensor [shape=(..., M+1)] or None
-            Numerator coefficients.
+            The numerator coefficients.
 
         a : Tensor [shape=(..., N+1)] or None
-            Denominator coefficients.
+            The denominator coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., L/2+1)]
-            Phase spectrum [:math:`\\pi` rad].
+            The phase spectrum [:math:`\\pi` rad].
 
         Examples
         --------
@@ -67,7 +65,26 @@ class Phase(nn.Module):
         tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])
 
         """
-        return self._forward(b, a, self.fft_length, self.unwrap)
+        return self._forward(b, a, *self.values)
+
+    @staticmethod
+    def _func(b, a, *args, **kwargs):
+        values = Phase._precompute(*args, **kwargs)
+        return Phase._forward(b, a, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(fft_length):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+
+    @staticmethod
+    def _precompute(fft_length, unwrap):
+        Phase._check(fft_length)
+        return (fft_length, unwrap)
 
     @staticmethod
     def _forward(b, a, fft_length, unwrap):
@@ -99,5 +116,3 @@ class Phase(nn.Module):
             s = torch.cumsum(bias, dim=-1)
             p[..., 1:] += s
         return p
-
-    _func = _forward

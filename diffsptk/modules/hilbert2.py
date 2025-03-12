@@ -15,46 +15,45 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import to
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .hilbert import HilbertTransform
 
 
-class TwoDimensionalHilbertTransform(nn.Module):
+class TwoDimensionalHilbertTransform(BaseFunctionalModule):
     """2-D Hilbert transform module.
 
     Parameters
     ----------
-    fft_length : int or list[int]
-        Number of FFT bins.
+    fft_length : int >= 1 or list[int]
+        The number of FFT bins.
 
     dim : list[int]
-        Dimensions along which to take the Hilbert transform.
+        The dimension along which to take the Hilbert transform.
 
     """
 
     def __init__(self, fft_length, dim=(-2, -1)):
         super().__init__()
 
-        assert len(dim) == 2
-
-        self.dim = dim
-        self.register_buffer("h", self._precompute(fft_length))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("h", tensors[0])
 
     def forward(self, x):
-        """Compute analytic signal using the Hilbert transform.
+        """Compute the analytic signal using the Hilbert transform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T1, T2, ...)]
-            Input signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., T1, T2, ...)]
-            Analytic signal, where real part is the input signal and imaginary part is
-            the Hilbert transform of the input signal.
+            The analytic signal, where the real part is the input signal and the
+            imaginary part is the Hilbert transform of the input signal.
 
         Examples
         --------
@@ -69,10 +68,43 @@ class TwoDimensionalHilbertTransform(nn.Module):
         tensor([[ 0.3358,  0.7989, -0.3358, -0.7989]])
 
         """
-        return self._forward(x, self.h, self.dim)
+        return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _forward(x, h, dim):
+    def _func(x, fft_length, dim):
+        values, _, tensors = TwoDimensionalHilbertTransform._precompute(
+            (x.size(dim[0]), x.size(dim[1])) if fft_length is None else fft_length,
+            dim,
+            device=x.device,
+            dtype=x.dtype,
+        )
+        return TwoDimensionalHilbertTransform._forward(x, *values, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(dim):
+        if len(dim) != 2:
+            raise ValueError("dim must have length 2.")
+
+    @staticmethod
+    def _precompute(fft_length, dim, device=None, dtype=None):
+        TwoDimensionalHilbertTransform._check(dim)
+        if isinstance(fft_length, int):
+            fft_length = (fft_length, fft_length)
+        _, _, h1 = HilbertTransform._precompute(
+            fft_length[0], None, device=device, dtype=torch.double
+        )
+        _, _, h2 = HilbertTransform._precompute(
+            fft_length[1], None, device=device, dtype=torch.double
+        )
+        h = h1[0].unsqueeze(1) * h2[0].unsqueeze(0)
+        return (dim,), None, (to(h, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, dim, h):
         L = h.size(dim[0]), h.size(dim[1])
         target_shape = [1] * x.dim()
         target_shape[dim[0]] = L[0]
@@ -81,25 +113,3 @@ class TwoDimensionalHilbertTransform(nn.Module):
         X = torch.fft.fft2(x, s=L, dim=dim)
         z = torch.fft.ifft2(X * h, s=L, dim=dim)
         return z
-
-    @staticmethod
-    def _func(x, fft_length, dim):
-        if fft_length is None:
-            fft_length = (x.size(dim[0]), x.size(dim[1]))
-        h = TwoDimensionalHilbertTransform._precompute(
-            fft_length, dtype=x.dtype, device=x.device
-        )
-        return TwoDimensionalHilbertTransform._forward(x, h, dim)
-
-    @staticmethod
-    def _precompute(fft_length, dtype=None, device=None):
-        if isinstance(fft_length, int):
-            fft_length = (fft_length, fft_length)
-        h1 = HilbertTransform._precompute(
-            fft_length[0], dtype=torch.double, device=device
-        )
-        h2 = HilbertTransform._precompute(
-            fft_length[1], dtype=torch.double, device=device
-        )
-        h = h1.unsqueeze(1) * h2.unsqueeze(0)
-        return to(h, dtype=dtype)

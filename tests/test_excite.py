@@ -38,7 +38,6 @@ def test_compatibility(device, module, voiced_region, unvoiced_region, P=80):
         module,
         diffsptk.ExcitationGeneration,
         diffsptk.functional.excite,
-        {},
         {
             "frame_period": P,
             "voiced_region": voiced_region,

@@ -29,19 +29,14 @@ def test_compatibility(device, module, C=12):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x, sr = diffsptk.read(
-        "assets/data.wav",
-        double=torch.get_default_dtype() == torch.double,
-        device=device,
-    )
+    x, sr = diffsptk.read("assets/data.wav", device=device)
     X = diffsptk.functional.stft(x)
 
     chroma = U.choice(
         module,
         diffsptk.ChromaFilterBankAnalysis,
         diffsptk.functional.chroma,
-        {"fft_length": 2 * (X.size(-1) - 1)},
-        {"n_channel": C, "sample_rate": sr},
+        {"fft_length": 2 * X.size(-1) - 2, "n_channel": C, "sample_rate": sr},
     )
     if hasattr(chroma, "to"):
         chroma.to(device)

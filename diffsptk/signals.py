@@ -26,7 +26,7 @@ def impulse(order, **kwargs):
     Parameters
     ----------
     order : int >= 0
-        Order of sequence, :math:`M`.
+        The order of the sequence, :math:`M`.
 
     **kwargs : additional keyword arguments
         See `torch.eye <https://pytorch.org/docs/stable/generated/torch.eye.html>`_.
@@ -34,7 +34,7 @@ def impulse(order, **kwargs):
     Returns
     -------
     out : Tensor [shape=(M+1,)]
-        Impulse sequence.
+        The impulse sequence.
 
     Examples
     --------
@@ -56,7 +56,7 @@ def step(order, value=1, **kwargs):
     Parameters
     ----------
     order : int >= 0
-        Order of sequence, :math:`M`.
+        The order of the sequence, :math:`M`.
 
     value : float
         Step value.
@@ -67,7 +67,7 @@ def step(order, value=1, **kwargs):
     Returns
     -------
     out : Tensor [shape=(M+1,)]
-        Step sequence.
+        The step sequence.
 
     Examples
     --------
@@ -89,13 +89,13 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
     Parameters
     ----------
     arg : float
-        If `end` is `None` end value otherwise start value.
+        If `end` is `None`, this is the end value otherwise start value.
 
     end : float
-        End value.
+        The end value.
 
     step : float != 0
-        Slope.
+        The slope.
 
     eps : float
         A correction value.
@@ -107,7 +107,7 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
     Returns
     -------
     out : Tensor [shape=(?,)]
-        Ramp sequence.
+        The ramp sequence.
 
     Examples
     --------
@@ -138,13 +138,13 @@ def sin(order, period=None, magnitude=1, **kwargs):
     Parameters
     ----------
     order : int >= 0
-        Order of sequence, :math:`M`.
+        The order of the sequence, :math:`M`.
 
     period : float > 0
-        Period.
+        The period.
 
     magnitude : float
-        Magnitude.
+        The magnitude.
 
     **kwargs : additional keyword arguments
         See `torch.arange
@@ -153,7 +153,7 @@ def sin(order, period=None, magnitude=1, **kwargs):
     Returns
     -------
     out : Tensor [shape=(M+1,)]
-        Sinusoidal sequence.
+        The sinusoidal sequence.
 
     Examples
     --------
@@ -178,13 +178,13 @@ def train(order, frame_period, norm="power", **kwargs):
     Parameters
     ----------
     order : int >= 0
-        Order of sequence, :math:`M`.
+        The order of the sequence, :math:`M`.
 
     frame_period : float >= 1
-        Frame period.
+        The frame period.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type.
+        The normalization type.
 
     **kwargs : additional keyword arguments
         See `torch.zeros <https://pytorch.org/docs/stable/generated/torch.zeros.html>`_.
@@ -192,7 +192,7 @@ def train(order, frame_period, norm="power", **kwargs):
     Returns
     -------
     out : Tensor [shape=(M+1,)]
-        Pulse sequence.
+        The pulse sequence.
 
     Examples
     --------
@@ -232,16 +232,16 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
     Parameters
     ----------
     order : int >= 0
-        Order of sequence, :math:`M`.
+        The order of the sequence, :math:`M`.
 
     mean : float
-        Mean.
+        The mean.
 
     stdv : float >= 0
-        Standard deviation.
+        The standard deviation.
 
     var : float >= 0
-        Variance.
+        The variance. This overrides `stdv`.
 
     **kwargs : additional keyword arguments
         See `torch.randn <https://pytorch.org/docs/stable/generated/torch.randn.html>`_.
@@ -249,7 +249,7 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
     Returns
     -------
     out : Tensor [shape=(M+1,)]
-        Random value sequence.
+        The random value sequence.
 
     Examples
     --------

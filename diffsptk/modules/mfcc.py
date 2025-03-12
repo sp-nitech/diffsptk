@@ -14,44 +14,48 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import numpy as np
+import inspect
+
 import torch
 from torch import nn
 
-from ..misc.utils import numpy_to_torch
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
 
 
-class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
+class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mfcc.html>`_
     for details.
 
     Parameters
     ----------
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
+
     mfcc_order : int >= 1
-        Order of MFCC, :math:`M`.
+        The order of the MFCC, :math:`M`.
 
     n_channel : int >= 1
-        Number of mel-filter banks, :math:`C`.
-
-    fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of mel filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     lifter : int >= 1
-        Liftering coefficient.
+        The liftering coefficient.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     floor : float > 0
-        Minimum mel-filter bank output in linear scale.
+        The minimum mel filter bank output in linear scale.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
@@ -64,50 +68,41 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
 
     def __init__(
         self,
+        *,
+        fft_length,
         mfcc_order,
         n_channel,
-        fft_length,
         sample_rate,
         lifter=1,
+        f_min=0,
+        f_max=None,
+        floor=1e-5,
         out_format="y",
-        **fbank_kwargs,
     ):
         super().__init__()
 
-        assert 1 <= mfcc_order < n_channel
-        assert 1 <= lifter
-
-        self.mfcc_order = mfcc_order
-        self.formatter = self._formatter(out_format)
-
-        self.fbank = MelFilterBankAnalysis(
-            n_channel, fft_length, sample_rate, out_format="y,E", **fbank_kwargs
-        )
-        self.dct = DiscreteCosineTransform(n_channel)
-
-        m = np.arange(self.mfcc_order + 1)
-        v = 1 + (lifter / 2) * np.sin((np.pi / lifter) * m)
-        v[0] = np.sqrt(2)
-        self.register_buffer("liftering_vector", numpy_to_torch(v))
+        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
+        self.register_buffer("liftering_vector", tensors[0])
 
     def forward(self, x):
-        """Compute MFCC.
+        """Compute the MFCC from the power spectrum.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         y : Tensor [shape=(..., M)]
-            MFCC without C0.
+            The MFCC without C0.
 
         E : Tensor [shape=(..., 1)] (optional)
-            Energy.
+            The energy.
 
         c : Tensor [shape=(..., 1)] (optional)
-            C0.
+            The C0.
 
         Examples
         --------
@@ -120,20 +115,91 @@ class MelFrequencyCepstralCoefficientsAnalysis(nn.Module):
                 [ 2.8049e+00, -1.6257e+00, -2.3566e-02,  1.2804e-01]])
 
         """
-        y, E = self.fbank(x)
-        y = self.dct(y)
-        y = y[..., : self.mfcc_order + 1] * self.liftering_vector
-        c, y = torch.split(y, [1, self.mfcc_order], dim=-1)
-        return self.formatter(y, c, E)
+        return self._forward(x, *self.values, *self.layers, **self._buffers)
 
     @staticmethod
-    def _formatter(out_format):
+    def _func(x, *args, **kwargs):
+        values, layers, tensors = MelFrequencyCepstralCoefficientsAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return MelFrequencyCepstralCoefficientsAnalysis._forward(
+            x, *values, *layers, *tensors
+        )
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(mfcc_order, n_channel, lifter):
+        if mfcc_order < 0:
+            raise ValueError("mfcc_order must be non-negative.")
+        if n_channel <= mfcc_order:
+            raise ValueError("mfcc_order must be less than n_channel.")
+        if lifter < 0:
+            raise ValueError("lifter must be non-negative.")
+
+    @staticmethod
+    def _precompute(
+        fft_length,
+        mfcc_order,
+        n_channel,
+        sample_rate,
+        lifter,
+        f_min,
+        f_max,
+        floor,
+        out_format,
+        device=None,
+        dtype=None,
+    ):
+        MelFrequencyCepstralCoefficientsAnalysis._check(mfcc_order, n_channel, lifter)
+        module = inspect.stack()[1].function == "__init__"
+
         if out_format in (0, "y"):
-            return lambda y, c, E: y
+            formatter = lambda y, c, E: y
         elif out_format in (1, "yE"):
-            return lambda y, c, E: torch.cat((y, E), dim=-1)
+            formatter = lambda y, c, E: torch.cat((y, E), dim=-1)
         elif out_format in (2, "yc"):
-            return lambda y, c, E: torch.cat((y, c), dim=-1)
+            formatter = lambda y, c, E: torch.cat((y, c), dim=-1)
         elif out_format in (3, "ycE"):
-            return lambda y, c, E: torch.cat((y, c, E), dim=-1)
-        raise ValueError(f"out_format {out_format} is not supported.")
+            formatter = lambda y, c, E: torch.cat((y, c, E), dim=-1)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        fbank = get_layer(
+            module,
+            MelFilterBankAnalysis,
+            dict(
+                fft_length=fft_length,
+                n_channel=n_channel,
+                sample_rate=sample_rate,
+                f_min=f_min,
+                f_max=f_max,
+                floor=floor,
+                use_power=False,
+                out_format="y,E",
+            ),
+        )
+        dct = get_layer(
+            module,
+            DiscreteCosineTransform,
+            dict(
+                dct_length=n_channel,
+                dct_type=2,
+            ),
+        )
+
+        ramp = torch.arange(mfcc_order + 1, device=device, dtype=torch.double)
+        liftering_vector = 1 + (lifter / 2) * torch.sin((torch.pi / lifter) * ramp)
+        liftering_vector[0] = 2**0.5
+
+        return (formatter,), (fbank, dct), (to(liftering_vector, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, formatter, fbank, dct, liftering_vector):
+        y, E = fbank(x)
+        y = dct(y)
+        y = y[..., : len(liftering_vector)] * liftering_vector
+        c, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
+        return formatter(y, c, E)

@@ -15,26 +15,26 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class RootMeanSquareError(nn.Module):
+class RootMeanSquareError(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/rmse.html>`_
     for details.
 
     Parameters
     ----------
     reduction : ['none', 'mean', 'sum']
-        Reduction type.
+        The reduction type.
 
     """
 
     def __init__(self, reduction="mean"):
         super().__init__()
 
-        assert reduction in ("none", "mean", "sum")
-
-        self.reduction = reduction
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x, y):
         """Calculate RMSE.
@@ -42,15 +42,15 @@ class RootMeanSquareError(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., D)]
-            Input.
+            The input.
 
         y : Tensor [shape=(..., D)]
-            Target.
+            The target.
 
         Returns
         -------
         out : Tensor [shape=(...,) or scalar]
-            RMSE.
+            The RMSE.
 
         Examples
         --------
@@ -66,11 +66,29 @@ class RootMeanSquareError(nn.Module):
         tensor(1.8340)
 
         """
-        return self._forward(x, y, self.reduction)
+        return self._forward(x, y, *self.values)
+
+    @staticmethod
+    def _func(x, y, *args, **kwargs):
+        values = RootMeanSquareError._precompute(*args, **kwargs)
+        return RootMeanSquareError._forward(x, y, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(reduction):
+        RootMeanSquareError._check()
+        return (reduction,)
 
     @staticmethod
     def _forward(x, y, reduction):
-        error = torch.linalg.vector_norm(x - y, ord=2, dim=-1) / x.size(-1) ** 0.5
+        error = torch.linalg.vector_norm(x - y, dim=-1) / (x.size(-1) ** 0.5)
 
         if reduction == "none":
             pass
@@ -80,6 +98,5 @@ class RootMeanSquareError(nn.Module):
             error = error.mean()
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
-        return error
 
-    _func = _forward
+        return error

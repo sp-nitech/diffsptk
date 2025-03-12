@@ -27,8 +27,7 @@ def test_compatibility(device, module, M=9, alpha=0.1, L=64, B=2):
         module,
         diffsptk.MelCepstrumPowerNormalization,
         diffsptk.functional.pnorm,
-        {"cep_order": M},
-        {"alpha": alpha, "ir_length": L},
+        {"cep_order": M, "alpha": alpha, "ir_length": L},
     )
 
     U.check_compatibility(

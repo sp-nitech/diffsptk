@@ -16,10 +16,9 @@
 
 import logging
 import math
-from importlib import import_module
+from itertools import islice
 
 import numpy as np
-import soundfile as sf
 import torch
 import torch.nn.functional as F
 import torchaudio
@@ -39,9 +38,21 @@ class Lambda(nn.Module):
         return self.func(x, **self.opt)
 
 
-def delayed_import(module_path, item_name):
-    module = import_module(module_path)
-    return getattr(module, item_name)
+def get_layer(is_module, module, params):
+    if is_module:
+        return module(**params)
+
+    if module._takes_input_size():
+        params = dict(islice(params.items(), 1, None))
+
+    def layer(*args, **kwargs):
+        return module._func(*args, **params, **kwargs)
+
+    return layer
+
+
+def get_values(dictionary, begin=1, end=-1):
+    return list(dictionary.values())[begin:end]
 
 
 def get_logger(name):
@@ -62,6 +73,11 @@ def get_generator(seed=None):
     if seed is not None:
         generator.manual_seed(seed)
     return generator
+
+
+def check_size(x, y, cause):
+    if x != y:
+        raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")
 
 
 def is_power_of_two(n):
@@ -106,13 +122,13 @@ def numpy_to_torch(x):
         return torch.from_numpy(x.astype(default_dtype()))
 
 
-def to(x, dtype=None, device=None):
+def to(x, device=None, dtype=None):
     if dtype is None:
         if torch.is_complex(x):
             dtype = torch_default_complex_dtype()
         else:
             dtype = torch.get_default_dtype()
-    return x.to(dtype=dtype, device=device)
+    return x.to(device=device, dtype=dtype)
 
 
 def to_2d(x):
@@ -137,8 +153,7 @@ def to_dataloader(x, batch_size=None):
         return data_loader
     elif isinstance(x, torch.utils.data.DataLoader):
         return x
-    else:
-        raise ValueError(f"Unsupported input type: {type(x)}.")
+    raise ValueError(f"Unsupported input type: {type(x)}.")
 
 
 def reflect(x):
@@ -188,92 +203,11 @@ def get_resample_params(mode="kaiser_best"):
     return params
 
 
-def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
-    """Compute an appropriate frequency warping factor under given sample rate.
-
-    Parameters
-    ----------
-    sr : int >= 1
-        Sample rate in Hz.
-
-    mode : ['hts', 'auto']
-        'hts' returns traditional alpha used in HTS. 'auto' computes appropriate
-        alpha in L2 sense.
-
-    n_freq : int >= 2
-        Number of sample points in the frequency domain.
-
-    n_alpha : int >= 1
-        Number of sample points to search alpha.
-
-    Returns
-    -------
-    out : float in [0, 1)
-        Frequency warping factor, :math:`\\alpha`.
-
-    Examples
-    --------
-    >>> _, sr = diffsptk.read("assets/data.wav")
-    >>> alpha = diffsptk.get_alpha(sr)
-    >>> alpha
-    0.42
-
-    """
-
-    def get_hts_alpha(sr):
-        sr_to_alpha = {
-            "8000": 0.31,
-            "10000": 0.35,
-            "12000": 0.37,
-            "16000": 0.42,
-            "22050": 0.45,
-            "32000": 0.50,
-            "44100": 0.53,
-            "48000": 0.55,
-        }
-        key = str(int(sr))
-        if key not in sr_to_alpha:
-            raise ValueError(f"Unsupported sample rate: {sr}.")
-        selected_alpha = sr_to_alpha[key]
-        return selected_alpha
-
-    def get_auto_alpha(sr, n_freq, n_alpha):
-        # Compute target mel-frequencies.
-        freq = np.arange(n_freq) * (0.5 * sr / (n_freq - 1))
-        mel_freq = np.log1p(freq / 1000)
-        mel_freq = mel_freq * (np.pi / mel_freq[-1])
-        mel_freq = np.expand_dims(mel_freq, 0)
-
-        # Compute phase characteristic of the 1st order all-pass filter.
-        alpha = np.linspace(0, 1, n_alpha, endpoint=False)
-        alpha = np.expand_dims(alpha, 1)
-        alpha2 = alpha * alpha
-        omega = np.arange(n_freq) * (np.pi / (n_freq - 1))
-        omega = np.expand_dims(omega, 0)
-        numer = (1 - alpha2) * np.sin(omega)
-        denom = (1 + alpha2) * np.cos(omega) - 2 * alpha
-        warped_omega = np.arctan(numer / denom)
-        warped_omega[warped_omega < 0] += np.pi
-
-        # Select an appropriate alpha in terms of L2 distance.
-        distance = np.square(mel_freq - warped_omega).sum(axis=1)
-        selected_alpha = float(np.squeeze(alpha[np.argmin(distance)]))
-        return selected_alpha
-
-    if mode == "hts":
-        alpha = get_hts_alpha(sr)
-    elif mode == "auto":
-        alpha = get_auto_alpha(sr, n_freq, n_alpha)
-    else:
-        raise ValueError("Only hts and auto are supported.")
-
-    return alpha
-
-
 def get_gamma(gamma, c):
     if c is None or c == 0:
         return gamma
-    assert 1 <= c
+    if not 1 <= c:
+        raise ValueError("c must be an integer greater than or equal to 1.")
     return -1 / c
 
 
@@ -314,12 +248,7 @@ def outer(x, y=None):
     )
 
 
-def iir(x, b=None, a=None, batching=True):
-    if b is None:
-        b = torch.ones(1, dtype=x.dtype, device=x.device)
-    if a is None:
-        a = torch.ones(1, dtype=x.dtype, device=x.device)
-
+def iir(x, b, a, batching=True):
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
@@ -329,8 +258,8 @@ def iir(x, b=None, a=None, batching=True):
     return y
 
 
-def plateau(length, first, middle, last=None, dtype=None, device=None):
-    x = torch.full((length,), middle, dtype=dtype, device=device)
+def plateau(length, first, middle, last=None, device=None, dtype=None):
+    x = torch.full((length,), middle, device=device, dtype=dtype)
     x[0] = first
     if last is not None:
         x[-1] = last
@@ -338,103 +267,27 @@ def plateau(length, first, middle, last=None, dtype=None, device=None):
 
 
 def deconv1d(x, weight):
-    """Deconvolve input. This is not transposed convolution.
+    """Deconvolve the input signal. Note that this is not transposed convolution.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Input signal.
+        The input signal.
 
     weight : Tensor [shape=(M+1,)]
-        Filter coefficients.
+        The filter coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., T-M)]
-        Output signal.
+        The output signal.
 
     """
-    assert weight.dim() == 1
+    if weight.dim() != 1:
+        raise ValueError("The weight must be 1D.")
     b = x.view(-1, x.size(-1))
     a = weight.view(1, -1).expand(b.size(0), -1)
     impulse = F.pad(torch.ones_like(b[..., :1]), (0, b.size(-1) - a.size(-1)))
     y = iir(impulse, b, a)
     y = y.view(x.size()[:-1] + y.size()[-1:])
     return y
-
-
-def check_size(x, y, cause):
-    assert x == y, f"Unexpected {cause} (input {x} vs target {y})."
-
-
-def read(filename, double=False, device=None, **kwargs):
-    """Read waveform from file.
-
-    Parameters
-    ----------
-    filename : str
-        Path of wav file.
-
-    double : bool
-        If True, return double-type tensor.
-
-    device : torch.device or None
-        Device of returned tensor.
-
-    **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.read
-        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.read>`_.
-
-    Returns
-    -------
-    x : Tensor
-        Waveform.
-
-    sr : int
-        Sample rate in Hz.
-
-    Examples
-    --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> x
-    tensor([ 0.0002,  0.0004,  0.0006,  ...,  0.0006, -0.0006, -0.0007])
-    >>> sr
-    16000
-
-    """
-    x, sr = sf.read(filename, **kwargs)
-    if double:
-        x = torch.DoubleTensor(x)
-    else:
-        x = torch.FloatTensor(x)
-    if device is not None:
-        x = x.to(device)
-    return x, sr
-
-
-def write(filename, x, sr, **kwargs):
-    """Write waveform to file.
-
-    Parameters
-    ----------
-    filename : str
-        Path of wav file.
-
-    x : Tensor
-        Waveform.
-
-    sr : int
-        Sample rate in Hz.
-
-    **kwargs : additional keyword arguments
-        Additional arguments passed to `soundfile.write
-        <https://python-soundfile.readthedocs.io/en/latest/#soundfile.write>`_.
-
-    Examples
-    --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> diffsptk.write("out.wav", x, sr)
-
-    """
-    x = x.cpu().numpy() if torch.is_tensor(x) else x
-    sf.write(filename, x, sr, **kwargs)

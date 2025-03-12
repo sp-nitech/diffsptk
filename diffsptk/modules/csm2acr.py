@@ -15,20 +15,21 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 
 
-class CompositeSinusoidalModelCoefficientsToAutocorrelation(nn.Module):
+class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/csm2acr.html>`_
     for details.
 
     Parameters
     ----------
-    csm_order : int >= 0
-        Order of CSM coefficients, :math:`M`.
+    acr_order : int >= 0
+        The order of the autocorrelation, :math:`M`.
 
     References
     ----------
@@ -37,14 +38,13 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(nn.Module):
 
     """
 
-    def __init__(self, csm_order):
+    def __init__(self, acr_order):
         super().__init__()
 
-        assert 1 <= csm_order
-        assert csm_order % 2 == 1
+        self.in_dim = acr_order + 1
 
-        self.csm_order = csm_order
-        self.register_buffer("ramp", self._precompute(self.csm_order))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("ramp", tensors[0])
 
     def forward(self, c):
         """Convert CSM coefficients to autocorrelation.
@@ -52,12 +52,12 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M+1)]
-            Composite sinusoidal model coefficients.
+            The CSM coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Autocorrelation.
+            The autocorrelation.
 
         Examples
         --------
@@ -73,25 +73,39 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(nn.Module):
         tensor([ 8.8894, -0.1102, -4.1748,  0.7501])
 
         """
-        check_size(c.size(-1), self.csm_order + 1, "dimension of autocorrelation")
-        return self._forward(c, self.ramp)
+        check_size(c.size(-1), self.in_dim, "dimension of autocorrelation")
+        return self._forward(c, **self._buffers)
+
+    @staticmethod
+    def _func(c, *args, **kwargs):
+        _, _, tensors = (
+            CompositeSinusoidalModelCoefficientsToAutocorrelation._precompute(
+                c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
+            )
+        )
+        return CompositeSinusoidalModelCoefficientsToAutocorrelation._forward(
+            c, *tensors
+        )
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(acr_order):
+        if acr_order <= 0 or acr_order % 2 == 0:
+            raise ValueError("acr_order must be a positive odd number.")
+
+    @staticmethod
+    def _precompute(acr_order, device=None, dtype=None):
+        CompositeSinusoidalModelCoefficientsToAutocorrelation._check(acr_order)
+        ramp = torch.arange(acr_order + 1, device=device)
+        return None, None, (to(ramp, dtype=dtype),)
 
     @staticmethod
     def _forward(c, ramp):
         w, m = torch.tensor_split(c, 2, dim=-1)
-        a = m.unsqueeze(-2)
-        b = torch.cos(w.unsqueeze(-1) * ramp)
-        r = torch.matmul(a, b).squeeze(-2)
+        a = m.unsqueeze(-2)  # (..., 1, (M+1)/2)
+        b = torch.cos(w.unsqueeze(-1) * ramp)  # (..., (M+1)/2, M+1)
+        r = torch.matmul(a, b).squeeze(-2)  # (..., M+1)
         return r
-
-    @staticmethod
-    def _func(c):
-        ramp = CompositeSinusoidalModelCoefficientsToAutocorrelation._precompute(
-            c.size(-1) - 1, dtype=c.dtype, device=c.device
-        )
-        return CompositeSinusoidalModelCoefficientsToAutocorrelation._forward(c, ramp)
-
-    @staticmethod
-    def _precompute(csm_order, dtype=None, device=None):
-        ramp = torch.arange(csm_order + 1, device=device)
-        return to(ramp, dtype=dtype)

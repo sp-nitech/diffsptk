@@ -32,18 +32,23 @@ def test_compatibility(device, module, fl, fp, center, T=20):
     if fl < fp:
         return
 
-    frame = diffsptk.Frame(fl, fp, center=center)
+    frame = diffsptk.Frame(
+        fl,
+        fp,
+        center=center,
+    ).to(device)
     unframe = U.choice(
         module,
         diffsptk.Unframe,
         diffsptk.functional.unframe,
-        {},
         {"frame_length": fl, "frame_period": fp, "center": center},
     )
+    if module:
+        unframe = unframe.to(device)
 
-    x1 = diffsptk.ramp(T)
+    x1 = diffsptk.ramp(T, device=device)
     y = frame(x1)
-    x2 = diffsptk.ramp(torch.max(y))
+    x2 = diffsptk.ramp(torch.max(y), device=device)
     x3 = unframe(y, out_length=x2.size(0))
     assert torch.allclose(x2, x3)
 

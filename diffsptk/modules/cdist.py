@@ -14,11 +14,15 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import math
+
 import torch
-from torch import nn
+
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class CepstralDistance(nn.Module):
+class CepstralDistance(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/cdist.html>`_
     for details.
 
@@ -28,7 +32,7 @@ class CepstralDistance(nn.Module):
         If True, include the constant term in the distance calculation.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+        The reduction type.
 
     References
     ----------
@@ -41,26 +45,23 @@ class CepstralDistance(nn.Module):
     def __init__(self, full=False, reduction="mean"):
         super().__init__()
 
-        assert reduction in ("none", "mean", "batchmean", "sum")
-
-        self.full = full
-        self.reduction = reduction
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, c1, c2):
-        """Calculate cepstral distance between two inputs.
+        """Calculate the cepstral distance between two inputs.
 
         Parameters
         ----------
         c1 : Tensor [shape=(..., M+1)]
-            Input cepstral coefficients.
+            The input cepstral coefficients.
 
         c2 : Tensor [shape=(..., M+1)]
-            Target cepstral coefficients.
+            The target cepstral coefficients.
 
         Returns
         -------
         out : Tensor [shape=(...,) or scalar]
-            Cepstral distance.
+            The cepstral distance.
 
         Examples
         --------
@@ -76,26 +77,40 @@ class CepstralDistance(nn.Module):
         tensor(1.6551)
 
         """
-        return self._forward(c1, c2, self.full, self.reduction)
+        return self._forward(c1, c2, *self.values)
 
     @staticmethod
-    def _forward(c1, c2, full, reduction):
-        distance = torch.linalg.vector_norm(c1[..., 1:] - c2[..., 1:], ord=2, dim=-1)
+    def _func(c1, c2, *args, **kwargs):
+        values = CepstralDistance._precompute(*args, **kwargs)
+        return CepstralDistance._forward(c1, c2, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(full, reduction):
+        CepstralDistance._check()
+        const = 10 * math.sqrt(2) / math.log(10) if full else 1
+        return (const, reduction)
+
+    @staticmethod
+    def _forward(c1, c2, const, reduction):
+        distance = torch.linalg.vector_norm(c1[..., 1:] - c2[..., 1:], dim=-1)
 
         if reduction == "none":
             pass
         elif reduction == "sum":
             distance = distance.sum()
         elif reduction == "mean":
-            distance = distance.mean() / (c1.size(-1) - 1) ** 0.5
+            distance = distance.mean() / ((c1.size(-1) - 1) ** 0.5)
         elif reduction == "batchmean":
             distance = distance.mean()
         else:
             raise ValueError(f"reduction {reduction} is not supported.")
 
-        if full:
-            # Multiply by 10 * math.sqrt(2) / math.log(10)
-            distance = distance * 6.141851463713754
-        return distance
-
-    _func = _forward
+        return const * distance

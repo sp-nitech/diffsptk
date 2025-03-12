@@ -30,8 +30,7 @@ def test_compatibility(device, module, w, norm, L1, L2=10, B=2):
         module,
         diffsptk.Window,
         diffsptk.functional.window,
-        {"in_length": L1},
-        {"out_length": L2, "window": w, "norm": norm},
+        {"in_length": L1, "out_length": L2, "window": w, "norm": norm},
     )
 
     U.check_compatibility(

@@ -21,22 +21,35 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("o", [0, 1, 2, 3])
+@pytest.mark.parametrize("module", [False, True])
+@pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(
-    device, o, M=4, C=10, L=32, sr=8000, lifter=20, f_min=300, floor=1, B=2
+    device, module, out_format, M=4, C=10, L=32, sr=8000, lifter=20, floor=1, B=2
 ):
     spec = diffsptk.Spectrum(L, eps=0)
-    mfcc = diffsptk.MFCC(
-        M, C, L, sr, lifter=lifter, f_min=f_min, floor=floor, out_format=o
+    mfcc = U.choice(
+        module,
+        diffsptk.MelFrequencyCepstralCoefficientsAnalysis,
+        diffsptk.functional.mfcc,
+        {
+            "fft_length": L,
+            "mfcc_order": M,
+            "n_channel": C,
+            "sample_rate": sr,
+            "lifter": lifter,
+            "floor": floor,
+            "out_format": out_format,
+        },
     )
 
+    o = out_format
     s = sr // 1000
     U.check_compatibility(
         device,
         [mfcc, spec],
         [],
         f"nrand -l {B * L}",
-        f"mfcc -m {M} -n {C} -l {L} -s {s} -c {lifter} -L {f_min} -e {floor} -o {o}",
+        f"mfcc -m {M} -n {C} -l {L} -s {s} -c {lifter} -e {floor} -o {o}",
         [],
         dx=L,
         dy=M + (o if o <= 1 else o - 1),

@@ -33,11 +33,7 @@ def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
     if device == "cuda" and not torch.cuda.is_available():
         return
 
-    x, sr = diffsptk.read(
-        "assets/data.wav",
-        double=torch.get_default_dtype() == torch.double,
-        device=device,
-    )
+    x, sr = diffsptk.read("assets/data.wav", device=device)
 
     cqt = diffsptk.CQT(
         fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale, res_type=res_type

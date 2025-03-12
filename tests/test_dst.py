@@ -29,8 +29,7 @@ def test_compatibility(device, module, dst_type, L=8, B=2):
         module,
         diffsptk.DST,
         diffsptk.functional.dst,
-        {"dst_length": L},
-        {"dst_type": dst_type},
+        {"dst_length": L, "dst_type": dst_type},
     )
 
     def func(x):

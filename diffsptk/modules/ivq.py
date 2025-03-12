@@ -15,10 +15,11 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from .base import BaseNonFunctionalModule
 
 
-class InverseVectorQuantization(nn.Module):
+class InverseVectorQuantization(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/imsvq.html>`_
     for details.
 
@@ -38,15 +39,15 @@ class InverseVectorQuantization(nn.Module):
         Parameters
         ----------
         indices : Tensor [shape=(...,)]
-            Codebook indices.
+            The codebook indices.
 
         codebook : Tensor [shape=(K, M+1)]
-            Codebook.
+            The codebook.
 
         Returns
         -------
         xq : Tensor [shape=(..., M+1)]
-            Quantized vectors.
+            The quantized vectors.
 
         Examples
         --------

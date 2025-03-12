@@ -16,28 +16,29 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class CepstralAnalysis(nn.Module):
+class CepstralAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/fftcep.html>`_
     for details.
 
     Parameters
     ----------
-    cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
-
     fft_length : int >= 2M
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
-    n_iter : int >= 0
-        Number of iterations.
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
 
     accel : float >= 0
-        Acceleration factor.
+        The acceleration factor.
+
+    n_iter : int >= 0
+        The number of iterations.
 
     References
     ----------
@@ -46,47 +47,69 @@ class CepstralAnalysis(nn.Module):
 
     """
 
-    def __init__(self, cep_order, fft_length, n_iter=0, accel=0):
+    def __init__(self, *, fft_length, cep_order, accel=0, n_iter=0):
         super().__init__()
 
-        assert 0 <= cep_order <= fft_length // 2
-        assert 0 <= n_iter
-        assert 0 <= accel
+        self.in_dim = fft_length // 2 + 1
 
-        self.cep_order = cep_order
-        self.fft_length = fft_length
-        self.n_iter = n_iter
-        self.accel = accel
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
-        """Estimate cepstrum from spectrum.
+        """Perform cepstral analysis.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Cepstrum.
+            The cepstrum.
 
         Examples
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> fftcep = diffsptk.CepstralAnalysis(3, 16)
+        >>> fftcep = diffsptk.CepstralAnalysis(fft_length=16, cep_order=3)
         >>> c = fftcep(stft(x))
         >>> c
         tensor([[-0.9663,  0.8190, -0.0932, -0.0152],
                 [-0.8539,  4.6173, -0.5496, -0.3207]])
 
         """
-        check_size(x.size(-1), self.fft_length // 2 + 1, "dimension of spectrum")
-        return self._forward(x, self.cep_order, self.n_iter, self.accel)
+        check_size(x.size(-1), self.in_dim, "dimension of spectrum")
+        return self._forward(x, *self.values)
 
     @staticmethod
-    def _forward(x, cep_order, n_iter, accel):
+    def _func(x, *args, **kwargs):
+        values = CepstralAnalysis._precompute(2 * x.size(-1) - 2, *args, **kwargs)
+        return CepstralAnalysis._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(fft_length, cep_order, accel, n_iter):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if fft_length < 2 * cep_order:
+            raise ValueError("cep_order must be less than or equal to fft_length // 2.")
+        if accel < 0:
+            raise ValueError("accel must be non-negative.")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
+
+    @staticmethod
+    def _precompute(fft_length, cep_order, accel, n_iter):
+        CepstralAnalysis._check(fft_length, cep_order, accel, n_iter)
+        return (cep_order, accel, n_iter)
+
+    @staticmethod
+    def _forward(x, cep_order, accel, n_iter):
         N = cep_order + 1
         H = x.size(-1)
 
@@ -105,5 +128,3 @@ class CepstralAnalysis(nn.Module):
         indices = [0, N - 1] if H == N else [0]
         v[..., indices] *= 0.5
         return v
-
-    _func = _forward

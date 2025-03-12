@@ -7,6 +7,10 @@ utils
 
 .. autofunction:: diffsptk.write
 
+.. data:: diffsptk.tau
+
+    The value of :math:`2\pi`.
+
 .. data:: diffsptk.two_pi
 
     The value of :math:`2\pi`.

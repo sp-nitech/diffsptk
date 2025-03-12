@@ -14,61 +14,78 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+# ------------------------------------------------------------------------ #
+# Copyright (c) 2013--2022, librosa development team.                      #
+#                                                                          #
+# Permission to use, copy, modify, and/or distribute this software for any #
+# purpose with or without fee is hereby granted, provided that the above   #
+# copyright notice and this permission notice appear in all copies.        #
+#                                                                          #
+# THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES #
+# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF         #
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR  #
+# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES   #
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN    #
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF  #
+# OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
+# ------------------------------------------------------------------------ #
+
 import numpy as np
 import torch
 import torchaudio
 from torch import nn
 
-from ..misc.librosa import cqt_frequencies
-from ..misc.librosa import et_relative_bw
-from ..misc.librosa import relative_bandwidth
-from ..misc.librosa import vqt_filter_fft
-from ..misc.librosa import wavelet_lengths
-from ..misc.utils import get_resample_params
-from ..misc.utils import numpy_to_torch
+from ..third_party.librosa import cqt_frequencies
+from ..third_party.librosa import et_relative_bw
+from ..third_party.librosa import relative_bandwidth
+from ..third_party.librosa import vqt_filter_fft
+from ..third_party.librosa import wavelet_lengths
+from ..utils.private import get_resample_params
+from ..utils.private import numpy_to_torch
+from .base import BaseNonFunctionalModule
 from .istft import InverseShortTimeFourierTransform as ISTFT
 
 
-class InverseConstantQTransform(nn.Module):
+class InverseConstantQTransform(BaseNonFunctionalModule):
     """Perform inverse constant-Q transform based on the librosa implementation.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period in samples, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     f_min : float > 0
-        Minimum center frequency in Hz.
+        The minimum center frequency in Hz.
 
     n_bin : int >= 1
-        Number of CQ-bins, :math:`K`.
+        The number of CQ-bins, :math:`K`.
 
     n_bin_per_octave : int >= 1
-        number of bins per octave, :math:`B`.
+        The number of bins per octave, :math:`B`.
 
     tuning : float
-        Tuning offset in fractions of a bin.
+        The tuning offset in fractions of a bin.
 
     filter_scale : float > 0
-        Filter scale factor.
+        The filter scale factor.
 
     norm : float
-        Type of norm used in basis function normalization.
+        The type of norm used in the basis function normalization.
 
     sparsity : float in [0, 1)
-        Sparsification factor.
+        The sparsification factor.
 
     window : str
-        Window function for the basis.
+        The window function for the basis.
 
     scale : bool
-        If True, scale the CQT response by the length of filter.
+        If True, scale the CQT response by the length of the filter.
 
     res_type : ['kaiser_best', 'kaiser_fast'] or None
-        Resampling type.
+        The resampling type.
 
     **kwargs : additional keyword arguments
         See `torchaudio.transforms.Resample
@@ -95,8 +112,8 @@ class InverseConstantQTransform(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert 1 <= sample_rate
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
 
         K = n_bin
         B = n_bin_per_octave
@@ -198,15 +215,15 @@ class InverseConstantQTransform(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., T/P, K)]
-            CQT complex output.
+            The CQT complex input.
 
         out_length : int or None
-            Length of output waveform.
+            The length of the output waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------

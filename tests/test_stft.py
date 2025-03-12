@@ -31,7 +31,6 @@ def test_compatibility(
         module,
         diffsptk.STFT,
         diffsptk.functional.stft,
-        {},
         {
             "frame_length": L1,
             "frame_period": P,

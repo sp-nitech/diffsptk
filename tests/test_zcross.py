@@ -28,7 +28,6 @@ def test_compatibility(device, module, norm, L=10, T=50):
         module,
         diffsptk.ZeroCrossingAnalysis,
         diffsptk.functional.zcross,
-        {},
         {"frame_length": L, "norm": norm, "softness": 1e-3},
     )
 

@@ -14,23 +14,28 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 from torch import nn
 
+from ..utils.private import get_layer
+from ..utils.private import get_values
 from .acorr import Autocorrelation
+from .base import BaseFunctionalModule
 from .levdur import LevinsonDurbin
 
 
-class LinearPredictiveCodingAnalysis(nn.Module):
+class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc.html>`_
     for details. Double precision is recommended.
 
     Parameters
     ----------
     frame_length : int > M
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     lpc_order : int >= 0
-        Order of LPC, :math:`M`.
+        The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0
         A small value to improve numerical stability.
@@ -40,23 +45,21 @@ class LinearPredictiveCodingAnalysis(nn.Module):
     def __init__(self, frame_length, lpc_order, eps=1e-6):
         super().__init__()
 
-        self.lpc = nn.Sequential(
-            Autocorrelation(frame_length, lpc_order),
-            LevinsonDurbin(lpc_order, eps=eps),
-        )
+        _, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
-        """Compute LPC coefficients.
+        """Perform LPC analysis.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Framed waveform.
+            The framed waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Gain and LPC coefficients.
+            The gain and LPC coefficients.
 
         Examples
         --------
@@ -68,10 +71,46 @@ class LinearPredictiveCodingAnalysis(nn.Module):
         tensor([0.8726, 0.1475, 0.5270])
 
         """
-        return self.lpc(x)
+        return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(x, lpc_order, eps):
-        r = Autocorrelation._func(x, lpc_order)
-        a = LevinsonDurbin._func(r, eps)
-        return a
+    def _func(x, *args, **kwargs):
+        _, layers, _ = LinearPredictiveCodingAnalysis._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return LinearPredictiveCodingAnalysis._forward(x, *layers)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(frame_length, lpc_order, eps, device=None, dtype=None):
+        LinearPredictiveCodingAnalysis._check()
+        module = inspect.stack()[1].function == "__init__"
+
+        acorr = get_layer(
+            module,
+            Autocorrelation,
+            dict(
+                frame_length=frame_length,
+                acr_order=lpc_order,
+            ),
+        )
+        levdur = get_layer(
+            module,
+            LevinsonDurbin,
+            dict(
+                lpc_order=lpc_order,
+                eps=eps,
+            ),
+        )
+        return None, (acorr, levdur), None
+
+    @staticmethod
+    def _forward(x, acorr, levdur):
+        return levdur(acorr(x))

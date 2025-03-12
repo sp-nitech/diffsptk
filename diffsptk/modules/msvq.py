@@ -14,24 +14,23 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from torch import nn
-from vector_quantize_pytorch import ResidualVQ
+from .base import BaseNonFunctionalModule
 
 
-class MultiStageVectorQuantization(nn.Module):
+class MultiStageVectorQuantization(BaseNonFunctionalModule):
     """See `this page <https://github.com/lucidrains/vector-quantize-pytorch>`_
     for details.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the input vector, :math:`M`.
 
     codebook_size : int >= 1
-        Codebook size, :math:`K`.
+        The codebook size, :math:`K`.
 
     n_stage : int >= 1
-        Number of stages (quantizers), :math:`Q`.
+        The number of stages (quantizers), :math:`Q`.
 
     **kwargs : additional keyword arguments
         See `this page`_ for details.
@@ -46,9 +45,14 @@ class MultiStageVectorQuantization(nn.Module):
     def __init__(self, order, codebook_size, n_stage, **kwargs):
         super().__init__()
 
-        assert 0 <= order
-        assert 1 <= codebook_size
-        assert 1 <= n_stage
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if codebook_size <= 0:
+            raise ValueError("codebook_size must be positive.")
+        if n_stage <= 0:
+            raise ValueError("n_stage must be positive.")
+
+        from vector_quantize_pytorch import ResidualVQ
 
         self.vq = ResidualVQ(
             dim=order + 1, codebook_size=codebook_size, num_quantizers=n_stage, **kwargs
@@ -64,10 +68,10 @@ class MultiStageVectorQuantization(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         codebooks : Tensor [shape=(Q, K, M+1)]
-            External codebooks. If None, use internal codebooks.
+            The external codebook. If None, use the internal codebook.
 
         **kwargs : additional keyword arguments
             See `this page`_ for details.
@@ -75,13 +79,13 @@ class MultiStageVectorQuantization(nn.Module):
         Returns
         -------
         xq : Tensor [shape=(..., M+1)]
-            Quantized vectors.
+            The quantized vectors.
 
         indices : Tensor [shape=(..., Q)]
-            Codebook indices.
+            The codebook indices.
 
         losses : Tensor [shape=(Q,)]
-            Commitment losses.
+            The commitment losses.
 
         Examples
         --------

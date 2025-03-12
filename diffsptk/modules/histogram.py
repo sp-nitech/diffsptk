@@ -15,28 +15,30 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import to
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 
 
-class Histogram(nn.Module):
+class Histogram(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/histogram.html>`_
-    for details.
+    for details. Note that the values at the edges of the bins cannot be counted
+    correctly in the current implementation.
 
     Parameters
     ----------
     n_bin : int >= 1
-        Number of bins, :math:`K`.
+        The number of bins, :math:`K`.
 
     lower_bound : float < U
-        Lower bound of the histogram, :math:`L`.
+        The lower bound of the histogram, :math:`L`.
 
     upper_bound : float > L
-        Upper bound of the histogram, :math:`U`.
+        The upper bound of the histogram, :math:`U`.
 
     norm : bool
-        If True, normalize the histogram.
+        If True, normalizes the histogram.
 
     softness : float > 0
         A smoothing parameter. The smaller value makes the output closer to the true
@@ -55,15 +57,8 @@ class Histogram(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= n_bin
-        assert lower_bound < upper_bound
-        assert 0 < softness
-
-        self.norm = norm
-        self.softness = softness
-
-        centers = self._precompute(n_bin, lower_bound, upper_bound)
-        self.register_buffer("centers", centers)
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("centers", tensors[0])
 
     def forward(self, x):
         """Compute histogram.
@@ -71,23 +66,57 @@ class Histogram(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Input data.
+            The input data.
 
         Returns
         -------
         out : Tensor [shape=(..., K)]
-            Histogram.
+            The histogram.
 
         Examples
         --------
         >>> x = diffsptk.ramp(9)
+        >>> histogram = diffsptk.Histogram(n_bin=4, lower_bound=0, upper_bound=9)
+        >>> h = histogram(x)
+        >>> h
+        tensor([2.5000, 2.0000, 2.0000, 2.5000])
         >>> histogram = diffsptk.Histogram(n_bin=4, lower_bound=-0.1, upper_bound=9.1)
         >>> h = histogram(x)
         >>> h
         tensor([3., 2., 2., 3.])
 
         """
-        return self._forward(x, self.norm, self.softness, self.centers)
+        return self._forward(x, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values, _, tensors = Histogram._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return Histogram._forward(x, *values, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(n_bin, lower_bound, upper_bound, softness):
+        if n_bin <= 0:
+            raise ValueError("n_bin must be positive.")
+        if upper_bound <= lower_bound:
+            raise ValueError("upper_bound must be greater than lower_bound.")
+        if softness <= 0:
+            raise ValueError("softness must be positive.")
+
+    @staticmethod
+    def _precompute(
+        n_bin, lower_bound, upper_bound, norm, softness, dtype=None, device=None
+    ):
+        Histogram._check(n_bin, lower_bound, upper_bound, softness)
+        width = (upper_bound - lower_bound) / n_bin
+        bias = lower_bound + 0.5 * width
+        centers = torch.arange(n_bin, device=device, dtype=torch.double) * width + bias
+        return (norm, softness), None, (to(centers, dtype=dtype),)
 
     @staticmethod
     def _forward(x, norm, softness, centers):
@@ -98,17 +127,3 @@ class Histogram(nn.Module):
         if norm:
             h /= h.sum(-1, keepdim=True)
         return h
-
-    @staticmethod
-    def _func(x, n_bin, lower_bound, upper_bound, norm, softness):
-        centers = Histogram._precompute(
-            n_bin, lower_bound, upper_bound, dtype=x.dtype, device=x.device
-        )
-        return Histogram._forward(x, norm, softness, centers)
-
-    @staticmethod
-    def _precompute(n_bin, lower_bound, upper_bound, dtype=None, device=None):
-        width = (upper_bound - lower_bound) / n_bin
-        bias = lower_bound + 0.5 * width
-        centers = torch.arange(n_bin, dtype=torch.double, device=device) * width + bias
-        return to(centers, dtype=dtype)

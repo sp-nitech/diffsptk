@@ -28,9 +28,7 @@ def test_compatibility(device, module, reduction, B=2, M=19):
         module,
         diffsptk.CepstralDistance,
         diffsptk.functional.cdist,
-        {},
         {"full": True, "reduction": reduction},
-        n_input=2,
     )
 
     opt = "-f" if reduction == "none" else ""

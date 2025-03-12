@@ -15,50 +15,50 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 from tqdm import tqdm
 
-from ..misc.utils import get_generator
-from ..misc.utils import get_logger
-from ..misc.utils import to_dataloader
+from ..utils.private import get_generator
+from ..utils.private import get_logger
+from ..utils.private import to_dataloader
+from .base import BaseLearnerModule
 
 
-class NonnegativeMatrixFactorization(nn.Module):
+class NonnegativeMatrixFactorization(BaseLearnerModule):
     """Nonnegative matrix factorization module. Note that the forward method is not
     differentiable.
 
     Parameters
     ----------
     n_data : int >= 1
-        Number of vectors, :math:`T`.
+        The number of vectors, :math:`T`.
 
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the vector, :math:`M`.
 
     n_comp : int >= 1
-        Number of basis vectors, :math:`K`.
+        The number of principal components, :math:`K`.
 
     beta : float
         A control parameter of beta-divergence, :math:`\\beta`. 0: Itakura-Saito
         divergence, 1: generalized Kullback-Leibler divergence, 2: Euclidean distance.
 
     n_iter : int >= 1
-        Number of iterations.
+        The number of iterations.
 
     eps : float >= 0
-        Convergence threshold.
+        The convergence threshold.
 
     act_norm : bool
-        If True, normalize activation to sum to one.
+        If True, normalizes the activation to sum to one.
 
     seed : int or None
-        Random seed.
+        The random seed.
 
     batch_size : int >= 1 or None
-        Batch size.
+        The bBatch size.
 
     verbose : bool or int
-        If 1, show distance at each iteration; if 2, show progress bar.
+        If 1, shows the distance at each iteration; if 2, shows progress bars.
 
     References
     ----------
@@ -84,11 +84,16 @@ class NonnegativeMatrixFactorization(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= n_data
-        assert 0 <= order
-        assert 1 <= n_comp
-        assert 1 <= n_iter
-        assert 0 <= eps
+        if n_data <= 0:
+            raise ValueError("n_data must be positive.")
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if n_comp <= 0:
+            raise ValueError("n_comp must be positive.")
+        if n_iter <= 0:
+            raise ValueError("n_iter must be positive.")
+        if eps < 0:
+            raise ValueError("eps must be non-negative.")
 
         self.beta = beta
         self.n_iter = n_iter
@@ -118,15 +123,15 @@ class NonnegativeMatrixFactorization(nn.Module):
         self.phi = phi
 
     def warmup(self, x, **lbg_params):
-        """Initialize dictionary matrix by K-means clustering.
+        """Initialize the dictionary matrix by K-means clustering.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Training data.
+            The training data.
 
         lbg_params : additional keyword arguments
-            Parameters for Linde-Buzo-Gray algorithm.
+            The parameters for the Linde-Buzo-Gray algorithm.
 
         """
         x = to_dataloader(x, batch_size=self.batch_size)
@@ -141,20 +146,20 @@ class NonnegativeMatrixFactorization(nn.Module):
 
     @torch.inference_mode()
     def forward(self, x):
-        """Estimate coefficient matrix and dictionary matrix.
+        """Estimate the coefficient matrix and dictionary matrix.
 
         Parameters
         ----------
         x : Tensor [shape=(T, M+1)] or DataLoader
-            Input vectors or dataloder yielding input vectors.
+            The input vectors or a DataLoader that yields the input vectors.
 
         Returns
         -------
         params : tuple of Tensors [shape=((T, K), (K, M+1))]
-            Estimated coefficient matrix and dictionary matrix.
+            The estimated coefficient matrix and dictionary matrix.
 
         divergence : Tensor [scalar]
-            Divergence between input and reconstructed vectors.
+            The divergence between the input and reconstructed vectors.
 
         Examples
         --------
@@ -244,3 +249,19 @@ class NonnegativeMatrixFactorization(nn.Module):
             prev_divergence = divergence
 
         return (self.U, self.H), divergence
+
+    def transform(self, x):
+        """Transform the input vectors using the estimated parameters.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(..., M+1)]
+            The input vectors.
+
+        Returns
+        -------
+        out : Tensor [shape=(..., K)]
+            The transformed vectors.
+
+        """
+        return torch.matmul(x, self.H.T)

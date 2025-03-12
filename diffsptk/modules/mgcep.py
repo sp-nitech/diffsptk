@@ -17,11 +17,13 @@
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import hankel
-from ..misc.utils import symmetric_toeplitz
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_gamma
+from ..utils.private import hankel
+from ..utils.private import symmetric_toeplitz
+from ..utils.private import to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
+from .base import BaseNonFunctionalModule
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .ignorm import GeneralizedCepstrumInverseGainNormalization
 from .mc2b import MelCepstrumToMLSADigitalFilterCoefficients
@@ -29,107 +31,60 @@ from .mcep import MelCepstralAnalysis
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
-class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, alpha):
-        super().__init__()
-
-        beta = 1 - alpha * alpha
-        L1 = in_order + 1
-        L2 = out_order + 1
-
-        # Make transform matrix.
-        A = torch.zeros((L2, L1), dtype=torch.double)
-        A[0, 0] = 1
-        if 1 < L2 and 1 < L1:
-            A[1, 1:] = alpha ** torch.arange(L1 - 1, dtype=torch.double) * beta
-        for i in range(2, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
-
-        self.register_buffer("A", to(A.T))
-
-    def forward(self, x):
-        y = torch.matmul(x, self.A)
-        return y
-
-
-class PTransform(nn.Module):
-    def __init__(self, order, alpha):
-        super().__init__()
-
-        # Make transform matrix.
-        A = torch.eye(order + 1, dtype=torch.double)
-        A[:, 1:].fill_diagonal_(alpha)
-
-        A[0, 0] -= alpha * alpha
-        A[0, 1] += alpha
-        A[-1, -1] += alpha
-
-        self.register_buffer("A", to(A.T))
-
-    def forward(self, p):
-        p = torch.matmul(p, self.A)
-        return p
-
-
-class QTransform(nn.Module):
-    def __init__(self, order, alpha):
-        super().__init__()
-
-        # Make transform matrix.
-        A = torch.eye(order + 1, dtype=torch.double)
-        A[1:].fill_diagonal_(alpha)
-
-        A[1, 0] = 0
-        A[1, 1] += alpha
-
-        self.register_buffer("A", to(A.T))
-
-    def forward(self, q):
-        q = torch.matmul(q, self.A)
-        return q
-
-
-class MelGeneralizedCepstralAnalysis(nn.Module):
+class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgcep.html>`_
     for details. Note that the current implementation does not use the efficient
     Toeplitz-plus-Hankel system solver.
 
     Parameters
     ----------
-    cep_order : int >= 0
-        Order of mel-cepstrum, :math:`M`.
-
     fft_length : int >= 2M
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
+
+    cep_order : int >= 0
+        The order of the mel-cepstrum, :math:`M`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 0]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
+
+    c : int >= 1 or None
+        The number of stages.
 
     n_iter : int >= 0
-        Number of iterations.
+        THe number of iterations.
 
     """
 
-    def __init__(self, cep_order, fft_length, alpha=0, gamma=0, n_iter=0):
+    def __init__(self, *, fft_length, cep_order, alpha=0, gamma=0, c=None, n_iter=0):
         super().__init__()
 
-        assert 0 <= cep_order <= fft_length // 2
-        assert gamma <= 0
-        assert 0 <= n_iter
+        gamma = get_gamma(gamma, c)
 
-        self.cep_order = cep_order
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if fft_length < 2 * cep_order:
+            raise ValueError("cep_order must be less than or equal to fft_length // 2.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if gamma < -1 or 0 < gamma:
+            raise ValueError("gamma must be in [-1, 0].")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
+
         self.fft_length = fft_length
+        self.cep_order = cep_order
         self.gamma = gamma
         self.n_iter = n_iter
 
         if gamma == 0:
-            self.mcep = MelCepstralAnalysis(cep_order, fft_length, alpha, n_iter=n_iter)
+            self.mcep = MelCepstralAnalysis(
+                fft_length=fft_length, cep_order=cep_order, alpha=alpha, n_iter=n_iter
+            )
         else:
             self.cfreqt = CoefficientsFrequencyTransform(
                 cep_order, fft_length - 1, -alpha
@@ -165,18 +120,20 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Mel-generalized cepstrum.
+            The mel-generalized cepstrum.
 
         Examples
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> mgcep = diffsptk.MelGeneralizedCepstralAnalysis(3, 16, 0.1, n_iter=1)
+        >>> mgcep = diffsptk.MelGeneralizedCepstralAnalysis(
+        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ... )
         >>> mc = mgcep(stft(x))
         >>> mc
         tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
@@ -261,3 +218,66 @@ class MelGeneralizedCepstralAnalysis(nn.Module):
         b = torch.cat((b0, b1), dim=-1)
         mc = self.b2mc(b)
         return mc
+
+
+class CoefficientsFrequencyTransform(nn.Module):
+    def __init__(self, in_order, out_order, alpha):
+        super().__init__()
+
+        beta = 1 - alpha * alpha
+        L1 = in_order + 1
+        L2 = out_order + 1
+
+        # Make transform matrix.
+        A = torch.zeros((L2, L1), dtype=torch.double)
+        A[0, 0] = 1
+        if 1 < L2 and 1 < L1:
+            A[1, 1:] = alpha ** torch.arange(L1 - 1, dtype=torch.double) * beta
+        for i in range(2, L2):
+            i1 = i - 1
+            for j in range(1, L1):
+                j1 = j - 1
+                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+
+        self.register_buffer("A", to(A.T))
+
+    def forward(self, x):
+        y = torch.matmul(x, self.A)
+        return y
+
+
+class PTransform(nn.Module):
+    def __init__(self, order, alpha):
+        super().__init__()
+
+        # Make transform matrix.
+        A = torch.eye(order + 1, dtype=torch.double)
+        A[:, 1:].fill_diagonal_(alpha)
+
+        A[0, 0] -= alpha * alpha
+        A[0, 1] += alpha
+        A[-1, -1] += alpha
+
+        self.register_buffer("A", to(A.T))
+
+    def forward(self, p):
+        p = torch.matmul(p, self.A)
+        return p
+
+
+class QTransform(nn.Module):
+    def __init__(self, order, alpha):
+        super().__init__()
+
+        # Make transform matrix.
+        A = torch.eye(order + 1, dtype=torch.double)
+        A[1:].fill_diagonal_(alpha)
+
+        A[1, 0] = 0
+        A[1, 1] += alpha
+
+        self.register_buffer("A", to(A.T))
+
+    def forward(self, q):
+        q = torch.matmul(q, self.A)
+        return q

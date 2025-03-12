@@ -17,56 +17,51 @@
 import warnings
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class LineSpectralPairsStabilityCheck(nn.Module):
+class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lspcheck.html>`_
     for details.
 
     Parameters
     ----------
     lsp_order : int >= 0
-        Order of LSP, :math:`M`.
+        The order of the LSP, :math:`M`.
 
     rate : float in [0, 1]
-        Rate of distance between two adjacent LSPs.
+        The rate of distance between two adjacent LSPs.
 
     n_iter : int >= 0
-        Number of iterations for modification.
+        The number of iterations for the modification.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Warning type.
+        The warning type.
 
     """
 
     def __init__(self, lsp_order, rate=0, n_iter=1, warn_type="warn"):
         super().__init__()
 
-        assert 0 <= lsp_order
-        assert 0 <= rate <= 1
-        assert 0 <= n_iter
-        assert warn_type in ("ignore", "warn", "exit")
+        self.in_dim = lsp_order + 1
 
-        self.lsp_order = lsp_order
-        self.min_distance = self._precompute(lsp_order, rate)
-        self.n_iter = n_iter
-        self.warn_type = warn_type
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, w):
-        """Check stability of LSP.
+        """Check the stability of the input LSP coefficients.
 
         Parameters
         ----------
         w : Tensor [shape=(..., M+1)]
-            LSP coefficients in radians.
+            The input LSP coefficients in radians.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Modified LSP coefficients.
+            The modified LSP coefficients in radians.
 
         Examples
         --------
@@ -77,8 +72,37 @@ class LineSpectralPairsStabilityCheck(nn.Module):
         tensor([0.0000, 0.0105, 3.1311])
 
         """
-        check_size(w.size(-1), self.lsp_order + 1, "dimension of LSP")
-        return self._forward(w, self.min_distance, self.n_iter, self.warn_type)
+        check_size(w.size(-1), self.in_dim, "dimension of LSP")
+        return self._forward(w, *self.values)
+
+    @staticmethod
+    def _func(w, *args, **kwargs):
+        values = LineSpectralPairsStabilityCheck._precompute(
+            w.size(-1) - 1, *args, **kwargs
+        )
+        return LineSpectralPairsStabilityCheck._forward(w, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(lsp_order, rate, n_iter):
+        if lsp_order < 0:
+            raise ValueError("lsp_order must be non-negative.")
+        if not 0 <= rate <= 1:
+            raise ValueError("rate must be in [0, 1].")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
+
+    @staticmethod
+    def _precompute(lsp_order, rate, n_iter, warn_type):
+        LineSpectralPairsStabilityCheck._check(lsp_order, rate, n_iter)
+        return (
+            rate * torch.pi / (lsp_order + 1),
+            n_iter,
+            warn_type,
+        )
 
     @staticmethod
     def _forward(w, min_distance, n_iter, warn_type):
@@ -110,12 +134,3 @@ class LineSpectralPairsStabilityCheck(nn.Module):
 
         w2 = torch.cat((K, w1), dim=-1)
         return w2
-
-    @staticmethod
-    def _func(w, rate, n_iter, warn_type):
-        const = LineSpectralPairsStabilityCheck._precompute(w.size(-1) - 1, rate)
-        return LineSpectralPairsStabilityCheck._forward(w, const, n_iter, warn_type)
-
-    @staticmethod
-    def _precompute(lsp_order, rate):
-        return rate * torch.pi / (lsp_order + 1)

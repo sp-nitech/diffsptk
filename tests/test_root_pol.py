@@ -30,8 +30,7 @@ def test_compatibility(device, module, out_format, M=12, B=2):
         module,
         diffsptk.PolynomialToRoots,
         diffsptk.functional.root_pol,
-        {"order": M},
-        {"out_format": out_format},
+        {"order": M, "out_format": out_format},
     )
 
     def eq(y_hat, y):

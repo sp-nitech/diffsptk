@@ -15,47 +15,46 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
+
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
+from .quantize import UniformQuantization
 
 
-class InverseUniformQuantization(nn.Module):
+class InverseUniformQuantization(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/dequantize.html>`_
     for details.
 
     Parameters
     ----------
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the original waveform.
 
     n_bit : int >= 1
-        Number of quantization bits.
+        The number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
-        Quantizer.
+        The quantizer type.
 
     """
 
     def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
         super().__init__()
 
-        assert 0 < abs_max
-        assert 1 <= n_bit
-
-        self.abs_max = abs_max
-        self.const = self._precompute(n_bit, quantizer)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
-        """Dequantize input.
+        """Dequantize the input waveform.
 
         Parameters
         ----------
         y : Tensor [shape=(...,)]
-            Quantized input.
+            The quantized waveform.
 
         Returns
         -------
         out : Tensor [shape=(...,)]
-            Dequantized input.
+            The dequantized waveform.
 
         Examples
         --------
@@ -69,26 +68,42 @@ class InverseUniformQuantization(nn.Module):
         tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])
 
         """
-        return self._forward(y, self.abs_max, *self.const)
+        return self._forward(y, *self.values)
+
+    @staticmethod
+    def _func(y, *args, **kwargs):
+        values = InverseUniformQuantization._precompute(*args, **kwargs)
+        return InverseUniformQuantization._forward(y, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        UniformQuantization._check(*args, **kwargs)
+
+    @staticmethod
+    def _precompute(abs_max, n_bit, quantizer):
+        InverseUniformQuantization._check(abs_max, n_bit)
+        if quantizer in (0, "mid-rise"):
+            level = 1 << n_bit
+            return (
+                abs_max,
+                level,
+                lambda y: y - (level // 2 - 0.5),
+            )
+        elif quantizer in (1, "mid-tread"):
+            level = (1 << n_bit) - 1
+            return (
+                abs_max,
+                level,
+                lambda y: y - (level // 2),
+            )
+        raise ValueError(f"quantizer {quantizer} is not supported.")
 
     @staticmethod
     def _forward(y, abs_max, level, func):
-        y = func(y)
-        x = y * (2 * abs_max / level)
+        x = func(y) * (2 * abs_max / level)
         x = torch.clip(x, min=-abs_max, max=abs_max)
         return x
-
-    @staticmethod
-    def _func(y, abs_max, n_bit, quantizer):
-        const = InverseUniformQuantization._precompute(n_bit, quantizer)
-        return InverseUniformQuantization._forward(y, abs_max, *const)
-
-    @staticmethod
-    def _precompute(n_bit, quantizer):
-        if quantizer in (0, "mid-rise"):
-            level = 1 << n_bit
-            return level, lambda y: y - (level // 2 - 0.5)
-        elif quantizer in (1, "mid-tread"):
-            level = (1 << n_bit) - 1
-            return level, lambda y: y - (level // 2)
-        raise ValueError(f"quantizer {quantizer} is not supported.")

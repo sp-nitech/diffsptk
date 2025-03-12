@@ -57,7 +57,7 @@ def test_compatibility(device, algorithm, out_format, M=24, P=80, sr=16000, L=51
 
         return inner_eq
 
-    ksr = sr // 1000
+    s = sr // 1000
     a = 0 if algorithm == "tandem" else 1
     tmp1 = "ap.tmp1"
     tmp2 = "ap.tmp2"
@@ -66,10 +66,10 @@ def test_compatibility(device, algorithm, out_format, M=24, P=80, sr=16000, L=51
         ap,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
-            f"pitch -s {ksr} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
+            f"pitch -s {s} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
         ],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"ap -s {ksr} -p {P} -l {L} -a {a} -q 1 -o {out_format} {tmp2} < {tmp1}",
+        f"ap -s {s} -p {P} -l {L} -a {a} -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
         eq=eq(a, out_format),

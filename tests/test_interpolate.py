@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
+import torch
 
 import diffsptk
 import tests.utils as U
@@ -27,7 +28,6 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
         module,
         diffsptk.Interpolation,
         diffsptk.functional.interpolate,
-        {},
         {"period": P, "start": S, "dim": 0},
     )
 
@@ -43,3 +43,23 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
     )
 
     U.check_differentiability(device, interpolate, [T, L])
+
+
+def test_dim_option(P=2, S=0, T=20, L=4):
+    x = torch.arange(T * L).reshape(T, L)
+    x0 = diffsptk.functional.interpolate(
+        diffsptk.functional.decimate(x, P, S, 0), P, S, 0
+    )
+    assert U.allclose(x[S::P], x0[S::P])
+    x1 = diffsptk.functional.interpolate(
+        diffsptk.functional.decimate(x, P, S, 1), P, S, 1
+    )
+    assert U.allclose(x[:, S::P], x1[:, S::P])
+    x0 = diffsptk.functional.interpolate(
+        diffsptk.functional.decimate(x, P, S, -2), P, S, -2
+    )
+    assert U.allclose(x[S::P], x0[S::P])
+    x1 = diffsptk.functional.interpolate(
+        diffsptk.functional.decimate(x, P, S, -1), P, S, -1
+    )
+    assert U.allclose(x[:, S::P], x1[:, S::P])

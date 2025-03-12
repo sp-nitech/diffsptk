@@ -28,7 +28,6 @@ def test_compatibility(device, module, quantizer, v=3, n_bit=8, L=20):
         module,
         diffsptk.UniformQuantization,
         diffsptk.functional.quantize,
-        {},
         {"abs_max": v, "n_bit": n_bit, "quantizer": quantizer},
     )
 

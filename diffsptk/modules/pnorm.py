@@ -14,50 +14,53 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
 
 
-class MelCepstrumPowerNormalization(nn.Module):
+class MelCepstrumPowerNormalization(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/pnorm.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     ir_length : int >= 1
-        Length of impulse response.
+        The length of the impulse response.
 
     """
 
-    def __init__(self, cep_order, alpha=0, ir_length=128):
+    def __init__(self, cep_order, alpha=0, ir_length=128, device=None, dtype=None):
         super().__init__()
 
-        self.mc2pow = nn.Sequential(
-            FrequencyTransform(cep_order, ir_length - 1, -alpha),
-            CepstrumToAutocorrelation(ir_length - 1, 0, ir_length),
-        )
+        _, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
-        """Perform cepstrum power normalization.
+        """Perform mel-cepstrum power normalization.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input cepstrum.
+            The input mel-cepstrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+2)]
-            Power-normalized cepstrum.
+            The log power and power-normalized mel-cepstrum.
 
         Examples
         --------
@@ -68,20 +71,51 @@ class MelCepstrumPowerNormalization(nn.Module):
         tensor([ 8.2942, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
-        return self._forward(x, self.mc2pow)
+        return self._forward(x, *self.layers)
 
     @staticmethod
-    def _forward(x, mc2pow):
+    def _func(x, *args, **kwargs):
+        _, layers, _ = MelCepstrumPowerNormalization._precompute(
+            x.size(-1) - 1, *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return MelCepstrumPowerNormalization._forward(x, *layers)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(cep_order, alpha, ir_length, device=None, dtype=None):
+        MelCepstrumPowerNormalization._check()
+        module = inspect.stack()[1].function == "__init__"
+
+        freqt = get_layer(
+            module,
+            FrequencyTransform,
+            dict(
+                in_order=cep_order,
+                out_order=ir_length - 1,
+                alpha=-alpha,
+            ),
+        )
+        c2acr = get_layer(
+            module,
+            CepstrumToAutocorrelation,
+            dict(
+                cep_order=ir_length - 1,
+                acr_order=0,
+                n_fft=ir_length,
+            ),
+        )
+        return None, (freqt, c2acr), None
+
+    @staticmethod
+    def _forward(x, freqt, c2acr):
         x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
-        P = torch.log(mc2pow(x))
+        P = torch.log(c2acr(freqt(x)))
         y = torch.cat((P, x0 - 0.5 * P, x1), dim=-1)
         return y
-
-    @staticmethod
-    def _func(x, alpha, ir_length):
-        def mc2pow(mc):
-            c = FrequencyTransform._func(mc, ir_length - 1, -alpha)
-            r = CepstrumToAutocorrelation._func(c, 0, ir_length)
-            return r
-
-        return MelCepstrumPowerNormalization._forward(x, mc2pow)

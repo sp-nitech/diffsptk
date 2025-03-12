@@ -14,21 +14,20 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from torch import nn
-from vector_quantize_pytorch import VectorQuantize
+from .base import BaseNonFunctionalModule
 
 
-class VectorQuantization(nn.Module):
+class VectorQuantization(BaseNonFunctionalModule):
     """See `this page <https://github.com/lucidrains/vector-quantize-pytorch>`_
     for details.
 
     Parameters
     ----------
     order : int >= 0
-        Order of vector, :math:`M`.
+        The order of the input vector, :math:`M`.
 
     codebook_size : int >= 1
-        Codebook size, :math:`K`.
+        The codebook size, :math:`K`.
 
     **kwargs : additional keyword arguments
         See `this page`_ for details.
@@ -43,8 +42,12 @@ class VectorQuantization(nn.Module):
     def __init__(self, order, codebook_size, **kwargs):
         super().__init__()
 
-        assert 0 <= order
-        assert 1 <= codebook_size
+        if order < 0:
+            raise ValueError("order must be non-negative.")
+        if codebook_size <= 0:
+            raise ValueError("codebook_size must be positive.")
+
+        from vector_quantize_pytorch import VectorQuantize
 
         self.vq = VectorQuantize(
             dim=order + 1, codebook_size=codebook_size, **kwargs
@@ -60,10 +63,10 @@ class VectorQuantization(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Input vectors.
+            The input vectors.
 
         codebook : Tensor [shape=(K, M+1)]
-            External codebook. If None, use internal codebook.
+            The external codebook. If None, use the internal codebook.
 
         **kwargs : additional keyword arguments
             See `this page`_ for details.
@@ -71,13 +74,13 @@ class VectorQuantization(nn.Module):
         Returns
         -------
         xq : Tensor [shape=(..., M+1)]
-            Quantized vectors.
+            The quantized vectors.
 
         indices : Tensor [shape=(...,)]
-            Codebook indices.
+            The codebook indices.
 
         loss : Tensor [scalar]
-            Commitment loss.
+            The commitment loss.
 
         Examples
         --------

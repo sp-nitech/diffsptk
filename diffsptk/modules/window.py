@@ -16,54 +16,62 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 
 
-class Window(nn.Module):
+class Window(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/window.html>`_
     for details.
 
     Parameters
     ----------
     in_length : int >= 1
-        Input length or window length, :math:`L_1`.
+        The window length, :math:`L_1`.
 
     out_length : int >= L1 or None
-        Output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
+        The output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
+        If None, :math:`L_2 = L_1`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
-        Window type.
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     """
 
-    def __init__(self, in_length, out_length=None, *, window="blackman", norm="power"):
+    def __init__(
+        self,
+        in_length,
+        out_length=None,
+        *,
+        window="blackman",
+        norm="power",
+    ):
         super().__init__()
 
-        assert 1 <= in_length
+        self.in_dim = in_length
 
-        self.in_length = in_length
-        self.out_length = out_length
-        self.register_buffer("window", self._precompute(self.in_length, window, norm))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("window", tensors[0])
 
     def forward(self, x):
-        """Apply a window function to given waveform.
+        """Apply a window function to the given waveform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L1)]
-            Framed waveform.
+            The input framed waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., L2)]
-            Windowed waveform.
+            The windowed waveform.
 
         Examples
         --------
@@ -74,60 +82,64 @@ class Window(nn.Module):
         tensor([0.0800, 0.5400, 1.0000, 0.5400, 0.0800, 0.0000, 0.0000])
 
         """
-        check_size(x.size(-1), self.in_length, "input length")
-        return self._forward(x, self.out_length, self.window)
+        check_size(x.size(-1), self.in_dim, "input length")
+        return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _forward(x, out_length, window):
-        y = x * window
-        if out_length is not None:
-            in_length = x.size(-1)
-            y = F.pad(y, (0, out_length - in_length))
-        return y
-
-    @staticmethod
-    def _func(x, out_length, window, norm):
-        window = Window._precompute(
-            x.size(-1), window, norm, dtype=x.dtype, device=x.device
+    def _func(x, *args, **kwargs):
+        values, _, tensors = Window._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return Window._forward(x, out_length, window)
+        return Window._forward(x, *values, *tensors)
 
     @staticmethod
-    def _precompute(length, window, norm, dtype=None, device=None):
-        # Make window.
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(in_length, out_length):
+        if in_length <= 0:
+            raise ValueError("in_length must be positive.")
+        if out_length is not None and out_length <= 0:
+            raise ValueError("out_length must be positive.")
+
+    @staticmethod
+    def _precompute(in_length, out_length, window, norm, device=None, dtype=None):
+        Window._check(in_length, out_length)
+
+        L = in_length
         params = {"dtype": dtype, "device": device}
         if window in (0, "blackman"):
-            w = torch.blackman_window(length, periodic=False, **params)
+            w = torch.blackman_window(L, periodic=False, **params)
         elif window in (1, "hamming"):
-            w = torch.hamming_window(length, periodic=False, **params)
+            w = torch.hamming_window(L, periodic=False, **params)
         elif window in (2, "hanning"):
-            w = torch.hann_window(length, periodic=False, **params)
+            w = torch.hann_window(L, periodic=False, **params)
         elif window in (3, "bartlett"):
-            w = torch.bartlett_window(length, periodic=False, **params)
+            w = torch.bartlett_window(L, periodic=False, **params)
         elif window in (4, "trapezoidal"):
-            slope = torch.linspace(0, 4, length, **params)
+            slope = torch.linspace(0, 4, L, **params)
             w = torch.minimum(torch.clip(slope, min=0, max=1), slope.flip(0))
         elif window in (5, "rectangular"):
-            w = torch.ones(length, **params)
+            w = torch.ones(L, **params)
         elif window in (6, "nuttall"):
             c1 = torch.tensor([0.355768, -0.487396, 0.144232, -0.012604], **params)
-            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / (length - 1))
-            seed = torch.arange(length, **params)
+            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / (L - 1))
+            seed = torch.arange(L, **params)
             w = torch.sum(c1 * torch.cos(torch.outer(seed, c2)), dim=1)
         elif window == "sine":
-            w = torch.signal.windows.cosine(length, **params)
+            w = torch.signal.windows.cosine(L, **params)
         elif window == "vorbis":
-            seed = torch.signal.windows.cosine(length, **params)
+            seed = torch.signal.windows.cosine(L, **params)
             w = torch.sin(torch.pi * 0.5 * seed**2)
         elif window == "kbd":
-            seed = torch.kaiser_window(length // 2 + 1, periodic=False, **params)
+            seed = torch.kaiser_window(L // 2 + 1, periodic=False, **params)
             cumsum = torch.cumsum(seed, dim=0)
             half = torch.sqrt(cumsum[:-1] / cumsum[-1])
             w = torch.cat([half, half.flip(0)])
         else:
             raise ValueError(f"window {window} is not supported.")
 
-        # Normalize window.
         if norm in (0, "none"):
             pass
         elif norm in (1, "power"):
@@ -137,4 +149,12 @@ class Window(nn.Module):
         else:
             raise ValueError(f"norm {norm} is not supported.")
 
-        return to(w, dtype=dtype)
+        return (out_length,), None, (to(w, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, out_length, window):
+        y = x * window
+        if out_length is not None:
+            in_length = x.size(-1)
+            y = F.pad(y, (0, out_length - in_length))
+        return y

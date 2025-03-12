@@ -29,7 +29,6 @@ def test_compatibility(device, module, out_format, L=5, B=2):
         module,
         diffsptk.Entropy,
         diffsptk.functional.entropy,
-        {},
         {"out_format": out_format},
     )
 

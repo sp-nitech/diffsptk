@@ -15,39 +15,42 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class MelCepstrumInversePowerNormalization(nn.Module):
+class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/ipnorm.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     """
 
     def __init__(self, cep_order):
         super().__init__()
 
-        self.cep_order = cep_order
+        self.in_dim = cep_order + 2
+
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, y):
-        """Perform cepstrum inverse power normalization.
+        """Perform mel-cepstrum inverse power normalization.
 
         Parameters
         ----------
         y : Tensor [shape=(..., M+2)]
-            Power-normalized cepstrum.
+            The log power and power-normalized cepstrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Output cepstrum.
+            The cepstrum.
 
         Examples
         --------
@@ -59,13 +62,29 @@ class MelCepstrumInversePowerNormalization(nn.Module):
         tensor([1., 2., 3., 4.])
 
         """
-        check_size(y.size(-1), self.cep_order + 2, "dimension of cepstrum")
+        check_size(y.size(-1), self.in_dim, "dimension of cepstrum")
         return self._forward(y)
+
+    @staticmethod
+    def _func(y):
+        MelCepstrumInversePowerNormalization._precompute(y.size(-1) - 1)
+        return MelCepstrumInversePowerNormalization._forward(y)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(cep_order):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+
+    @staticmethod
+    def _precompute(cep_order):
+        MelCepstrumInversePowerNormalization._check(cep_order)
 
     @staticmethod
     def _forward(y):
         P, y1, y2 = torch.split(y, [1, 1, y.size(-1) - 2], dim=-1)
         x = torch.cat((0.5 * P + y1, y2), dim=-1)
         return x
-
-    _func = _forward

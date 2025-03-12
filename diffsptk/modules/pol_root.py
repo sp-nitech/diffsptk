@@ -16,43 +16,48 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class RootsToPolynomial(nn.Module):
+class RootsToPolynomial(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.PolynomialToRoots`.
 
     Parameters
     ----------
     order : int >= 1
-        Order of polynomial.
+        The order of the polynomial.
+
+    eps : float >= 0 or None
+        If the absolute values of the imaginary parts of the polynomial coefficients are
+        all less than this value, they are considered as real numbers.
+
+    in_format : ['rectangular', 'polar']
+        The input format.
 
     """
 
-    def __init__(self, order):
+    def __init__(self, order, *, eps=None, in_format="rectangular"):
         super().__init__()
 
-        assert 1 <= order
+        self.in_dim = order
 
-        self.order = order
+        self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x, real=False):
+    def forward(self, x):
         """Convert roots to polynomial coefficients.
 
         Parameters
         ----------
         x : Tensor [shape=(..., M)]
-            Complex roots.
-
-        real : bool
-            If True, return as real numbers.
+            The roots, can be complex.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Polynomial coefficients.
+            The polynomial coefficients.
 
         Examples
         --------
@@ -63,16 +68,48 @@ class RootsToPolynomial(nn.Module):
         tensor([ 1, -6,  5, 12])
 
         """
-        check_size(x.size(-1), self.order, "number of roots")
-        return self._forward(x, real)
+        check_size(x.size(-1), self.in_dim, "number of roots")
+        return self._forward(x, *self.values)
 
     @staticmethod
-    def _forward(x, real):
+    def _func(x, *args, **kwargs):
+        values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs)
+        return RootsToPolynomial._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(order, eps):
+        if order <= 0:
+            raise ValueError("order must be positive.")
+        if eps is not None and eps < 0:
+            raise ValueError("eps must be non-negative.")
+
+    @staticmethod
+    def _precompute(order, eps=None, in_format="rectangular"):
+        RootsToPolynomial._check(order, eps)
+
+        if eps is None:
+            eps = 1e-4 if torch.get_default_dtype() == torch.float else 1e-8
+        if in_format in (0, "rectangular"):
+            formatter = lambda x: x
+        elif in_format in (1, "polar"):
+            formatter = lambda x: torch.polar(x.real, x.imag)
+        else:
+            raise ValueError(f"in_format {in_format} is not supported.")
+
+        return (eps, formatter)
+
+    @staticmethod
+    def _forward(x, eps, formatter):
+        x = formatter(x)
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)
         for m in range(M):
             z = a.clone()
             a[..., 1:] = z[..., 1:] - x[..., m : m + 1] * z[..., :-1]
-        return a.real if real else a
-
-    _func = _forward
+        if torch.is_complex(a) and torch.all(a.imag.abs() < eps):
+            a = a.real
+        return a

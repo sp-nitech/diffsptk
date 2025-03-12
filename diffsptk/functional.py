@@ -17,32 +17,27 @@
 from . import modules as nn
 
 
-def acorr(x, acr_order, norm=False, estimator="none"):
-    """Compute autocorrelation.
+def acorr(x, acr_order, out_format="naive"):
+    """Estimate the autocorrelation of the input waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Framed waveform.
+        The framed waveform.
 
     acr_order : int >= 0
-        Order of autocorrelation, :math:`M`.
+        The order of the autocorrelation, :math:`M`.
 
-    norm : bool
-        If True, normalize the autocorrelation.
-
-    estimator : ['none', 'biased', 'unbiased']
-        Estimator of autocorrelation.
+    out_format : ['naive', 'normalized', 'biased']
+        The type of the autocorrelation.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     """
-    return nn.Autocorrelation._func(
-        x, acr_order=acr_order, norm=norm, estimator=estimator
-    )
+    return nn.Autocorrelation._func(x, acr_order=acr_order, out_format=out_format)
 
 
 def acr2csm(r):
@@ -51,35 +46,35 @@ def acr2csm(r):
     Parameters
     ----------
     r : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        CSM coefficients.
+        The CSM coefficients.
 
     """
     return nn.AutocorrelationToCompositeSinusoidalModelCoefficients._func(r)
 
 
 def alaw(x, abs_max=1, a=87.6):
-    """Compress waveform by A-law algorithm.
+    """Compress the input waveform using the A-law algorithm.
 
     Parameters
     ----------
     x : Tensor [shape=(...,)]
-        Waveform.
+        The input waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     a : float >= 1
-        Compression factor, :math:`A`.
+        The compression factor, :math:`A`.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Compressed waveform.
+        The compressed waveform.
 
     """
     return nn.ALawCompression._func(x, abs_max=abs_max, a=a)
@@ -91,15 +86,15 @@ def b2mc(b, alpha=0):
     Parameters
     ----------
     b : Tensor [shape=(..., M+1)]
-        MLSA filter coefficients.
+        The MLSA filter coefficients.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Mel-cepstral coefficients.
+        The mel-cepstral coefficients.
 
     """
     return nn.MLSADigitalFilterCoefficientsToMelCepstrum._func(b, alpha=alpha)
@@ -111,18 +106,18 @@ def c2acr(c, acr_order, n_fft=512):
     Parameters
     ----------
     c : Tensor [shape=(..., M+1)]
-        Cepstral coefficients.
+        The cepstral coefficients.
 
     acr_order : int >= 0
-        Order of autocorrelation, :math:`N`.
+        The order of the autocorrelation, :math:`N`.
 
     n_fft : int >> N
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins used for conversion.
 
     Returns
     -------
     out : Tensor [shape=(..., N+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     """
     return nn.CepstrumToAutocorrelation._func(c, acr_order=acr_order, n_fft=n_fft)
@@ -134,18 +129,18 @@ def c2mpir(c, ir_length, n_fft=512):
     Parameters
     ----------
     c : Tensor [shape=(..., M+1)]
-        Cepstral coefficients.
+        The cepstral coefficients.
 
     ir_length : int >= 1
-        Length of impulse response, :math:`N`.
+        The length of the impulse response, :math:`N`.
 
     n_fft : int >> N
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins used for conversion.
 
     Returns
     -------
     out : Tensor [shape=(..., N)]
-        Truncated minimum phase impulse response.
+        The truncated minimum phase impulse response.
 
     """
     return nn.CepstrumToMinimumPhaseImpulseResponse._func(
@@ -159,15 +154,15 @@ def c2ndps(c, fft_length):
     Parameters
     ----------
     c : Tensor [shape=(..., M+1)]
-        Cepstrum.
+        The cepstrum.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        NDPS.
+        The NDPS.
 
     """
     return nn.CepstrumToNegativeDerivativeOfPhaseSpectrum._func(
@@ -176,52 +171,55 @@ def c2ndps(c, fft_length):
 
 
 def cdist(c1, c2, full=False, reduction="mean"):
-    """Calculate cepstral distance between two inputs.
+    """Calculate the cepstral distance between two inputs.
 
     Parameters
     ----------
     c1 : Tensor [shape=(..., M+1)]
-        Input cepstral coefficients.
+        The input cepstral coefficients.
 
     c2 : Tensor [shape=(..., M+1)]
-        Target cepstral coefficients.
+        The target cepstral coefficients.
 
     full : bool
         If True, include the constant term in the distance calculation.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+        The reduction type.
 
     Returns
     -------
     out : Tensor [shape=(...,) or scalar]
-        Cepstral distance.
+        The cepstral distance.
 
     """
     return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction)
 
 
-def chroma(x, n_channel, sample_rate, norm=float("inf")):
-    """Apply chroma-filter banks to STFT.
+def chroma(x, n_channel, sample_rate, norm=float("inf"), use_power=True):
+    """Apply chroma-filter banks to the STFT.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L/2+1)]
-        Power spectrum.
+        The power spectrum.
 
     n_channel : int >= 1
-        Number of chroma-filter banks, :math:`C`.
+        The number of chroma filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     norm : float
-        Normalization factor.
+        The normalization factor.
+
+    use_power : bool
+        If True, use the power spectrum instead of the amplitude spectrum.
 
     Returns
     -------
     out : Tensor [shape=(..., C)]
-        Chroma-filter bank output.
+        The chroma filter bank output.
 
     """
     return nn.ChromaFilterBankAnalysis._func(
@@ -229,7 +227,7 @@ def chroma(x, n_channel, sample_rate, norm=float("inf")):
         n_channel=n_channel,
         sample_rate=sample_rate,
         norm=norm,
-        use_power=True,
+        use_power=use_power,
     )
 
 
@@ -239,12 +237,12 @@ def csm2acr(c):
     Parameters
     ----------
     c : Tensor [shape=(..., M+1)]
-        CSM coefficients.
+        The CSM coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     """
     return nn.CompositeSinusoidalModelCoefficientsToAutocorrelation._func(c)
@@ -256,116 +254,116 @@ def dct(x, dct_type=2):
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Input signal.
+        The input.
 
     dct_type : int in [1, 4]
-        DCT type.
+        The DCT type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        DCT output.
+        The DCT output.
 
     """
     return nn.DiscreteCosineTransform._func(x, dct_type=dct_type)
 
 
 def decimate(x, period=1, start=0, dim=-1):
-    """Decimate signal.
+    """Decimate the input signal.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T, ...)]
-        Signal.
+        The input signal.
 
     period : int >= 1
-        Decimation period, :math:`P`.
+        The decimation period, :math:`P`.
 
     start : int >= 0
-        Start point, :math:`S`.
+        The start point, :math:`S`.
 
     dim : int
-        Dimension along which to decimate the tensors.
+        The dimension along which to decimate the tensors.
 
     Returns
     -------
     out : Tensor [shape=(..., T/P-S, ...)]
-        Decimated signal.
+        The decimated signal.
 
     """
     return nn.Decimation._func(x, period=period, start=start, dim=dim)
 
 
 def delay(x, start=0, keeplen=False, dim=-1):
-    """Delay signal.
+    """Delay the input signal.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T, ...)]
-        Signal.
+        The input signal.
 
     start : int
-        Start point, :math:`S`. If negative, advance signal.
+        The start point, :math:`S`. If negative, advance the signal.
 
     keeplen : bool
-        If True, output has the same length of input.
+        If True, the output has the same length of the input.
 
     dim : int
-        Dimension along which to shift the tensors.
+        The dimension along which to delay the tensors.
 
     Returns
     -------
     out : Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
-        Delayed signal.
+        The delayed signal.
 
     """
     return nn.Delay._func(x, start=start, keeplen=keeplen, dim=dim)
 
 
 def delta(x, seed=[[-0.5, 0, 0.5]], static_out=True):
-    """Compute delta components.
+    """Compute the delta components.
 
     Parameters
     ----------
     x : Tensor [shape=(B, T, D) or (T, D)]
-        Static components.
+        The static components.
 
     seed : list[list[float]] or list[int]
-        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+        The delta coefficients or the width(s) of 1st (and 2nd) regression coefficients.
 
     static_out : bool
-        If False, output only delta components.
+        If False, outputs only the delta components.
 
     Returns
     -------
     out : Tensor [shape=(B, T, DxH) or (T, DxH)]
-        Delta (and static) components.
+        The delta (and static) components.
 
     """
     return nn.Delta._func(x, seed, static_out=static_out)
 
 
 def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
-    """Dequantize input.
+    """Dequantize the input waveform.
 
     Parameters
     ----------
     y : Tensor [shape=(...,)]
-        Quantized input.
+        The quantized waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the original waveform.
 
     n_bit : int >= 1
-        Number of quantization bits.
+        The number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
-        Quantizer.
+        The quantizer type.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Dequantized input.
+        The dequantized waveform.
 
     """
     return nn.InverseUniformQuantization._func(
@@ -373,27 +371,33 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
-def dfs(x, b=None, a=None):
-    """Apply an IIR digital filter.
+def dfs(x, b=None, a=None, ir_length=None):
+    """Apply an IIR digital filter to the input waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Input waveform.
+        The input waveform.
 
     b : Tensor [shape=(M+1,)] or None
-        Numerator coefficients.
+        The numerator coefficients.
 
     a : Tensor [shape=(N+1,)] or None
-        Denominator coefficients.
+        The denominator coefficients.
+
+    ir_length : int >= 1 or None
+        The length of the truncated impulse response. If given, the filter is
+        approximated by an FIR filter.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Filtered waveform.
+        The filtered waveform.
 
     """
-    return nn.InfiniteImpulseResponseDigitalFilter._func(x, b=b, a=a)
+    return nn.InfiniteImpulseResponseDigitalFilter._func(
+        x, b=b, a=a, ir_length=ir_length
+    )
 
 
 def dht(x, dht_type=2):
@@ -402,15 +406,15 @@ def dht(x, dht_type=2):
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Input signal.
+        The input.
 
     dht_type : int in [1, 4]
-        DHT type.
+        The DHT type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        DHT output.
+        The DHT output.
 
     """
     return nn.DiscreteHartleyTransform._func(x, dht_type=dht_type)
@@ -426,38 +430,38 @@ def drc(
     makeup_gain=0,
     abs_max=1,
 ):
-    """Apply dynamic range compression.
+    """Perform dynamic range compression.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Input signal.
+        The input waveform.
 
     threshold : float <= 0
-        Threshold in dB.
+        The threshold in dB.
 
     ratio : float > 1
-        Input/output ratio.
+        The input/output ratio.
 
     attack_time : float > 0
-        Attack time in msec.
+        The attack time in msec.
 
     release_time : float > 0
-        Release time in msec.
+        The release time in msec.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     makeup_gain : float >= 0
-        Make-up gain in dB.
+        The make-up gain in dB.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of input.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Compressed signal.
+        The compressed waveform.
 
     """
     return nn.DynamicRangeCompression._func(
@@ -478,35 +482,35 @@ def dst(x, dst_type=2):
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Input signal.
+        The input.
 
     dst_type : int in [1, 4]
-        DST type.
+        The DST type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        DST output.
+        The DST output.
 
     """
     return nn.DiscreteSineTransform._func(x, dst_type=dst_type)
 
 
 def entropy(p, out_format="nat"):
-    """Calculate entropy.
+    """Calculate the entropy of a probability distribution.
 
     Parameters
     ----------
     p : Tensor [shape=(..., N)]
-        Probability.
+        The probability.
 
     out_format : ['bit', 'nat', 'dit']
-        Output format.
+        The output format.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Entropy.
+        The entropy.
 
     """
     return nn.Entropy._func(p, out_format=out_format)
@@ -526,28 +530,28 @@ def excite(
     Parameters
     ----------
     p : Tensor [shape=(..., N)]
-        Pitch in seconds.
+        The pitch in seconds.
 
     frame_period : int >= 1
-        Frame period in samples, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
                      'triangle', 'square']
-        Value on voiced region.
+        The type of voiced region.
 
-    unvoiced_region : ['gauss', 'zeros']
-        Value on unvoiced region.
+    unvoiced_region : ['zeros', 'gauss']
+        The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
-        Polarity.
+        The polarity.
 
     init_phase : ['zeros', 'random']
-        Initial phase.
+        The initial phase.
 
     Returns
     -------
     out : Tensor [shape=(..., NxP)]
-        Excitation signal.
+        The excitation signal.
 
     """
     return nn.ExcitationGeneration._func(
@@ -560,40 +564,52 @@ def excite(
     )
 
 
-def fbank(x, n_channel, sample_rate, f_min=0, f_max=None, floor=1e-5, out_format="y"):
-    """Apply mel-filter banks to STFT.
+def fbank(
+    x,
+    n_channel,
+    sample_rate,
+    f_min=0,
+    f_max=None,
+    floor=1e-5,
+    use_power=False,
+    out_format="y",
+):
+    """Apply mel-filter banks to the STFT.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L/2+1)]
-        Power spectrum.
+        The power spectrum.
 
     n_channel : int >= 1
-        Number of mel-filter banks, :math:`C`.
+        The number of mel filter banks, :math:`C`.
 
     sample_rate : int >= 1
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     f_min : float >= 0
-        Minimum frequency in Hz.
+        The minimum frequency in Hz.
 
     f_max : float <= sample_rate // 2
-        Maximum frequency in Hz.
+        The maximum frequency in Hz.
 
     floor : float > 0
-        Minimum mel-filter bank output in linear scale.
+        The minimum mel filter bank output in linear scale.
+
+    use_power : bool
+        If True, use the power spectrum instead of the amplitude spectrum.
 
     out_format : ['y', 'yE', 'y,E']
-        `y` is mel-filber bank output and `E` is energy. If this is `yE`, the two output
+        `y` is mel filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
     Returns
     -------
     y : Tensor [shape=(..., C)]
-        Mel-filter bank output.
+        The mel filter bank output.
 
     E : Tensor [shape=(..., 1)] (optional)
-        Energy.
+        The energy.
 
     """
     return nn.MelFilterBankAnalysis._func(
@@ -603,35 +619,35 @@ def fbank(x, n_channel, sample_rate, f_min=0, f_max=None, floor=1e-5, out_format
         f_min=f_min,
         f_max=f_max,
         floor=floor,
-        use_power=False,
+        use_power=use_power,
         out_format=out_format,
     )
 
 
-def fftcep(x, cep_order, n_iter=0, accel=0):
-    """Estimate cepstrum from spectrum.
+def fftcep(x, cep_order, accel=0, n_iter=0):
+    """Perform cepstral analysis.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L/2+1)]
-        Power spectrum.
+        The power spectrum.
 
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
-
-    n_iter : int >= 0
-        Number of iterations.
+        The order of the cepstrum, :math:`M`.
 
     accel : float >= 0
-        Acceleration factor.
+        The acceleration factor.
+
+    n_iter : int >= 0
+        The number of iterations.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Cepstrum.
+        The cepstrum.
 
     """
-    return nn.CepstralAnalysis._func(x, cep_order=cep_order, n_iter=n_iter, accel=accel)
+    return nn.CepstralAnalysis._func(x, cep_order=cep_order, accel=accel, n_iter=n_iter)
 
 
 def flux(x, y=None, lag=1, norm=2, reduction="mean"):
@@ -640,24 +656,24 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
     Parameters
     ----------
     x : Tensor [shape=(..., N, D)]
-        Input.
+        The input.
 
     y : Tensor [shape=(..., N, D)] or None
-        Target (optional).
+        The target (optional).
 
     lag : int
-        Lag of the distance calculation, :math:`L`.
+        The lag of the distance calculation, :math:`L`.
 
     norm : int or float
-        Order of norm.
+        The order of the norm.
 
     reduction : ['none', 'mean', 'batchmean', 'sum']
-        Reduction type.
+        The reduction type.
 
     Returns
     -------
     out : Tensor [shape=(..., N-\\|L\\|) or scalar]
-        Flux.
+        The flux.
 
     """
     return nn.Flux._func(x, y, lag=lag, norm=norm, reduction=reduction)
@@ -666,33 +682,32 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
 def frame(
     x, frame_length=400, frame_period=80, center=True, zmean=False, mode="constant"
 ):
-    """Perform framing.
+    """Apply framing to the given waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Waveform.
+        The waveform.
 
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
-    frame_peirod : int >= 1
-        Frame period, :math:`P`.
+    frame_period : int >= 1
+        The frame period in samples, :math:`P`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     zmean : bool
         If True, perform mean subtraction on each frame.
 
     mode : ['constant', 'reflect', 'replicate', 'circular']
-        Padding mode.
+        The padding method.
 
     Returns
     -------
     out : Tensor [shape=(..., T/P, L)]
-        Framed waveform.
+        The framed waveform.
 
     """
     return nn.Frame._func(
@@ -711,18 +726,18 @@ def freqt(c, out_order, alpha=0):
     Parameters
     ----------
     c : Tensor [shape=(..., M1+1)]
-        Cepstral coefficients.
+        The cepstral coefficients.
 
     out_order : int >= 0
-        Order of output cepstrum, :math:`M_2`.
+        The order of the output cepstrum, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     Returns
     -------
     out : Tensor [shape=(..., M2+1)]
-        Warped cepstral coefficients.
+        The warped cepstral coefficients.
 
     """
     return nn.FrequencyTransform._func(c, out_order=out_order, alpha=alpha)
@@ -734,24 +749,24 @@ def freqt2(c, out_order, alpha=0, theta=0, n_fft=512):
     Parameters
     ----------
     c : Tensor [shape=(..., M1+1)]
-        Cepstral coefficients.
+        The cepstral coefficients.
 
     out_order : int >= 0
-        Order of output cepstrum, :math:`M_2`.
+        The order of the output sequence, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     theta : float in [0, 1]
-        Emphasis frequency, :math:`\\theta`.
+        The emphasis frequency, :math:`\\theta`.
 
     n_fft : int >> M2
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins. The accurate conversion requires the large value.
 
     Returns
     -------
     out : Tensor [shape=(..., M2+1)]
-        Warped cepstral coefficients.
+        The warped cepstral coefficients.
 
     """
     return nn.SecondOrderAllPassFrequencyTransform._func(
@@ -765,18 +780,18 @@ def gnorm(x, gamma=0, c=None):
     Parameters
     ----------
     x : Tensor [shape=(..., M+1)]
-        Generalized cepstrum.
+        The generalized cepstrum.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Normalized generalized cepstrum.
+        The normalized generalized cepstrum.
 
     """
     return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma, c=c)
@@ -788,24 +803,24 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     Parameters
     ----------
     b : Tensor [shape=(..., M+1)] or None
-        Numerator coefficients.
+        The numerator coefficients.
 
     a : Tensor [shape=(..., N+1)] or None
-        Denominator coefficients.
+        The denominator coefficients.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     alpha : float > 0
-        Tuning parameter, :math:`\\alpha`.
+        The tuning parameter, :math:`\\alpha`.
 
     gamma : float > 0
-        Tuning parameter, :math:`\\gamma`.
+        The tuning parameter, :math:`\\gamma`.
 
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        Group delay or modified group delay function.
+        The group delay or modified group delay function.
 
     """
     return nn.GroupDelay._func(
@@ -814,48 +829,46 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
 
 
 def hilbert(x, fft_length=None, dim=-1):
-    """Compute analytic signal using the Hilbert transform.
+    """Compute the analytic signal using the Hilbert transform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T, ...)]
-        Input signal.
+        The input signal.
 
     fft_length : int >= 1 or None
-        Number of FFT bins. If None, set to :math:`T`.
+        The number of FFT bins. If None, set to :math:`T`.
 
     dim : int
-        Dimension along which to take the Hilbert transform.
+        The dimension along which to take the Hilbert transform.
 
     Returns
     -------
     out : Tensor [shape=(..., T, ...)]
-        Analytic signal, where real part is the input signal and imaginary part is
-        the Hilbert transform of the input signal.
+        The analytic signal.
 
     """
     return nn.HilbertTransform._func(x, fft_length=fft_length, dim=dim)
 
 
 def hilbert2(x, fft_length=None, dim=(-2, -1)):
-    """Compute analytic signal using the Hilbert transform.
+    """Compute the analytic signal using the Hilbert transform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T1, T2, ...)]
-        Input signal.
+        The input signal.
 
     fft_length : int, list[int], or None
-        Number of FFT bins. If None, set to (:math:`T1`, :math:`T2`).
+        The number of FFT bins. If None, set to (:math:`T1`, :math:`T2`).
 
     dim : list[int]
-        Dimensions along which to take the Hilbert transform.
+        The dimensions along which to take the Hilbert transform.
 
     Returns
     -------
     out : Tensor [shape=(..., T1, T2, ...)]
-        Analytic signal, where real part is the input signal and imaginary part is
-        the Hilbert transform of the input signal.
+        The analytic signal.
 
     """
     return nn.TwoDimensionalHilbertTransform._func(x, fft_length=fft_length, dim=dim)
@@ -867,19 +880,19 @@ def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Input data.
+        The input data.
 
     n_bin : int >= 1
-        Number of bins, :math:`K`.
+        The number of bins, :math:`K`.
 
     lower_bound : float < U
-        Lower bound of the histogram, :math:`L`.
+        The lower bound of the histogram, :math:`L`.
 
     upper_bound : float > L
-        Upper bound of the histogram, :math:`U`.
+        The upper bound of the histogram, :math:`U`.
 
     norm : bool
-        If True, normalize the histogram.
+        If True, normalizes the histogram.
 
     softness : float > 0
         A smoothing parameter. The smaller value makes the output closer to the true
@@ -888,7 +901,7 @@ def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e
     Returns
     -------
     out : Tensor [shape=(..., K)]
-        Histogram in [L, U].
+        The histogram.
 
     """
     return nn.Histogram._func(
@@ -902,23 +915,23 @@ def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e
 
 
 def ialaw(y, abs_max=1, a=87.6):
-    """Expand waveform by A-law algorithm.
+    """Expand the waveform using the A-law algorithm.
 
     Parameters
     ----------
     y : Tensor [shape=(...,)]
-        Compressed waveform.
+        The compressed waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the original input waveform.
 
     a : float >= 1
-        Compression factor, :math:`A`.
+        The compression factor, :math:`A`.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Waveform.
+        The expanded waveform.
 
     """
     return nn.ALawExpansion._func(y, abs_max=abs_max, a=a)
@@ -930,15 +943,15 @@ def idct(y, dct_type=2):
     Parameters
     ----------
     y : Tensor [shape=(..., L)]
-        Input.
+        The input.
 
     dct_type : int in [1, 4]
-        DCT type.
+        The DCT type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        Inverse DCT output.
+        The inverse DCT output.
 
     """
     return nn.InverseDiscreteCosineTransform._func(y, dct_type=dct_type)
@@ -950,15 +963,15 @@ def idht(y, dht_type=2):
     Parameters
     ----------
     y : Tensor [shape=(..., L)]
-        Input.
+        The input.
 
     dht_type : int in [1, 4]
-        DHT type.
+        The DHT type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        Inverse DHT output.
+        The inverse DHT output.
 
     """
     return nn.InverseDiscreteHartleyTransform._func(y, dht_type=dht_type)
@@ -970,15 +983,15 @@ def idst(y, dst_type=2):
     Parameters
     ----------
     y : Tensor [shape=(..., L)]
-        Input.
+        The input.
 
     dst_type : int in [1, 4]
-        DST type.
+        The DST type.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        Inverse DST output.
+        The inverse DST output.
 
     """
     return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
@@ -993,21 +1006,21 @@ def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
         Cepstral coefficients.
 
     out_order : int >= 0
-        Order of output cepstrum, :math:`M_2`.
+        The order of the output sequence, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     theta : float in [0, 1]
-        Emphasis frequency, :math:`\\theta`.
+        The emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> M1
-        Number of FFT bins. Accurate conversion requires the large value.
+    n_fft : int >> M2
+        The number of FFT bins.
 
     Returns
     -------
     out : Tensor [shape=(..., M2+1)]
-        Warped cepstral coefficients.
+        The warped cepstral coefficients.
 
     """
     return nn.SecondOrderAllPassInverseFrequencyTransform._func(
@@ -1021,18 +1034,18 @@ def ignorm(y, gamma=0, c=None):
     Parameters
     ----------
     y : Tensor [shape=(..., M+1)]
-        Normalized generalized cepstrum.
+        The normalized generalized cepstrum.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Generalized cepstrum.
+        The generalized cepstrum.
 
     """
     return nn.GeneralizedCepstrumInverseGainNormalization._func(y, gamma=gamma, c=c)
@@ -1044,16 +1057,21 @@ def imdct(y, out_length=None, frame_length=400, window="sine"):
     Parameters
     ----------
     y : Tensor [shape=(..., 2T/L, L/2)]
-        Spectrum.
+        The spectrum.
 
     out_length : int or None
-        Length of output waveform.
+        The length of the output waveform.
 
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        The reconstructed waveform.
 
     """
     return nn.InverseModifiedDiscreteCosineTransform._func(
@@ -1067,16 +1085,21 @@ def imdst(y, out_length=None, frame_length=400, window="sine"):
     Parameters
     ----------
     y : Tensor [shape=(..., 2T/L, L/2)]
-        Spectrum.
+        The spectrum.
 
     out_length : int or None
-        Length of output waveform.
+        The length of the output waveform.
 
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        The reconstructed waveform.
 
     """
     return nn.InverseModifiedDiscreteSineTransform._func(
@@ -1085,26 +1108,26 @@ def imdst(y, out_length=None, frame_length=400, window="sine"):
 
 
 def interpolate(x, period=1, start=0, dim=-1):
-    """Interpolate signal.
+    """Interpolate the input signal.
 
     Parameters
     ----------
     x : Tensor [shape=(..., T, ...)]
-        Signal.
+        The input signal.
 
     period : int >= 1
-        Interpolation period, :math:`P`.
+        The interpolation period, :math:`P`.
 
     start : int >= 0
-        Start point, :math:`S`.
+        The start point, :math:`S`.
 
     dim : int
-        Dimension along which to interpolate the tensors.
+        The dimension along which to interpolate the tensors.
 
     Returns
     -------
     out : Tensor [shape=(..., TxP+S, ...)]
-        Interpolated signal.
+        The interpolated signal.
 
     """
     return nn.Interpolation._func(x, period=period, start=start, dim=dim)
@@ -1116,15 +1139,32 @@ def ipnorm(y):
     Parameters
     ----------
     y : Tensor [shape=(..., M+2)]
-        Power-normalized cepstrum.
+        The log power and power-normalized cepstrum.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Output cepstrum.
+        The cepstrum.
 
     """
     return nn.MelCepstrumInversePowerNormalization._func(y)
+
+
+def is2par(s):
+    """Convert IS to PARCOR.
+
+    Parameters
+    ----------
+    s : Tensor [shape=(..., M+1)]
+        The inverse sine coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The PARCOR coefficients.
+
+    """
+    return nn.InverseSineToParcorCoefficients._func(s)
 
 
 def istft(
@@ -1143,35 +1183,34 @@ def istft(
     Parameters
     ----------
     y : Tensor [shape=(..., T/P, N/2+1)]
-        Complex spectrum.
+        The complex spectrogram.
 
     out_length : int >= 1 or None
-        Length of output signal.
+        The length of the output waveform.
 
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
-    frame_peirod : int >= 1
-        Frame period, :math:`P`.
+    frame_period : int >= 1
+        The frame period in samples, :math:`P`.
 
     fft_length : int >= L
-        Number of FFT bins, :math:`N`.
+        The number of FFT bins, :math:`N`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
-        Window type.
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Waveform.
+        The reconstructed waveform.
 
     """
     return nn.InverseShortTimeFourierTransform._func(
@@ -1187,23 +1226,23 @@ def istft(
 
 
 def iulaw(y, abs_max=1, mu=255):
-    """Expand waveform by :math:`\\mu`-law algorithm.
+    """Expand the waveform using the :math:`\\mu`-law algorithm.
 
     Parameters
     ----------
     y : Tensor [shape=(...,)]
-        Compressed waveform.
+        The compressed waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the original input waveform.
 
     mu : int >= 1
-        Compression factor, :math:`\\mu`.
+        The compression factor, :math:`\\mu`.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Waveform.
+        The expanded waveform.
 
     """
     return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
@@ -1215,15 +1254,15 @@ def iwht(y, wht_type="natural"):
     Parameters
     ----------
     y : Tensor [shape=(..., L)]
-        Input.
+        The input.
 
     wht_type : ['sequency', 'natural', 'dyadic']
-        Order of coefficients of Walsh matrix.
+        The order of the coefficients in the Walsh matrix.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        Inverse WHT output.
+        The inverse WHT output.
 
     """
     return nn.InverseWalshHadamardTransform._func(y, wht_type=wht_type)
@@ -1235,12 +1274,12 @@ def lar2par(g):
     Parameters
     ----------
     g : Tensor [shape=(..., M+1)]
-        Log area ratio.
+        The log area ratio.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        PARCOR coefficients.
+        The PARCOR coefficients.
 
     """
     return nn.LogAreaRatioToParcorCoefficients._func(g)
@@ -1252,7 +1291,7 @@ def levdur(r, eps=0):
     Parameters
     ----------
     r : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     eps : float >= 0
         A small value to improve numerical stability.
@@ -1260,7 +1299,7 @@ def levdur(r, eps=0):
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Gain and LPC coefficients.
+        The gain and LPC coefficients.
 
     """
     return nn.LevinsonDurbin._func(r, eps=eps)
@@ -1272,30 +1311,30 @@ def linear_intpl(x, upsampling_factor=80):
     Parameters
     ----------
     x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-        Filter coefficients.
+        The filter coefficients.
 
     upsampling_factor : int >= 1
-        Upsampling factor, :math:`P`.
+        The upsampling factor, :math:`P`.
 
     Returns
     -------
     y : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
-        Upsampled filter coefficients.
+        The upsampled filter coefficients.
 
     """
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
 def lpc(x, lpc_order, eps=1e-6):
-    """Compute LPC coefficients.
+    """Perform LPC analysis.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Framed waveform.
+        The famed waveform.
 
     lpc_order : int >= 0
-        Order of LPC, :math:`M`.
+        The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0
         A small value to improve numerical stability.
@@ -1303,7 +1342,7 @@ def lpc(x, lpc_order, eps=1e-6):
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Gain and LPC coefficients.
+        The gain and LPC coefficients.
 
     """
     return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order, eps=eps)
@@ -1315,21 +1354,21 @@ def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        LPC coefficients.
+        The LPC coefficients.
 
     log_gain : bool
-        If True, output gain in log scale.
+        If True, output the gain in logarithmic scale.
 
     sample_rate : int >= 1 or None
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     out_format : ['radian', 'cycle', 'khz', 'hz']
-        Output format.
+        The output format.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        LSP frequencies.
+        The LSP frequencies.
 
     """
     return nn.LinearPredictiveCoefficientsToLineSpectralPairs._func(
@@ -1343,18 +1382,18 @@ def lpc2par(a, gamma=1, c=None):
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        LPC coefficients.
+        The LPC coefficients.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        PARCOR coefficients.
+        The PARCOR coefficients.
 
     """
     return nn.LinearPredictiveCoefficientsToParcorCoefficients._func(
@@ -1368,18 +1407,18 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        LPC coefficients.
+        The input LPC coefficients.
 
     margin : float in (0, 1)
-        Margin for stability.
+        The margin to guarantee the stability of LPC.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Warning type.
+        The warning type.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Modified LPC coefficients.
+        The modified LPC coefficients.
 
     """
     return nn.LinearPredictiveCoefficientsStabilityCheck._func(
@@ -1387,49 +1426,55 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     )
 
 
-def lsp2lpc(w, log_gain=False):
+def lsp2lpc(w, log_gain=False, sample_rate=None, in_format="radian"):
     """Convert LSP to LPC.
 
     Parameters
     ----------
     w : Tensor [shape=(..., M+1)]
-        LSP frequencies in radians.
+        The LSP frequencies.
 
     log_gain : bool
-        If True, assume input gain is in log scale.
+        If True, assume the input gain is in logarithmic scale.
+
+    sample_rate : int >= 1 or None
+        The sample rate in Hz.
+
+    in_format : ['radian', 'cycle', 'khz', 'hz']
+        The input format.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        LPC coefficients.
+        The LPC coefficients.
 
     """
     return nn.LineSpectralPairsToLinearPredictiveCoefficients._func(
-        w, log_gain=log_gain
+        w, log_gain=log_gain, sample_rate=sample_rate, in_format=in_format
     )
 
 
 def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
-    """Check stability of LSP frequencies.
+    """Check the stability of the input LSP coefficients.
 
     Parameters
     ----------
     w : Tensor [shape=(..., M+1)]
-        LSP frequencies in radians.
+        The input LSP coefficients in radians.
 
     rate : float in [0, 1]
-        Rate of distance between two adjacent LSPs.
+        The rate of distance between two adjacent LSPs.
 
     n_iter : int >= 0
-        Number of iterations for modification.
+        The number of iterations for the modification.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Warning type.
+        The warning type.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Modified LSP frequencies.
+        The modified LSP frequencies.
 
     """
     return nn.LineSpectralPairsStabilityCheck._func(
@@ -1443,27 +1488,27 @@ def lsp2sp(w, fft_length, alpha=0, gamma=-1, log_gain=False, out_format="power")
     Parameters
     ----------
     w : Tensor [shape=(..., M+1)]
-        Line spectral pairs in radians.
+        The line spectral pairs in radians.
 
-    fft_length : int >= 1
-        Number of FFT bins, :math:`L`.
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
 
     alpha : float in (-1, 1)
-        Warping factor, :math:`\\alpha`.
+        The warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 0)
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     log_gain : bool
-        If True, assume input gain is in log scale.
+        If True, assume the input gain is in logarithmic scale.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
-        Output format.
+        The output format.
 
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        Spectrum.
+        The spectrum.
 
     """
     return nn.LineSpectralPairsToSpectrum._func(
@@ -1482,15 +1527,15 @@ def magic_intpl(x, magic_number=0):
     Parameters
     ----------
     x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-        Data containing magic number.
+        The data containing magic number.
 
     magic_number : float or Tensor
-        Magic number.
+        The magic number to be interpolated.
 
     Returns
     -------
     out : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-        Data after interpolation.
+        The data after interpolation.
 
     """
     return nn.MagicNumberInterpolation._func(x, magic_number=magic_number)
@@ -1502,18 +1547,77 @@ def mc2b(mc, alpha=0):
     Parameters
     ----------
     mc : Tensor [shape=(..., M+1)]
-        Mel-cepstral coefficients.
+        The mel-cepstral coefficients.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        MLSA digital filter coefficients.
+        The MLSA digital filter coefficients.
 
     """
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
+
+
+def mcep(x, cep_order, alpha=0, n_iter=0):
+    """Perform mel-cepstral analysis.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    n_iter : int >= 0
+        The number of iterations.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The mel-cepstrum.
+
+    """
+    return nn.MelCepstralAnalysis._func(
+        x, cep_order=cep_order, alpha=alpha, n_iter=n_iter
+    )
+
+
+def mcpf(mc, alpha=0, beta=0, onset=2, ir_length=128):
+    """Perform mel-cesptrum postfiltering.
+
+    Parameters
+    ----------
+    mc : Tensor [shape=(..., M+1)]
+        The input mel-cepstral coefficients.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    beta : float
+        The intensity parameter, :math:`\\beta`.
+
+    onset : int >= 0
+        The onset index.
+
+    ir_length : int >= 1
+        The length of the impulse response.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The postfiltered mel-cepstral coefficients.
+
+    """
+    return nn.MelCepstrumPostfiltering._func(
+        mc, alpha=alpha, beta=beta, onset=onset, ir_length=ir_length
+    )
 
 
 def mdct(x, frame_length=400, window="sine"):
@@ -1522,18 +1626,18 @@ def mdct(x, frame_length=400, window="sine"):
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Waveform.
+        The input waveform.
 
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     Returns
     -------
     out : Tensor [shape=(..., 2T/L, L/2)]
-        Spectrum.
+        The spectrum.
 
     """
     return nn.ModifiedDiscreteCosineTransform._func(
@@ -1547,22 +1651,89 @@ def mdst(x, frame_length=400, window="sine"):
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Waveform.
+        The input waveform.
 
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     Returns
     -------
     out : Tensor [shape=(..., 2T/L, L/2)]
-        Spectrum.
+        The spectrum.
 
     """
     return nn.ModifiedDiscreteSineTransform._func(
         x, frame_length=frame_length, window=window
+    )
+
+
+def mfcc(
+    x,
+    mfcc_order,
+    n_channel,
+    sample_rate,
+    lifter=1,
+    f_min=0,
+    f_max=None,
+    floor=1e-5,
+    out_format="y",
+):
+    """Compute the MFCC from the power spectrum.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    mfcc_order : int >= 1
+        The order of the MFCC, :math:`M`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    lifter : int >= 1
+        The liftering coefficient.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    floor : float > 0
+        The minimum mel filter bank output in linear scale.
+
+    out_format : ['y', 'yE', 'yc', 'ycE']
+        `y` is MFCC, `c` is C0, and `E` is energy.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., M)]
+        The MFCC without C0.
+
+    E : Tensor [shape=(..., 1)] (optional)
+        The energy.
+
+    c : Tensor [shape=(..., 1)] (optional)
+        The C0.
+
+    """
+    return nn.MelFrequencyCepstralCoefficientsAnalysis._func(
+        x,
+        mfcc_order=mfcc_order,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        lifter=lifter,
+        f_min=f_min,
+        f_max=f_max,
+        floor=floor,
+        out_format=out_format,
     )
 
 
@@ -1584,42 +1755,42 @@ def mgc2mgc(
     Parameters
     ----------
     mc : Tensor [shape=(..., M1+1)]
-        Input mel-cepstrum.
+        The input mel-cepstrum.
 
     out_order : int >= 0
-        Order of output cepstrum, :math:`M_2`.
+        The order of the output cepstrum, :math:`M_2`.
 
     in_alpha : float in (-1, 1)
-        Input alpha, :math:`\\alpha_1`.
+        The input alpha, :math:`\\alpha_1`.
 
     out_alpha : float in (-1, 1)
-        Output alpha, :math:`\\alpha_2`.
+        The output alpha, :math:`\\alpha_2`.
 
     in_gamma : float in [-1, 1]
-        Input gamma, :math:`\\gamma_1`.
+        The input gamma, :math:`\\gamma_1`.
 
     out_gamma : float in [-1, 1]
-        Output gamma, :math:`\\gamma_2`.
+        The output gamma, :math:`\\gamma_2`.
 
     in_norm : bool
-        If True, assume normalized input.
+        If True, the input is assumed to be normalized.
 
     out_norm : bool
-        If True, assume normalized output.
+        If True, the output is assumed to be normalized.
 
     in_mul : bool
-        If True, assume gamma-multiplied input.
+        If True, the input is assumed to be gamma-multiplied.
 
     out_mul : bool
-        If True, assume gamma-multiplied output.
+        If True, the output is assumed to be gamma-multiplied.
 
     n_fft : int >> M1, M2
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins.
 
     Returns
     -------
     out : Tensor [shape=(..., M2+1)]
-        Converted mel-cepstrum.
+        The converted mel-cepstrum.
 
     """
     return nn.MelGeneralizedCepstrumToMelGeneralizedCepstrum._func(
@@ -1655,26 +1826,26 @@ def mgc2sp(
         Mel-cepstrum.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     alpha : float in (-1, 1)
-        Warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     norm : bool
-        If True, assume normalized cepstrum.
+        If True, the input is assumed to be normalized.
 
     mul : bool
-        If True, assume gamma-multiplied cepstrum.
+        If True, the input is assumed to be gamma-multiplied.
 
     n_fft : int >> L
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', \
                   'cycle', 'radian', 'degree', 'complex']
-        Output format.
+        The output format.
 
     Returns
     -------
@@ -1695,20 +1866,20 @@ def mgc2sp(
 
 
 def mlpg(u, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
-    """Perform MLPG to obtain smoothed static sequence.
+    """Perform MLPG given the mean vectors with delta components.
 
     Parameters
     ----------
     u : Tensor [shape=(..., T, DxH)]
-        Time-variant mean vectors with delta components.
+        The time-variant mean vectors with delta components.
 
     seed : list[list[float]] or list[int]
-        Delta coefficients or width(s) of 1st (and 2nd) regression coefficients.
+        The delta coefficients or the width(s) of 1st (and 2nd) regression coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., T, D)]
-        Static components.
+        The smoothed static components.
 
     """
     return nn.MaximumLikelihoodParameterGeneration._func(u, seed=seed)
@@ -1726,41 +1897,42 @@ def mlsacheck(
     warn_type="warn",
     mod_type="scale",
 ):
-    """Check stability of MLSA filter.
+    """Check the stability of the MLSA digital filter.
 
     Parameters
     ----------
     c : Tensor [shape=(..., M+1)]
-        Mel-cepstrum.
+        The input Mel-cepstrum.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     pade_order : int in [4, 7]
-        Order of Pade approximation.
+        The order of the Pade approximation.
 
     strict : bool
-        If True, keep maximum log approximation error rather than MLSA filter stability.
+        If True, prioritizes maintaining the maximum log approximation error over MLSA
+        filter stability.
 
     threshold : float > 0 or None
-        Threshold value. If not given, automatically computed.
+        The threshold value. If None, it is automatically computed.
 
     fast : bool
-        Enable fast mode.
+        Enables fast mode (do not use FFT).
 
     n_fft : int > M
-        Number of FFT bins, :math:`L`. Used only in non-fast mode.
+        The number of FFT bins. Used only in non-fast mode.
 
     warn_type : ['ignore', 'warn', 'exit']
-        Warning type.
+        The warning type.
 
     mod_type : ['clip', 'scale']
-        Modification type.
+        The modification method.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Modified mel-cepstrum.
+        The modified mel-cepstrum.
 
     """
     return nn.MLSADigitalFilterStabilityCheck._func(
@@ -1777,23 +1949,24 @@ def mlsacheck(
 
 
 def mpir2c(h, cep_order, n_fft=512):
-    """Convert minimum phase impulse response to cepstrum.
+    """Convert minimum-phase impulse response to cepstrum.
 
     Parameters
     ----------
     h : Tensor [shape=(..., N)]
-        Minimum phase impulse response.
+        The truncated minimum-phase impulse response.
 
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     n_fft : int >> N
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins used for conversion. The accurate conversion requires the
+        large value.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Cepstrum.
+        The cepstral coefficients.
 
     """
     return nn.MinimumPhaseImpulseResponseToCepstrum._func(
@@ -1807,15 +1980,15 @@ def ndps2c(n, cep_order):
     Parameters
     ----------
     n : Tensor [shape=(..., L/2+1)]
-        NDPS, where :math:`L` is the number of FFT bins.
+        The NDPS, where :math:`L` is the number of FFT bins.
 
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Cepstrum.
+        The cepstrum.
 
     """
     return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._func(n, cep_order=cep_order)
@@ -1827,15 +2000,32 @@ def norm0(a):
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        All-pole or all-zero filter coefficients.
+        The all-pole or all-zero filter coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        All-zero or all-pole filter coefficients.
+        The all-zero or all-pole filter coefficients.
 
     """
     return nn.AllPoleToAllZeroDigitalFilterCoefficients._func(a)
+
+
+def par2is(k):
+    """Convert PARCOR to IS.
+
+    Parameters
+    ----------
+    k : Tensor [shape=(..., M+1)]
+        The PARCOR coefficients.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The inverse sine coefficients.
+
+    """
+    return nn.ParcorCoefficientsToInverseSine._func(k)
 
 
 def par2lar(k):
@@ -1844,12 +2034,12 @@ def par2lar(k):
     Parameters
     ----------
     k : Tensor [shape=(..., M+1)]
-        PARCOR coefficients.
+        The PARCOR coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Log area ratio.
+        The log area ratio.
 
     """
     return nn.ParcorCoefficientsToLogAreaRatio._func(k)
@@ -1861,18 +2051,18 @@ def par2lpc(k, gamma=1, c=None):
     Parameters
     ----------
     k : Tensor [shape=(..., M+1)]
-        PARCOR coefficients.
+        The PARCOR coefficients.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        LPC coefficients.
+        The LPC coefficients.
 
     """
     return nn.ParcorCoefficientsToLinearPredictiveCoefficients._func(
@@ -1886,24 +2076,101 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
     Parameters
     ----------
     b : Tensor [shape=(..., M+1)] or None
-        Numerator coefficients.
+        The numerator coefficients.
 
     a : Tensor [shape=(..., N+1)] or None
-        Denominator coefficients.
+        The denominator coefficients.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     unwrap : bool
-        If True, perform phase unwrapping.
+        If True, perform the phase unwrapping.
 
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        Phase spectrum [:math:`\\pi` rad].
+        The phase spectrum [:math:`\\pi` rad].
 
     """
     return nn.Phase._func(b, a, fft_length=fft_length, unwrap=unwrap)
+
+
+def plp(
+    x,
+    plp_order,
+    n_channel,
+    sample_rate,
+    compression_factor=0.33,
+    lifter=1,
+    f_min=0,
+    f_max=None,
+    floor=1e-5,
+    n_fft=512,
+    out_format="y",
+):
+    """Compute the MFCC from the power spectrum.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    plp_order : int >= 1
+        The order of the PLP, :math:`M`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    compression_factor : float > 0
+        The amplitude compression factor.
+
+    lifter : int >= 1
+        The liftering coefficient.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    floor : float > 0
+        The minimum mel filter bank output in linear scale.
+
+    n_fft : int >> M
+        The number of FFT bins for the conversion from LPC to cepstrum.
+
+    out_format : ['y', 'yE', 'yc', 'ycE']
+        `y` is MFCC, `c` is C0, and `E` is energy.
+
+    Returns
+    -------
+    y : Tensor [shape=(..., M)]
+        The MFCC without C0.
+
+    E : Tensor [shape=(..., 1)] (optional)
+        The energy.
+
+    c : Tensor [shape=(..., 1)] (optional)
+        The C0.
+
+    """
+    return nn.PerceptualLinearPredictiveCoefficientsAnalysis._func(
+        x,
+        plp_order=plp_order,
+        n_channel=n_channel,
+        sample_rate=sample_rate,
+        compression_factor=compression_factor,
+        lifter=lifter,
+        f_min=f_min,
+        f_max=f_max,
+        floor=floor,
+        n_fft=n_fft,
+        out_format=out_format,
+    )
 
 
 def pnorm(x, alpha=0, ir_length=128):
@@ -1912,41 +2179,45 @@ def pnorm(x, alpha=0, ir_length=128):
     Parameters
     ----------
     x : Tensor [shape=(..., M+1)]
-        Input cepstrum.
+        The input mel-cepstrum.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     ir_length : int >= 1
-        Length of impulse response.
+        The length of the impulse response.
 
     Returns
     -------
     out : Tensor [shape=(..., M+2)]
-        Power-normalized cepstrum.
+        The power-normalized cepstrum.
 
     """
     return nn.MelCepstrumPowerNormalization._func(x, alpha=alpha, ir_length=ir_length)
 
 
-def pol_root(x, real=False):
-    """Compute polynomial coefficients from roots.
+def pol_root(x, *, eps=None, in_format="rectangular"):
+    """Convert roots to polynomial coefficients.
 
     Parameters
     ----------
     x : Tensor [shape=(..., M)]
-        Complex roots.
+        The roots, can be complex.
 
-    real : bool
-        If True, return as real numbers.
+    eps : float >= 0 or None
+        If the absolute values of the imaginary parts of the polynomial coefficients are
+        all less than this value, they are considered as real numbers.
+
+    in_format : ['rectangular', 'polar']
+        The input format.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Polynomial coefficients.
+        The polynomial coefficients.
 
     """
-    return nn.RootsToPolynomial._func(x, real=real)
+    return nn.RootsToPolynomial._func(x, eps=eps, in_format=in_format)
 
 
 def poledf(x, a, frame_period=80, ignore_gain=False):
@@ -1955,21 +2226,21 @@ def poledf(x, a, frame_period=80, ignore_gain=False):
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Excitation signal.
+        The excitation signal.
 
     a : Tensor [shape=(..., T/P, M+1)]
-        Filter coefficients.
+        The filter coefficients.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     ignore_gain : bool
-        If True, perform filtering without gain.
+        If True, perform filtering without the gain.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Output signal.
+        The output signal.
 
     """
     return nn.AllPoleDigitalFilter._func(
@@ -1978,26 +2249,26 @@ def poledf(x, a, frame_period=80, ignore_gain=False):
 
 
 def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
-    """Quantize input.
+    """Quantize the input waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(...,)]
-        Input.
+        The input waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     n_bit : int >= 1
-        Number of quantization bits.
+        The number of quantization bits.
 
     quantizer : ['mid-rise', 'mid-tread']
-        Quantizer.
+        The quantizer type.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Quantized input.
+        The quantized waveform.
 
     """
     return nn.UniformQuantization._func(
@@ -2006,17 +2277,17 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
 
 
 def rlevdur(a):
-    """Solve a Yule-Walker linear system given LPC coefficients.
+    """Solve a Yule-Walker linear system given the LPC coefficients.
 
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        Gain and LPC coefficients.
+        The gain and the LPC coefficients.
 
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
-        Autocorrelation.
+        The autocorrelation.
 
     """
     return nn.ReverseLevinsonDurbin._func(a)
@@ -2028,30 +2299,34 @@ def rmse(x, y, reduction="mean"):
     Parameters
     ----------
     x : Tensor [shape=(..., D)]
-        Input.
+        The input.
 
     y : Tensor [shape=(..., D)]
-        Target.
+        The target.
 
     reduction : ['none', 'mean', 'sum']
-        Reduction type.
+        The reduction type.
 
     Returns
     -------
     out : Tensor [shape=(...,) or scalar]
-        RMSE.
+        The RMSE.
 
     """
     return nn.RootMeanSquareError._func(x, y, reduction=reduction)
 
 
-def root_pol(a, out_format="rectangular"):
+def root_pol(a, *, eps=None, out_format="rectangular"):
     """Compute roots of polynomial.
 
     Parameters
     ----------
     a : Tensor [shape=(..., M+1)]
-        Polynomial coefficients.
+        The polynomial coefficients.
+
+    eps : float >= 0 or None
+        If the absolute values of the imaginary parts of the roots are all less than
+        this value, they are considered as real roots.
 
     out_format : ['rectangular', 'polar']
         Output format.
@@ -2059,10 +2334,53 @@ def root_pol(a, out_format="rectangular"):
     Returns
     -------
     out : Tensor [shape=(..., M)]
-        Roots of polynomial.
+        The roots.
 
     """
-    return nn.PolynomialToRoots._func(a, out_format=out_format)
+    return nn.PolynomialToRoots._func(
+        a,
+        eps=eps,
+        out_format=out_format,
+    )
+
+
+def smcep(x, cep_order, alpha=0, theta=0, n_iter=0, accuracy_factor=4):
+    """Perform mel-cepstral analysis.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., L/2+1)]
+        The power spectrum.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    theta : float in [0, 1]
+        The emphasis frequency, :math:`\\theta`.
+
+    n_iter : int >= 0
+        The number of iterations.
+
+    accuracy_factor : int >= 1
+        The accuracy factor multiplied by the FFT length.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., M+1)]
+        The mel-cepstrum.
+
+    """
+    return nn.SecondOrderAllPassMelCepstralAnalysis._func(
+        x,
+        cep_order=cep_order,
+        alpha=alpha,
+        theta=theta,
+        n_iter=n_iter,
+        accuracy_factor=accuracy_factor,
+    )
 
 
 def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
@@ -2071,27 +2389,27 @@ def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
     Parameters
     ----------
     s : Tensor [shape=(..., T)]
-        Signal.
+        The signal.
 
     sn : Tensor [shape=(..., T)]
-        Signal plus noise.
+        The signal with noise.
 
     frame_length : int >= 1 or None
-        Frame length, :math:`L`. If given, calculate segmental SNR.
+        The frame length in samples, :math:`L`. If given, calculate the segmental SNR.
 
     full : bool
         If True, include the constant term in the SNR calculation.
 
     reduction : ['none', 'mean', 'sum']
-        Reduction type.
+        The reduction type.
 
     eps : float >= 0
-        A small value to prevent NaN.
+        A small value to avoid NaN.
 
     Returns
     -------
     out : Tensor [shape=(...,) or scalar]
-        Signal-to-noise ratio.
+        The SNR.
 
     """
     return nn.SignalToNoiseRatio._func(
@@ -2107,27 +2425,27 @@ def spec(
     Parameters
     ----------
     b : Tensor [shape=(..., M+1)] or None
-        Numerator coefficients.
+        The numerator coefficients.
 
     a : Tensor [shape=(..., N+1)] or None
-        Denominator coefficients.
+        The denominator coefficients.
 
     fft_length : int >= 2
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
 
     eps : float >= 0
-        A small value added to power spectrum.
+        A small value added to the power spectrum.
 
     relative_floor : float < 0 or None
-        Relative floor in decibels.
+        The relative floor of the power spectrum in dB.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
-        Output format.
+        The output format.
 
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        Spectrum.
+        The spectrum.
 
     """
     return nn.Spectrum._func(
@@ -2148,6 +2466,7 @@ def stft(
     fft_length=512,
     center=True,
     zmean=False,
+    mode="constant",
     window="blackman",
     norm="power",
     eps=1e-9,
@@ -2159,45 +2478,46 @@ def stft(
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Waveform.
+        The input waveform.
 
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
-    frame_peirod : int >= 1
-        Frame period, :math:`P`.
+    frame_period : int >= 1
+        The frame period in samples, :math:`P`.
 
     fft_length : int >= L
-        Number of FFT bins, :math:`N`.
+        The number of FFT bins, :math:`N`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     zmean : bool
         If True, perform mean subtraction on each frame.
 
+    mode : ['constant', 'reflect', 'replicate', 'circular']
+        The padding method.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
-        Window type.
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     eps : float >= 0
-        A small value added to power spectrum.
+        A small value added to the power spectrum.
 
     relative_floor : float < 0 or None
-        Relative floor in decibels.
+        The relative floor of the power spectrum in dB.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
-        Output format.
+        The output format.
 
     Returns
     -------
     out : Tensor [shape=(..., T/P, N/2+1)]
-        Spectrum.
+        The output spectrogram.
 
     """
     return nn.ShortTimeFourierTransform._func(
@@ -2207,6 +2527,7 @@ def stft(
         fft_length=fft_length,
         center=center,
         zmean=zmean,
+        mode=mode,
         window=window,
         norm=norm,
         eps=eps,
@@ -2216,23 +2537,23 @@ def stft(
 
 
 def ulaw(x, abs_max=1, mu=255):
-    """Compress waveform by :math:`\\mu`-law algorithm.
+    """Compress the input waveform using the :math:`\\mu`-law algorithm.
 
     Parameters
     ----------
     x : Tensor [shape=(...,)]
-        Waveform.
+        The input waveform.
 
     abs_max : float > 0
-        Absolute maximum value of input.
+        The absolute maximum value of the input waveform.
 
     mu : int >= 1
-        Compression factor, :math:`\\mu`.
+        The compression factor, :math:`\\mu`.
 
     Returns
     -------
     out : Tensor [shape=(...,)]
-        Compressed waveform.
+        The compressed waveform.
 
     """
     return nn.MuLawCompression._func(x, abs_max=abs_max, mu=mu)
@@ -2240,9 +2561,8 @@ def ulaw(x, abs_max=1, mu=255):
 
 def unframe(
     y,
-    *,
     out_length=None,
-    frame_length=400,
+    *,
     frame_period=80,
     center=True,
     window="rectangular",
@@ -2253,38 +2573,33 @@ def unframe(
     Parameters
     ----------
     y : Tensor [shape=(..., T/P, L)]
-        Framed waveform.
+        The framed waveform.
 
     out_length : int >= 1 or None
-        Length of original signal, `T`.
-
-    frame_length : int >= 1
-        Frame length, :math:`L`.
+        The length of the original waveform, :math:`T`.
 
     frame_peirod : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
-        Window type.
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Waveform.
+        The unframed waveform.
 
     """
     return nn.Unframe._func(
         y,
         out_length=out_length,
-        frame_length=frame_length,
         frame_period=frame_period,
         center=center,
         window=window,
@@ -2293,76 +2608,77 @@ def unframe(
 
 
 def wht(x, wht_type="natural"):
-    """Compute WHT.
+    """Apply WHT to the input.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Input signal.
+        The input.
 
     wht_type : ['sequency', 'natural', 'dyadic']
-        Order of coefficients of Walsh matrix.
+        The order of the coefficients in the Walsh matrix.
 
     Returns
     -------
     out : Tensor [shape=(..., L)]
-        WHT output.
+        The WHT output.
 
     """
     return nn.WalshHadamardTransform._func(x, wht_type=wht_type)
 
 
 def window(x, out_length=None, *, window="blackman", norm="power"):
-    """Apply window function.
+    """Apply a window function to the given waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L1)]
-        Framed waveform.
+        The input framed waveform.
 
     out_length : int >= L1 or None
-        Output length, :math:`L_2`.
+        The output length, :math:`L_2`. If :math:`L_2 > L_1`, output is zero-padded.
+        If None, :math:`L_2 = L_1`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
               'rectangular', 'nuttall']
-        Window type.
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     Returns
     -------
     out : Tensor [shape=(..., L2)]
-        Windowed waveform.
+        The windowed waveform.
 
     """
     return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
 
 
 def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
-    """Pitch-related feature extraction module based on YIN.
+    """Compute the YIN derivatives from the waveform.
 
     Parameters
     ----------
     x : Tensor [shape=(..., L)]
-        Framed waveform.
+        The framed waveform.
 
-    sample_rate : int >= 1
-        Sample rate in Hz.
+    sample_rate : int >= 8000
+        The sample rate in Hz.
 
     lag_min : int >= 1
-        Minimum lag in points.
+        The minimum lag in points.
 
-    lag_max : int <= :math:`L` or None
-        Maximum lag in points.
+    lag_max : int < L
+        The maximum lag in points.
 
     n_bin : int >= 1
-        Number of bins of Yingram to represent a semitone range.
+        The number of bins to represent a semitone range.
 
     Returns
     -------
     out : Tensor [shape=(..., M)]
-        Yingram.
+        The Yingram.
 
     """
     return nn.Yingram._func(
@@ -2376,13 +2692,13 @@ def zcross(x, frame_length, norm=False, softness=1e-3):
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Waveform.
+        The input waveform.
 
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     norm : bool
-        If True, divide zero-crossing rate by frame length.
+        If True, divide the zero-crossing rate by the frame length.
 
     softness : float > 0
         A smoothing parameter. The smaller value makes the output closer to the true
@@ -2391,7 +2707,7 @@ def zcross(x, frame_length, norm=False, softness=1e-3):
     Returns
     -------
     out : Tensor [shape=(..., T/L)]
-        Zero-crossing rate.
+        The zero-crossing rate.
 
     """
     return nn.ZeroCrossingAnalysis._func(
@@ -2405,21 +2721,21 @@ def zerodf(x, b, frame_period=80, ignore_gain=False):
     Parameters
     ----------
     x : Tensor [shape=(..., T)]
-        Excitation signal.
+        The excitation signal.
 
     b : Tensor [shape=(..., T/P, M+1)]
-        Filter coefficients.
+        The filter coefficients.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     ignore_gain : bool
-        If True, perform filtering without gain.
+        If True, perform filtering without the gain.
 
     Returns
     -------
     out : Tensor [shape=(..., T)]
-        Output signal.
+        The output signal.
 
     """
     return nn.AllZeroDigitalFilter._func(

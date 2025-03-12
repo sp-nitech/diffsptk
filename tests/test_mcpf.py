@@ -21,8 +21,14 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, M=9, alpha=0.1, beta=0.2, onset=2, L=128, B=2):
-    mcpf = diffsptk.MelCepstrumPostfiltering(M, alpha, beta, onset, L)
+@pytest.mark.parametrize("module", [False, True])
+def test_compatibility(device, module, M=9, alpha=0.1, beta=0.2, onset=2, L=128, B=2):
+    mcpf = U.choice(
+        module,
+        diffsptk.MelCepstrumPostfiltering,
+        diffsptk.functional.mcpf,
+        {"cep_order": M, "alpha": alpha, "beta": beta, "onset": onset, "ir_length": L},
+    )
 
     U.check_compatibility(
         device,

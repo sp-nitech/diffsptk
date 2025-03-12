@@ -18,6 +18,7 @@ import functools
 import subprocess
 import time
 import warnings
+from itertools import islice
 
 import numpy as np
 import soundfile as sf
@@ -35,22 +36,17 @@ def compose(*fs):
     return functools.reduce(compose2_outer_kwargs, fs)
 
 
-def choice(first, a, b, a_params, params={}, n_input=1):
-    if first:
-        return a(**a_params, **params)
-    elif n_input == 1:
+def choice(is_module, module, func, params={}):
+    if is_module:
+        return module(**params)
 
-        def func(x, **kwargs):
-            return b(x, **params, **kwargs)
+    if module._takes_input_size():
+        params = dict(islice(params.items(), 1, None))
 
-        return func
-    elif n_input == 2:
+    def f(*args, **kwargs):
+        return func(*args, **params, **kwargs)
 
-        def func(x, y, **kwargs):
-            return b(x, y, **params, **kwargs)
-
-        return func
-    raise ValueError("n_input must be 1 or 2.")
+    return f
 
 
 def allclose(a, b, rtol=None, atol=None):

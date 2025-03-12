@@ -27,8 +27,7 @@ def test_compatibility(device, module, m=4, M=5, L=16, B=2):
         module,
         diffsptk.CepstrumToAutocorrelation,
         diffsptk.functional.c2acr,
-        {"cep_order": m},
-        {"acr_order": M, "n_fft": L},
+        {"cep_order": m, "acr_order": M, "n_fft": L},
     )
 
     U.check_compatibility(

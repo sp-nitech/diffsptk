@@ -15,26 +15,27 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import get_gamma
+from ..utils.private import check_size
+from ..utils.private import get_gamma
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class GeneralizedCepstrumGainNormalization(nn.Module):
+class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/gnorm.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of filter stages.
 
     References
     ----------
@@ -47,11 +48,9 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
     def __init__(self, cep_order, gamma=0, c=None):
         super().__init__()
 
-        assert 0 <= cep_order
-        assert abs(gamma) <= 1
+        self.in_dim = cep_order + 1
 
-        self.cep_order = cep_order
-        self.gamma = self._precompute(gamma, c)
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
         """Perform cepstrum gain normalization.
@@ -59,12 +58,12 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., M+1)]
-            Generalized cepstrum.
+            The generalized cepstrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Normalized generalized cepstrum.
+            The normalized generalized cepstrum.
 
         Examples
         --------
@@ -75,8 +74,33 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
         tensor([2.2500, 1.3333, 2.0000, 2.6667])
 
         """
-        check_size(x.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(x, self.gamma)
+        check_size(x.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = GeneralizedCepstrumGainNormalization._precompute(
+            x.size(-1) - 1, *args, **kwargs
+        )
+        return GeneralizedCepstrumGainNormalization._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(cep_order, gamma, c):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if 1 < abs(gamma):
+            raise ValueError("gamma must be in [-1, 1].")
+        if c is not None and c < 1:
+            raise ValueError("c must be greater than or equal to 1.")
+
+    @staticmethod
+    def _precompute(cep_order, gamma, c=None):
+        GeneralizedCepstrumGainNormalization._check(cep_order, gamma, c)
+        return (get_gamma(gamma, c),)
 
     @staticmethod
     def _forward(x, gamma):
@@ -90,12 +114,3 @@ class GeneralizedCepstrumGainNormalization(nn.Module):
             y = x1 / z
         y = torch.cat((K, y), dim=-1)
         return y
-
-    @staticmethod
-    def _func(x, gamma, c=None):
-        gamma = GeneralizedCepstrumGainNormalization._precompute(gamma, c)
-        return GeneralizedCepstrumGainNormalization._forward(x, gamma)
-
-    @staticmethod
-    def _precompute(gamma, c):
-        return get_gamma(gamma, c)

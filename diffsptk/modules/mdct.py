@@ -18,35 +18,33 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .frame import Frame
 from .window import Window
 
 
-class ModifiedDiscreteCosineTransform(nn.Module):
+class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
     """This module is a simple cascade of framing, windowing, and modified DCT.
 
     Parameters
     ----------
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     """
 
-    def __init__(self, frame_length, window="sine", **kwargs):
+    def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        self.frame_period = frame_length // 2
-
-        self.mdct = nn.Sequential(
-            Frame(frame_length, self.frame_period),
-            Window(frame_length, window=window, norm="none"),
-            ModifiedDiscreteTransform(frame_length, window, **kwargs),
-        )
+        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
         """Compute modified discrete cosine transform.
@@ -54,12 +52,12 @@ class ModifiedDiscreteCosineTransform(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., 2T/L, L/2)]
-            Spectrum.
+            The spectrum.
 
         Examples
         --------
@@ -74,83 +72,132 @@ class ModifiedDiscreteCosineTransform(nn.Module):
                 [-0.7678,  1.8536]])
 
         """
-        # This is for perfect reconstruction.
-        x = F.pad(x, (0, self.frame_period))
-        return self.mdct(x)
+        return self._forward(x, *self.values, *self.layers)
 
     @staticmethod
-    def _func(x, frame_length, window, **kwargs):
+    def _func(x, *args, **kwargs):
+        values, layers, _ = ModifiedDiscreteCosineTransform._precompute(
+            *args, **kwargs, module=False
+        )
+        return ModifiedDiscreteCosineTransform._forward(x, *values, *layers)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(frame_length, window, transform="cosine", module=True):
+        ModifiedDiscreteCosineTransform._check()
         frame_period = frame_length // 2
+
+        frame = get_layer(
+            module,
+            Frame,
+            dict(
+                frame_length=frame_length,
+                frame_period=frame_period,
+            ),
+        )
+        window_ = get_layer(
+            module,
+            Window,
+            dict(
+                in_length=frame_length,
+                out_length=None,
+                window=window,
+                norm="none",
+            ),
+        )
+        mdt = get_layer(
+            module,
+            ModifiedDiscreteTransform,
+            dict(
+                length=frame_length,
+                window=window,
+                transform=transform,
+            ),
+        )
+        return (frame_period,), (frame, window_, mdt), None
+
+    @staticmethod
+    def _forward(x, frame_period, frame, window, mdt):
+        # This padding is for perfect reconstruction.
         x = F.pad(x, (0, frame_period))
-        y = Frame._func(x, frame_length, frame_period)
-        y = Window._func(y, None, window, "none")
-        y = ModifiedDiscreteTransform._func(y, window, **kwargs)
-        return y
+        return mdt(window(frame(x)))
 
 
-class ModifiedDiscreteTransform(nn.Module):
+class ModifiedDiscreteTransform(BaseFunctionalModule):
     """Oddly stacked modified discrete cosine/sine transform module.
 
     Parameters
     ----------
     length : int >= 2
-        Input length, :math:`L`.
+        The input length, :math:`L`.
 
-    window : bool or str
-        If True, assume that input is windowed.
+    window : str
+        The window type used to determine whether it is rectangular or not.
 
     transform : ['cosine', 'sine']
-        Transform type.
+        The transform type.
 
     """
 
     def __init__(self, length, window, transform="cosine"):
         super().__init__()
 
-        assert 2 <= length
-        assert length % 2 == 0
+        self.in_dim = length
 
-        self.length = length
-        self.register_buffer("W", self._precompute(length, window, transform))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("W", tensors[0])
 
     def forward(self, x):
-        """Apply MDCT/MDST to input.
+        """Apply MDCT/MDST to the input.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Input.
+            The input.
 
         Returns
         -------
         out : Tensor [shape=(..., L/2)]
-            Output.
+            The output.
 
         """
-        check_size(x.size(-1), self.length, "dimension of input")
-        return self._forward(x, self.W)
+        check_size(x.size(-1), self.in_dim, "dimension of input")
+        return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _forward(x, W):
-        return torch.matmul(x, W)
-
-    @staticmethod
-    def _func(x, window, **kwargs):
-        W = ModifiedDiscreteTransform._precompute(
-            x.size(-1), window, dtype=x.dtype, device=x.device, **kwargs
+    def _func(x, *args, **kwargs):
+        _, _, tensors = ModifiedDiscreteTransform._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return ModifiedDiscreteTransform._forward(x, W)
+        return ModifiedDiscreteTransform._forward(x, *tensors)
 
     @staticmethod
-    def _precompute(length, window, transform="cosine", dtype=None, device=None):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(length):
+        if length < 2 or length % 2 == 1:
+            raise ValueError("length must be at least 2 and even.")
+
+    @staticmethod
+    def _precompute(length, window, transform="cosine", device=None, dtype=None):
+        ModifiedDiscreteTransform._check(length)
         L2 = length
         L = L2 // 2
-        n = torch.arange(L2, dtype=torch.double, device=device) + 0.5
+        n = torch.arange(L2, device=device, dtype=torch.double) + 0.5
         k = (torch.pi / L) * n[:L]
         n += L / 2
 
         z = 2 / L
-        if window != "rectangular" or window is True:
+        if window != "rectangular":
             z *= 2
         z **= 0.5
 
@@ -160,4 +207,8 @@ class ModifiedDiscreteTransform(nn.Module):
             W = z * torch.sin(k.unsqueeze(0) * n.unsqueeze(1))
         else:
             raise ValueError("transform must be either 'cosine' or 'sine'.")
-        return to(W, dtype=dtype)
+        return None, None, (to(W, dtype=dtype),)
+
+    @staticmethod
+    def _forward(x, W):
+        return torch.matmul(x, W)

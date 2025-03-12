@@ -39,8 +39,8 @@ def test_compatibility(
         module,
         diffsptk.MLSADigitalFilterStabilityCheck,
         diffsptk.functional.mlsacheck,
-        {"cep_order": M},
         {
+            "cep_order": M,
             "alpha": alpha,
             "pade_order": P,
             "strict": strict,

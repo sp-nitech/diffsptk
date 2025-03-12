@@ -14,90 +14,63 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import hankel
-from ..misc.utils import symmetric_toeplitz
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from ..utils.private import hankel
+from ..utils.private import symmetric_toeplitz
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .freqt import FrequencyTransform
 
 
-class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, alpha):
-        super().__init__()
-
-        L1 = in_order + 1
-        L2 = out_order + 1
-
-        # Make transform matrix.
-        A = torch.zeros((L2, L1), dtype=torch.double)
-        A[:, 0] = (-alpha) ** torch.arange(L2, dtype=torch.double)
-        for i in range(1, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
-
-        self.register_buffer("A", to(A.T))
-
-    def forward(self, x):
-        return torch.matmul(x, self.A)
-
-
-class MelCepstralAnalysis(nn.Module):
+class MelCepstralAnalysis(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mgcep.html>`_
     for details. Note that the current implementation does not use the efficient
     Toeplitz-plus-Hankel system solver.
 
     Parameters
     ----------
-    cep_order : int >= 0
-        Order of mel-cepstrum, :math:`M`.
-
     fft_length : int >= 2M
-        Number of FFT bins, :math:`L`.
+        The number of FFT bins, :math:`L`.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     n_iter : int >= 0
-        Number of iterations.
+        The number of iterations.
 
     """
 
-    def __init__(self, cep_order, fft_length, alpha=0, n_iter=0):
+    def __init__(self, *, fft_length, cep_order, alpha=0, n_iter=0):
         super().__init__()
 
-        assert 0 <= cep_order <= fft_length // 2
-        assert 0 <= n_iter
+        self.in_dim = fft_length // 2 + 1
 
-        self.cep_order = cep_order
-        self.fft_length = fft_length
-        self.n_iter = n_iter
-
-        self.freqt = FrequencyTransform(self.fft_length // 2, self.cep_order, alpha)
-        self.ifreqt = FrequencyTransform(self.cep_order, self.fft_length // 2, -alpha)
-        self.rfreqt = CoefficientsFrequencyTransform(
-            self.fft_length // 2, 2 * self.cep_order, alpha
-        )
-
-        alpha_vector = (-alpha) ** torch.arange(self.cep_order + 1, dtype=torch.double)
-        self.register_buffer("alpha_vector", to(alpha_vector))
+        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
+        self.register_buffer("alpha_vector", tensors[0])
 
     def forward(self, x):
-        """Estimate mel-cepstrum from spectrum.
+        """Perform mel-cepstral analysis.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
+            The power spectrum.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            Mel-cepstrum.
+            The mel-cepstrum.
 
         Examples
         --------
@@ -110,25 +83,103 @@ class MelCepstralAnalysis(nn.Module):
                 [-0.3522,  4.4222, -1.0882, -0.0511]])
 
         """
-        M = self.cep_order
-        H = self.fft_length // 2
-        check_size(x.size(-1), H + 1, "dimension of spectrum")
+        check_size(x.size(-1), self.in_dim, "dimension of spectrum")
+        return self._forward(x, *self.values, *self.layers, **self._buffers)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values, layers, tensors = MelCepstralAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs, dtype=x.dtype, device=x.device
+        )
+        return MelCepstralAnalysis._forward(x, *values, *layers, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(fft_length, cep_order, alpha, n_iter):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if fft_length < 2 * cep_order:
+            raise ValueError("cep_order must be less than or equal to fft_length // 2.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
+
+    @staticmethod
+    def _precompute(fft_length, cep_order, alpha, n_iter, device=None, dtype=None):
+        MelCepstralAnalysis._check(fft_length, cep_order, alpha, n_iter)
+        module = inspect.stack()[1].function == "__init__"
+
+        freqt = get_layer(
+            module,
+            FrequencyTransform,
+            dict(
+                in_order=fft_length // 2,
+                out_order=cep_order,
+                alpha=alpha,
+            ),
+        )
+        ifreqt = get_layer(
+            module,
+            FrequencyTransform,
+            dict(
+                in_order=cep_order,
+                out_order=fft_length // 2,
+                alpha=-alpha,
+            ),
+        )
+        rfreqt = get_layer(
+            module,
+            CoefficientsFrequencyTransform,
+            dict(
+                in_order=fft_length // 2,
+                out_order=2 * cep_order,
+                alpha=alpha,
+            ),
+        )
+
+        alpha_vector = (-alpha) ** torch.arange(
+            cep_order + 1, device=device, dtype=dtype
+        )
+
+        return (
+            (
+                fft_length,
+                n_iter,
+            ),
+            (
+                freqt,
+                ifreqt,
+                rfreqt,
+            ),
+            (alpha_vector,),
+        )
+
+    @staticmethod
+    def _forward(x, fft_length, n_iter, freqt, ifreqt, rfreqt, alpha_vector):
+        M = len(alpha_vector) - 1
+        H = fft_length // 2
 
         log_x = torch.log(x)
         c = torch.fft.irfft(log_x)
         c[..., 0] *= 0.5
         c[..., H] *= 0.5
-        mc = self.freqt(c[..., : H + 1])
+        mc = freqt(c[..., : H + 1])
 
-        for _ in range(self.n_iter):
-            c = self.ifreqt(mc)
-            d = torch.fft.rfft(c, n=self.fft_length).real
+        for _ in range(n_iter):
+            c = ifreqt(mc)
+            d = torch.fft.rfft(c, n=fft_length).real
             d = torch.exp(log_x - d - d)
 
             rd = torch.fft.irfft(d)
-            rt = self.rfreqt(rd[..., : H + 1])
+            rt = rfreqt(rd[..., : H + 1])
             r = rt[..., : M + 1]
-            ra = r - self.alpha_vector
+            ra = r - alpha_vector
 
             R = symmetric_toeplitz(r)
             Q = hankel(rt)
@@ -136,3 +187,57 @@ class MelCepstralAnalysis(nn.Module):
             mc = mc + gradient
 
         return mc
+
+
+class CoefficientsFrequencyTransform(BaseFunctionalModule):
+    def __init__(self, in_order, out_order, alpha=0):
+        super().__init__()
+
+        self.in_dim = in_order + 1
+
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("A", tensors[0])
+
+    def forward(self, c):
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, **self._buffers)
+
+    @staticmethod
+    def _func(c, *args, **kwargs):
+        _, _, tensors = CoefficientsFrequencyTransform._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
+        )
+        return CoefficientsFrequencyTransform._forward(c, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(in_order, out_order, alpha):
+        if in_order < 0:
+            raise ValueError("in_order must be non-negative.")
+        if out_order < 0:
+            raise ValueError("out_order must be non-negative.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, device=None, dtype=None):
+        CoefficientsFrequencyTransform._check(in_order, out_order, alpha)
+        L1 = in_order + 1
+        L2 = out_order + 1
+
+        A = torch.zeros((L2, L1), device=device, dtype=torch.double)
+        A[:, 0] = (-alpha) ** torch.arange(L2, device=device, dtype=torch.double)
+        for i in range(1, L2):
+            i1 = i - 1
+            for j in range(1, L1):
+                j1 = j - 1
+                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+
+        return None, None, (to(A.T, dtype=dtype),)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)

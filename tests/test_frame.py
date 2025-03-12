@@ -31,7 +31,6 @@ def test_compatibility(device, module, fl, fp, center, zmean, T=20):
         module,
         diffsptk.Frame,
         diffsptk.functional.frame,
-        {},
         {"frame_length": fl, "frame_period": fp, "center": center, "zmean": zmean},
     )
 

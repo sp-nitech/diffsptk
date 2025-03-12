@@ -20,30 +20,31 @@ import numpy as np
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import numpy_to_torch
+from ..utils.private import numpy_to_torch
+from .base import BaseNonFunctionalModule
 from .pqmf import make_filter_banks
 
 
-class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
+class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/ipqmf.html>`_
     for details.
 
     Parameters
     ----------
     n_band : int >= 1
-        Number of subbands, :math:`K`.
+        The number of subbands, :math:`K`.
 
     filter_order : int >= 2
-        Order of filter, :math:`M`.
+        The order of the filters, :math:`M`.
 
     alpha : float > 0
-        Stopband attenuation in dB.
+        The stopband attenuation in dB.
 
     learnable : bool
-        Whether to make filter-bank coefficients learnable.
+        Whether to make the filter-bank coefficients learnable.
 
     **kwargs : additional keyword arguments
-        Parameters to find optimal filter-bank coefficients.
+        The parameters to find optimal filter-bank coefficients.
 
     References
     ----------
@@ -58,10 +59,6 @@ class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
 
     def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
         super().__init__()
-
-        assert 1 <= n_band
-        assert 2 <= filter_order
-        assert 0 < alpha
 
         # Make filterbanks.
         filters, is_converged = make_filter_banks(
@@ -84,9 +81,9 @@ class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
         else:
             delay_left = (filter_order - 1) // 2
             delay_right = (filter_order + 1) // 2
-
         self.pad = nn.Sequential(
-            nn.ConstantPad1d((delay_left, 0), 0), nn.ReplicationPad1d((0, delay_right))
+            nn.ConstantPad1d((delay_left, 0), 0),
+            nn.ReplicationPad1d((0, delay_right)),
         )
 
     def forward(self, y, keepdim=True):
@@ -95,15 +92,15 @@ class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
         Parameters
         ----------
         y : Tensor [shape=(B, K, T) or (K, T)]
-            Subband waveforms.
+            The subband waveforms.
 
         keepdim : bool
-            If True, the output shape is (B, 1, T) instead (B, T).
+            If True, the output shape is (B, 1, T) instead of (B, T).
 
         Returns
         -------
         out : Tensor [shape=(B, 1, T) or (B, T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------
@@ -119,7 +116,8 @@ class PseudoQuadratureMirrorFilterBankSynthesis(nn.Module):
         """
         if y.dim() == 2:
             y = y.unsqueeze(0)
-        assert y.dim() == 3, "Input must be 3D tensor."
+        if y.dim() != 3:
+            raise ValueError("Input must be 3D tensor.")
 
         x = F.conv1d(self.pad(y), self.filters)
         if not keepdim:

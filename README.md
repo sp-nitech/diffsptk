@@ -3,7 +3,7 @@
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
 [![Latest Manual](https://img.shields.io/badge/docs-latest-blue.svg)](https://sp-nitech.github.io/diffsptk/latest/)
-[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/2.5.0/)
+[![Stable Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.0.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.6.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
@@ -20,7 +20,7 @@
 
 ## Documentation
 
-- See [this page](https://sp-nitech.github.io/diffsptk/latest/) for the reference manual.
+- See [this page](https://sp-nitech.github.io/diffsptk/3.0.0/) for the reference manual.
 - Our [paper](https://www.isca-speech.org/archive/ssw_2023/yoshimura23_ssw.html) is available on the ISCA Archive.
 
 ## Installation
@@ -59,8 +59,8 @@ X = stft(x)
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
 mcep = diffsptk.MelCepstralAnalysis(
-    cep_order=M,
     fft_length=n_fft,
+    cep_order=M,
     alpha=alpha,
     n_iter=10,
 )
@@ -140,12 +140,14 @@ pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
     frame_period=fp,
     sample_rate=sr,
     fft_length=n_fft,
+    algorithm="cheap-trick",
+    out_format="power",
 )
 H = pitch_spec(x, f0)
 
 # Estimate mel-cepstrum of x.
 alpha = diffsptk.get_alpha(sr)
-mcep = diffsptk.MelCepstralAnalysis(cep_order=M, fft_length=n_fft, alpha=alpha)
+mcep = diffsptk.MelCepstralAnalysis(fft_length=n_fft, cep_order=M, alpha=alpha)
 mc_a = mcep(A)
 mc_h = mcep(H)
 
@@ -221,8 +223,8 @@ X = stft(x)
 
 # Extract log mel-spectrogram.
 fbank = diffsptk.MelFilterBankAnalysis(
-    n_channel=n_channel,
     fft_length=n_fft,
+    n_channel=n_channel,
     sample_rate=sr,
 )
 Y = fbank(X)
@@ -230,9 +232,9 @@ print(Y.shape)
 
 # Extract MFCC.
 mfcc = diffsptk.MFCC(
+    fft_length=n_fft,
     mfcc_order=M,
     n_channel=n_channel,
-    fft_length=n_fft,
     sample_rate=sr,
 )
 Y = mfcc(X)
@@ -240,9 +242,9 @@ print(Y.shape)
 
 # Extract PLP.
 plp = diffsptk.PLP(
+    fft_length=n_fft,
     plp_order=M,
     n_channel=n_channel,
-    fft_length=n_fft,
     sample_rate=sr,
 )
 Y = plp(X)
@@ -346,7 +348,7 @@ mdct = diffsptk.MDCT(fl)
 c = mdct(x)
 
 # Reconstruct x.
-imdct = diffpstk.IMDCT(fl)
+imdct = diffsptk.IMDCT(fl)
 x_hat = imdct(c, out_length=x.size(0))
 
 # Write reconstructed waveform.

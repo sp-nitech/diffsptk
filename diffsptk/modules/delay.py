@@ -14,46 +14,46 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import torch
-from torch import nn
+import torch.nn.functional as F
+
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class Delay(nn.Module):
+class Delay(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/delay.html>`_
     for details.
 
     Parameters
     ----------
     start : int
-        Start point, :math:`S`. If negative, advance signal.
+        The start point, :math:`S`. If negative, advance the signal.
 
     keeplen : bool
-        If True, output has the same length of input.
+        If True, the output has the same length of the input.
 
     dim : int
-        Dimension along which to shift the tensors.
+        The dimension along which to delay the tensors.
 
     """
 
     def __init__(self, start, keeplen=False, dim=-1):
         super().__init__()
 
-        self.start = start
-        self.keeplen = keeplen
-        self.dim = dim
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
-        """Delay signal.
+        """Delay the input signal.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T, ...)]
-            Signal.
+            The input signal.
 
         Returns
         -------
         out : Tensor [shape=(..., T-S, ...)] or [shape=(..., T, ...)]
-            Delayed signal.
+            The delayed signal.
 
         Examples
         --------
@@ -64,30 +64,46 @@ class Delay(nn.Module):
         tensor([0., 0., 1., 2., 3.])
 
         """
-        return self._forward(x, self.start, self.keeplen, self.dim)
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = Delay._precompute(*args, **kwargs)
+        return Delay._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(start, keeplen, dim):
+        Delay._check()
+        return start, keeplen, dim
 
     @staticmethod
     def _forward(x, start=0, keeplen=False, dim=-1):
-        # Generate zeros if needed.
-        if 0 < start or keeplen:
-            shape = list(x.shape)
-            shape[dim] = abs(start)
-            zeros = torch.zeros(*shape, dtype=x.dtype, device=x.device)
+        if not -x.ndim <= dim < x.ndim:
+            raise ValueError(f"Dimension {dim} out of range.")
 
-        # Delay signal.
+        if start == 0:
+            return x
+
+        dim = dim % x.ndim
+        pad = [0] * (2 * x.ndim)
         if 0 < start:
-            y = torch.cat((zeros, x), dim=dim)
+            # Delay case:
+            pad[2 * (x.ndim - 1 - dim)] = start
+            y = F.pad(x, pad)
             if keeplen:
-                y, _ = torch.split(y, [y.size(dim) - start, start], dim=dim)
-            return y
-
-        # Advance signal.
-        if start < 0:
-            _, y = torch.split(x, [-start, x.size(dim) + start], dim=dim)
+                y = y.narrow(dim, 0, x.size(dim))
+        else:
+            # Advance case:
+            y = x.narrow(dim, -start, x.size(dim) + start)
             if keeplen:
-                y = torch.cat((y, zeros), dim=dim)
-            return y
-
-        return x
-
-    _func = _forward
+                pad[2 * (x.ndim - 1 - dim) + 1] = -start
+                y = F.pad(y, pad)
+        return y

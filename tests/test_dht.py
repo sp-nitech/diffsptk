@@ -29,8 +29,7 @@ def test_convolution(device, module, dht_type, L=8, B=2):
         module,
         diffsptk.DHT,
         diffsptk.functional.dht,
-        {"dht_length": L},
-        {"dht_type": dht_type},
+        {"dht_length": L, "dht_type": dht_type},
     )
 
     if dht_type == 1:

@@ -38,7 +38,6 @@ def test_compatibility(
         module,
         diffsptk.DRC,
         diffsptk.functional.drc,
-        {},
         {
             "threshold": threshold,
             "ratio": ratio,

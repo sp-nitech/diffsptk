@@ -30,8 +30,7 @@ def test_compatibility(device, module, dst_type, L=8, B=2):
         module,
         diffsptk.IDST,
         diffsptk.functional.idst,
-        {"dst_length": L},
-        {"dst_type": dst_type},
+        {"dst_length": L, "dst_type": dst_type},
     )
 
     U.check_compatibility(

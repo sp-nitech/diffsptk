@@ -28,7 +28,6 @@ def test_compatibility(device, module, P, N=10):
         module,
         diffsptk.LinearInterpolation,
         diffsptk.functional.linear_intpl,
-        {},
         {"upsampling_factor": P},
     )
 

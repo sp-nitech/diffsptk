@@ -27,8 +27,7 @@ def test_compatibility(device, module, M=14, L=30, B=2):
         module,
         diffsptk.LPC,
         diffsptk.functional.lpc,
-        {"frame_length": L},
-        {"lpc_order": M},
+        {"frame_length": L, "lpc_order": M},
     )
 
     U.check_compatibility(

@@ -27,9 +27,7 @@ def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
         module,
         diffsptk.GroupDelay,
         diffsptk.functional.grpdelay,
-        {},
         {"fft_length": L, "alpha": alpha, "gamma": gamma},
-        n_input=2,
     )
 
     tmp1 = "grpdelay.tmp1"
@@ -54,16 +52,8 @@ def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-def test_compatibility_b(device, module, L=16, B=2):
-    grpdelay = U.choice(
-        module,
-        diffsptk.GroupDelay,
-        diffsptk.functional.grpdelay,
-        {},
-        {"fft_length": L},
-        n_input=1,
-    )
+def test_compatibility_b(device, L=16, B=2):
+    grpdelay = diffsptk.GroupDelay(L)
 
     M = L // 2
     U.check_compatibility(
@@ -79,16 +69,8 @@ def test_compatibility_b(device, module, L=16, B=2):
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-def test_compatibility_a(device, module, L=16, B=2):
-    grpdelay = U.choice(
-        module,
-        diffsptk.GroupDelay,
-        diffsptk.functional.grpdelay,
-        {},
-        {"fft_length": L},
-        n_input=2,
-    )
+def test_compatibility_a(device, L=16, B=2):
+    grpdelay = diffsptk.GroupDelay(L)
 
     tmp = "grpdelay.tmp"
     N = L // 4
@@ -101,6 +83,5 @@ def test_compatibility_a(device, module, L=16, B=2):
         [f"rm {tmp}"],
         dx=N,
         dy=L // 2 + 1,
-        opt={} if module else {"x": None},
-        key=["a"] if module else ["y"],
+        key=["a"],
     )

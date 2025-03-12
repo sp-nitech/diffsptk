@@ -15,28 +15,29 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class LogAreaRatioToParcorCoefficients(nn.Module):
+class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lar2par.html>`_
     for details.
 
     Parameters
     ----------
     par_order : int >= 0
-        Order of PARCOR, :math:`M`.
+        The order of the PARCOR coefficients, :math:`M`.
 
     """
 
     def __init__(self, par_order):
         super().__init__()
 
-        assert 0 <= par_order
+        self.in_dim = par_order + 1
 
-        self.par_order = par_order
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, g):
         """Convert LAR to PARCOR.
@@ -44,12 +45,12 @@ class LogAreaRatioToParcorCoefficients(nn.Module):
         Parameters
         ----------
         g : Tensor [shape=(..., M+1)]
-            Log area ratio.
+            The log area ratio.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            PARCOR coefficients.
+            The PARCOR coefficients.
 
         Examples
         --------
@@ -60,13 +61,32 @@ class LogAreaRatioToParcorCoefficients(nn.Module):
         tensor([0.1000, 0.0997, 0.1489, 0.1974])
 
         """
-        check_size(g.size(-1), self.par_order + 1, "dimension of parcor")
-        return self._forward(g)
+        check_size(g.size(-1), self.in_dim, "dimension of parcor")
+        return self._forward(g, *self.values)
 
     @staticmethod
-    def _forward(g):
-        K, g = torch.split(g, [1, g.size(-1) - 1], dim=-1)
-        k = torch.cat((K, torch.tanh(0.5 * g)), dim=-1)
-        return k
+    def _func(x, *args, **kwargs):
+        values = LogAreaRatioToParcorCoefficients._precompute(
+            x.size(-1) - 1, *args, **kwargs
+        )
+        return LogAreaRatioToParcorCoefficients._forward(x, *values)
 
-    _func = _forward
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(par_order):
+        if par_order < 0:
+            raise ValueError("par_order must be non-negative.")
+
+    @staticmethod
+    def _precompute(par_order):
+        LogAreaRatioToParcorCoefficients._check(par_order)
+        return (0.5,)
+
+    @staticmethod
+    def _forward(g, c):
+        K, g = torch.split(g, [1, g.size(-1) - 1], dim=-1)
+        k = torch.cat((K, torch.tanh(c * g)), dim=-1)
+        return k

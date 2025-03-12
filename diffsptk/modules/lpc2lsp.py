@@ -16,31 +16,32 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import TAU
-from ..misc.utils import check_size
-from ..misc.utils import deconv1d
+from ..utils.private import TAU
+from ..utils.private import check_size
+from ..utils.private import deconv1d
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 
 
-class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
+class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/lpc2lsp.html>`_
     for details.
 
     Parameters
     ----------
     lpc_order : int >= 0
-        Order of LPC, :math:`M`.
+        The order of the input LPC, :math:`M`.
 
     log_gain : bool
-        If True, output gain in log scale.
+        If True, output the gain in logarithmic scale.
 
     sample_rate : int >= 1 or None
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     out_format : ['radian', 'cycle', 'khz', 'hz']
-        Output format.
+        The output format.
 
     References
     ----------
@@ -55,14 +56,11 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= lpc_order
+        self.in_dim = lpc_order + 1
 
-        self.lpc_order = lpc_order
-        self.log_gain = log_gain
-        self.formatter = self._formatter(out_format, sample_rate)
-        kernel_p, kernel_q = self._precompute(self.lpc_order)
-        self.register_buffer("kernel_p", kernel_p)
-        self.register_buffer("kernel_q", kernel_q)
+        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("kernel_p", tensors[0])
+        self.register_buffer("kernel_q", tensors[1])
 
     def forward(self, a):
         """Convert LPC to LSP.
@@ -70,12 +68,12 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
         Parameters
         ----------
         a : Tensor [shape=(..., M+1)]
-            LPC coefficients.
+            The LPC coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., M+1)]
-            LSP frequencies.
+            The LSP frequencies.
 
         Examples
         --------
@@ -92,18 +90,69 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
         tensor([2.7969, 0.9037, 1.8114, 2.4514])
 
         """
-        check_size(a.size(-1), self.lpc_order + 1, "dimension of LPC")
-        return self._forward(
-            a, self.log_gain, self.formatter, self.kernel_p, self.kernel_q
+        check_size(a.size(-1), self.in_dim, "dimension of LPC")
+        return self._forward(a, *self.values, **self._buffers)
+
+    @staticmethod
+    def _func(a, *args, **kwargs):
+        values, _, tensors = (
+            LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
+                a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
+            )
         )
+        return LinearPredictiveCoefficientsToLineSpectralPairs._forward(
+            a, *values, *tensors
+        )
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(lpc_order, log_gain, sample_rate, out_format):
+        if lpc_order < 0:
+            raise ValueError("lpc_order must be non-negative.")
+        if out_format in (2, 3, "hz", "khz") and (
+            sample_rate is None or sample_rate <= 0
+        ):
+            raise ValueError("sample_rate must be positive.")
+
+    @staticmethod
+    def _precompute(
+        lpc_order, log_gain, sample_rate, out_format, device=None, dtype=None
+    ):
+        LinearPredictiveCoefficientsToLineSpectralPairs._check(
+            lpc_order, log_gain, sample_rate, out_format
+        )
+
+        if out_format in (0, "radian"):
+            formatter = lambda x: x
+        elif out_format in (1, "cycle"):
+            formatter = lambda x: x / TAU
+        elif out_format in (2, "khz"):
+            formatter = lambda x: x / (TAU / sample_rate * 1000)
+        elif out_format in (3, "hz"):
+            formatter = lambda x: x / (TAU / sample_rate)
+        else:
+            raise ValueError(f"out_format {out_format} is not supported.")
+
+        params = {"device": device, "dtype": dtype}
+        if lpc_order % 2 == 0:
+            kernel_p = torch.tensor([1.0, -1.0], **params)
+            kernel_q = torch.tensor([1.0, 1.0], **params)
+        else:
+            kernel_p = torch.tensor([1.0, 0.0, -1.0], **params)
+            kernel_q = torch.tensor([1.0], **params)
+
+        return (log_gain, formatter), None, (kernel_p, kernel_q)
 
     @staticmethod
     def _forward(a, log_gain, formatter, kernel_p, kernel_q):
         M = a.size(-1) - 1
         K, a = torch.split(a, [1, M], dim=-1)
-
         if log_gain:
             K = torch.log(K)
+
         if M == 0:
             return K
 
@@ -128,39 +177,3 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(nn.Module):
         w = formatter(w)
         w = torch.cat((K, w), dim=-1)
         return w
-
-    @staticmethod
-    def _func(a, log_gain, sample_rate, out_format):
-        formatter = LinearPredictiveCoefficientsToLineSpectralPairs._formatter(
-            out_format, sample_rate
-        )
-        kernels = LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
-            a.size(-1) - 1, dtype=a.dtype, device=a.device
-        )
-        return LinearPredictiveCoefficientsToLineSpectralPairs._forward(
-            a, log_gain, formatter, *kernels
-        )
-
-    @staticmethod
-    def _precompute(lpc_order, dtype=None, device=None):
-        if lpc_order % 2 == 0:
-            kernel_p = torch.tensor([1.0, -1.0], device=device)
-            kernel_q = torch.tensor([1.0, 1.0], device=device)
-        else:
-            kernel_p = torch.tensor([1.0, 0.0, -1.0], device=device)
-            kernel_q = torch.tensor([1.0], device=device)
-        return kernel_p, kernel_q
-
-    @staticmethod
-    def _formatter(out_format, sample_rate):
-        if out_format in (0, "radian"):
-            return lambda x: x
-        elif out_format in (1, "cycle"):
-            return lambda x: x / TAU
-        elif out_format in (2, "khz"):
-            assert sample_rate is not None and 0 < sample_rate
-            return lambda x: x * (sample_rate / 1000 / TAU)
-        elif out_format in (3, "hz"):
-            assert sample_rate is not None and 0 < sample_rate
-            return lambda x: x * (sample_rate / TAU)
-        raise ValueError(f"out_format {out_format} is not supported.")

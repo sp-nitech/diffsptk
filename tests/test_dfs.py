@@ -24,8 +24,9 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("b", [(1,), (-0.42, 1)])
 @pytest.mark.parametrize("a", [(1,), (1, -0.42)])
-def test_compatibility(device, b, a, T=100):
-    dfs = diffsptk.IIR(b, a, ir_length=30)
+@pytest.mark.parametrize("ir_length", [None, 30])
+def test_compatibility(device, b, a, ir_length, T=100):
+    dfs = diffsptk.IIR(b, a, ir_length=ir_length)
 
     bb = " ".join([str(x) for x in b])
     aa = " ".join([str(x) for x in a])
@@ -54,6 +55,8 @@ def test_compatibility_func(b=[-0.42, 1], a=[1, -0.42], T=20):
     assert U.allclose(y1, y2)
 
 
-def test_learnable(b=[-0.42, 1], T=20):
-    dfs = diffsptk.IIR(b, learnable=True)
+def test_learnable(b=[-0.42, 1], a=[1, -0.42], T=20):
+    dfs = diffsptk.IIR(b, None, learnable=True)
+    U.check_learnable(dfs, (T,))
+    dfs = diffsptk.IIR(None, a, learnable=True)
     U.check_learnable(dfs, (T,))

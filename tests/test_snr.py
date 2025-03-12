@@ -43,9 +43,7 @@ def test_compatibility(device, module, cond, B=2, T=100, L=20):
         module,
         diffsptk.SNR,
         diffsptk.functional.snr,
-        {},
         {"frame_length": frame_length, "full": True, "reduction": reduction},
-        n_input=2,
     )
 
     tmp1 = "snr.tmp1"

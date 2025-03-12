@@ -31,7 +31,6 @@ def test_compatibility(device, module, window, L=512):
         module,
         diffsptk.IMDCT,
         diffsptk.functional.imdct,
-        {},
         mdct_params,
     )
 

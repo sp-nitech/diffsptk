@@ -32,7 +32,7 @@ def test_compatibility_d4c(device, out_format, P=80, sr=16000, L=1024, B=2):
         P, sr, L, algorithm="cheap-trick", out_format=out_format
     )
 
-    ksr = sr // 1000
+    s = sr // 1000
     tmp1 = "pitch_spec.tmp1"
     tmp2 = "pitch_spec.tmp2"
     U.check_compatibility(
@@ -40,10 +40,10 @@ def test_compatibility_d4c(device, out_format, P=80, sr=16000, L=1024, B=2):
         pitch_spec,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
-            f"pitch -s {ksr} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
+            f"pitch -s {s} -p {P} -L 80 -H 180 -o 1 {tmp1} > {tmp2}",
         ],
         [f"cat {tmp1}", f"cat {tmp2}"],
-        f"pitch_spec -x -s {ksr} -p {P} -l {L} -q 1 -o {out_format} {tmp2} < {tmp1}",
+        f"pitch_spec -x -s {s} -p {P} -l {L} -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
         rtol=1e-5 if device == "cpu" else 1e-4,
@@ -66,10 +66,8 @@ def test_compatibility_straight(device, out_format, P=80, sr=16000, L=2048, B=2)
     cmd = "x2x +sd tools/SPTK/asset/data.short"
     x = U.call(cmd)
 
-    ksr = sr // 1000
-    cmd = (
-        f"x2x +sd tools/SPTK/asset/data.short | pitch -s {ksr} -p {P} -L 80 -H 180 -o 1"
-    )
+    s = sr // 1000
+    cmd = f"x2x +sd tools/SPTK/asset/data.short | pitch -s {s} -p {P} -L 80 -H 180 -o 1"
     f0 = U.call(cmd)
 
     pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
@@ -78,7 +76,7 @@ def test_compatibility_straight(device, out_format, P=80, sr=16000, L=2048, B=2)
 
     sp_formats = {0: "db", 1: "log", 2: "linear", 3: "power"}
     sp = pylstraight.extract_sp(
-        x, sr, f0, frame_shift=P / ksr, sp_format=sp_formats[out_format]
+        x, sr, f0, frame_shift=P / s, sp_format=sp_formats[out_format]
     )
 
     sp_hat = (

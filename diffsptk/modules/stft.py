@@ -14,51 +14,58 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
-from ..misc.utils import Lambda
+from ..utils.private import Lambda
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
 from .window import Window
 
 
-class ShortTimeFourierTransform(nn.Module):
+class ShortTimeFourierTransform(BaseFunctionalModule):
     """This module is a simple cascade of framing, windowing, and spectrum calculation.
 
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     fft_length : int >= L
-        Number of FFT bins, :math:`N`.
+        The number of FFT bins, :math:`N`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     zmean : bool
         If True, perform mean subtraction on each frame.
 
+    mode : ['constant', 'reflect', 'replicate', 'circular']
+        The padding method.
+
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-        'rectangular']
-        Window type.
+              'rectangular', 'nuttall']
+        The window type.
 
     norm : ['none', 'power', 'magnitude']
-        Normalization type of window.
+        The normalization type of the window.
 
     eps : float >= 0
-        A small value added to power spectrum.
+        A small value added to the power spectrum.
 
     relative_floor : float < 0 or None
-        Relative floor in decibels.
+        The relative floor of the power spectrum in dB.
 
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
-        Output format.
+        The output format.
 
     """
 
@@ -70,6 +77,7 @@ class ShortTimeFourierTransform(nn.Module):
         *,
         center=True,
         zmean=False,
+        mode="constant",
         window="blackman",
         norm="power",
         eps=1e-9,
@@ -78,20 +86,8 @@ class ShortTimeFourierTransform(nn.Module):
     ):
         super().__init__()
 
-        self.stft = nn.Sequential(
-            Frame(frame_length, frame_period, center=center, zmean=zmean),
-            Window(frame_length, fft_length, window=window, norm=norm),
-            (
-                Lambda(torch.fft.rfft)
-                if out_format == "complex"
-                else Spectrum(
-                    fft_length,
-                    eps=eps,
-                    relative_floor=relative_floor,
-                    out_format=out_format,
-                )
-            ),
-        )
+        _, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, x):
         """Compute short-time Fourier transform.
@@ -99,12 +95,12 @@ class ShortTimeFourierTransform(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The input waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T/P, N/2+1)]
-            Spectrum.
+            The output spectrogram.
 
         Examples
         --------
@@ -119,26 +115,74 @@ class ShortTimeFourierTransform(nn.Module):
                 [9.0000, 9.0000, 9.0000, 9.0000, 9.0000]])
 
         """
-        return self.stft(x)
+        return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(
-        x,
+    def _func(x, *args, **kwargs):
+        _, layers, _ = ShortTimeFourierTransform._precompute(*args, **kwargs)
+        return ShortTimeFourierTransform._forward(x, *layers)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(
         frame_length,
         frame_period,
         fft_length,
         center,
         zmean,
+        mode,
         window,
         norm,
         eps,
         relative_floor,
         out_format,
     ):
-        y = Frame._func(x, frame_length, frame_period, center, zmean)
-        y = Window._func(y, fft_length, window, norm)
+        ShortTimeFourierTransform._check()
+        module = inspect.stack()[1].function == "__init__"
+
+        frame = get_layer(
+            module,
+            Frame,
+            dict(
+                frame_length=frame_length,
+                frame_period=frame_period,
+                center=center,
+                zmean=zmean,
+                mode=mode,
+            ),
+        )
+        window_ = get_layer(
+            module,
+            Window,
+            dict(
+                in_length=frame_length,
+                out_length=fft_length,
+                window=window,
+                norm=norm,
+            ),
+        )
         if out_format == "complex":
-            y = torch.fft.rfft(y)
+            spec = Lambda(torch.fft.rfft)
         else:
-            y = Spectrum._func(y, None, fft_length, eps, relative_floor, out_format)
-        return y
+            spec = get_layer(
+                module,
+                Spectrum,
+                dict(
+                    fft_length=fft_length,
+                    eps=eps,
+                    relative_floor=relative_floor,
+                    out_format=out_format,
+                ),
+            )
+        return None, (frame, window_, spec), None
+
+    @staticmethod
+    def _forward(x, frame, window, spec):
+        return spec(window(frame(x)))

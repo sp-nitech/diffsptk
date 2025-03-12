@@ -27,8 +27,7 @@ def test_compatibility(device, module, M=9, alpha=0.1, B=2):
         module,
         diffsptk.MelCepstrumToMLSADigitalFilterCoefficients,
         diffsptk.functional.mc2b,
-        {"cep_order": M},
-        {"alpha": alpha},
+        {"cep_order": M, "alpha": alpha},
     )
 
     U.check_compatibility(

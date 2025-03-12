@@ -15,38 +15,36 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
+from ..utils.private import check_size
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class CepstrumToAutocorrelation(nn.Module):
+class CepstrumToAutocorrelation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/c2acr.html>`_
     for details.
 
     Parameters
     ----------
     cep_order : int >= 0
-        Order of cepstrum, :math:`M`.
+        The order of the cepstrum, :math:`M`.
 
     acr_order : int >= 0
-        Order of autocorrelation, :math:`N`.
+        The order of the autocorrelation, :math:`N`.
 
     n_fft : int >> N
-        Number of FFT bins. Accurate conversion requires the large value.
+        The number of FFT bins used for conversion. The accurate conversion requires the
+        large value.
 
     """
 
     def __init__(self, cep_order, acr_order, n_fft=512):
         super().__init__()
 
-        assert 0 <= cep_order
-        assert 0 <= acr_order
-        assert max(cep_order + 1, acr_order + 1) <= n_fft
+        self.in_dim = cep_order + 1
 
-        self.cep_order = cep_order
-        self.acr_order = acr_order
-        self.n_fft = n_fft
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, c):
         """Convert cepstrum to autocorrelation.
@@ -54,12 +52,12 @@ class CepstrumToAutocorrelation(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M+1)]
-            Cepstral coefficients.
+            The cepstral coefficients.
 
         Returns
         -------
         out : Tensor [shape=(..., N+1)]
-            Autocorrelation.
+            The autocorrelation.
 
         Examples
         --------
@@ -72,8 +70,31 @@ class CepstrumToAutocorrelation(nn.Module):
         tensor([ 1.0672, -0.0485, -0.1564,  0.2666, -0.4551])
 
         """
-        check_size(c.size(-1), self.cep_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.acr_order, self.n_fft)
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, *self.values)
+
+    @staticmethod
+    def _func(c, *args, **kwargs):
+        values = CepstrumToAutocorrelation._precompute(c.size(-1) - 1, *args, **kwargs)
+        return CepstrumToAutocorrelation._forward(c, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(cep_order, acr_order, n_fft):
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if acr_order < 0:
+            raise ValueError("acr_order must be non-negative.")
+        if n_fft < max(cep_order + 1, acr_order + 1):
+            raise ValueError("n_fft must be large value.")
+
+    @staticmethod
+    def _precompute(cep_order, acr_order, n_fft):
+        CepstrumToAutocorrelation._check(cep_order, acr_order, n_fft)
+        return (acr_order, n_fft)
 
     @staticmethod
     def _forward(c, acr_order, n_fft):
@@ -81,5 +102,3 @@ class CepstrumToAutocorrelation(nn.Module):
         x = torch.exp(2 * x)
         r = torch.fft.hfft(x, norm="forward")[..., : acr_order + 1]
         return r
-
-    _func = _forward

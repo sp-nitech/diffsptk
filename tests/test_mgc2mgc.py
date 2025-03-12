@@ -50,8 +50,8 @@ def test_compatibility(
         module,
         diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum,
         diffsptk.functional.mgc2mgc,
-        {"in_order": m},
         {
+            "in_order": m,
             "out_order": M,
             "in_alpha": a,
             "out_alpha": A,

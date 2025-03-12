@@ -15,32 +15,33 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 
 
-class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
+class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
     """Second-order all-pass inverse frequency transform module.
 
     Parameters
     ----------
     in_order : int >= 0
-        Order of input sequence, :math:`M_1`.
+        The order of the input sequence, :math:`M_1`.
 
     out_order : int >= 0
-        Order of output sequence, :math:`M_2`.
+        The order of the output sequence, :math:`M_2`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     theta : float in [0, 1]
-        Emphasis frequency, :math:`\\theta`.
+        The emphasis frequency, :math:`\\theta`.
 
-    n_fft : int >> M1
-        Number of FFT bins. Accurate conversion requires the large value.
+    n_fft : int >> M2
+        The number of FFT bins. The accurate conversion requires the large value.
 
     References
     ----------
@@ -53,16 +54,10 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
     def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):
         super().__init__()
 
-        assert 0 <= in_order < n_fft
-        assert 0 <= out_order
-        assert abs(alpha) < 1
-        assert 0 <= theta <= 1
+        self.in_dim = in_order + 1
 
-        self.in_order = in_order
-        self.out_order = out_order
-        self.register_buffer(
-            "A", self._precompute(self.in_order, self.out_order, alpha, theta, n_fft)
-        )
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("A", tensors[0])
 
     def forward(self, c):
         """Perform second-order all-pass inverse frequency transform.
@@ -70,12 +65,12 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
         Parameters
         ----------
         c : Tensor [shape=(..., M1+1)]
-            Warped sequence.
+            The warped sequence.
 
         Returns
         -------
         out : Tensor [shape=(..., M2+1)]
-            Output sequence.
+            The output sequence.
 
         Examples
         --------
@@ -92,30 +87,35 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
         tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
 
         """
-        check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
-        return self._forward(c, self.A)
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, **self._buffers)
 
     @staticmethod
-    def _forward(c, A):
-        return torch.matmul(c, A)
-
-    @staticmethod
-    def _func(c, out_order, alpha, theta, n_fft):
-        in_order = c.size(-1) - 1
-        A = SecondOrderAllPassInverseFrequencyTransform._precompute(
-            in_order, out_order, alpha, theta, n_fft, dtype=c.dtype, device=c.device
+    def _func(c, *args, **kwargs):
+        _, _, tensors = SecondOrderAllPassInverseFrequencyTransform._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
-        return SecondOrderAllPassInverseFrequencyTransform._forward(c, A)
+        return SecondOrderAllPassInverseFrequencyTransform._forward(c, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        SecondOrderAllPassFrequencyTransform._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(in_order, out_order, alpha, theta, n_fft, dtype=None, device=None):
+        SecondOrderAllPassInverseFrequencyTransform._check(
+            in_order, out_order, alpha, theta
+        )
         theta *= torch.pi
-
-        k = torch.arange(n_fft, dtype=torch.double, device=device)
+        k = torch.arange(n_fft, device=device, dtype=torch.double)
         omega = k * (2 * torch.pi / n_fft)
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 
-        m1 = torch.arange(-in_order, in_order + 1, dtype=torch.double, device=device)
+        m1 = torch.arange(-in_order, in_order + 1, device=device, dtype=torch.double)
         wwm1 = ww.reshape(-1, 1) * m1.reshape(1, -1)
         real = torch.cos(wwm1)
         imag = -torch.sin(wwm1)
@@ -127,4 +127,8 @@ class SecondOrderAllPassInverseFrequencyTransform(nn.Module):
         A = A[:L, (M - 1) :]
         A[1:, 0] *= 2
         A[0, 1:] /= 2
-        return to(A.T, dtype=dtype)
+        return None, None, (to(A.T, dtype=dtype),)
+
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)

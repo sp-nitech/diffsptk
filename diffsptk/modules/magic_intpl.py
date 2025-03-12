@@ -15,26 +15,28 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..misc.utils import UNVOICED_SYMBOL
+from ..utils.private import UNVOICED_SYMBOL
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class MagicNumberInterpolation(nn.Module):
+class MagicNumberInterpolation(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/magic_intpl.html>`_
     for details.
 
     Parameters
     ----------
     magic_number : float
-        Magic number.
+        The magic number to be interpolated.
 
     """
 
     def __init__(self, magic_number=UNVOICED_SYMBOL):
         super().__init__()
 
-        self.register_buffer("magic_number", self._precompute(magic_number))
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("magic_number", tensors[0])
 
     def forward(self, x):
         """Interpolate magic number.
@@ -42,12 +44,12 @@ class MagicNumberInterpolation(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-            Data containing magic number.
+            The data containing magic number.
 
         Returns
         -------
         out : Tensor [shape=(B, N, D) or (N, D) or (N,)]
-            Data after interpolation.
+            The data after interpolation.
 
         Examples
         --------
@@ -60,24 +62,32 @@ class MagicNumberInterpolation(nn.Module):
         tensor([1., 1., 2., 3., 4., 4.])
 
         """
-        return self._forward(x, self.magic_number)
+        return self._forward(x, **self._buffers)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        _, _, tensors = MagicNumberInterpolation._precompute(
+            *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return MagicNumberInterpolation._forward(x, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check():
+        pass
+
+    @staticmethod
+    def _precompute(magic_number, device=None, dtype=None):
+        MagicNumberInterpolation._check()
+        magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
+        return None, None, (magic_number,)
 
     @staticmethod
     def _forward(x, magic_number):
         return MagicNumberInterpolationImpl.apply(x, magic_number)
-
-    @staticmethod
-    def _func(x, magic_number):
-        magic_number = MagicNumberInterpolation._precompute(
-            magic_number, dtype=x.dtype, device=x.device
-        )
-        return MagicNumberInterpolation._forward(x, magic_number)
-
-    @staticmethod
-    def _precompute(magic_number, dtype=None, device=None):
-        if not torch.is_tensor(magic_number):
-            magic_number = torch.tensor(magic_number, dtype=dtype, device=device)
-        return magic_number
 
 
 class MagicNumberInterpolationImpl(torch.autograd.Function):
@@ -85,7 +95,7 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
     def forward(ctx, x, magic_number):
         ctx.save_for_backward(x, magic_number)
 
-        # Pass through if magic number is not found
+        # Pass through if magic number is not found.
         if torch.all(x != magic_number):
             return x
 
@@ -94,7 +104,8 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
             x = x.view(1, -1, 1)
         elif d == 2:
             x = x.unsqueeze(0)
-        assert x.dim() == 3, "Input must be 3D tensor."
+        if x.dim() != 3:
+            raise ValueError("Input must be 1D, 2D, or 3D tensor.")
         B, T, D = x.shape
 
         def compute_lerp_inputs(x, magic_number):

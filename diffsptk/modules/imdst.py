@@ -16,26 +16,29 @@
 
 from torch import nn
 
-from .imdct import InverseModifiedDiscreteCosineTransform as IMDST
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
+from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
 
 
-class InverseModifiedDiscreteSineTransform(nn.Module):
+class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
     """This is the opposite module to :func:`~diffsptk.ModifiedDiscreteSineTransform`.
 
     Parameters
     ----------
     frame_length : int >= 2
-        Frame length, :math:`L`.
+        The frame length, :math:`L`.
 
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
-        Window type.
+        The window type.
 
     """
 
     def __init__(self, frame_length, window="sine"):
         super().__init__()
 
-        self.imdst = IMDST(frame_length, window, transform="sine")
+        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
 
     def forward(self, y, out_length=None):
         """Compute inverse modified discrete sine transform.
@@ -43,15 +46,15 @@ class InverseModifiedDiscreteSineTransform(nn.Module):
         Parameters
         ----------
         y : Tensor [shape=(..., 2T/L, L/2)]
-            Spectrum.
+            The spectrum.
 
         out_length : int or None
-            Length of output waveform.
+            The length of the output waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Reconstructed waveform.
+            The reconstructed waveform.
 
         Examples
         --------
@@ -66,8 +69,24 @@ class InverseModifiedDiscreteSineTransform(nn.Module):
         tensor([-8.9407e-08, 1.0000e+00, 2.0000e+00, 3.0000e+00])
 
         """
-        return self.imdst(y, out_length=out_length)
+        return self._forward(y, out_length, *self.values, *self.layers)
 
     @staticmethod
-    def _func(y, out_length, frame_length, window):
-        return IMDST._func(y, out_length, frame_length, window, transform="sine")
+    def _func(*args, **kwargs):
+        return IMDCT._func(*args, **kwargs, transform="sine")
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(*args, **kwargs):
+        raise NotImplementedError
+
+    @staticmethod
+    def _precompute(frame_length, window):
+        return IMDCT._precompute(frame_length, window, transform="sine")
+
+    @staticmethod
+    def _forward(*args, **kwargs):
+        return IMDCT._forward(*args, **kwargs)

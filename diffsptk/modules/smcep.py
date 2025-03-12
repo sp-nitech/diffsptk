@@ -14,24 +14,244 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import hankel
-from ..misc.utils import symmetric_toeplitz
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_layer
+from ..utils.private import get_values
+from ..utils.private import to
+from .base import BaseFunctionalModule
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
+from .mcep import MelCepstralAnalysis
 
 
-class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, alpha, theta, n_fft=512):
+class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/smcep.html>`_
+    for details. Note that the current implementation does not use the efficient
+    Toeplitz-plus-Hankel system solver.
+
+    Parameters
+    ----------
+    fft_length : int >= 2M
+        The number of FFT bins, :math:`L`.
+
+    cep_order : int >= 0
+        The order of the cepstrum, :math:`M`.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    theta : float in [0, 1]
+        The emphasis frequency, :math:`\\theta`.
+
+    n_iter : int >= 0
+        The number of iterations.
+
+    accuracy_factor : int >= 1
+        The accuracy factor multiplied by the FFT length.
+
+    References
+    ----------
+    .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
+           spectrum by arbitrary basis functions," *IEICE Trans*, vol. J82-D-II, no. 12,
+           pp. 2203-2211, 1999 (in Japanese).
+
+    """
+
+    def __init__(
+        self, *, fft_length, cep_order, alpha=0, theta=0, n_iter=0, accuracy_factor=4
+    ):
         super().__init__()
 
-        theta *= torch.pi
+        self.in_dim = fft_length // 2 + 1
 
-        k = torch.arange(n_fft, dtype=torch.double)
+        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.layers = nn.ModuleList(layers)
+        self.register_buffer("alpha_vector", tensors[0])
+
+    def forward(self, x):
+        """Perform mel-cepstral analysis based on the second-order all-pass filter.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(..., L/2+1)]
+            The power spectrum.
+
+        Returns
+        -------
+        out : Tensor [shape=(..., M+1)]
+            The mel-cepstrum.
+
+        Examples
+        --------
+        >>> x = diffsptk.ramp(19)
+        >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
+        >>> smcep = diffsptk.SecondOrderAllPassMelCepstralAnalysis(
+        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ... )
+        >>> mc = smcep(stft(x))
+        >>> mc
+        tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
+                [-0.3523,  4.4223, -1.0883, -0.0510]])
+
+        """
+        check_size(x.size(-1), self.in_dim, "dimension of spectrum")
+        return self._forward(x, *self.values, *self.layers, **self._buffers)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values, layers, tensors = SecondOrderAllPassMelCepstralAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return SecondOrderAllPassMelCepstralAnalysis._forward(
+            x, *values, *layers, *tensors
+        )
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(fft_length, cep_order, alpha, theta, n_iter, accuracy_factor):
+        if fft_length <= 1:
+            raise ValueError("fft_length must be greater than 1.")
+        if cep_order < 0:
+            raise ValueError("cep_order must be non-negative.")
+        if fft_length < 2 * cep_order:
+            raise ValueError("cep_order must be less than or equal to fft_length // 2.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if not 0 <= theta <= 1:
+            raise ValueError("theta must be in [0, 1].")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
+        if accuracy_factor <= 0:
+            raise ValueError("accuracy_factor must be positive.")
+
+    @staticmethod
+    def _precompute(
+        fft_length,
+        cep_order,
+        alpha,
+        theta,
+        n_iter,
+        accuracy_factor,
+        device=None,
+        dtype=None,
+    ):
+        SecondOrderAllPassMelCepstralAnalysis._check(
+            fft_length, cep_order, alpha, theta, n_iter, accuracy_factor
+        )
+        module = inspect.stack()[1].function == "__init__"
+
+        n_fft = fft_length * accuracy_factor
+        freqt = get_layer(
+            module,
+            SecondOrderAllPassFrequencyTransform,
+            dict(
+                in_order=fft_length // 2,
+                out_order=cep_order,
+                alpha=alpha,
+                theta=theta,
+                n_fft=n_fft,
+            ),
+        )
+        ifreqt = get_layer(
+            module,
+            SecondOrderAllPassInverseFrequencyTransform,
+            dict(
+                in_order=cep_order,
+                out_order=fft_length // 2,
+                alpha=alpha,
+                theta=theta,
+                n_fft=n_fft,
+            ),
+        )
+        rfreqt = get_layer(
+            module,
+            CoefficientsFrequencyTransform,
+            dict(
+                in_order=fft_length // 2,
+                out_order=2 * cep_order,
+                alpha=alpha,
+                theta=theta,
+                n_fft=n_fft,
+            ),
+        )
+
+        seed = to(torch.ones(1, device=device), dtype=dtype)
+        alpha_vector = CoefficientsFrequencyTransform._func(
+            seed,
+            out_order=cep_order,
+            alpha=alpha,
+            theta=theta,
+            n_fft=n_fft,
+        )
+
+        return (
+            (
+                fft_length,
+                n_iter,
+            ),
+            (
+                freqt,
+                ifreqt,
+                rfreqt,
+            ),
+            (alpha_vector,),
+        )
+
+    @staticmethod
+    def _forward(*args, **kwargs):
+        return MelCepstralAnalysis._forward(*args, **kwargs)
+
+
+class CoefficientsFrequencyTransform(BaseFunctionalModule):
+    def __init__(self, in_order, out_order, alpha=0, theta=0, n_fft=512):
+        super().__init__()
+
+        self.in_dim = in_order + 1
+
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("A", tensors[0])
+
+    def forward(self, c):
+        check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
+        return self._forward(c, **self._buffers)
+
+    @staticmethod
+    def _func(c, *args, **kwargs):
+        _, _, tensors = CoefficientsFrequencyTransform._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
+        )
+        return CoefficientsFrequencyTransform._forward(c, *tensors)
+
+    @staticmethod
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(in_order, out_order, alpha, theta, n_fft):
+        if in_order < 0:
+            raise ValueError("in_order must be non-negative.")
+        if out_order < 0:
+            raise ValueError("out_order must be non-negative.")
+        if 1 <= abs(alpha):
+            raise ValueError("alpha must be in (-1, 1).")
+        if not 0 <= theta <= 1:
+            raise ValueError("theta must be in [0, 1].")
+        if n_fft <= 1:
+            raise ValueError("n_fft must be greater than 1.")
+
+    @staticmethod
+    def _precompute(in_order, out_order, alpha, theta, n_fft, device=None, dtype=None):
+        CoefficientsFrequencyTransform._check(in_order, out_order, alpha, theta, n_fft)
+        theta *= torch.pi
+        k = torch.arange(n_fft, device=device, dtype=torch.double)
         omega = k * (2 * torch.pi / n_fft)
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 
@@ -45,138 +265,8 @@ class CoefficientsFrequencyTransform(nn.Module):
         if 2 <= L:
             A[1:L] += A[-(L - 1) :].flip(0)
         A = A[:L]
-        self.register_buffer("A", to(A))
+        return None, None, (to(A, dtype=dtype),)
 
-    def forward(self, c):
-        return torch.matmul(c, self.A)
-
-
-class SecondOrderAllPassMelCepstralAnalysis(nn.Module):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/smcep.html>`_
-    for details. Note that the current implementation does not use the efficient
-    Toeplitz-plus-Hankel system solver.
-
-    Parameters
-    ----------
-    cep_order : int >= 0
-        Order of mel-cepstrum, :math:`M`.
-
-    fft_length : int >= 2M
-        Number of FFT bins, :math:`L`.
-
-    alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
-
-    theta : float in [0, 1]
-        Emphasis frequency, :math:`\\theta`.
-
-    n_iter : int >= 0
-        Number of iterations.
-
-    accuracy_factor : int >= 1
-        Accuracy factor multiplied by FFT length.
-
-    References
-    ----------
-    .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
-           spectrum by arbitrary basis functions," *IEICE Trans*, vol. J82-D-II, no. 12,
-           pp. 2203-2211, 1999 (in Japanese).
-
-    """
-
-    def __init__(
-        self, cep_order, fft_length, alpha=0, theta=0, n_iter=0, accuracy_factor=4
-    ):
-        super().__init__()
-
-        assert 0 <= cep_order <= fft_length // 2
-        assert 0 <= n_iter
-
-        self.cep_order = cep_order
-        self.fft_length = fft_length
-        self.n_iter = n_iter
-
-        n_fft = fft_length * accuracy_factor
-
-        self.freqt = SecondOrderAllPassFrequencyTransform(
-            self.fft_length // 2,
-            self.cep_order,
-            alpha,
-            theta,
-            n_fft=n_fft,
-        )
-        self.ifreqt = SecondOrderAllPassInverseFrequencyTransform(
-            self.cep_order,
-            self.fft_length // 2,
-            alpha,
-            theta,
-            n_fft=n_fft,
-        )
-        self.rfreqt = CoefficientsFrequencyTransform(
-            self.fft_length // 2,
-            2 * self.cep_order,
-            alpha,
-            theta,
-            n_fft=n_fft,
-        )
-
-        seed = torch.ones(1)
-        alpha_vector = CoefficientsFrequencyTransform(
-            0,
-            self.cep_order,
-            alpha,
-            theta,
-            n_fft=n_fft,
-        )(seed)
-        self.register_buffer("alpha_vector", alpha_vector)
-
-    def forward(self, x):
-        """Estimate mel-cepstrum from spectrum.
-
-        Parameters
-        ----------
-        x : Tensor [shape=(..., L/2+1)]
-            Power spectrum.
-
-        Returns
-        -------
-        out : Tensor [shape=(..., M+1)]
-            Mel-cepstrum.
-
-        Examples
-        --------
-        >>> x = diffsptk.ramp(19)
-        >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> smcep = diffsptk.SecondOrderAllPassMelCepstralAnalysis(3, 16, 0.1, n_iter=1)
-        >>> mc = smcep(stft(x))
-        >>> mc
-        tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
-                [-0.3523,  4.4223, -1.0883, -0.0510]])
-
-        """
-        M = self.cep_order
-        H = self.fft_length // 2
-        check_size(x.size(-1), H + 1, "dimension of spectrum")
-
-        log_x = torch.log(x)
-        c = torch.fft.irfft(log_x)
-        c[..., 0] *= 0.5
-        c[..., H] *= 0.5
-        mc = self.freqt(c[..., : H + 1])
-
-        for _ in range(self.n_iter):
-            c = self.ifreqt(mc)
-            d = torch.fft.rfft(c, n=self.fft_length).real
-            d = torch.exp(log_x - d - d)
-
-            rd = torch.fft.irfft(d)
-            rt = self.rfreqt(rd[..., : H + 1])
-            r = rt[..., : M + 1]
-            ra = r - self.alpha_vector
-
-            R = symmetric_toeplitz(r)
-            Q = hankel(rt)
-            gradient = torch.linalg.solve(R + Q, ra)
-            mc = mc + gradient
-
-        return mc
+    @staticmethod
+    def _forward(c, A):
+        return torch.matmul(c, A)

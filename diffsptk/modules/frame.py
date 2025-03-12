@@ -15,59 +15,53 @@
 # ------------------------------------------------------------------------ #
 
 import torch.nn.functional as F
-from torch import nn
+
+from ..utils.private import get_values
+from .base import BaseFunctionalModule
 
 
-class Frame(nn.Module):
+class Frame(BaseFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/frame.html>`_
     for details.
 
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     center : bool
-        If True, assume that the center of data is the center of frame, otherwise
-        assume that the center of data is the left edge of frame.
+        If True, pad the input on both sides so that the frame is centered.
 
     zmean : bool
         If True, perform mean subtraction on each frame.
 
     mode : ['constant', 'reflect', 'replicate', 'circular']
-        Padding mode.
+        The padding method.
 
     """
 
     def __init__(
-        self, frame_length, frame_period, center=True, zmean=False, mode="constant"
+        self, frame_length, frame_period, *, center=True, zmean=False, mode="constant"
     ):
         super().__init__()
 
-        assert 1 <= frame_length
-        assert 1 <= frame_period
-
-        self.frame_length = frame_length
-        self.frame_period = frame_period
-        self.center = center
-        self.zmean = zmean
-        self.mode = mode
+        self.values = self._precompute(*get_values(locals()))
 
     def forward(self, x):
-        """Apply framing to given waveform.
+        """Apply framing to the given waveform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Waveform.
+            The waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., T/P, L)]
-            Framed waveform.
+            The framed waveform.
 
         Examples
         --------
@@ -82,14 +76,39 @@ class Frame(nn.Module):
                 [7., 8., 9., 0., 0.]])
 
         """
-        return self._forward(
-            x, self.frame_length, self.frame_period, self.center, self.zmean, self.mode
+        return self._forward(x, *self.values)
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        values = Frame._precompute(*args, **kwargs)
+        return Frame._forward(x, *values)
+
+    @staticmethod
+    def _takes_input_size():
+        return False
+
+    @staticmethod
+    def _check(frame_length, frame_period):
+        if frame_length <= 0:
+            raise ValueError("frame_length must be positive.")
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+
+    @staticmethod
+    def _precompute(
+        frame_length, frame_period, center=True, zmean=False, mode="constant"
+    ):
+        Frame._check(frame_length, frame_period)
+        return (
+            frame_length,
+            frame_period,
+            center,
+            zmean,
+            mode,
         )
 
     @staticmethod
-    def _forward(
-        x, frame_length, frame_period, center=True, zmean=False, mode="constant"
-    ):
+    def _forward(x, frame_length, frame_period, center, zmean, mode):
         if center:
             padding = (frame_length // 2, (frame_length - 1) // 2)
         else:
@@ -102,5 +121,3 @@ class Frame(nn.Module):
         if zmean:
             y = y - y.mean(-1, keepdim=True)
         return y
-
-    _func = _forward

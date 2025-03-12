@@ -28,15 +28,13 @@ def test_compatibility(device, module, wht_type, L=8, B=2):
         module,
         diffsptk.WHT,
         diffsptk.functional.wht,
-        {"wht_length": L},
-        {"wht_type": wht_type},
+        {"wht_length": L, "wht_type": wht_type},
     )
     iwht = U.choice(
         module,
         diffsptk.IWHT,
         diffsptk.functional.iwht,
-        {"wht_length": L},
-        {"wht_type": wht_type},
+        {"wht_length": L, "wht_type": wht_type},
     )
 
     U.check_compatibility(

@@ -14,35 +14,60 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+# ------------------------------------------------------------------------------ #
+# MIT License                                                                    #
+#                                                                                #
+# Copyright (c) 2022 YoungJoong Kim                                              #
+#                                                                                #
+# Permission is hereby granted, free of charge, to any person obtaining a copy   #
+# of this software and associated documentation files (the "Software"), to deal  #
+# in the Software without restriction, including without limitation the rights   #
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell      #
+# copies of the Software, and to permit persons to whom the Software is          #
+# furnished to do so, subject to the following conditions:                       #
+#                                                                                #
+# The above copyright notice and this permission notice shall be included in all #
+# copies or substantial portions of the Software.                                #
+#                                                                                #
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR     #
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,       #
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE    #
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER         #
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  #
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  #
+# SOFTWARE.                                                                      #
+# ------------------------------------------------------------------------------ #
+
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..misc.utils import check_size
-from ..misc.utils import to
+from ..utils.private import check_size
+from ..utils.private import get_values
+from ..utils.private import to
 from .acorr import Autocorrelation
+from .base import BaseFunctionalModule
 
 
-class Yingram(nn.Module):
+class Yingram(BaseFunctionalModule):
     """Pitch-related feature extraction module based on YIN.
 
     Parameters
     ----------
     frame_length : int >= 1
-        Frame length, :math:`L`.
+        The frame length in samples, :math:`L`.
 
-    sample_rate : int >= 1
-        Sample rate in Hz.
+    sample_rate : int >= 8000
+        The sample rate in Hz.
 
     lag_min : int >= 1
-        Minimum lag in points.
+        The minimum lag in points.
 
     lag_max : int < L
-        Maximum lag in points.
+        The maximum lag in points.
 
     n_bin : int >= 1
-        Number of bins of Yingram to represent a semitone range.
+        The number of bins to represent a semitone range.
 
     References
     ----------
@@ -65,36 +90,26 @@ class Yingram(nn.Module):
     ):
         super().__init__()
 
-        if lag_max is None:
-            lag_max = frame_length - 1
+        self.in_dim = frame_length
 
-        assert 1 <= sample_rate
-        assert 1 <= lag_min <= lag_max < frame_length
-        assert 1 <= n_bin
-
-        self.frame_length = frame_length
-        self.lag_max = lag_max
-        self.acorr = Autocorrelation(frame_length, lag_max - 1)
-        lags, lags_ceil, lags_floor, ramp = self._precompute(
-            sample_rate, lag_min, lag_max, n_bin
-        )
-        self.register_buffer("lags", lags)
-        self.register_buffer("lags_ceil", lags_ceil)
-        self.register_buffer("lags_floor", lags_floor)
-        self.register_buffer("ramp", ramp)
+        _, _, tensors = self._precompute(*get_values(locals()))
+        self.register_buffer("lags", tensors[0])
+        self.register_buffer("lags_ceil", tensors[1])
+        self.register_buffer("lags_floor", tensors[2])
+        self.register_buffer("ramp", tensors[3])
 
     def forward(self, x):
-        """Compute YIN derivatives.
+        """Compute the YIN derivatives from the waveform.
 
         Parameters
         ----------
         x : Tensor [shape=(..., L)]
-            Framed waveform.
+            The framed waveform.
 
         Returns
         -------
         out : Tensor [shape=(..., M)]
-            Yingram.
+            The Yingram.
 
         Examples
         --------
@@ -106,25 +121,58 @@ class Yingram(nn.Module):
         torch.Size([51, 1580])
 
         """
-        check_size(x.size(-1), self.frame_length, "frame length")
-        return self._forward(
-            x,
-            self.acorr,
-            self.lag_max,
-            self.lags,
-            self.lags_ceil,
-            self.lags_floor,
-            self.ramp,
-        )
+        check_size(x.size(-1), self.in_dim, "frame length")
+        return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _forward(x, acorr, lag_max, lags, lags_ceil, lags_floor, ramp):
+    def _takes_input_size():
+        return True
+
+    @staticmethod
+    def _check(frame_length, sample_rate, lag_min, lag_max, n_bin):
+        if sample_rate < 8000:
+            raise ValueError("sample_rate must be greater than or equal to 8000.")
+        if not (1 <= lag_min <= lag_max < frame_length):
+            raise ValueError("Invalid lag_min and lag_max.")
+        if n_bin <= 0:
+            raise ValueError("n_bin must be positive.")
+
+    @staticmethod
+    def _func(x, *args, **kwargs):
+        _, _, tensors = Yingram._precompute(
+            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
+        )
+        return Yingram._forward(x, *tensors)
+
+    @staticmethod
+    def _precompute(
+        frame_length, sample_rate, lag_min, lag_max, n_bin, device=None, dtype=None
+    ):
+        if lag_max is None:
+            lag_max = frame_length - 1
+        Yingram._check(frame_length, sample_rate, lag_min, lag_max, n_bin)
+        midi_min = int(np.ceil(Yingram.lag2midi(lag_max, sample_rate)))
+        midi_max = int(Yingram.lag2midi(lag_min, sample_rate))
+        lags = Yingram.midi2lag(
+            torch.arange(
+                midi_min, midi_max + 1, 1 / n_bin, device=device, dtype=torch.double
+            ),
+            sample_rate,
+        )
+        lags_ceil = lags.ceil().long()
+        lags_floor = lags.floor().long()
+        ramp = torch.arange(1, lag_max, device=device)
+        return None, None, (to(lags, dtype=dtype), lags_ceil, lags_floor, ramp)
+
+    @staticmethod
+    def _forward(x, lags, lags_ceil, lags_floor, ramp):
+        lag_max = len(ramp) + 1
         W = x.size(-1)
         x0 = F.pad(x, (1, 0))
         s = torch.cumsum(x0 * x0, dim=-1)
         term1 = (s[..., W - lag_max + 1 :]).flip(-1)
         term2 = s[..., W:] - s[..., :lag_max]
-        term3 = -2 * acorr(x)
+        term3 = -2 * Autocorrelation._func(x, lag_max - 1)
 
         # Compute Eq. (7).
         d = (term1 + term2 + term3)[..., 1:]
@@ -138,32 +186,6 @@ class Yingram(nn.Module):
         denom = lags_ceil - lags_floor
         y = numer / denom + d0[..., lags_floor]
         return y
-
-    @staticmethod
-    def _func(x, sample_rate, lag_min, lag_max, n_bin):
-        if lag_max is None:
-            lag_max = x.size(-1) - 1
-        const = Yingram._precompute(
-            sample_rate, lag_min, lag_max, n_bin, dtype=x.dtype, device=x.device
-        )
-        return Yingram._forward(
-            x, lambda x: Autocorrelation._func(x, lag_max - 1), lag_max, *const
-        )
-
-    @staticmethod
-    def _precompute(sample_rate, lag_min, lag_max, n_bin, dtype=None, device=None):
-        midi_min = int(np.ceil(Yingram.lag2midi(lag_max, sample_rate)))
-        midi_max = int(Yingram.lag2midi(lag_min, sample_rate))
-        lags = Yingram.midi2lag(
-            torch.arange(
-                midi_min, midi_max + 1, 1 / n_bin, dtype=torch.double, device=device
-            ),
-            sample_rate,
-        )
-        lags_ceil = lags.ceil().long()
-        lags_floor = lags.floor().long()
-        ramp = torch.arange(1, lag_max, device=device)
-        return to(lags, dtype=dtype), lags_ceil, lags_floor, ramp
 
     @staticmethod
     def midi2lag(midi, sample_rate):

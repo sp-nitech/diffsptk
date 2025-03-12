@@ -21,41 +21,42 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import numpy_to_torch
-from ..misc.world import dc_correction
-from ..misc.world import get_windowed_waveform
-from ..misc.world import linear_smoothing
+from ..third_party.world import dc_correction
+from ..third_party.world import get_windowed_waveform
+from ..third_party.world import linear_smoothing
+from ..utils.private import numpy_to_torch
+from .base import BaseNonFunctionalModule
 from .spec import Spectrum
 from .window import Window
 
 
-class Aperiodicity(nn.Module):
+class Aperiodicity(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/ap.html>`_
-    for details.
+    for details. Note that the gradients do not propagated through F0.
 
     Parameters
     ----------
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     sample_rate : int >= 8000
-        Sample rate in Hz.
+        The sample rate in Hz.
 
     fft_length : int >= 16 or None
-        Size of double-sided aperiodicity, :math:`L`. If None, band aperiodicity
+        The size of double-sided aperiodicity, :math:`L`. If None, the band aperiodicity
         (uninterpolated aperiodicity) is returned as the output.
 
     algorithm : ['tandem', 'd4c']
-        Algorithm.
+        The algorithm to estimate aperiodicity.
 
     out_format : ['a', 'p', 'a/p', 'p/a']
-        Output format.
+        The output format.
 
     lower_bound : float >= 0
-        Lower bound of aperiodicity.
+        The lower bound of aperiodicity.
 
     upper_bound : float <= 1
-        Upper bound of aperiodicity.
+        The upper bound of aperiodicity.
 
     References
     ----------
@@ -81,10 +82,14 @@ class Aperiodicity(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= frame_period
-        assert 8000 <= sample_rate
-        assert fft_length is None or 16 <= fft_length
-        assert 0 <= lower_bound < upper_bound <= 1
+        if frame_period <= 0:
+            raise ValueError("frame_period must be positive.")
+        if sample_rate < 8000:
+            raise ValueError("sample_rate must be at least 8000 Hz.")
+        if fft_length is not None and fft_length < 16:
+            raise ValueError("fft_length must be at least 16.")
+        if not 0 <= lower_bound < upper_bound <= 1:
+            raise ValueError("Invalid lower_bound and upper_bound.")
 
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
@@ -117,15 +122,15 @@ class Aperiodicity(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(B, T) or (T,)]
-            Waveform.
+            The input waveform.
 
         f0 : Tensor [shape=(B, T/P) or (T/P,)]
-            F0 in Hz.
+            The F0 in Hz.
 
         Returns
         -------
         out : Tensor [shape=(B, T/P, L/2+1) or (T/P, L/2+1)]
-            Aperiodicity.
+            The aperiodicity.
 
         Examples
         --------
@@ -149,11 +154,13 @@ class Aperiodicity(nn.Module):
         d = x.dim()
         if d == 1:
             x = x.unsqueeze(0)
-        assert x.dim() == 2, "Input must be 2D tensor."
+        if x.dim() != 2:
+            raise ValueError("Input must be 1D or 2D tensor.")
 
         if f0.dim() == 1:
             f0 = f0.unsqueeze(0)
-        assert f0.dim() == 2, "Input must be 2D tensor."
+        if f0.dim() != 2:
+            raise ValueError("F0 must be 1D or 2D tensor.")
 
         ap = self.extractor(x, f0)
         ap = torch.clip(ap, min=self.lower_bound, max=self.upper_bound)
@@ -162,6 +169,41 @@ class Aperiodicity(nn.Module):
         if d == 1:
             ap = ap.squeeze(0)
         return ap
+
+
+# ----------------------------------------------------------------- #
+# Copyright (c) 2010  M. Morise                                     #
+#                                                                   #
+# All rights reserved.                                              #
+#                                                                   #
+# Redistribution and use in source and binary forms, with or        #
+# without modification, are permitted provided that the following   #
+# conditions are met:                                               #
+#                                                                   #
+# - Redistributions of source code must retain the above copyright  #
+#   notice, this list of conditions and the following disclaimer.   #
+# - Redistributions in binary form must reproduce the above         #
+#   copyright notice, this list of conditions and the following     #
+#   disclaimer in the documentation and/or other materials provided #
+#   with the distribution.                                          #
+# - Neither the name of the M. Morise nor the names of its          #
+#   contributors may be used to endorse or promote products derived #
+#   from this software without specific prior written permission.   #
+#                                                                   #
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND            #
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,       #
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF          #
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE          #
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS #
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,          #
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED   #
+# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,     #
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON #
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,   #
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY    #
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           #
+# POSSIBILITY OF SUCH DAMAGE.                                       #
+# ----------------------------------------------------------------- #
 
 
 class AperiodicityExtractionByTANDEM(nn.Module):
@@ -178,8 +220,10 @@ class AperiodicityExtractionByTANDEM(nn.Module):
     ):
         super().__init__()
 
-        assert 1 <= window_length_ms
-        assert 0 < eps
+        if window_length_ms <= 0:
+            raise ValueError("window_length_ms must be positive.")
+        if eps <= 0:
+            raise ValueError("eps must be positive.")
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
@@ -358,6 +402,41 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         hLP[18] = +0.52827343594055032
         hLP[19:] = hLP[17::-1]
         return hLP
+
+
+# ----------------------------------------------------------------- #
+# Copyright (c) 2010  M. Morise                                     #
+#                                                                   #
+# All rights reserved.                                              #
+#                                                                   #
+# Redistribution and use in source and binary forms, with or        #
+# without modification, are permitted provided that the following   #
+# conditions are met:                                               #
+#                                                                   #
+# - Redistributions of source code must retain the above copyright  #
+#   notice, this list of conditions and the following disclaimer.   #
+# - Redistributions in binary form must reproduce the above         #
+#   copyright notice, this list of conditions and the following     #
+#   disclaimer in the documentation and/or other materials provided #
+#   with the distribution.                                          #
+# - Neither the name of the M. Morise nor the names of its          #
+#   contributors may be used to endorse or promote products derived #
+#   from this software without specific prior written permission.   #
+#                                                                   #
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND            #
+# CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,       #
+# INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF          #
+# MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE          #
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS #
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,          #
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED   #
+# TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,     #
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON #
+# ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,   #
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY    #
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE           #
+# POSSIBILITY OF SUCH DAMAGE.                                       #
+# ----------------------------------------------------------------- #
 
 
 class AperiodicityExtractionByD4C(nn.Module):

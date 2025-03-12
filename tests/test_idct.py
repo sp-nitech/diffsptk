@@ -29,8 +29,7 @@ def test_compatibility(device, module, dct_type, L=8, B=2):
         module,
         diffsptk.IDCT,
         diffsptk.functional.idct,
-        {"dct_length": L},
-        {"dct_type": dct_type},
+        {"dct_length": L, "dct_type": dct_type},
     )
 
     if dct_type == 2:

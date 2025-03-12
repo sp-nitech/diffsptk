@@ -4,6 +4,9 @@ mgcep
 =====
 
 .. autoclass:: diffsptk.MelCepstralAnalysis
+    :members:
+
+.. autofunction:: diffsptk.functional.mcep
 
 .. autoclass:: diffsptk.MelGeneralizedCepstralAnalysis
     :members:

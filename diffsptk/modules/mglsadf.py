@@ -18,11 +18,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..misc.utils import Lambda
-from ..misc.utils import check_size
-from ..misc.utils import get_gamma
-from ..misc.utils import remove_gain
+from ..utils.private import Lambda
+from ..utils.private import check_size
+from ..utils.private import get_gamma
+from ..utils.private import remove_gain
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
+from .base import BaseNonFunctionalModule
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
 from .gnorm import GeneralizedCepstrumGainNormalization
 from .istft import InverseShortTimeFourierTransform
@@ -34,39 +35,10 @@ from .stft import ShortTimeFourierTransform
 
 
 def is_array_like(x):
-    """Return True if the input is array-like.
-
-    Parameters
-    ----------
-    x : object
-        Any object.
-
-    Returns
-    -------
-    out : bool
-        True if the input is array-like.
-
-    """
     return isinstance(x, (tuple, list))
 
 
 def mirror(x, half=False):
-    """Mirror the input tensor.
-
-    Parameters
-    ----------
-    x : Tensor [shape=(..., L)]
-        Input tensor.
-
-    half : bool
-        If True, multiply all elements except the first one by 0.5.
-
-    Returns
-    -------
-    out : Tensor [shape=(..., 2L-1)]
-        Output tensor.
-
-    """
     x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
     if half:
         x1 = x1 * 0.5
@@ -74,52 +46,54 @@ def mirror(x, half=False):
     return y
 
 
-class PseudoMGLSADigitalFilter(nn.Module):
+class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
     """See `this page <https://sp-nitech.github.io/sptk/latest/main/mglsadf.html>`_
     for details.
 
     Parameters
     ----------
     filter_order : int >= 0 or tuple[int, int]
-        Order of filter coefficients, :math:`M` or :math:`(N, M)`. A tuple input is
-        allowed only if **phase** is 'mixed'.
+        The order of the filter coefficients, :math:`M` or :math:`(N, M)`. A tuple input
+        is allowed only if **phase** is 'mixed'.
 
     frame_period : int >= 1
-        Frame period, :math:`P`.
+        The frame period, :math:`P`.
 
     alpha : float in (-1, 1)
-        Frequency warping factor, :math:`\\alpha`.
+        The frequency warping factor, :math:`\\alpha`.
 
     gamma : float in [-1, 1]
-        Gamma, :math:`\\gamma`.
+        The gamma parameter, :math:`\\gamma`.
 
     c : int >= 1 or None
-        Number of stages.
+        The number of stages.
 
     ignore_gain : bool
-        If True, perform filtering without gain.
+        If True, filtering is performed without gain.
 
     phase : ['minimum', 'maximum', 'zero', 'mixed']
-        Filter type.
+        The filter type.
 
     mode : ['multi-stage', 'single-stage', 'freq-domain']
         'multi-stage' approximates the MLSA filter by cascading FIR filters based on the
-        Taylor series expansion. 'single-stage' uses a FIR filter whose coefficients are
-        the impulse response converted from input mel-cepstral coefficients using FFT.
-        'freq-domain' performs filtering in the frequency domain rather than time one.
+        Taylor series expansion. 'single-stage' uses an FIR filter with the coefficients
+        derived from the impulse response converted from the input mel-cepstral
+        coefficients using FFT. 'freq-domain' performs filtering in the frequency domain
+        rather than the time domain.
 
     n_fft : int >= 1
-        Number of FFT bins used for conversion. Higher values result in increased
+        The number of FFT bins used for conversion. Higher values result in increased
         conversion accuracy.
 
     taylor_order : int >= 0
-        Order of Taylor series expansion (valid only if **mode** is 'multi-stage').
+        The order of the Taylor series expansion (valid only if **mode** is
+        'multi-stage').
 
     cep_order : int >= 0 or tuple[int, int]
-        Order of linear cepstrum (valid only if **mode** is 'multi-stage').
+        The order of the linear cepstrum (valid only if **mode** is 'multi-stage').
 
     ir_length : int >= 1 or tuple[int, int]
-        Length of impulse response (valid only if **mode** is 'single-stage').
+        The length of the impulse response (valid only if **mode** is 'single-stage').
 
     **kwargs : additional keyword arguments
         See :func:`~diffsptk.ShortTimeFourierTransform` (valid only if **mode** is
@@ -210,18 +184,18 @@ class PseudoMGLSADigitalFilter(nn.Module):
         Parameters
         ----------
         x : Tensor [shape=(..., T)]
-            Excitation signal.
+            The excitation signal.
 
         mc : Tensor [shape=(..., T/P, M+1)] or [shape=(..., T/P, N+M+1)]
-            Mel-generalized cepstrum, not MLSA digital filter coefficients. Note that
-            the mixed-phase case assumes that the coefficients are of the form
+            The mel-generalized cepstrum, not MLSA digital filter coefficients. Note
+            that the mixed-phase case assumes that the coefficients are of the form
             c_{-N}, ..., c_{0}, ..., c_{M}, where M is the order of the minimum-phase
             part and N is the order of the maximum-phase part.
 
         Returns
         -------
         out : Tensor [shape=(..., T)]
-            Output signal.
+            The output signal.
 
         Examples
         --------
@@ -263,7 +237,8 @@ class MultiStageFIRFilter(nn.Module):
     ):
         super().__init__()
 
-        assert 0 <= taylor_order
+        if taylor_order < 0:
+            raise ValueError("taylor_order must be non-negative.")
 
         self.ignore_gain = ignore_gain
         self.phase = phase
@@ -486,7 +461,8 @@ class FrequencyDomainFIRFilter(nn.Module):
     ):
         super().__init__()
 
-        assert 2 * frame_period < frame_length
+        if frame_length <= 2 * frame_period:
+            raise ValueError("frame_period must be less than half of frame_length.")
 
         self.ignore_gain = ignore_gain
         self.phase = phase
