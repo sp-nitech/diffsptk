@@ -83,6 +83,7 @@ ignore-multiline-regex = "codespell:ignore-begin.*codespell:ignore-end"
 [tool.coverage.report]
 exclude_lines = [
   "pragma: no cover",
+  "except",
   "raise",
   "verbose",
   "warn_type",
