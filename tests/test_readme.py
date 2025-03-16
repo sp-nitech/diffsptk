@@ -16,6 +16,8 @@
 
 from pathlib import Path
 
+import torch
+
 
 def test_readme_examples():
     # Extract code blocks from the README file.
@@ -42,6 +44,8 @@ def test_readme_examples():
     # Execute the code blocks.
     for code_block in code_blocks:
         if "librosa" in code_block:
+            continue
+        if "cuda" in code_block and not torch.cuda.is_available():
             continue
         try:
             exec(code_block)

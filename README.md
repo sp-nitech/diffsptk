@@ -39,6 +39,26 @@ pip install git+https://github.com/sp-nitech/diffsptk.git@master
 
 ## Examples
 
+### Running on a GPU
+
+```python
+import diffsptk
+
+stft_params = {"frame_length": 400, "frame_period": 80, "fft_length": 512}
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav", device="cuda")
+
+# Compute spectrogram using a nn.Module class.
+X1 = diffsptk.STFT(**stft_params).to("cuda")(x)
+
+# Compute spectrogram using a functional method.
+X2 = diffsptk.functional.stft(x, **stft_params)
+
+assert X1.device == X2.device
+assert X1.allclose(X2)
+```
+
 ### Mel-cepstral analysis and synthesis
 
 ```python
