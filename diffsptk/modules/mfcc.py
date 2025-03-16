@@ -108,7 +108,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
-        >>> mfcc = diffsptk.MFCC(4, 8, 32, 8000)
+        >>> mfcc = diffsptk.MFCC(
+        ...     fft_length=32, mfcc_order=4, n_channel=8, sample_rate=8000
+        ... )
         >>> y = mfcc(stft(x))
         >>> y
         tensor([[-7.7745e-03, -1.4447e-02,  1.6157e-02,  1.1069e-03],

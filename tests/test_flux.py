@@ -42,6 +42,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
         reduce_cmd = "vsum"
     else:
         raise ValueError
+
     tmp1 = "flux.tmp1"
     tmp2 = "flux.tmp2"
     U.check_compatibility(

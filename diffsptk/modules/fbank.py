@@ -102,7 +102,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         --------
         >>> x = diffsptk.ramp(19)
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
-        >>> fbank = diffsptk.MelFilterBankAnalysis(4, 32, 8000)
+        >>> fbank = diffsptk.MelFilterBankAnalysis(
+        ...     fft_length=32, n_channel=4, sample_rate=8000
+        ... )
         >>> y = fbank(stft(x))
         >>> y
         tensor([[0.1214, 0.4825, 0.6072, 0.3589],

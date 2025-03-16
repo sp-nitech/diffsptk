@@ -40,6 +40,7 @@ def test_compatibility(device, module, reduction, B=2, M=19):
         mul = B
     else:
         raise ValueError
+
     tmp1 = "cdist.tmp1"
     tmp2 = "cdist.tmp2"
     U.check_compatibility(
