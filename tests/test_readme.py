@@ -37,7 +37,7 @@ def test_readme_examples():
             if line == "```python":
                 is_code_block = True
 
-    assert 0 < len(code_block)
+    assert 0 < len(code_blocks)
 
     # Execute the code blocks.
     for code_block in code_blocks:
