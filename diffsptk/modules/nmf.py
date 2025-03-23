@@ -17,9 +17,7 @@
 import torch
 from tqdm import tqdm
 
-from ..utils.private import get_generator
-from ..utils.private import get_logger
-from ..utils.private import to_dataloader
+from ..utils.private import get_generator, get_logger, to_dataloader
 from .base import BaseLearnerModule
 
 
@@ -70,18 +68,18 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
 
     def __init__(
         self,
-        n_data,
-        order,
-        n_comp,
+        n_data: int,
+        order: int,
+        n_comp: int,
         *,
-        beta=0,
-        n_iter=100,
-        eps=1e-5,
-        act_norm=False,
-        batch_size=None,
-        seed=None,
-        verbose=False,
-    ):
+        beta: float = 0,
+        n_iter: int = 100,
+        eps: float = 1e-5,
+        act_norm: bool = False,
+        batch_size: int | None = None,
+        seed: int | None = None,
+        verbose: bool | int = False,
+    ) -> None:
         super().__init__()
 
         if n_data <= 0:
@@ -122,7 +120,9 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
             phi = 1
         self.phi = phi
 
-    def warmup(self, x, **lbg_params):
+    def warmup(
+        self, x: torch.Tensor | torch.utils.data.DataLoader, **lbg_params
+    ) -> None:
         """Initialize the dictionary matrix by K-means clustering.
 
         Parameters
@@ -145,7 +145,9 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
         self.H[:] = codebook
 
     @torch.inference_mode()
-    def forward(self, x):
+    def forward(
+        self, x: torch.Tensor | torch.utils.data.DataLoader
+    ) -> tuple[tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         """Estimate the coefficient matrix and dictionary matrix.
 
         Parameters
@@ -250,7 +252,7 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
 
         return (self.U, self.H), divergence
 
-    def transform(self, x):
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Transform the input vectors using the estimated parameters.
 
         Parameters

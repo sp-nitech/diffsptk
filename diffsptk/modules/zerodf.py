@@ -14,10 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import Precomputed
+
+import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
@@ -39,14 +41,16 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
     """
 
-    def __init__(self, filter_order, frame_period, ignore_gain=False):
+    def __init__(
+        self, filter_order: int, frame_period: int, ignore_gain: bool = False
+    ) -> None:
         super().__init__()
 
         self.in_dim = filter_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x, b):
+    def forward(self, x: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
         """Apply an all-zero digital filter.
 
         Parameters
@@ -76,28 +80,32 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         return self._forward(x, b, *self.values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _func(x, b, *args, **kwargs):
+    def _func(x: torch.Tensor, b: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = AllZeroDigitalFilter._precompute(b.size(-1) - 1, *args, **kwargs)
         return AllZeroDigitalFilter._forward(x, b, *values)
 
     @staticmethod
-    def _check(filter_order, frame_period):
+    def _check(filter_order: int, frame_period: int) -> None:
         if filter_order < 0:
             raise ValueError("filter_order must be non-negative.")
         if frame_period <= 0:
             raise ValueError("frame_period must be positive.")
 
     @staticmethod
-    def _precompute(filter_order, frame_period, ignore_gain=False):
+    def _precompute(
+        filter_order: int, frame_period: int, ignore_gain: bool = False
+    ) -> Precomputed:
         AllZeroDigitalFilter._check(filter_order, frame_period)
         return (frame_period, ignore_gain)
 
     @staticmethod
-    def _forward(x, b, frame_period, ignore_gain):
+    def _forward(
+        x: torch.Tensor, b: torch.Tensor, frame_period: int, ignore_gain: bool
+    ) -> torch.Tensor:
         check_size(x.size(-1), b.size(-2) * frame_period, "sequence length")
 
         M = b.size(-1) - 1

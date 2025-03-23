@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -38,14 +38,16 @@ class Autocorrelation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length, acr_order, out_format="naive"):
+    def __init__(
+        self, frame_length: int, acr_order: int, out_format: str | int = "naive"
+    ) -> None:
         super().__init__()
 
         self.in_dim = frame_length
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Estimate the autocorrelation of the input waveform.
 
         Parameters
@@ -71,23 +73,25 @@ class Autocorrelation(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Autocorrelation._precompute(x.size(-1), *args, **kwargs)
         return Autocorrelation._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(frame_length, acr_order):
+    def _check(frame_length: int, acr_order: int) -> None:
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if frame_length <= acr_order:
             raise ValueError("acr_order must be less than frame_length.")
 
     @staticmethod
-    def _precompute(frame_length, acr_order, out_format="naive"):
+    def _precompute(
+        frame_length: int, acr_order: int, out_format: str | int = "naive"
+    ) -> Precomputed:
         Autocorrelation._check(frame_length, acr_order)
         if out_format in (0, "naive"):
             formatter = lambda x: x
@@ -106,7 +110,7 @@ class Autocorrelation(BaseFunctionalModule):
         return (acr_order, formatter)
 
     @staticmethod
-    def _forward(x, acr_order, formatter):
+    def _forward(x: torch.Tensor, acr_order: int, formatter: Callable) -> torch.Tensor:
         fft_length = x.size(-1) + acr_order
         if fft_length % 2 == 1:
             fft_length += 1

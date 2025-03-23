@@ -30,10 +30,10 @@ class InverseMultiStageVectorQuantization(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, indices, codebooks):
+    def forward(self, indices: torch.Tensor, codebooks: torch.Tensor) -> torch.Tensor:
         """Perform inverse residual vector quantization.
 
         Parameters

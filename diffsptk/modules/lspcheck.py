@@ -18,8 +18,8 @@ import warnings
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -43,14 +43,16 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
     """
 
-    def __init__(self, lsp_order, rate=0, n_iter=1, warn_type="warn"):
+    def __init__(
+        self, lsp_order: int, rate: float = 0, n_iter: int = 1, warn_type: str = "warn"
+    ) -> None:
         super().__init__()
 
         self.in_dim = lsp_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, w):
+    def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Check the stability of the input LSP coefficients.
 
         Parameters
@@ -76,18 +78,18 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
         return self._forward(w, *self.values)
 
     @staticmethod
-    def _func(w, *args, **kwargs):
+    def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LineSpectralPairsStabilityCheck._precompute(
             w.size(-1) - 1, *args, **kwargs
         )
         return LineSpectralPairsStabilityCheck._forward(w, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(lsp_order, rate, n_iter):
+    def _check(lsp_order: int, rate: float, n_iter: int) -> None:
         if lsp_order < 0:
             raise ValueError("lsp_order must be non-negative.")
         if not 0 <= rate <= 1:
@@ -96,7 +98,9 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
             raise ValueError("n_iter must be non-negative.")
 
     @staticmethod
-    def _precompute(lsp_order, rate, n_iter, warn_type):
+    def _precompute(
+        lsp_order: int, rate: float, n_iter: int, warn_type: str
+    ) -> Precomputed:
         LineSpectralPairsStabilityCheck._check(lsp_order, rate, n_iter)
         return (
             rate * torch.pi / (lsp_order + 1),
@@ -105,7 +109,9 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(w, min_distance, n_iter, warn_type):
+    def _forward(
+        w: torch.Tensor, min_distance: float, n_iter: int, warn_type: str
+    ) -> torch.Tensor:
         K, w1 = torch.split(w, [1, w.size(-1) - 1], dim=-1)
 
         distance = torch.diff(w1, dim=-1)

@@ -16,14 +16,12 @@
 
 import inspect
 
+import numpy as np
 import torch
 from torch import nn
 
-from ..utils.private import get_layer
-from ..utils.private import get_values
-from ..utils.private import numpy_to_torch
-from ..utils.private import replicate1
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import get_layer, get_values, numpy_to_torch, replicate1, to
 from .base import BaseFunctionalModule
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
@@ -79,18 +77,18 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     def __init__(
         self,
         *,
-        fft_length,
-        plp_order,
-        n_channel,
-        sample_rate,
-        compression_factor=0.33,
-        lifter=1,
-        f_min=0,
-        f_max=None,
-        floor=1e-5,
-        n_fft=512,
-        out_format="y",
-    ):
+        fft_length: int,
+        plp_order: int,
+        n_channel: int,
+        sample_rate: int,
+        compression_factor: float = 0.33,
+        lifter: int = 1,
+        f_min: float = 0,
+        f_max: float | None = None,
+        floor: float = 1e-5,
+        n_fft: int = 512,
+        out_format: str | int = "y",
+    ) -> None:
         super().__init__()
 
         self.values, layers, tensors = self._precompute(*get_values(locals()))
@@ -98,7 +96,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         self.register_buffer("equal_loudness_curve", tensors[0])
         self.register_buffer("liftering_vector", tensors[1])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the PLP from the power spectrum.
 
         Parameters
@@ -133,7 +131,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values, *self.layers, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, tensors = (
             PerceptualLinearPredictiveCoefficientsAnalysis._precompute(
                 2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
@@ -144,11 +142,13 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(plp_order, n_channel, compression_factor, lifter):
+    def _check(
+        plp_order: int, n_channel: int, compression_factor: float, lifter: int
+    ) -> None:
         if plp_order < 0:
             raise ValueError("plp_order must be non-negative.")
         if n_channel <= plp_order:
@@ -160,20 +160,20 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        fft_length,
-        plp_order,
-        n_channel,
-        sample_rate,
-        compression_factor,
-        lifter,
-        f_min,
-        f_max,
-        floor,
-        n_fft,
-        out_format,
-        device=None,
-        dtype=None,
-    ):
+        fft_length: int,
+        plp_order: int,
+        n_channel: int,
+        sample_rate: int,
+        compression_factor: float,
+        lifter: int,
+        f_min: float,
+        f_max: float | None,
+        floor: float,
+        n_fft: int,
+        out_format: str | int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
         )
@@ -229,20 +229,20 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
             ),
         )
 
-        if module:
-            f = fbank.center_frequencies[:-1] ** 2
-        else:
-            f = (
-                MelFilterBankAnalysis(
-                    fft_length=fft_length,
-                    n_channel=n_channel,
-                    sample_rate=sample_rate,
-                    f_min=f_min,
-                    f_max=f_max,
-                    floor=floor,
-                ).center_frequencies[:-1]
-                ** 2
-            )
+        if f_max is None:
+            f_max = sample_rate / 2
+
+        def hz_to_mel(x):
+            return 1127 * np.log1p(x / 700)
+
+        def mel_to_hz(x):
+            return 700 * np.expm1(x / 1127)
+
+        mel_min = hz_to_mel(f_min)
+        mel_max = hz_to_mel(f_max)
+        seed = np.arange(1, n_channel + 2)
+        center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
+        f = mel_to_hz(center_frequencies)[:-1] ** 2
         e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
         equal_loudness_curve = numpy_to_torch(e)
 
@@ -261,15 +261,15 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _forward(
-        x,
-        compression_factor,
-        formatter,
-        fbank,
-        levdur,
-        lpc2c,
-        equal_loudness_curve,
-        liftering_vector,
-    ):
+        x: torch.Tensor,
+        compression_factor: float,
+        formatter: Callable,
+        fbank: Callable,
+        levdur: Callable,
+        lpc2c: Callable,
+        equal_loudness_curve: torch.Tensor,
+        liftering_vector: torch.Tensor,
+    ) -> torch.Tensor:
         y, E = fbank(x)
         y = (torch.exp(y) * equal_loudness_curve) ** compression_factor
         y = replicate1(y)

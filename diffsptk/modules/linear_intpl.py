@@ -14,10 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn.functional as F
 
-from ..utils.private import get_values
-from ..utils.private import replicate1
+from ..typing import Precomputed
+from ..utils.private import get_values, replicate1
 from .base import BaseFunctionalModule
 
 
@@ -34,12 +35,12 @@ class LinearInterpolation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, upsampling_factor):
+    def __init__(self, upsampling_factor: int) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate filter coefficients.
 
         Parameters
@@ -66,26 +67,26 @@ class LinearInterpolation(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LinearInterpolation._precompute(*args, **kwargs)
         return LinearInterpolation._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(upsampling_factor):
+    def _check(upsampling_factor: int) -> None:
         if upsampling_factor <= 0:
             raise ValueError("The upsampling factor must be positive.")
 
     @staticmethod
-    def _precompute(upsampling_factor):
+    def _precompute(upsampling_factor: int) -> Precomputed:
         LinearInterpolation._check(upsampling_factor)
         return (upsampling_factor,)
 
     @staticmethod
-    def _forward(x, upsampling_factor):
+    def _forward(x: torch.Tensor, upsampling_factor: int) -> torch.Tensor:
         if upsampling_factor == 1:
             return x
 

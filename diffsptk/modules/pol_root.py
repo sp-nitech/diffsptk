@@ -17,8 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -39,14 +39,20 @@ class RootsToPolynomial(BaseFunctionalModule):
 
     """
 
-    def __init__(self, order, *, eps=None, in_format="rectangular"):
+    def __init__(
+        self,
+        order: int,
+        *,
+        eps: float | None = None,
+        in_format: str | int = "rectangular",
+    ) -> None:
         super().__init__()
 
         self.in_dim = order
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert roots to polynomial coefficients.
 
         Parameters
@@ -72,23 +78,25 @@ class RootsToPolynomial(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs)
         return RootsToPolynomial._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(order, eps):
+    def _check(order: int, eps: float | None) -> None:
         if order <= 0:
             raise ValueError("order must be positive.")
         if eps is not None and eps < 0:
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(order, eps=None, in_format="rectangular"):
+    def _precompute(
+        order: int, eps: float | None = None, in_format: str | int = "rectangular"
+    ) -> Precomputed:
         RootsToPolynomial._check(order, eps)
 
         if eps is None:
@@ -103,7 +111,7 @@ class RootsToPolynomial(BaseFunctionalModule):
         return (eps, formatter)
 
     @staticmethod
-    def _forward(x, eps, formatter):
+    def _forward(x: torch.Tensor, eps: float, formatter: Callable) -> torch.Tensor:
         x = formatter(x)
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)

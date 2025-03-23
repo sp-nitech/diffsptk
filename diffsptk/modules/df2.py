@@ -16,8 +16,10 @@
 
 import math
 
+import torch
 from torch import nn
 
+from ..typing import Callable, Precomputed
 from ..utils.private import get_values
 from .base import BaseNonFunctionalModule
 from .dfs import InfiniteImpulseResponseDigitalFilter
@@ -32,16 +34,16 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
     sample_rate : int >= 1
         The sample rate in Hz.
 
-    pole_frequency : float > 0
+    pole_frequency : float > 0 or None
         The pole frequency in Hz.
 
-    pole_bandwidth : float > 0
+    pole_bandwidth : float > 0 or None
         The pole bandwidth in Hz.
 
-    zero_frequency : float > 0
+    zero_frequency : float > 0 or None
         The zero frequency in Hz.
 
-    zero_bandwidth : float > 0
+    zero_bandwidth : float > 0 or None
         The zero bandwidth in Hz.
 
     ir_length : int >= 1 or None
@@ -52,19 +54,19 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        sample_rate,
-        pole_frequency=None,
-        pole_bandwidth=None,
-        zero_frequency=None,
-        zero_bandwidth=None,
-        ir_length=None,
-    ):
+        sample_rate: int,
+        pole_frequency: float | None = None,
+        pole_bandwidth: float | None = None,
+        zero_frequency: float | None = None,
+        zero_bandwidth: float | None = None,
+        ir_length: int | None = None,
+    ) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a second order digital filter to the input waveform.
 
         Parameters
@@ -90,8 +92,12 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
 
     @staticmethod
     def _check(
-        sample_rate, pole_frequency, pole_bandwidth, zero_frequency, zero_bandwidth
-    ):
+        sample_rate: int,
+        pole_frequency: float | None,
+        pole_bandwidth: float | None,
+        zero_frequency: float | None,
+        zero_bandwidth: float | None,
+    ) -> None:
         if pole_frequency is not None and pole_frequency <= 0:
             raise ValueError("pole_frequency must be positive.")
         if pole_bandwidth is not None and pole_bandwidth <= 0:
@@ -108,13 +114,13 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
 
     @staticmethod
     def _precompute(
-        sample_rate,
-        pole_frequency,
-        pole_bandwidth,
-        zero_frequency,
-        zero_bandwidth,
-        ir_length=None,
-    ):
+        sample_rate: int,
+        pole_frequency: float | None,
+        pole_bandwidth: float | None,
+        zero_frequency: float | None,
+        zero_bandwidth: float | None,
+        ir_length: int | None,
+    ) -> Precomputed:
         SecondOrderDigitalFilter._check(
             sample_rate, pole_frequency, pole_bandwidth, zero_frequency, zero_bandwidth
         )
@@ -133,5 +139,5 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         return None, (dfs,), None
 
     @staticmethod
-    def _forward(x, dfs):
+    def _forward(x: torch.Tensor, dfs: Callable) -> torch.Tensor:
         return dfs(x)

@@ -14,10 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
+import torch
 from torch import nn
+
+from ..typing import Precomputed
 
 
 class BaseNonFunctionalModule(ABC, nn.Module):
@@ -27,31 +29,31 @@ class BaseNonFunctionalModule(ABC, nn.Module):
 class BaseFunctionalModule(ABC, nn.Module):
     @staticmethod
     @abstractmethod
-    def _func(*args, **kwargs):
+    def _func(*args, **kwargs) -> torch.Tensor:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def _precompute(*args, **kwargs):
+    def _precompute(*args, **kwargs) -> Precomputed:
         raise NotImplementedError
 
     @staticmethod
     @abstractmethod
-    def _forward(*args, **kwargs):
+    def _forward(*args, **kwargs) -> torch.Tensor:
         raise NotImplementedError
 
 
 class BaseLearnerModule(ABC, nn.Module):
     @abstractmethod
-    def transform(self, *args, **kwargs):
+    def transform(self, *args, **kwargs) -> torch.Tensor:
         raise NotImplementedError

@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import ArrayLike, Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 from .delta import Delta
 
@@ -37,7 +36,14 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
     """
 
-    def __init__(self, size, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
+    def __init__(
+        self,
+        size: int,
+        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [
+            [-0.5, 0, 0.5],
+            [1, -2, 1],
+        ],
+    ) -> None:
         super().__init__()
 
         self.in_length = size
@@ -45,7 +51,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("M", tensors[0])
 
-    def forward(self, u):
+    def forward(self, u: torch.Tensor) -> torch.Tensor:
         """Perform MLPG given the mean vectors with delta components.
 
         Parameters
@@ -86,22 +92,27 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         return self._forward(u, **self._buffers)
 
     @staticmethod
-    def _func(u, *args, **kwargs):
+    def _func(u: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = MaximumLikelihoodParameterGeneration._precompute(
             u.size(-2), *args, **kwargs, device=u.device, dtype=u.dtype
         )
         return MaximumLikelihoodParameterGeneration._forward(u, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(size, seed, device=None, dtype=None):
+    def _precompute(
+        size: int,
+        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MaximumLikelihoodParameterGeneration._check()
 
         # Make window.
@@ -141,7 +152,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         return None, None, (to(M, dtype=dtype),)
 
     @staticmethod
-    def _forward(mean, M):
+    def _forward(mean: torch.Tensor, M: torch.Tensor) -> torch.Tensor:
         T = mean.size(-2)
         H = M.size(-1) // T
         u = mean.reshape(*mean.shape[:-2], T * H, -1)

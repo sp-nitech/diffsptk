@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -32,14 +32,14 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, filter_order):
+    def __init__(self, filter_order: int) -> None:
         super().__init__()
 
         self.in_dim = filter_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, a):
+    def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert all-pole to all-zero filter coefficients vice versa.
 
         Parameters
@@ -65,27 +65,28 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
         return self._forward(a)
 
     @staticmethod
-    def _func(a, *args, **kwargs):
+    def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         AllPoleToAllZeroDigitalFilterCoefficients._precompute(
             a.size(-1) - 1, *args, **kwargs
         )
         return AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(filter_order):
+    def _check(filter_order: int) -> None:
         if filter_order < 0:
             raise ValueError("filter_order must be non-negative.")
 
     @staticmethod
-    def _precompute(filter_order):
+    def _precompute(filter_order: int) -> Precomputed:
         AllPoleToAllZeroDigitalFilterCoefficients._check(filter_order)
+        return (None,)
 
     @staticmethod
-    def _forward(a):
+    def _forward(a: torch.Tensor) -> torch.Tensor:
         K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
         b0 = torch.reciprocal(K)
         b1 = a1 * b0

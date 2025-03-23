@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -36,12 +37,12 @@ class ALawCompression(BaseFunctionalModule):
 
     """
 
-    def __init__(self, abs_max=1, a=87.6):
+    def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compress the input waveform using the A-law algorithm.
 
         Parameters
@@ -66,23 +67,23 @@ class ALawCompression(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ALawCompression._precompute(*args, **kwargs)
         return ALawCompression._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(abs_max, a):
+    def _check(abs_max: float, a: float) -> None:
         if abs_max < 0:
             raise ValueError("abs_max must be non-negative.")
         if a < 1:
             raise ValueError("a must be greater than or equal to 1.")
 
     @staticmethod
-    def _precompute(abs_max, a):
+    def _precompute(abs_max: float, a: float) -> Precomputed:
         ALawCompression._check(abs_max, a)
         return (
             abs_max,
@@ -91,7 +92,7 @@ class ALawCompression(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(x, abs_max, a, c):
+    def _forward(x: torch.Tensor, abs_max: float, a: float, c: float) -> torch.Tensor:
         x_abs = x.abs() / abs_max
         x1 = a * x_abs
         x2 = 1 + torch.log(x1)

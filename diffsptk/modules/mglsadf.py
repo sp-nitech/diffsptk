@@ -14,14 +14,14 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any
+
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import Lambda
-from ..utils.private import check_size
-from ..utils.private import get_gamma
-from ..utils.private import remove_gain
+from ..utils.private import Lambda, check_size, get_gamma, remove_gain
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseNonFunctionalModule
 from .c2mpir import CepstrumToMinimumPhaseImpulseResponse
@@ -34,11 +34,11 @@ from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .stft import ShortTimeFourierTransform
 
 
-def is_array_like(x):
-    return isinstance(x, (tuple, list))
+def is_array_like(x: Any) -> bool:
+    return isinstance(x, (tuple, list, np.ndarray))
 
 
-def mirror(x, half=False):
+def mirror(x: torch.Tensor, half: bool = False) -> torch.Tensor:
     x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
     if half:
         x1 = x1 * 0.5
@@ -108,17 +108,17 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        filter_order,
-        frame_period,
+        filter_order: tuple[int, int] | int,
+        frame_period: int,
         *,
-        alpha=0,
-        gamma=0,
-        c=None,
-        ignore_gain=False,
-        phase="minimum",
-        mode="multi-stage",
+        alpha: float = 0,
+        gamma: float = 0,
+        c: int | None = None,
+        ignore_gain: bool = False,
+        phase: str = "minimum",
+        mode: str = "multi-stage",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         self.frame_period = frame_period
@@ -178,7 +178,7 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         else:
             raise ValueError(f"mode {mode} is not supported.")
 
-    def forward(self, x, mc):
+    def forward(self, x: torch.Tensor, mc: torch.Tensor) -> torch.Tensor:
         """Apply an MGLSA digital filter.
 
         Parameters
@@ -224,17 +224,17 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
 class MultiStageFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order,
-        frame_period,
+        filter_order: tuple[int, int] | int,
+        frame_period: int,
         *,
-        alpha=0,
-        gamma=0,
-        ignore_gain=False,
-        phase="minimum",
-        taylor_order=20,
-        cep_order=199,
-        n_fft=512,
-    ):
+        alpha: float = 0,
+        gamma: float = 0,
+        ignore_gain: bool = False,
+        phase: str = "minimum",
+        taylor_order: int = 20,
+        cep_order: tuple[int, int] | int = 199,
+        n_fft: int = 512,
+    ) -> None:
         super().__init__()
 
         if taylor_order < 0:
@@ -284,7 +284,11 @@ class MultiStageFIRFilter(nn.Module):
 
         self.linear_intpl = LinearInterpolation(frame_period)
 
-    def forward(self, x, mc):
+    def forward(
+        self,
+        x: torch.Tensor,
+        mc: tuple[torch.Tensor, torch.Tensor] | torch.Tensor,
+    ) -> torch.Tensor:
         if self.phase == "mixed":
             mc_min, mc_max = mc
             c_min = self.mgc2c[0](mc_min)
@@ -324,16 +328,16 @@ class MultiStageFIRFilter(nn.Module):
 class SingleStageFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order,
-        frame_period,
+        filter_order: tuple[int, int] | int,
+        frame_period: int,
         *,
-        alpha=0,
-        gamma=0,
-        ignore_gain=False,
-        phase="minimum",
-        ir_length=2000,
-        n_fft=4096,
-    ):
+        alpha: float = 0,
+        gamma: float = 0,
+        ignore_gain: bool = False,
+        phase: str = "minimum",
+        ir_length: tuple[int, int] | int = 2000,
+        n_fft: int = 4096,
+    ) -> None:
         super().__init__()
 
         self.ignore_gain = ignore_gain
@@ -401,7 +405,11 @@ class SingleStageFIRFilter(nn.Module):
 
         self.linear_intpl = LinearInterpolation(frame_period)
 
-    def forward(self, x, mc):
+    def forward(
+        self,
+        x: torch.Tensor,
+        mc: tuple[torch.Tensor, torch.Tensor] | torch.Tensor,
+    ) -> torch.Tensor:
         if self.phase == "minimum":
             h = self.mgc2ir(mc)
             h = h.flip(-1)
@@ -447,18 +455,18 @@ class SingleStageFIRFilter(nn.Module):
 class FrequencyDomainFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order,
-        frame_period,
+        filter_order: tuple[int, int] | int,
+        frame_period: int,
         *,
-        alpha=0,
-        gamma=0,
-        ignore_gain=False,
-        phase="minimum",
-        frame_length=400,
-        fft_length=512,
-        n_fft=512,
+        alpha: float = 0,
+        gamma: float = 0,
+        ignore_gain: bool = False,
+        phase: str = "minimum",
+        frame_length: int = 400,
+        fft_length: int = 512,
+        n_fft: int = 512,
         **stft_kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_length <= 2 * frame_period:
@@ -510,7 +518,11 @@ class FrequencyDomainFIRFilter(nn.Module):
             frame_length, frame_period, fft_length, **stft_kwargs
         )
 
-    def forward(self, x, mc):
+    def forward(
+        self,
+        x: torch.Tensor,
+        mc: tuple[torch.Tensor, torch.Tensor] | torch.Tensor,
+    ) -> torch.Tensor:
         if torch.is_tensor(mc):
             mc = [mc]
 

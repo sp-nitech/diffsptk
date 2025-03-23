@@ -16,6 +16,7 @@
 
 import torch
 
+from ..typing import Callable, Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .quantize import UniformQuantization
@@ -38,12 +39,14 @@ class InverseUniformQuantization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
+    def __init__(
+        self, abs_max: float = 1, n_bit: int = 8, quantizer: str | int = "mid-rise"
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, y):
+    def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Dequantize the input waveform.
 
         Parameters
@@ -71,20 +74,20 @@ class InverseUniformQuantization(BaseFunctionalModule):
         return self._forward(y, *self.values)
 
     @staticmethod
-    def _func(y, *args, **kwargs):
+    def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = InverseUniformQuantization._precompute(*args, **kwargs)
         return InverseUniformQuantization._forward(y, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         UniformQuantization._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(abs_max, n_bit, quantizer):
+    def _precompute(abs_max: float, n_bit: int, quantizer: str | int) -> Precomputed:
         InverseUniformQuantization._check(abs_max, n_bit)
         if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
@@ -103,7 +106,9 @@ class InverseUniformQuantization(BaseFunctionalModule):
         raise ValueError(f"quantizer {quantizer} is not supported.")
 
     @staticmethod
-    def _forward(y, abs_max, level, func):
+    def _forward(
+        y: torch.Tensor, abs_max: float, level: int, func: Callable
+    ) -> torch.Tensor:
         x = func(y) * (2 * abs_max / level)
         x = torch.clip(x, min=-abs_max, max=abs_max)
         return x

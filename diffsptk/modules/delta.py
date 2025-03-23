@@ -17,8 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import ArrayLike, Precomputed
+from ..utils.private import get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -36,13 +36,20 @@ class Delta(BaseFunctionalModule):
 
     """
 
-    def __init__(self, seed=[[-0.5, 0, 0.5], [1, -2, 1]], static_out=True):
+    def __init__(
+        self,
+        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [
+            [-0.5, 0, 0.5],
+            [1, -2, 1],
+        ],
+        static_out: bool = True,
+    ) -> None:
         super().__init__()
 
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("window", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the delta components.
 
         Parameters
@@ -75,23 +82,28 @@ class Delta(BaseFunctionalModule):
         return self._forward(x, self.window)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = Delta._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return Delta._forward(x, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(seed):
+    def _check(seed: ArrayLike[ArrayLike[float]] | ArrayLike[int]) -> None:
         if not isinstance(seed, (tuple, list)):
             raise ValueError("seed must be tuple or list.")
 
     @staticmethod
-    def _precompute(seed, static_out, device=None, dtype=None):
+    def _precompute(
+        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
+        static_out: bool,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         Delta._check(seed)
 
         if isinstance(seed[0], (tuple, list)):
@@ -158,7 +170,7 @@ class Delta(BaseFunctionalModule):
         return None, None, (to(window, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, window):
+    def _forward(x: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
         d = x.dim()
         if d == 2:
             x = x.unsqueeze(0)

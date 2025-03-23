@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import ArrayLike, Precomputed
+from ..utils.private import get_values, to
 from .base import BaseFunctionalModule
 from .hilbert import HilbertTransform
 
@@ -27,21 +27,23 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
 
     Parameters
     ----------
-    fft_length : int >= 1 or list[int]
+    fft_length : int >= 1 or tuple[int, int]
         The number of FFT bins.
 
-    dim : list[int]
+    dim : tuple[int, int]
         The dimension along which to take the Hilbert transform.
 
     """
 
-    def __init__(self, fft_length, dim=(-2, -1)):
+    def __init__(
+        self, fft_length: ArrayLike[int] | int, dim: ArrayLike[int] = (-2, -1)
+    ) -> None:
         super().__init__()
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("h", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the analytic signal using the Hilbert transform.
 
         Parameters
@@ -71,7 +73,9 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(x, fft_length, dim):
+    def _func(
+        x: torch.Tensor, fft_length: ArrayLike[int] | int | None, dim: ArrayLike[int]
+    ) -> torch.Tensor:
         values, _, tensors = TwoDimensionalHilbertTransform._precompute(
             (x.size(dim[0]), x.size(dim[1])) if fft_length is None else fft_length,
             dim,
@@ -81,16 +85,21 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
         return TwoDimensionalHilbertTransform._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(dim):
+    def _check(dim: ArrayLike[int]) -> None:
         if len(dim) != 2:
             raise ValueError("dim must have length 2.")
 
     @staticmethod
-    def _precompute(fft_length, dim, device=None, dtype=None):
+    def _precompute(
+        fft_length: ArrayLike[int] | int,
+        dim: ArrayLike[int],
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         TwoDimensionalHilbertTransform._check(dim)
         if isinstance(fft_length, int):
             fft_length = (fft_length, fft_length)
@@ -104,7 +113,7 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
         return (dim,), None, (to(h, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, dim, h):
+    def _forward(x: torch.Tensor, dim: ArrayLike[int], h: torch.Tensor) -> torch.Tensor:
         L = h.size(dim[0]), h.size(dim[1])
         target_shape = [1] * x.dim()
         target_shape[dim[0]] = L[0]

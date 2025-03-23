@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -33,12 +34,12 @@ class Entropy(BaseFunctionalModule):
 
     """
 
-    def __init__(self, out_format="nat"):
+    def __init__(self, out_format: str | int = "nat") -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, p):
+    def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Compute entropy from probability sequence.
 
         Parameters
@@ -65,20 +66,20 @@ class Entropy(BaseFunctionalModule):
         return self._forward(p, *self.values)
 
     @staticmethod
-    def _func(p, *args, **kwargs):
+    def _func(p: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Entropy._precompute(*args, **kwargs)
         return Entropy._forward(p, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(out_format):
+    def _precompute(out_format: str | int) -> Precomputed:
         Entropy._check()
         if out_format in (0, "bit"):
             c = math.log2(math.e)
@@ -91,5 +92,5 @@ class Entropy(BaseFunctionalModule):
         return (c,)
 
     @staticmethod
-    def _forward(p, c):
+    def _forward(p: torch.Tensor, c: float) -> torch.Tensor:
         return c * torch.special.entr(p).sum(-1)

@@ -19,9 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..utils.private import Lambda
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import Lambda, get_layer, get_values
 from .base import BaseFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
@@ -71,25 +70,25 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
     def __init__(
         self,
-        frame_length,
-        frame_period,
-        fft_length,
+        frame_length: int,
+        frame_period: int,
+        fft_length: int,
         *,
-        center=True,
-        zmean=False,
-        mode="constant",
-        window="blackman",
-        norm="power",
-        eps=1e-9,
-        relative_floor=None,
-        out_format="power",
-    ):
+        center: bool = True,
+        zmean: bool = False,
+        mode: str = "constant",
+        window: str = "blackman",
+        norm: str = "power",
+        eps: float = 1e-9,
+        relative_floor: float | None = None,
+        out_format: str = "power",
+    ) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute short-time Fourier transform.
 
         Parameters
@@ -118,32 +117,32 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = ShortTimeFourierTransform._precompute(*args, **kwargs)
         return ShortTimeFourierTransform._forward(x, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
     def _precompute(
-        frame_length,
-        frame_period,
-        fft_length,
-        center,
-        zmean,
-        mode,
-        window,
-        norm,
-        eps,
-        relative_floor,
-        out_format,
-    ):
+        frame_length: int,
+        frame_period: int,
+        fft_length: int,
+        center: bool,
+        zmean: bool,
+        mode: str,
+        window: str,
+        norm: str,
+        eps: float,
+        relative_floor: float | None,
+        out_format: str,
+    ) -> Precomputed:
         ShortTimeFourierTransform._check()
         module = inspect.stack()[1].function == "__init__"
 
@@ -184,5 +183,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         return None, (frame, window_, spec), None
 
     @staticmethod
-    def _forward(x, frame, window, spec):
+    def _forward(
+        x: torch.Tensor, frame: Callable, window: Callable, spec: Callable
+    ) -> torch.Tensor:
         return spec(window(frame(x)))

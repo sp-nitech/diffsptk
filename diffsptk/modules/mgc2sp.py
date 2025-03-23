@@ -20,9 +20,8 @@ import math
 import torch
 from torch import nn
 
-from ..utils.private import check_size
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_layer, get_values
 from .base import BaseFunctionalModule
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
@@ -62,16 +61,16 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
     def __init__(
         self,
-        cep_order,
-        fft_length,
+        cep_order: int,
+        fft_length: int,
         *,
-        alpha=0,
-        gamma=0,
-        norm=False,
-        mul=False,
+        alpha: float = 0,
+        gamma: float = 0,
+        norm: bool = False,
+        mul: bool = False,
         n_fft=512,
-        out_format="power",
-    ):
+        out_format: str | int = "power",
+    ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
@@ -79,7 +78,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, mc):
+    def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-cepstrum to spectrum.
 
         Parameters
@@ -112,22 +111,31 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         return self._forward(mc, *self.values, *self.layers)
 
     @staticmethod
-    def _func(mc, *args, **kwargs):
+    def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, _ = MelGeneralizedCepstrumToSpectrum._precompute(
             mc.size(-1) - 1, *args, **kwargs
         )
         return MelGeneralizedCepstrumToSpectrum._forward(mc, *values, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(cep_order, fft_length, alpha, gamma, norm, mul, n_fft, out_format):
+    def _precompute(
+        cep_order: int,
+        fft_length: int,
+        alpha: float,
+        gamma: float,
+        norm: bool,
+        mul: bool,
+        n_fft: int,
+        out_format: str | int,
+    ) -> Precomputed:
         MelGeneralizedCepstrumToSpectrum._check()
 
         if out_format in (0, "db"):
@@ -169,7 +177,11 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         return (formatter,), (mgc2c,), None
 
     @staticmethod
-    def _forward(mc, formatter, mgc2c):
+    def _forward(
+        mc: torch.Tensor,
+        formatter: Callable,
+        mgc2c: Callable,
+    ) -> torch.Tensor:
         c = mgc2c(mc)
         sp = torch.fft.rfft(c, n=(c.size(-1) - 1) * 2)
         sp = formatter(sp)

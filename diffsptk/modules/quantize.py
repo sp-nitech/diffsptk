@@ -16,6 +16,7 @@
 
 import torch
 
+from ..typing import Callable, Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -57,12 +58,14 @@ class UniformQuantization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, abs_max=1, n_bit=8, quantizer="mid-rise"):
+    def __init__(
+        self, abs_max: float = 1, n_bit: int = 8, quantizer: str | int = "mid-rise"
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Quantize the input waveform.
 
         Parameters
@@ -87,23 +90,23 @@ class UniformQuantization(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = UniformQuantization._precompute(*args, **kwargs)
         return UniformQuantization._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(abs_max, n_bit):
+    def _check(abs_max: float, n_bit: int) -> None:
         if abs_max < 0:
             raise ValueError("abs_max must be non-negative.")
         if n_bit <= 0:
             raise ValueError("n_bit must be positive.")
 
     @staticmethod
-    def _precompute(abs_max, n_bit, quantizer):
+    def _precompute(abs_max: float, n_bit: int, quantizer: str | int) -> Precomputed:
         UniformQuantization._check(abs_max, n_bit)
         if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
@@ -122,7 +125,9 @@ class UniformQuantization(BaseFunctionalModule):
         raise ValueError(f"quantizer {quantizer} is not supported.")
 
     @staticmethod
-    def _forward(x, abs_max, level, func):
+    def _forward(
+        x: torch.Tensor, abs_max: float, level: int, func: Callable
+    ) -> torch.Tensor:
         y = func(x * (level / (2 * abs_max)))
         y = torch.clip(y, min=0, max=level - 1)
         return y

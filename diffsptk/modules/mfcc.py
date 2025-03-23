@@ -19,9 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..utils.private import get_layer
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import get_layer, get_values, to
 from .base import BaseFunctionalModule
 from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
@@ -69,23 +68,23 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     def __init__(
         self,
         *,
-        fft_length,
-        mfcc_order,
-        n_channel,
-        sample_rate,
-        lifter=1,
-        f_min=0,
-        f_max=None,
-        floor=1e-5,
-        out_format="y",
-    ):
+        fft_length: int,
+        mfcc_order: int,
+        n_channel: int,
+        sample_rate: int,
+        lifter: int = 1,
+        f_min: float = 0,
+        f_max: float | None = None,
+        floor: float = 1e-5,
+        out_format: str | int = "y",
+    ) -> None:
         super().__init__()
 
         self.values, layers, tensors = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("liftering_vector", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the MFCC from the power spectrum.
 
         Parameters
@@ -120,7 +119,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values, *self.layers, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, tensors = MelFrequencyCepstralCoefficientsAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
@@ -129,11 +128,11 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(mfcc_order, n_channel, lifter):
+    def _check(mfcc_order: int, n_channel: int, lifter: int) -> None:
         if mfcc_order < 0:
             raise ValueError("mfcc_order must be non-negative.")
         if n_channel <= mfcc_order:
@@ -143,18 +142,18 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        fft_length,
-        mfcc_order,
-        n_channel,
-        sample_rate,
-        lifter,
-        f_min,
-        f_max,
-        floor,
-        out_format,
-        device=None,
-        dtype=None,
-    ):
+        fft_length: int,
+        mfcc_order: int,
+        n_channel: int,
+        sample_rate: int,
+        lifter: int,
+        f_min: float,
+        f_max: float | None,
+        floor: float,
+        out_format: str | int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MelFrequencyCepstralCoefficientsAnalysis._check(mfcc_order, n_channel, lifter)
         module = inspect.stack()[1].function == "__init__"
 
@@ -199,7 +198,13 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         return (formatter,), (fbank, dct), (to(liftering_vector, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, formatter, fbank, dct, liftering_vector):
+    def _forward(
+        x: torch.Tensor,
+        formatter: Callable,
+        fbank: Callable,
+        dct: Callable,
+        liftering_vector: torch.Tensor,
+    ) -> torch.Tensor:
         y, E = fbank(x)
         y = dct(y)
         y = y[..., : len(liftering_vector)] * liftering_vector

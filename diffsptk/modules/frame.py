@@ -14,8 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 import torch.nn.functional as F
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -44,13 +46,19 @@ class Frame(BaseFunctionalModule):
     """
 
     def __init__(
-        self, frame_length, frame_period, *, center=True, zmean=False, mode="constant"
-    ):
+        self,
+        frame_length: int,
+        frame_period: int,
+        *,
+        center: bool = True,
+        zmean: bool = False,
+        mode: str = "constant",
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply framing to the given waveform.
 
         Parameters
@@ -79,16 +87,16 @@ class Frame(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Frame._precompute(*args, **kwargs)
         return Frame._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(frame_length, frame_period):
+    def _check(frame_length: int, frame_period: int) -> None:
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if frame_period <= 0:
@@ -96,8 +104,12 @@ class Frame(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        frame_length, frame_period, center=True, zmean=False, mode="constant"
-    ):
+        frame_length: int,
+        frame_period: int,
+        center: bool = True,
+        zmean: bool = False,
+        mode: str = "constant",
+    ) -> Precomputed:
         Frame._check(frame_length, frame_period)
         return (
             frame_length,
@@ -108,7 +120,14 @@ class Frame(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(x, frame_length, frame_period, center, zmean, mode):
+    def _forward(
+        x: torch.Tensor,
+        frame_length: int,
+        frame_period: int,
+        center: bool,
+        zmean: bool,
+        mode: str,
+    ) -> torch.Tensor:
         if center:
             padding = (frame_length // 2, (frame_length - 1) // 2)
         else:

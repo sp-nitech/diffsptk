@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
+
 from .base import BaseNonFunctionalModule
 from .mglsadf import PseudoMGLSADigitalFilter
 
@@ -21,12 +23,12 @@ from .mglsadf import PseudoMGLSADigitalFilter
 class PseudoInverseMGLSADigitalFilter(BaseNonFunctionalModule):
     """See :func:`~diffsptk.PseudoMGLSADigitalFilter` for details."""
 
-    def __init__(self, filter_order, frame_period, **kwargs):
+    def __init__(self, filter_order: int, frame_period: int, **kwargs) -> None:
         super().__init__()
 
         self.mglsadf = PseudoMGLSADigitalFilter(filter_order, frame_period, **kwargs)
 
-    def forward(self, y, mc):
+    def forward(self, y: torch.Tensor, mc: torch.Tensor) -> torch.Tensor:
         """Apply an inverse MGLSA digital filter.
 
         Parameters

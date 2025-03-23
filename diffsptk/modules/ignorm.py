@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .gnorm import GeneralizedCepstrumGainNormalization
 
@@ -45,14 +45,14 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, gamma=0, c=None):
+    def __init__(self, cep_order: int, gamma: float = 0, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, y):
+    def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum inverse gain normalization.
 
         Parameters
@@ -79,26 +79,26 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
         return self._forward(y, *self.values)
 
     @staticmethod
-    def _func(y, *args, **kwargs):
+    def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = GeneralizedCepstrumInverseGainNormalization._precompute(
             y.size(-1) - 1, *args, **kwargs
         )
         return GeneralizedCepstrumInverseGainNormalization._forward(y, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         raise NotImplementedError
 
     @staticmethod
-    def _precompute(*args, **kwargs):
+    def _precompute(*args, **kwargs) -> Precomputed:
         return GeneralizedCepstrumGainNormalization._precompute(*args, **kwargs)
 
     @staticmethod
-    def _forward(y, gamma):
+    def _forward(y: torch.Tensor, gamma: float) -> torch.Tensor:
         K, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
         if gamma == 0:
             x0 = torch.log(K)

@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .alaw import ALawCompression
 from .base import BaseFunctionalModule
@@ -37,12 +38,12 @@ class ALawExpansion(BaseFunctionalModule):
 
     """
 
-    def __init__(self, abs_max=1, a=87.6):
+    def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, y):
+    def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Expand the waveform using the A-law algorithm.
 
         Parameters
@@ -68,20 +69,20 @@ class ALawExpansion(BaseFunctionalModule):
         return self._forward(y, *self.values)
 
     @staticmethod
-    def _func(y, *args, **kwargs):
+    def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ALawExpansion._precompute(*args, **kwargs)
         return ALawExpansion._forward(y, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         ALawCompression._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(abs_max, a):
+    def _precompute(abs_max: float, a: float) -> Precomputed:
         ALawExpansion._check(abs_max, a)
         return (
             abs_max,
@@ -90,7 +91,7 @@ class ALawExpansion(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(y, abs_max, c, z):
+    def _forward(y: torch.Tensor, abs_max: float, c: float, z: float) -> torch.Tensor:
         y_abs = y.abs() / abs_max
         y1 = z * y_abs
         y2 = torch.exp(y1 - 1)

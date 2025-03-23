@@ -17,10 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import TAU
-from ..utils.private import check_size
-from ..utils.private import deconv1d
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import TAU, check_size, deconv1d, get_values
 from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 
@@ -52,8 +50,12 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
     """
 
     def __init__(
-        self, lpc_order, log_gain=False, sample_rate=None, out_format="radian"
-    ):
+        self,
+        lpc_order: int,
+        log_gain: bool = False,
+        sample_rate: int | None = None,
+        out_format: str | int = "radian",
+    ) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -62,7 +64,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         self.register_buffer("kernel_p", tensors[0])
         self.register_buffer("kernel_q", tensors[1])
 
-    def forward(self, a):
+    def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert LPC to LSP.
 
         Parameters
@@ -94,7 +96,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         return self._forward(a, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(a, *args, **kwargs):
+    def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = (
             LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
                 a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
@@ -105,11 +107,13 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(lpc_order, log_gain, sample_rate, out_format):
+    def _check(
+        lpc_order: int, log_gain: bool, sample_rate: int, out_format: str | int
+    ) -> None:
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
         if out_format in (2, 3, "hz", "khz") and (
@@ -119,8 +123,13 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        lpc_order, log_gain, sample_rate, out_format, device=None, dtype=None
-    ):
+        lpc_order: int,
+        log_gain: bool,
+        sample_rate: int,
+        out_format: str | int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         LinearPredictiveCoefficientsToLineSpectralPairs._check(
             lpc_order, log_gain, sample_rate, out_format
         )
@@ -147,7 +156,13 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         return (log_gain, formatter), None, (kernel_p, kernel_q)
 
     @staticmethod
-    def _forward(a, log_gain, formatter, kernel_p, kernel_q):
+    def _forward(
+        a: torch.Tensor,
+        log_gain: bool,
+        formatter: Callable,
+        kernel_p: torch.Tensor,
+        kernel_q: torch.Tensor,
+    ) -> torch.Tensor:
         M = a.size(-1) - 1
         K, a = torch.split(a, [1, M], dim=-1)
         if log_gain:

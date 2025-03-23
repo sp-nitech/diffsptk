@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
+
 from .base import BaseNonFunctionalModule
 
 
@@ -42,7 +44,7 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, order, codebook_size, n_stage, **kwargs):
+    def __init__(self, order: int, codebook_size: int, n_stage: int, **kwargs) -> None:
         super().__init__()
 
         if order < 0:
@@ -59,10 +61,12 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
         ).float()
 
     @property
-    def codebooks(self):
+    def codebooks(self) -> torch.Tensor:
         return self.vq.codebooks
 
-    def forward(self, x, codebooks=None, **kwargs):
+    def forward(
+        self, x: torch.Tensor, codebooks: torch.Tensor | None = None, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform residual vector quantization.
 
         Parameters
@@ -70,7 +74,7 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
         x : Tensor [shape=(..., M+1)]
             The input vectors.
 
-        codebooks : Tensor [shape=(Q, K, M+1)]
+        codebooks : Tensor [shape=(Q, K, M+1)] or None
             The external codebook. If None, use the internal codebook.
 
         **kwargs : additional keyword arguments

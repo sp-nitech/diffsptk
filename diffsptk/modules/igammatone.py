@@ -18,9 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..signals import impulse
-from ..utils.private import TAU
-from ..utils.private import check_size
-from ..utils.private import to
+from ..utils.private import TAU, check_size, to
 from .base import BaseNonFunctionalModule
 from .gammatone import GammatoneFilterBankAnalysis
 
@@ -76,19 +74,19 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        sample_rate,
+        sample_rate: int,
         *,
-        desired_delay=4,
-        f_min=70,
-        f_base=1000,
-        f_max=6700,
-        filter_order=4,
-        bandwidth_factor=1.0,
-        density=1.0,
-        exact=False,
-        n_iter=100,
-        eps=1e-8,
-    ):
+        desired_delay: float = 4,
+        f_min: float = 70,
+        f_base: float = 1000,
+        f_max: float = 6700,
+        filter_order: int = 4,
+        bandwidth_factor: float = 1,
+        density: float = 1,
+        exact: bool = False,
+        n_iter: int = 100,
+        eps: float = 1e-8,
+    ) -> None:
         super().__init__()
 
         self.delay = round(desired_delay * sample_rate / 1000)
@@ -147,7 +145,9 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
 
         self.register_buffer("gains", to(gains.real).unsqueeze(-1))  # (K, 1)
 
-    def forward(self, y, keepdim=True, compensate_delay=True):
+    def forward(
+        self, y: torch.Tensor, keepdim: bool = True, compensate_delay: bool = True
+    ) -> torch.Tensor:
         """Reconstruct waveform from filter bank signals.
 
         Parameters

@@ -17,9 +17,8 @@
 import numpy as np
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -63,26 +62,25 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     def __init__(
         self,
         *,
-        fft_length,
-        n_channel,
-        sample_rate,
-        f_min=0,
-        f_max=None,
-        floor=1e-5,
-        use_power=False,
-        out_format="y",
-        device=None,
-        dtype=None,
-    ):
+        fft_length: int,
+        n_channel: int,
+        sample_rate: int,
+        f_min: float = 0,
+        f_max: float | None = None,
+        floor: float = 1e-5,
+        use_power: bool = False,
+        out_format: str | int = "y",
+    ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors, others = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("H", tensors[0])
-        self.center_frequencies = others[0]  # For PLP.
 
-    def forward(self, x):
+    def forward(
+        self, x: torch.Tensor
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         """Apply mel filter banks to the STFT.
 
         Parameters
@@ -115,18 +113,27 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
-        values, _, tensors, _ = MelFilterBankAnalysis._precompute(
+    def _func(
+        x: torch.Tensor, *args, **kwargs
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
+        values, _, tensors = MelFilterBankAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return MelFilterBankAnalysis._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(fft_length, n_channel, sample_rate, f_min, f_max, floor):
+    def _check(
+        fft_length: int,
+        n_channel: int,
+        sample_rate: int,
+        f_min: float,
+        f_max: float | None,
+        floor: float,
+    ) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
         if n_channel <= 0:
@@ -142,17 +149,17 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        fft_length,
-        n_channel,
-        sample_rate,
-        f_min,
-        f_max,
-        floor,
-        use_power,
-        out_format,
-        device=None,
-        dtype=None,
-    ):
+        fft_length: int,
+        n_channel: int,
+        sample_rate: int,
+        f_min: float,
+        f_max: float | None,
+        floor: float,
+        use_power: bool,
+        out_format: str | int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MelFilterBankAnalysis._check(
             fft_length,
             n_channel,
@@ -190,7 +197,6 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         seed = np.arange(1, n_channel + 2)
         center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
-        center_frequencies_in_hz = mel_to_hz(center_frequencies)
 
         bin_indices = np.arange(lower_bin_index, upper_bin_index)
         mel = hz_to_mel(sample_rate * bin_indices / fft_length)
@@ -208,15 +214,16 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             if m < n_channel:
                 weights[k, m] += 1 - w
 
-        return (
-            (floor, use_power, formatter),
-            None,
-            (to(weights, dtype=dtype),),
-            (center_frequencies_in_hz,),
-        )
+        return (floor, use_power, formatter), None, (to(weights, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, floor, use_power, formatter, H):
+    def _forward(
+        x: torch.Tensor,
+        floor: float,
+        use_power: bool,
+        formatter: Callable,
+        H: torch.Tensor,
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         y = x if use_power else torch.sqrt(x)
         y = torch.matmul(y, H)
         y = torch.log(torch.clip(y, min=floor))

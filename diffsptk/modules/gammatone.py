@@ -63,16 +63,16 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        sample_rate,
+        sample_rate: int,
         *,
-        f_min=70,
-        f_base=1000,
-        f_max=6700,
-        filter_order=4,
-        bandwidth_factor=1.0,
-        density=1.0,
-        exact=False,
-    ):
+        f_min: float = 70,
+        f_base: float = 1000,
+        f_max: float = 6700,
+        filter_order: int = 4,
+        bandwidth_factor: float = 1,
+        density: float = 1,
+        exact: bool = False,
+    ) -> None:
         super().__init__()
 
         if not (0 <= f_min <= f_base <= f_max <= sample_rate / 2):
@@ -152,7 +152,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
 
         self.center_frequencies = center_frequencies_in_hz  # For synthesis.
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply Gammatone filter banks to the input signal.
 
         Parameters
@@ -197,7 +197,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
             y = y.to(torch.complex64)
         return y
 
-    def _H(self, z, ignore_gain=False):
+    def _H(self, z: torch.Tensor, ignore_gain: bool = False) -> torch.Tensor:
         """Return the frequency response of the filter.
 
         Parameters

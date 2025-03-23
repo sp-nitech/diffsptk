@@ -19,8 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import get_layer, get_values
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
@@ -43,13 +43,13 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0, ir_length=128, device=None, dtype=None):
+    def __init__(self, cep_order: int, alpha: float = 0, ir_length: int = 128) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum power normalization.
 
         Parameters
@@ -74,22 +74,28 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = MelCepstrumPowerNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return MelCepstrumPowerNormalization._forward(x, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(cep_order, alpha, ir_length, device=None, dtype=None):
+    def _precompute(
+        cep_order: int,
+        alpha: float,
+        ir_length: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MelCepstrumPowerNormalization._check()
         module = inspect.stack()[1].function == "__init__"
 
@@ -114,7 +120,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         return None, (freqt, c2acr), None
 
     @staticmethod
-    def _forward(x, freqt, c2acr):
+    def _forward(x: torch.Tensor, freqt: Callable, c2acr: Callable) -> torch.Tensor:
         x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
         P = torch.log(c2acr(freqt(x)))
         y = torch.cat((P, x0 - 0.5 * P, x1), dim=-1)

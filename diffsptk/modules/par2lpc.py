@@ -14,8 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+import torch
+
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 
@@ -37,7 +39,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, lpc_order, gamma=1, c=None):
+    def __init__(self, lpc_order: int, gamma: float = 1, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -46,7 +48,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
             *get_values(locals())
         )
 
-    def forward(self, k):
+    def forward(self, k: torch.Tensor) -> torch.Tensor:
         """Convert PARCOR to LPC.
 
         Parameters
@@ -79,28 +81,28 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         return self._forward(k, *self.values)
 
     @staticmethod
-    def _func(k, *args, **kwargs):
+    def _func(k: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
             k.size(-1) - 1, *args, **kwargs
         )
         return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         raise NotImplementedError
 
     @staticmethod
-    def _precompute(*args, **kwargs):
+    def _precompute(*args, **kwargs) -> Precomputed:
         return LinearPredictiveCoefficientsToParcorCoefficients._precompute(
             *args, **kwargs
         )
 
     @staticmethod
-    def _forward(k, gamma):
+    def _forward(k: torch.Tensor, gamma: float) -> torch.Tensor:
         a = k / gamma
         for m in range(2, k.size(-1)):
             km = k[..., m : m + 1]

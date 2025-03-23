@@ -16,6 +16,7 @@
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -40,12 +41,18 @@ class SignalToNoiseRatio(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length=None, full=False, reduction="mean", eps=1e-8):
+    def __init__(
+        self,
+        frame_length: int | None = None,
+        full: bool = False,
+        reduction: str = "mean",
+        eps: float = 1e-8,
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, s, sn):
+    def forward(self, s: torch.Tensor, sn: torch.Tensor) -> torch.Tensor:
         """Calculate SNR.
 
         Parameters
@@ -78,29 +85,38 @@ class SignalToNoiseRatio(BaseFunctionalModule):
         return self._forward(s, sn, *self.values)
 
     @staticmethod
-    def _func(s, sn, *args, **kwargs):
+    def _func(s: torch.Tensor, sn: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = SignalToNoiseRatio._precompute(*args, **kwargs)
         return SignalToNoiseRatio._forward(s, sn, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(frame_length, eps):
+    def _check(frame_length: int | None, eps: float) -> None:
         if frame_length is not None and frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if eps < 0:
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(frame_length, full, reduction, eps):
+    def _precompute(
+        frame_length: int | None, full: bool, reduction: str, eps: float
+    ) -> Precomputed:
         SignalToNoiseRatio._check(frame_length, eps)
         const = 10 if full else 1
         return (frame_length, reduction, eps, const)
 
     @staticmethod
-    def _forward(s, sn, frame_length, reduction, eps, const):
+    def _forward(
+        s: torch.Tensor,
+        sn: torch.Tensor,
+        frame_length: int | None,
+        reduction: str,
+        eps: float,
+        const: float,
+    ) -> torch.Tensor:
         if frame_length is not None:
             s = s.unfold(-1, frame_length, frame_length)
             sn = sn.unfold(-1, frame_length, frame_length)

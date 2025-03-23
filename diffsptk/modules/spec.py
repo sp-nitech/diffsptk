@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import remove_gain
+from ..typing import Callable, Precomputed
+from ..utils.private import get_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -41,12 +41,21 @@ class Spectrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, fft_length, *, eps=0, relative_floor=None, out_format="power"):
+    def __init__(
+        self,
+        fft_length: int,
+        *,
+        eps: float = 0,
+        relative_floor: float | None = None,
+        out_format: str | int = "power",
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, b=None, a=None):
+    def forward(
+        self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """Compute spectrum.
 
         Parameters
@@ -76,16 +85,18 @@ class Spectrum(BaseFunctionalModule):
         return self._forward(b, a, *self.values)
 
     @staticmethod
-    def _func(b=None, a=None, *args, **kwargs):
+    def _func(
+        b: torch.Tensor | None = None, a: torch.Tensor | None = None, *args, **kwargs
+    ) -> torch.Tensor:
         values = Spectrum._precompute(*args, **kwargs)
         return Spectrum._forward(b, a, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(fft_length, eps, relative_floor):
+    def _check(fft_length: int, eps: float, relative_floor: float | None) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
         if eps < 0:
@@ -94,7 +105,12 @@ class Spectrum(BaseFunctionalModule):
             raise ValueError("relative_floor must be negative.")
 
     @staticmethod
-    def _precompute(fft_length, eps, relative_floor, out_format):
+    def _precompute(
+        fft_length: int,
+        eps: float,
+        relative_floor: float | None,
+        out_format: str | int,
+    ) -> Precomputed:
         Spectrum._check(fft_length, eps, relative_floor)
         if relative_floor is not None:
             relative_floor = 10 ** (relative_floor / 10)
@@ -111,7 +127,14 @@ class Spectrum(BaseFunctionalModule):
         return (fft_length, eps, relative_floor, formatter)
 
     @staticmethod
-    def _forward(b, a, fft_length, eps, relative_floor, formatter):
+    def _forward(
+        b: torch.Tensor | None,
+        a: torch.Tensor | None,
+        fft_length: int,
+        eps: float,
+        relative_floor: float | None,
+        formatter: Callable,
+    ) -> torch.Tensor:
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 

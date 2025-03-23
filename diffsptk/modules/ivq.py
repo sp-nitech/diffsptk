@@ -33,7 +33,7 @@ class InverseVectorQuantization(BaseNonFunctionalModule):
     def __init__(self):
         super().__init__()
 
-    def forward(self, indices, codebook):
+    def forward(self, indices: torch.Tensor, codebook: torch.Tensor) -> torch.Tensor:
         """Perform inverse vector quantization.
 
         Parameters

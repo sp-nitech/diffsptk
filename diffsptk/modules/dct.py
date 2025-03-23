@@ -16,10 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import plateau
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, plateau, to
 from .base import BaseFunctionalModule
 
 
@@ -37,7 +35,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, dct_length, dct_type=2):
+    def __init__(self, dct_length: int, dct_type: int = 2) -> None:
         super().__init__()
 
         self.in_dim = dct_length
@@ -45,7 +43,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply DCT to the input.
 
         Parameters
@@ -71,25 +69,30 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = DiscreteCosineTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return DiscreteCosineTransform._forward(x, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(dct_length, dct_type):
+    def _check(dct_length: int, dct_type: int) -> None:
         if dct_length <= 0:
             raise ValueError("dct_length must be positive.")
         if not 1 <= dct_type <= 4:
             raise ValueError("dct_type must be in [1, 4].")
 
     @staticmethod
-    def _precompute(dct_length, dct_type=2, device=None, dtype=None):
+    def _precompute(
+        dct_length: int,
+        dct_type: int = 2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         DiscreteCosineTransform._check(dct_length, dct_type)
         params = {"device": device, "dtype": torch.double}
         L = dct_length
@@ -121,5 +124,5 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         return None, None, (to(W, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, W):
+    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

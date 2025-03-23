@@ -35,13 +35,14 @@ import torch
 import torchaudio
 from torch import nn
 
-from ..third_party.librosa import cqt_frequencies
-from ..third_party.librosa import et_relative_bw
-from ..third_party.librosa import relative_bandwidth
-from ..third_party.librosa import vqt_filter_fft
-from ..third_party.librosa import wavelet_lengths
-from ..utils.private import get_resample_params
-from ..utils.private import numpy_to_torch
+from ..third_party.librosa import (
+    cqt_frequencies,
+    et_relative_bw,
+    relative_bandwidth,
+    vqt_filter_fft,
+    wavelet_lengths,
+)
+from ..utils.private import get_resample_params, numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .istft import InverseShortTimeFourierTransform as ISTFT
 
@@ -95,21 +96,21 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
+        frame_period: int,
+        sample_rate: int,
         *,
-        f_min=32.7,
-        n_bin=84,
-        n_bin_per_octave=12,
-        tuning=0,
-        filter_scale=1,
-        norm=1,
-        sparsity=1e-2,
-        window="hann",
-        scale=True,
-        res_type="kaiser_best",
+        f_min: float = 32.7,
+        n_bin: float = 84,
+        n_bin_per_octave: int = 12,
+        tuning: float = 0,
+        filter_scale: float = 1,
+        norm: float = 1,
+        sparsity: float = 1e-2,
+        window: str = "hann",
+        scale: bool = True,
+        res_type: str | None = "kaiser_best",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_period <= 0:
@@ -209,7 +210,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
         self.transforms = nn.ModuleList(transforms)
         self.resamplers = nn.ModuleList(resamplers)
 
-    def forward(self, c, out_length=None):
+    def forward(self, c: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse constant-Q transform.
 
         Parameters
