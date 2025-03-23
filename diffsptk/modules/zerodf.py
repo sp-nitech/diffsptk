@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import Precomputed
-
 import torch
 import torch.nn.functional as F
 
+from ..typing import Precomputed
 from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation

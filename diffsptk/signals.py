@@ -17,7 +17,7 @@
 import torch
 
 
-def impulse(order, **kwargs):
+def impulse(order: int, **kwargs) -> torch.Tensor:
     """Generate impulse sequence.
 
     See `impulse <https://sp-nitech.github.io/sptk/latest/main/impulse.html>`_
@@ -47,7 +47,7 @@ def impulse(order, **kwargs):
     return x
 
 
-def step(order, value=1, **kwargs):
+def step(order: int, value: float = 1, **kwargs) -> torch.Tensor:
     """Generate step sequence.
 
     See `step <https://sp-nitech.github.io/sptk/latest/main/step.html>`_
@@ -80,7 +80,9 @@ def step(order, value=1, **kwargs):
     return x
 
 
-def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
+def ramp(
+    arg: float, end: float | None = None, step: float = 1, eps: float = 1e-8, **kwargs
+) -> torch.Tensor:
     """Generate ramp sequence.
 
     See `ramp <https://sp-nitech.github.io/sptk/latest/main/ramp.html>`_
@@ -91,7 +93,7 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
     arg : float
         If `end` is `None`, this is the end value otherwise start value.
 
-    end : float
+    end : float or None
         The end value.
 
     step : float != 0
@@ -121,15 +123,19 @@ def ramp(arg, end=None, step=1, eps=1e-8, **kwargs):
         end = arg
     else:
         start = arg
-    if step > 0:
+    if 0 < step:
         end += eps
-    else:
+    elif step < 0:
         end -= eps
+    else:
+        raise ValueError("step must be non-zero")
     x = torch.arange(start, end, step, **kwargs)
     return x
 
 
-def sin(order, period=None, magnitude=1, **kwargs):
+def sin(
+    order: int, period: float | None = None, magnitude: float = 1, **kwargs
+) -> torch.Tensor:
     """Generate sinusoidal sequence.
 
     See `sin <https://sp-nitech.github.io/sptk/latest/main/sin.html>`_
@@ -164,12 +170,16 @@ def sin(order, period=None, magnitude=1, **kwargs):
     """
     if period is None:
         period = order + 1
+    if period <= 0:
+        raise ValueError("period must be positive.")
     x = torch.arange(order + 1, **kwargs)
     x = torch.sin(x * (2 * torch.pi / period)) * magnitude
     return x
 
 
-def train(order, frame_period, norm="power", **kwargs):
+def train(
+    order: int, frame_period: float, norm: str | int = "power", **kwargs
+) -> torch.Tensor:
     """Generate pulse sequence.
 
     See `train <https://sp-nitech.github.io/sptk/latest/main/train.html>`_
@@ -201,13 +211,14 @@ def train(order, frame_period, norm="power", **kwargs):
     tensor([1.5166, 0.0000, 0.0000, 1.5166, 0.0000, 1.5166])
 
     """
-    assert 1 <= frame_period
+    if frame_period < 1:
+        raise ValueError("frame_period must be greater than or equal to 1.")
 
-    if norm == 0 or norm == "none":
+    if norm in (0, "none"):
         pulse = 1
-    elif norm == 1 or norm == "power":
+    elif norm in (1, "power"):
         pulse = frame_period**0.5
-    elif norm == 2 or norm == "magnitude":
+    elif norm in (2, "magnitude"):
         pulse = frame_period
     else:
         raise ValueError(f"norm {norm} is not supported.")
@@ -223,7 +234,9 @@ def train(order, frame_period, norm="power", **kwargs):
     return x
 
 
-def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
+def nrand(
+    *order: int, mean: float = 0, stdv: float = 1, var: float | None = None, **kwargs
+) -> torch.Tensor:
     """Generate random number sequence.
 
     See `nrand <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
@@ -264,7 +277,8 @@ def nrand(*order, mean=0, stdv=1, var=None, **kwargs):
     """
     if var is not None:
         stdv = var**0.5
-    assert 0 <= stdv
+    if stdv < 0:
+        raise ValueError("stdv must be non-negative.")
 
     if any(isinstance(item, (list, tuple)) for item in order):
         order = list(*order)
