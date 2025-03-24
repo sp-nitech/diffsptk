@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule
 
@@ -43,7 +42,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order: int, alpha: float = 0):
         super().__init__()
 
         self.in_dim = cep_order + 1
@@ -51,7 +50,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("A", tensors[0])
 
-    def forward(self, mc):
+    def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-cepstrum to MLSA filter coefficients.
 
         Parameters
@@ -77,7 +76,7 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         return self._forward(mc, **self._buffers)
 
     @staticmethod
-    def _func(mc, alpha):
+    def _func(mc: torch.Tensor, alpha: float) -> torch.Tensor:
         M = mc.size(-1) - 1
         MelCepstrumToMLSADigitalFilterCoefficients._check(M, alpha)
         b = torch.zeros_like(mc)
@@ -87,15 +86,20 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         return b
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         MLSADigitalFilterCoefficientsToMelCepstrum._check(*args, **kwargs)
 
     @staticmethod
-    def _precompute(cep_order, alpha, device=None, dtype=None):
+    def _precompute(
+        cep_order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MelCepstrumToMLSADigitalFilterCoefficients._check(cep_order, alpha)
         a = 1
         A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
@@ -105,5 +109,5 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod
-    def _forward(mc, A):
+    def _forward(mc: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(mc, A)

@@ -14,8 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
 from torch import nn
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
@@ -34,13 +36,13 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length, window="sine"):
+    def __init__(self, frame_length: int, window: str = "sine"):
         super().__init__()
 
         self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, y, out_length=None):
+    def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse modified discrete sine transform.
 
         Parameters
@@ -72,21 +74,21 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
         return self._forward(y, out_length, *self.values, *self.layers)
 
     @staticmethod
-    def _func(*args, **kwargs):
+    def _func(*args, **kwargs) -> torch.Tensor:
         return IMDCT._func(*args, **kwargs, transform="sine")
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         raise NotImplementedError
 
     @staticmethod
-    def _precompute(frame_length, window):
+    def _precompute(frame_length: int, window: str) -> Precomputed:
         return IMDCT._precompute(frame_length, window, transform="sine")
 
     @staticmethod
-    def _forward(*args, **kwargs):
+    def _forward(*args, **kwargs) -> torch.Tensor:
         return IMDCT._forward(*args, **kwargs)

@@ -17,8 +17,8 @@
 import torch
 from torchlpc import sample_wise_lpc
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
@@ -46,14 +46,16 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
     """
 
-    def __init__(self, filter_order, frame_period, ignore_gain=False):
+    def __init__(
+        self, filter_order: int, frame_period: int, ignore_gain: bool = False
+    ) -> None:
         super().__init__()
 
         self.in_dim = filter_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x, a):
+    def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         """Apply an all-pole digital filter.
 
         Parameters
@@ -83,28 +85,32 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
         return self._forward(x, a, *self.values)
 
     @staticmethod
-    def _func(x, a, *args, **kwargs):
+    def _func(x: torch.Tensor, a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = AllPoleDigitalFilter._precompute(a.size(-1) - 1, *args, **kwargs)
         return AllPoleDigitalFilter._forward(x, a, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(filter_order, frame_period):
+    def _check(filter_order: int, frame_period: int) -> None:
         if filter_order < 0:
             raise ValueError("filter_order must be non-negative.")
         if frame_period <= 0:
             raise ValueError("frame_period must be positive.")
 
     @staticmethod
-    def _precompute(filter_order, frame_period, ignore_gain=False):
+    def _precompute(
+        filter_order: int, frame_period: int, ignore_gain: bool = False
+    ) -> Precomputed:
         AllPoleDigitalFilter._check(filter_order, frame_period)
         return (frame_period, ignore_gain)
 
     @staticmethod
-    def _forward(x, a, frame_period, ignore_gain):
+    def _forward(
+        x: torch.Tensor, a: torch.Tensor, frame_period: int, ignore_gain: bool
+    ) -> torch.Tensor:
         check_size(x.size(-1), a.size(-2) * frame_period, "sequence length")
 
         d = x.dim()

@@ -19,8 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import get_layer, get_values
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
@@ -57,14 +57,21 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0, beta=0, onset=2, ir_length=128):
+    def __init__(
+        self,
+        cep_order: int,
+        alpha: float = 0,
+        beta: float = 0,
+        onset: int = 2,
+        ir_length: int = 128,
+    ) -> None:
         super().__init__()
 
         _, layers, tensors = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("weight", tensors[0])
 
-    def forward(self, mc):
+    def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Perform mel-cesptrum postfiltering.
 
         Parameters
@@ -95,23 +102,31 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         return self._forward(mc, *self.layers, **self._buffers)
 
     @staticmethod
-    def _func(mc, *args, **kwargs):
+    def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, tensors = MelCepstrumPostfiltering._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
         return MelCepstrumPostfiltering._forward(mc, *layers, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(onset):
+    def _check(onset: int) -> None:
         if onset < 0:
             raise ValueError("onset must be non-negative.")
 
     @staticmethod
-    def _precompute(cep_order, alpha, beta, onset, ir_length, device=None, dtype=None):
+    def _precompute(
+        cep_order: int,
+        alpha: float,
+        beta: float,
+        onset: int,
+        ir_length: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MelCepstrumPostfiltering._check(onset)
         module = inspect.stack()[1].function == "__init__"
 
@@ -149,7 +164,14 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         return None, (freqt, c2acr, mc2b, b2mc), (weight,)
 
     @staticmethod
-    def _forward(mc, freqt, c2acr, mc2b, b2mc, weight):
+    def _forward(
+        mc: torch.Tensor,
+        freqt: Callable,
+        c2acr: Callable,
+        mc2b: Callable,
+        b2mc: Callable,
+        weight: torch.Tensor,
+    ) -> torch.Tensor:
         mc1 = mc
         e1 = c2acr(freqt(mc1))
 

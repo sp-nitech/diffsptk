@@ -19,9 +19,8 @@ import inspect
 import torch
 from torch import nn
 
-from ..utils.private import Lambda
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import Lambda, get_layer, get_values
 from .base import BaseFunctionalModule
 from .unframe import Unframe
 
@@ -54,20 +53,20 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
 
     def __init__(
         self,
-        frame_length,
-        frame_period,
-        fft_length,
+        frame_length: int,
+        frame_period: int,
+        fft_length: int,
         *,
-        center=True,
-        window="blackman",
-        norm="power",
-    ):
+        center: bool = True,
+        window: str = "blackman",
+        norm: str = "power",
+    ) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, y, out_length=None):
+    def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse short-time Fourier transform.
 
         Parameters
@@ -99,7 +98,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         return self._forward(y, out_length, *self.layers)
 
     @staticmethod
-    def _func(x, out_length, *args, **kwargs):
+    def _func(x: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = InverseShortTimeFourierTransform._precompute(
             *args,
             **kwargs,
@@ -109,24 +108,24 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         return InverseShortTimeFourierTransform._forward(x, out_length, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
     def _precompute(
-        frame_length,
-        frame_period,
-        fft_length,
-        center,
-        window,
-        norm,
-        device=None,
-        dtype=None,
-    ):
+        frame_length: int,
+        frame_period: int,
+        fft_length: int,
+        center: bool,
+        window: str,
+        norm: str,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         InverseShortTimeFourierTransform._check()
         module = inspect.stack()[1].function == "__init__"
 
@@ -145,5 +144,10 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         return None, (ifft, unframe), None
 
     @staticmethod
-    def _forward(y, out_length, ifft, unframe):
+    def _forward(
+        y: torch.Tensor,
+        out_length: int | None,
+        ifft: Callable,
+        unframe: Callable,
+    ) -> torch.Tensor:
         return unframe(ifft(y), out_length)

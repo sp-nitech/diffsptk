@@ -17,6 +17,7 @@
 import warnings
 
 import numpy as np
+import torch
 import torch.nn.functional as F
 from torch import nn
 
@@ -57,7 +58,14 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
+    def __init__(
+        self,
+        n_band: int,
+        filter_order: int,
+        alpha: float = 100,
+        learnable: bool = False,
+        **kwargs,
+    ) -> None:
         super().__init__()
 
         # Make filterbanks.
@@ -86,7 +94,7 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
             nn.ReplicationPad1d((0, delay_right)),
         )
 
-    def forward(self, y, keepdim=True):
+    def forward(self, y: torch.Tensor, keepdim: bool = True) -> torch.Tensor:
         """Reconstruct waveform from subband waveforms.
 
         Parameters

@@ -17,24 +17,24 @@
 import warnings
 
 import numpy as np
+import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import next_power_of_two
-from ..utils.private import numpy_to_torch
+from ..utils.private import next_power_of_two, numpy_to_torch
 from .base import BaseNonFunctionalModule
 
 
 def make_filter_banks(
-    n_band,
-    filter_order,
-    mode="analysis",
-    alpha=100,
-    n_iter=100,
-    step_size=1e-2,
-    decay=0.5,
-    eps=1e-6,
-):
+    n_band: int,
+    filter_order: int,
+    mode: str = "analysis",
+    alpha: float = 100,
+    n_iter: int = 100,
+    step_size: float = 1e-2,
+    decay: float = 0.5,
+    eps: float = 1e-6,
+) -> tuple[np.ndarray, bool]:
     """Make filter-bank coefficients.
 
     Parameters
@@ -179,7 +179,14 @@ class PseudoQuadratureMirrorFilterBankAnalysis(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, n_band, filter_order, alpha=100, learnable=False, **kwargs):
+    def __init__(
+        self,
+        n_band: int,
+        filter_order: int,
+        alpha: float = 100,
+        learnable: bool = False,
+        **kwargs,
+    ) -> None:
         super().__init__()
 
         # Make filterbanks.
@@ -208,7 +215,7 @@ class PseudoQuadratureMirrorFilterBankAnalysis(BaseNonFunctionalModule):
             nn.ReplicationPad1d((0, delay_right)),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Decompose waveform into subband waveforms.
 
         Parameters

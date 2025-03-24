@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
+
 from .base import BaseNonFunctionalModule
 
 
@@ -39,7 +41,7 @@ class VectorQuantization(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, order, codebook_size, **kwargs):
+    def __init__(self, order: int, codebook_size: int, **kwargs) -> None:
         super().__init__()
 
         if order < 0:
@@ -54,10 +56,12 @@ class VectorQuantization(BaseNonFunctionalModule):
         ).float()
 
     @property
-    def codebook(self):
+    def codebook(self) -> torch.Tensor:
         return self.vq.codebook
 
-    def forward(self, x, codebook=None, **kwargs):
+    def forward(
+        self, x: torch.Tensor, codebook: torch.Tensor | None = None, **kwargs
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform vector quantization.
 
         Parameters

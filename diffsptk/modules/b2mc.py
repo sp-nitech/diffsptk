@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -43,7 +42,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, alpha=0):
+    def __init__(self, cep_order: int, alpha: float = 0) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
@@ -51,7 +50,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("A", tensors[0])
 
-    def forward(self, b):
+    def forward(self, b: torch.Tensor) -> torch.Tensor:
         """Convert MLSA filter coefficients to mel-cepstrum.
 
         Parameters
@@ -78,28 +77,33 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
         return self._forward(b, **self._buffers)
 
     @staticmethod
-    def _func(b, alpha):
+    def _func(b: torch.Tensor, alpha: float) -> torch.Tensor:
         MLSADigitalFilterCoefficientsToMelCepstrum._check(b.size(-1) - 1, alpha)
         return b + F.pad(alpha * b[..., 1:], (0, 1))
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(cep_order, alpha):
+    def _check(cep_order: int, alpha: float) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
         if 1 <= abs(alpha):
             raise ValueError("alpha must be in (-1, 1).")
 
     @staticmethod
-    def _precompute(cep_order, alpha, device=None, dtype=None):
+    def _precompute(
+        cep_order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MLSADigitalFilterCoefficientsToMelCepstrum._check(cep_order, alpha)
         A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
         A[:, 1:].fill_diagonal_(alpha)
         return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod
-    def _forward(b, A):
+    def _forward(b: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(b, A)

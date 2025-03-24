@@ -16,6 +16,7 @@
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -31,12 +32,12 @@ class RootMeanSquareError(BaseFunctionalModule):
 
     """
 
-    def __init__(self, reduction="mean"):
+    def __init__(self, reduction: str = "mean") -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x, y):
+    def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Calculate RMSE.
 
         Parameters
@@ -69,25 +70,25 @@ class RootMeanSquareError(BaseFunctionalModule):
         return self._forward(x, y, *self.values)
 
     @staticmethod
-    def _func(x, y, *args, **kwargs):
+    def _func(x: torch.Tensor, y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = RootMeanSquareError._precompute(*args, **kwargs)
         return RootMeanSquareError._forward(x, y, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(reduction):
+    def _precompute(reduction: str) -> Precomputed:
         RootMeanSquareError._check()
         return (reduction,)
 
     @staticmethod
-    def _forward(x, y, reduction):
+    def _forward(x: torch.Tensor, y: torch.Tensor, reduction: str) -> torch.Tensor:
         error = torch.linalg.vector_norm(x - y, dim=-1) / (x.size(-1) ** 0.5)
 
         if reduction == "none":

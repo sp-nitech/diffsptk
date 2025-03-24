@@ -18,10 +18,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import check_size
-from ..utils.private import get_layer
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_layer, get_values, to
 from .base import BaseFunctionalModule
 from .frame import Frame
 from .window import Window
@@ -40,13 +38,13 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length, window="sine"):
+    def __init__(self, frame_length: int, window: str = "sine") -> None:
         super().__init__()
 
         self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute modified discrete cosine transform.
 
         Parameters
@@ -75,22 +73,24 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
         return self._forward(x, *self.values, *self.layers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, _ = ModifiedDiscreteCosineTransform._precompute(
             *args, **kwargs, module=False
         )
         return ModifiedDiscreteCosineTransform._forward(x, *values, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(frame_length, window, transform="cosine", module=True):
+    def _precompute(
+        frame_length: int, window: str, transform: str = "cosine", module: bool = True
+    ) -> Precomputed:
         ModifiedDiscreteCosineTransform._check()
         frame_period = frame_length // 2
 
@@ -124,7 +124,13 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
         return (frame_period,), (frame, window_, mdt), None
 
     @staticmethod
-    def _forward(x, frame_period, frame, window, mdt):
+    def _forward(
+        x: torch.Tensor,
+        frame_period: int,
+        frame: Callable,
+        window: Callable,
+        mdt: Callable,
+    ) -> torch.Tensor:
         # This padding is for perfect reconstruction.
         x = F.pad(x, (0, frame_period))
         return mdt(window(frame(x)))
@@ -146,7 +152,7 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, length, window, transform="cosine"):
+    def __init__(self, length: int, window: str, transform: str = "cosine") -> None:
         super().__init__()
 
         self.in_dim = length
@@ -154,7 +160,7 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply MDCT/MDST to the input.
 
         Parameters
@@ -172,23 +178,29 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
         return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = ModifiedDiscreteTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return ModifiedDiscreteTransform._forward(x, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(length):
+    def _check(length: int) -> None:
         if length < 2 or length % 2 == 1:
             raise ValueError("length must be at least 2 and even.")
 
     @staticmethod
-    def _precompute(length, window, transform="cosine", device=None, dtype=None):
+    def _precompute(
+        length: int,
+        window: str,
+        transform: str = "cosine",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         ModifiedDiscreteTransform._check(length)
         L2 = length
         L = L2 // 2
@@ -210,5 +222,5 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
         return None, None, (to(W, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, W):
+    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

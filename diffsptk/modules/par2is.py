@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, k):
+    def forward(self, k: torch.Tensor) -> torch.Tensor:
         """Convert PARCOR to IS.
 
         Parameters
@@ -65,26 +65,28 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
         return self._forward(k, *self.values)
 
     @staticmethod
-    def _func(x):
-        values = ParcorCoefficientsToInverseSine._precompute(x.size(-1) - 1)
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        values = ParcorCoefficientsToInverseSine._precompute(
+            x.size(-1) - 1, *args, **kwargs
+        )
         return ParcorCoefficientsToInverseSine._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(par_order):
+    def _check(par_order: int) -> None:
         if par_order < 0:
             raise ValueError("par_order must be non-negative.")
 
     @staticmethod
-    def _precompute(par_order):
+    def _precompute(par_order: int) -> Precomputed:
         ParcorCoefficientsToInverseSine._check(par_order)
         return (2 / torch.pi,)
 
     @staticmethod
-    def _forward(k, c):
+    def _forward(k: torch.Tensor, c: float) -> torch.Tensor:
         K, k = torch.split(k, [1, k.size(-1) - 1], dim=-1)
         eps = 1e-6
         k = torch.clip(k, min=-1 + eps, max=1 - eps)

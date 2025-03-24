@@ -19,9 +19,7 @@ import math
 import torch
 from tqdm import tqdm
 
-from ..utils.private import get_generator
-from ..utils.private import get_logger
-from ..utils.private import to_dataloader
+from ..utils.private import get_generator, get_logger, to_dataloader
 from .base import BaseLearnerModule
 from .gmm import GaussianMixtureModeling
 from .vq import VectorQuantization
@@ -75,19 +73,19 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
 
     def __init__(
         self,
-        order,
-        codebook_size,
+        order: int,
+        codebook_size: int,
         *,
-        min_data_per_cluster=1,
-        n_iter=100,
-        eps=1e-5,
-        perturb_factor=1e-5,
-        init="mean",
-        metric="none",
-        batch_size=None,
-        seed=None,
-        verbose=False,
-    ):
+        min_data_per_cluster: int = 1,
+        n_iter: int = 100,
+        eps: float = 1e-5,
+        perturb_factor: float = 1e-5,
+        init: str = "mean",
+        metric: str = "none",
+        batch_size: int | None = None,
+        seed: int | None = None,
+        verbose: bool | int = False,
+    ) -> None:
         super().__init__()
 
         if order < 0:
@@ -140,7 +138,11 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
             self.init = init
 
     @torch.inference_mode()
-    def forward(self, x, return_indices=False):
+    def forward(
+        self,
+        x: torch.Tensor | torch.utils.data.DataLoader,
+        return_indices: bool = False,
+    ) -> list[torch.Tensor]:
         """Design a codebook using the Linde-Buzo-Gray algorithm.
 
         Parameters
@@ -314,7 +316,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         ret.append(distance)
         return ret
 
-    def transform(self, x):
+    def transform(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """Transform the input vectors using the codebook.
 
         Parameters

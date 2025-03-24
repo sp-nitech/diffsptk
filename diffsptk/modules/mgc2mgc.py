@@ -20,11 +20,8 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import cexp
-from ..utils.private import check_size
-from ..utils.private import clog
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import cexp, check_size, clog, get_values, to
 from .base import BaseFunctionalModule
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
@@ -81,24 +78,24 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
 
     def __init__(
         self,
-        in_order,
-        out_order,
-        in_alpha=0,
-        out_alpha=0,
-        in_gamma=0,
-        out_gamma=0,
-        in_norm=False,
-        out_norm=False,
-        in_mul=False,
-        out_mul=False,
-        n_fft=512,
-    ):
+        in_order: int,
+        out_order: int,
+        in_alpha: float = 0,
+        out_alpha: float = 0,
+        in_gamma: float = 0,
+        out_gamma: float = 0,
+        in_norm: bool = False,
+        out_norm: bool = False,
+        in_mul: bool = False,
+        out_mul: bool = False,
+        n_fft: int = 512,
+    ) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.seq = nn.Sequential(*layers[0])
 
-    def forward(self, mc):
+    def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-generalized cepstrum to mel-generalized cepstrum.
 
         Parameters
@@ -123,7 +120,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         return self._forward(mc, self.seq)
 
     @staticmethod
-    def _func(mc, *args, **kwargs):
+    def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
             mc.size(-1) - 1, *args, **kwargs
         )
@@ -136,13 +133,20 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         return MelGeneralizedCepstrumToMelGeneralizedCepstrum._forward(mc, seq)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
     def _check(
-        in_order, out_order, in_alpha, out_alpha, in_gamma, out_gamma, in_mul, n_fft
-    ):
+        in_order: int,
+        out_order: int,
+        in_alpha: float,
+        out_alpha: float,
+        in_gamma: float,
+        out_gamma: float,
+        in_mul: bool,
+        n_fft: int,
+    ) -> None:
         if in_order < 0:
             raise ValueError("in_order must be non-negative.")
         if out_order < 0:
@@ -162,18 +166,18 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        in_order,
-        out_order,
-        in_alpha,
-        out_alpha,
-        in_gamma,
-        out_gamma,
-        in_norm,
-        out_norm,
-        in_mul,
-        out_mul,
-        n_fft,
-    ):
+        in_order: int,
+        out_order: int,
+        in_alpha: float,
+        out_alpha: float,
+        in_gamma: float,
+        out_gamma: float,
+        in_norm: bool,
+        out_norm: bool,
+        in_mul: bool,
+        out_mul: bool,
+        n_fft: int,
+    ) -> Precomputed:
         def choice(use_module, module, module_params, common_params):
             if use_module:
                 return module(*module_params, *common_params)
@@ -273,12 +277,19 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         return None, (seq,), None
 
     @staticmethod
-    def _forward(mc, seq):
+    def _forward(mc: torch.Tensor, seq: Callable) -> torch.Tensor:
         return seq(mc)
 
 
 class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
-    def __init__(self, in_order, out_order, in_gamma, out_gamma, n_fft=512):
+    def __init__(
+        self,
+        in_order: int,
+        out_order: int,
+        in_gamma: float,
+        out_gamma: float,
+        n_fft: int = 512,
+    ) -> None:
         super().__init__()
 
         self.in_order = in_order
@@ -287,14 +298,20 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
         self.out_gamma = out_gamma
         self.n_fft = n_fft
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         check_size(c.size(-1), self.in_order + 1, "dimension of cepstrum")
         return self._forward(
             c, self.out_order, self.in_gamma, self.out_gamma, self.n_fft
         )
 
     @staticmethod
-    def _forward(c1, out_order, in_gamma, out_gamma, n_fft):
+    def _forward(
+        c1: torch.Tensor,
+        out_order: int,
+        in_gamma: float,
+        out_gamma: float,
+        n_fft: int,
+    ) -> torch.Tensor:
         c01 = F.pad(c1[..., 1:], (1, 0))
         C1 = torch.fft.fft(c01, n=n_fft)
 
@@ -322,64 +339,64 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 
 
 class GammaDivision(nn.Module):
-    def __init__(self, cep_order, gamma):
+    def __init__(self, cep_order: int, gamma: float) -> None:
         super().__init__()
         g = torch.full((cep_order + 1,), 1 / gamma)
         g[0] = 1
         self.register_buffer("g", to(g))
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         return c * self.g
 
     @staticmethod
-    def _func(c, gamma):
+    def _func(c: torch.Tensor, gamma: float) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
         return torch.cat((c0, c1 / gamma), dim=-1)
 
 
 class GammaMultiplication(nn.Module):
-    def __init__(self, cep_order, gamma):
+    def __init__(self, cep_order: int, gamma: float) -> None:
         super().__init__()
         g = torch.full((cep_order + 1,), gamma)
         g[0] = 1
         self.register_buffer("g", to(g))
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         return c * self.g
 
     @staticmethod
-    def _func(c, gamma):
+    def _func(c: torch.Tensor, gamma: float) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
         return torch.cat((c0, c1 * gamma), dim=-1)
 
 
 class ZerothGammaDivision(nn.Module):
-    def __init__(self, cep_order, gamma):
+    def __init__(self, cep_order: int, gamma: float) -> None:
         super().__init__()
         self.cep_order = cep_order
         self.g = 1 / gamma
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, self.cep_order], dim=-1)
         return torch.cat(((c0 - 1) * self.g, c1), dim=-1)
 
     @staticmethod
-    def _func(c, gamma):
+    def _func(c: torch.Tensor, gamma: float) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
         return torch.cat(((c0 - 1) / gamma, c1), dim=-1)
 
 
 class ZerothGammaMultiplication(nn.Module):
-    def __init__(self, cep_order, gamma):
+    def __init__(self, cep_order: int, gamma: float) -> None:
         super().__init__()
         self.cep_order = cep_order
         self.g = gamma
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, self.cep_order], dim=-1)
         return torch.cat((c0 * self.g + 1, c1), dim=-1)
 
     @staticmethod
-    def _func(c, gamma):
+    def _func(c: torch.Tensor, gamma: float) -> torch.Tensor:
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
         return torch.cat((c0 * gamma + 1, c1), dim=-1)

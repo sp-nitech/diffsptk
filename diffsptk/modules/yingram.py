@@ -14,37 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-# ------------------------------------------------------------------------------ #
-# MIT License                                                                    #
-#                                                                                #
-# Copyright (c) 2022 YoungJoong Kim                                              #
-#                                                                                #
-# Permission is hereby granted, free of charge, to any person obtaining a copy   #
-# of this software and associated documentation files (the "Software"), to deal  #
-# in the Software without restriction, including without limitation the rights   #
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell      #
-# copies of the Software, and to permit persons to whom the Software is          #
-# furnished to do so, subject to the following conditions:                       #
-#                                                                                #
-# The above copyright notice and this permission notice shall be included in all #
-# copies or substantial portions of the Software.                                #
-#                                                                                #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR     #
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,       #
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE    #
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER         #
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,  #
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE  #
-# SOFTWARE.                                                                      #
-# ------------------------------------------------------------------------------ #
-
 import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 
@@ -82,12 +57,12 @@ class Yingram(BaseFunctionalModule):
 
     def __init__(
         self,
-        frame_length,
-        sample_rate=22050,
-        lag_min=22,
-        lag_max=None,
-        n_bin=20,
-    ):
+        frame_length: int,
+        sample_rate: int = 22050,
+        lag_min: int = 22,
+        lag_max: int | None = None,
+        n_bin: int = 20,
+    ) -> None:
         super().__init__()
 
         self.in_dim = frame_length
@@ -98,7 +73,7 @@ class Yingram(BaseFunctionalModule):
         self.register_buffer("lags_floor", tensors[2])
         self.register_buffer("ramp", tensors[3])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the YIN derivatives from the waveform.
 
         Parameters
@@ -125,11 +100,13 @@ class Yingram(BaseFunctionalModule):
         return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(frame_length, sample_rate, lag_min, lag_max, n_bin):
+    def _check(
+        frame_length: int, sample_rate: int, lag_min: int, lag_max: int, n_bin: int
+    ) -> None:
         if sample_rate < 8000:
             raise ValueError("sample_rate must be greater than or equal to 8000.")
         if not (1 <= lag_min <= lag_max < frame_length):
@@ -138,7 +115,7 @@ class Yingram(BaseFunctionalModule):
             raise ValueError("n_bin must be positive.")
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = Yingram._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
@@ -146,14 +123,27 @@ class Yingram(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        frame_length, sample_rate, lag_min, lag_max, n_bin, device=None, dtype=None
-    ):
+        frame_length: int,
+        sample_rate: int,
+        lag_min: int,
+        lag_max: int | None,
+        n_bin: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         if lag_max is None:
             lag_max = frame_length - 1
         Yingram._check(frame_length, sample_rate, lag_min, lag_max, n_bin)
-        midi_min = int(np.ceil(Yingram.lag2midi(lag_max, sample_rate)))
-        midi_max = int(Yingram.lag2midi(lag_min, sample_rate))
-        lags = Yingram.midi2lag(
+
+        def midi2lag(midi, sample_rate):
+            return sample_rate / (440 * 2 ** ((midi - 69) / 12))
+
+        def lag2midi(lag, sample_rate):
+            return 12 * np.log2(sample_rate / (440 * lag)) + 69
+
+        midi_min = int(np.ceil(lag2midi(lag_max, sample_rate)))
+        midi_max = int(lag2midi(lag_min, sample_rate))
+        lags = midi2lag(
             torch.arange(
                 midi_min, midi_max + 1, 1 / n_bin, device=device, dtype=torch.double
             ),
@@ -165,7 +155,13 @@ class Yingram(BaseFunctionalModule):
         return None, None, (to(lags, dtype=dtype), lags_ceil, lags_floor, ramp)
 
     @staticmethod
-    def _forward(x, lags, lags_ceil, lags_floor, ramp):
+    def _forward(
+        x: torch.Tensor,
+        lags: torch.Tensor,
+        lags_ceil: torch.Tensor,
+        lags_floor: torch.Tensor,
+        ramp: torch.Tensor,
+    ) -> torch.Tensor:
         lag_max = len(ramp) + 1
         W = x.size(-1)
         x0 = F.pad(x, (1, 0))
@@ -186,11 +182,3 @@ class Yingram(BaseFunctionalModule):
         denom = lags_ceil - lags_floor
         y = numer / denom + d0[..., lags_floor]
         return y
-
-    @staticmethod
-    def midi2lag(midi, sample_rate):
-        return sample_rate / (440 * 2 ** ((midi - 69) / 12))
-
-    @staticmethod
-    def lag2midi(lag, sample_rate):
-        return 12 * np.log2(sample_rate / (440 * lag)) + 69

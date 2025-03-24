@@ -17,6 +17,7 @@
 import logging
 import math
 from itertools import islice
+from typing import Any, Callable
 
 import numpy as np
 import torch
@@ -24,21 +25,25 @@ import torch.nn.functional as F
 import torchaudio
 from torch import nn
 
-UNVOICED_SYMBOL = 0
-TAU = math.tau
+from ..modules.base import BaseFunctionalModule
+
+UNVOICED_SYMBOL: float = 0
+TAU: float = math.tau
 
 
 class Lambda(nn.Module):
-    def __init__(self, func, **opt):
+    def __init__(self, func: Callable, **opt) -> None:
         super().__init__()
         self.func = func
         self.opt = opt
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.func(x, **self.opt)
 
 
-def get_layer(is_module, module, params):
+def get_layer(
+    is_module: bool, module: BaseFunctionalModule, params: dict[str, Any]
+) -> Callable:
     if is_module:
         return module(**params)
 
@@ -51,11 +56,11 @@ def get_layer(is_module, module, params):
     return layer
 
 
-def get_values(dictionary, begin=1, end=-1):
+def get_values(dictionary: dict[str, Any], begin: int = 1, end: int = -1) -> list[Any]:
     return list(dictionary.values())[begin:end]
 
 
-def get_logger(name):
+def get_logger(name: str) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     formatter = logging.Formatter(
@@ -68,27 +73,27 @@ def get_logger(name):
     return logger
 
 
-def get_generator(seed=None):
+def get_generator(seed: int | None = None) -> torch.Generator:
     generator = torch.Generator()
     if seed is not None:
         generator.manual_seed(seed)
     return generator
 
 
-def check_size(x, y, cause):
+def check_size(x: int, y: int, cause: str) -> None:
     if x != y:
         raise ValueError(f"Unexpected {cause} (input {x} vs target {y}).")
 
 
-def is_power_of_two(n):
+def is_power_of_two(n: int) -> bool:
     return (n != 0) and (n & (n - 1) == 0)
 
 
-def next_power_of_two(n):
+def next_power_of_two(n: int) -> int:
     return 1 << (n - 1).bit_length()
 
 
-def default_dtype():
+def default_dtype() -> np.dtype:
     t = torch.get_default_dtype()
     if t == torch.float:
         return np.float32
@@ -97,7 +102,7 @@ def default_dtype():
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
-def default_complex_dtype():
+def default_complex_dtype() -> np.dtype:
     t = torch.get_default_dtype()
     if t == torch.float:
         return np.complex64
@@ -106,7 +111,7 @@ def default_complex_dtype():
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
-def torch_default_complex_dtype():
+def torch_default_complex_dtype() -> torch.dtype:
     t = torch.get_default_dtype()
     if t == torch.float:
         return torch.complex64
@@ -115,14 +120,18 @@ def torch_default_complex_dtype():
     raise RuntimeError("Unknown default dtype: {t}.")
 
 
-def numpy_to_torch(x):
+def numpy_to_torch(x: np.ndarray) -> torch.Tensor:
     if np.iscomplexobj(x):
         return torch.from_numpy(x.astype(default_complex_dtype()))
     else:
         return torch.from_numpy(x.astype(default_dtype()))
 
 
-def to(x, device=None, dtype=None):
+def to(
+    x: torch.Tensor,
+    device: torch.device | None = None,
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor:
     if dtype is None:
         if torch.is_complex(x):
             dtype = torch_default_complex_dtype()
@@ -131,17 +140,19 @@ def to(x, device=None, dtype=None):
     return x.to(device=device, dtype=dtype)
 
 
-def to_2d(x):
+def to_2d(x: torch.Tensor) -> torch.Tensor:
     y = x.view(-1, x.size(-1))
     return y
 
 
-def to_3d(x):
+def to_3d(x: torch.Tensor) -> torch.Tensor:
     y = x.view(-1, 1, x.size(-1))
     return y
 
 
-def to_dataloader(x, batch_size=None):
+def to_dataloader(
+    x: torch.Tensor, batch_size: int | None = None
+) -> torch.utils.data.DataLoader:
     if torch.is_tensor(x):
         dataset = torch.utils.data.TensorDataset(x)
         data_loader = torch.utils.data.DataLoader(
@@ -156,7 +167,7 @@ def to_dataloader(x, batch_size=None):
     raise ValueError(f"Unsupported input type: {type(x)}.")
 
 
-def reflect(x):
+def reflect(x: torch.Tensor) -> torch.Tensor:
     d = x.size(-1)
     y = x.view(-1, d)
     y = F.pad(y, (d - 1, 0), mode="reflect")
@@ -164,7 +175,7 @@ def reflect(x):
     return y
 
 
-def replicate1(x, left=True, right=True):
+def replicate1(x: torch.Tensor, left: bool = True, right: bool = True) -> torch.Tensor:
     d = x.size(-1)
     y = x.view(-1, d)
     y = F.pad(y, (1 if left else 0, 1 if right else 0), mode="replicate")
@@ -172,7 +183,9 @@ def replicate1(x, left=True, right=True):
     return y
 
 
-def remove_gain(a, value=1, return_gain=False):
+def remove_gain(
+    a: torch.Tensor, value: float = 1, return_gain: bool = False
+) -> tuple[torch.Tensor, torch.Tensor] | torch.Tensor:
     K, a1 = torch.split(a, [1, a.size(-1) - 1], dim=-1)
     a = F.pad(a1, (1, 0), value=value)
     if return_gain:
@@ -182,7 +195,7 @@ def remove_gain(a, value=1, return_gain=False):
     return ret
 
 
-def get_resample_params(mode="kaiser_best"):
+def get_resample_params(mode: str = "kaiser_best") -> dict[str, Any]:
     # From https://pytorch.org/audio/stable/tutorials/audio_resampling_tutorial.html
     if mode == "kaiser_best":
         params = {
@@ -203,7 +216,7 @@ def get_resample_params(mode="kaiser_best"):
     return params
 
 
-def get_gamma(gamma, c):
+def get_gamma(gamma: float, c: int | None) -> float:
     if c is None or c == 0:
         return gamma
     if not 1 <= c:
@@ -211,44 +224,46 @@ def get_gamma(gamma, c):
     return -1 / c
 
 
-def symmetric_toeplitz(x):
+def symmetric_toeplitz(x: torch.Tensor) -> torch.Tensor:
     d = x.size(-1)
     xx = reflect(x)
     X = xx.unfold(-1, d, 1).flip(-2)
     return X
 
 
-def hankel(x):
+def hankel(x: torch.Tensor) -> torch.Tensor:
     d = x.size(-1)
     n = (d + 1) // 2
     X = x.unfold(-1, n, 1)[..., :n, :]
     return X
 
 
-def vander(x):
+def vander(x: torch.Tensor) -> torch.Tensor:
     X = torch.linalg.vander(x).transpose(-2, -1)
     return X
 
 
-def cas(x):
+def cas(x: torch.Tensor) -> torch.Tensor:
     return (2**0.5) * torch.cos(x - 0.25 * torch.pi)  # cos(x) + sin(x)
 
 
-def cexp(x):
+def cexp(x: torch.Tensor) -> torch.Tensor:
     return torch.polar(torch.exp(x.real), x.imag)
 
 
-def clog(x):
+def clog(x: torch.Tensor) -> torch.Tensor:
     return torch.log(x.abs())
 
 
-def outer(x, y=None):
+def outer(x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
     return torch.matmul(
         x.unsqueeze(-1), x.unsqueeze(-2) if y is None else y.unsqueeze(-2)
     )
 
 
-def iir(x, b, a, batching=True):
+def iir(
+    x: torch.Tensor, b: torch.Tensor, a: torch.Tensor, batching: bool = True
+) -> torch.Tensor:
     diff = b.size(-1) - a.size(-1)
     if 0 < diff:
         a = F.pad(a, (0, diff))
@@ -258,7 +273,14 @@ def iir(x, b, a, batching=True):
     return y
 
 
-def plateau(length, first, middle, last=None, device=None, dtype=None):
+def plateau(
+    length: int,
+    first: float,
+    middle: float,
+    last: float | None = None,
+    device: torch.device | None = None,
+    dtype: torch.dtype = None,
+) -> torch.Tensor:
     x = torch.full((length,), middle, device=device, dtype=dtype)
     x[0] = first
     if last is not None:
@@ -266,7 +288,7 @@ def plateau(length, first, middle, last=None, device=None, dtype=None):
     return x
 
 
-def deconv1d(x, weight):
+def deconv1d(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     """Deconvolve the input signal. Note that this is not transposed convolution.
 
     Parameters

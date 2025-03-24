@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +37,7 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
 
     """
 
-    def __init__(self, acr_order):
+    def __init__(self, acr_order: int) -> None:
         super().__init__()
 
         self.in_dim = acr_order + 1
@@ -46,7 +45,7 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Convert CSM coefficients to autocorrelation.
 
         Parameters
@@ -77,7 +76,7 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
         return self._forward(c, **self._buffers)
 
     @staticmethod
-    def _func(c, *args, **kwargs):
+    def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = (
             CompositeSinusoidalModelCoefficientsToAutocorrelation._precompute(
                 c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
@@ -88,22 +87,26 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
         )
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(acr_order):
+    def _check(acr_order: int) -> None:
         if acr_order <= 0 or acr_order % 2 == 0:
             raise ValueError("acr_order must be a positive odd number.")
 
     @staticmethod
-    def _precompute(acr_order, device=None, dtype=None):
+    def _precompute(
+        acr_order: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         CompositeSinusoidalModelCoefficientsToAutocorrelation._check(acr_order)
         ramp = torch.arange(acr_order + 1, device=device)
         return None, None, (to(ramp, dtype=dtype),)
 
     @staticmethod
-    def _forward(c, ramp):
+    def _forward(c: torch.Tensor, ramp: torch.Tensor) -> torch.Tensor:
         w, m = torch.tensor_split(c, 2, dim=-1)
         a = m.unsqueeze(-2)  # (..., 1, (M+1)/2)
         b = torch.cos(w.unsqueeze(-1) * ramp)  # (..., (M+1)/2, M+1)

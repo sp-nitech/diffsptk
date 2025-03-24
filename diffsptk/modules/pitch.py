@@ -15,15 +15,13 @@
 # ------------------------------------------------------------------------ #
 
 import importlib
-from abc import ABC
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 import torch
 import torchaudio
 from torch import nn
 
-from ..utils.private import UNVOICED_SYMBOL
-from ..utils.private import numpy_to_torch
+from ..utils.private import UNVOICED_SYMBOL, numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .stft import ShortTimeFourierTransform
@@ -67,12 +65,12 @@ class Pitch(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        algorithm="fcnf0",
-        out_format="pitch",
+        frame_period: int,
+        sample_rate: int,
+        algorithm: str = "fcnf0",
+        out_format: str | int = "pitch",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_period <= 0:
@@ -109,7 +107,7 @@ class Pitch(BaseNonFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute pitch representation.
 
         Parameters
@@ -149,7 +147,7 @@ class PitchExtractionInterface(ABC, nn.Module):
     """Abstract class for pitch extraction."""
 
     @abstractmethod
-    def calc_prob(self, x):
+    def calc_prob(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the pitch probability.
 
         Parameters
@@ -166,7 +164,7 @@ class PitchExtractionInterface(ABC, nn.Module):
         raise NotImplementedError
 
     @abstractmethod
-    def calc_embed(self, x):
+    def calc_embed(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the pitch embedding.
 
         Parameters
@@ -183,7 +181,7 @@ class PitchExtractionInterface(ABC, nn.Module):
         raise NotImplementedError
 
     @abstractmethod
-    def calc_pitch(self, x):
+    def calc_pitch(self, x: torch.Tensor) -> torch.Tensor:
         """Calculate the pitch sequence.
 
         Parameters
@@ -205,15 +203,15 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
+        frame_period: int,
+        sample_rate: int,
         *,
-        f_min=None,
-        f_max=None,
-        voicing_threshold=1e-2,
-        silence_threshold=-60,
-        filter_length=3,
-        model="full",
+        f_min: float | None = None,
+        f_max: float | None = None,
+        voicing_threshold: float = 1e-2,
+        silence_threshold: float = -60,
+        filter_length: int = 3,
+        model: str = "full",
     ):
         super().__init__()
 
@@ -257,7 +255,7 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
         self.register_buffer("weights", numpy_to_torch(weights))
 
-    def forward(self, x, embed=True):
+    def forward(self, x: torch.Tensor, embed: bool = True) -> torch.Tensor:
         x = self.resample(x)
         x = self.frame(x)
         x = x / torch.clip(x.std(dim=-1, keepdim=True), min=1e-10)
@@ -268,13 +266,13 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         y = y.reshape(B, N, -1)
         return y
 
-    def calc_prob(self, x):
+    def calc_prob(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x, embed=False)
 
-    def calc_embed(self, x):
+    def calc_embed(self, x: torch.Tensor) -> torch.Tensor:
         return self.forward(x, embed=True)
 
-    def calc_pitch(self, x):
+    def calc_pitch(self, x: torch.Tensor) -> torch.Tensor:
         prob = self.calc_prob(x).transpose(-2, -1)
 
         pitch, periodicity = self.torchcrepe.postprocess(
@@ -307,13 +305,13 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
+        frame_period: int,
+        sample_rate: int,
         *,
-        f_min=None,
-        f_max=None,
-        voicing_threshold=0.5,
-    ):
+        f_min: float | None = None,
+        f_max: float | None = None,
+        voicing_threshold: float = 0.5,
+    ) -> None:
         super().__init__()
 
         try:
@@ -339,7 +337,7 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
             dtype=torch.get_default_dtype(),
         )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.resample(x)
         frames = self.frame(x)
         target_shape = frames.shape[:-1] + (self.penn.PITCH_BINS,)
@@ -347,13 +345,13 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
         logits = logits.reshape(*target_shape)
         return logits
 
-    def calc_prob(self, x):
+    def calc_prob(self, x: torch.Tensor) -> torch.Tensor:
         return torch.softmax(self.forward(x), dim=-1)
 
-    def calc_embed(self, x):
+    def calc_embed(self, x: torch.Tensor) -> None:
         raise NotImplementedError
 
-    def calc_pitch(self, x):
+    def calc_pitch(self, x: torch.Tensor) -> torch.Tensor:
         logits = self.forward(x)
         target_shape = logits.shape[:-1]
         logits = logits.reshape(-1, self.penn.PITCH_BINS, 1)

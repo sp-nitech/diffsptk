@@ -14,11 +14,21 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from . import functional
-from . import modules
-from . import signals
-from . import utils
-from .modules import *
-from .signals import *
-from .utils import *
-from .version import __version__
+from typing import Any, Callable, TypeAlias, TypeVar
+
+import numpy as np
+import torch
+
+Callable: TypeAlias = Callable[..., Any]
+
+T = TypeVar("T", int, float)
+ArrayLike: TypeAlias = list[T] | tuple[T, ...] | np.ndarray
+
+Precomputed: TypeAlias = (
+    tuple[
+        tuple[Any, ...] | None,
+        tuple[Callable, ...] | None,
+        tuple[torch.Tensor, ...] | None,
+    ]
+    | tuple[Any, ...]
+)

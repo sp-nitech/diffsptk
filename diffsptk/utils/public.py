@@ -19,7 +19,9 @@ import soundfile as sf
 import torch
 
 
-def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
+def get_alpha(
+    sr: int, mode: str = "hts", n_freq: int = 10, n_alpha: int = 100
+) -> float:
     """Compute an appropriate frequency warping factor given the sample rate.
 
     Parameters
@@ -102,7 +104,12 @@ def get_alpha(sr, mode="hts", n_freq=10, n_alpha=100):
     return alpha
 
 
-def read(filename, device=None, dtype=None, **kwargs):
+def read(
+    filename: str,
+    device: torch.device | None = None,
+    dtype: torch.dtype | None = None,
+    **kwargs,
+) -> tuple[torch.Tensor, int]:
     """Read a waveform from the given file.
 
     Parameters
@@ -144,7 +151,7 @@ def read(filename, device=None, dtype=None, **kwargs):
     return x, sr
 
 
-def write(filename, x, sr, **kwargs):
+def write(filename: str, x: torch.Tensor, sr: int, **kwargs) -> None:
     """Write the given waveform to a file.
 
     Parameters

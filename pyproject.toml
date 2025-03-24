@@ -72,9 +72,6 @@ extend-ignore = ["E731"]
 preview = true
 exclude = ["__init__.py", "*/librosa/*"]
 
-[tool.ruff.lint.isort]
-force-single-line = true
-
 [tool.codespell]
 skip = "./docs/build,./tools"
 ignore-words-list = "numer"

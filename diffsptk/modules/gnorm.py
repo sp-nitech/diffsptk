@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_gamma
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_gamma, get_values
 from .base import BaseFunctionalModule
 
 
@@ -45,14 +44,13 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, gamma=0, c=None):
+    def __init__(self, cep_order: int, gamma: float = 0, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
-
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum gain normalization.
 
         Parameters
@@ -78,18 +76,18 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = GeneralizedCepstrumGainNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs
         )
         return GeneralizedCepstrumGainNormalization._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(cep_order, gamma, c):
+    def _check(cep_order: int, gamma: float, c: int | None) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
         if 1 < abs(gamma):
@@ -98,12 +96,12 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
             raise ValueError("c must be greater than or equal to 1.")
 
     @staticmethod
-    def _precompute(cep_order, gamma, c=None):
+    def _precompute(cep_order: int, gamma: float, c: int | None = None) -> Precomputed:
         GeneralizedCepstrumGainNormalization._check(cep_order, gamma, c)
         return (get_gamma(gamma, c),)
 
     @staticmethod
-    def _forward(x, gamma):
+    def _forward(x: torch.Tensor, gamma: float) -> torch.Tensor:
         x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
         if gamma == 0:
             K = torch.exp(x0)

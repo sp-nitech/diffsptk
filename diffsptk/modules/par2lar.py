@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -32,7 +32,7 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
 
     """
 
-    def __init__(self, par_order):
+    def __init__(self, par_order: int) -> None:
         super().__init__()
 
         self.in_dim = par_order + 1
@@ -41,7 +41,7 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
             *get_values(locals())
         )
 
-    def forward(self, k):
+    def forward(self, k: torch.Tensor) -> torch.Tensor:
         """Convert PARCOR to LAR.
 
         Parameters
@@ -68,28 +68,28 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
         return self._forward(k, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ParcorCoefficientsToLogAreaRatio._precompute(
             x.size(-1) - 1, *args, **kwargs
         )
         return ParcorCoefficientsToLogAreaRatio._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(par_order):
+    def _check(par_order: int) -> None:
         if par_order < 0:
             raise ValueError("par_order must be non-negative.")
 
     @staticmethod
-    def _precompute(par_order):
+    def _precompute(par_order: int) -> Precomputed:
         ParcorCoefficientsToLogAreaRatio._check(par_order)
         return (2,)
 
     @staticmethod
-    def _forward(k, c):
+    def _forward(k: torch.Tensor, c: float) -> torch.Tensor:
         K, k = torch.split(k, [1, k.size(-1) - 1], dim=-1)
         g = torch.cat((K, c * torch.atanh(k)), dim=-1)
         return g

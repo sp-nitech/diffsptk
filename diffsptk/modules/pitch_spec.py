@@ -14,20 +14,14 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-
 import numpy as np
 import torch
 import torch.nn.functional as F
-from scipy import signal
 from torch import nn
 
-from ..third_party.world import dc_correction
-from ..third_party.world import get_windowed_waveform
-from ..third_party.world import linear_smoothing
-from ..utils.private import TAU
-from ..utils.private import iir
-from ..utils.private import next_power_of_two
-from ..utils.private import numpy_to_torch
+from ..third_party.world import dc_correction, get_windowed_waveform, linear_smoothing
+from ..typing import Callable
+from ..utils.private import TAU, iir, next_power_of_two, numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
@@ -72,13 +66,13 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length,
-        algorithm="cheap-trick",
-        out_format="power",
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int,
+        algorithm: str = "cheap-trick",
+        out_format: str | int = "power",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_period <= 0:
@@ -101,7 +95,7 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
 
         self.formatter = self._formatter(out_format)
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         """Estimate spectral envelope.
 
         Parameters
@@ -135,7 +129,7 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
         return sp
 
     @staticmethod
-    def _formatter(out_format):
+    def _formatter(out_format: str | int) -> Callable:
         if out_format in (0, "db"):
             return lambda x: x * (10 / np.log(10))
         elif out_format in (1, "log-magnitude"):
@@ -187,13 +181,13 @@ class SpectrumExtractionByCheapTrick(nn.Module):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length,
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int,
         *,
-        default_f0=500,
-        q1=-0.15,
-    ):
+        default_f0: float = 500,
+        q1: float = -0.15,
+    ) -> None:
         super().__init__()
 
         self.frame_period = frame_period
@@ -220,7 +214,7 @@ class SpectrumExtractionByCheapTrick(nn.Module):
 
         self.register_buffer("ramp", torch.arange(fft_length))
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = torch.where(f0 <= self.f_min, self.default_f0, f0).unsqueeze(-1).detach()
 
         # GetWindowedWaveform()
@@ -292,14 +286,14 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length,
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int,
         *,
-        default_f0=160,
-        spectral_exponent=0.6,
-        compensation_factor=0.2,
-    ):
+        default_f0: float = 160,
+        spectral_exponent: float = 0.6,
+        compensation_factor: float = 0.2,
+    ) -> None:
         super().__init__()
 
         self.frame_period = frame_period
@@ -309,6 +303,8 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         self.pc = spectral_exponent
         self.mag = compensation_factor
+
+        from scipy import signal
 
         b1, a1 = signal.butter(6, 70 / sample_rate * 2, btype="highpass")
         b2, a2 = signal.butter(6, 300 / sample_rate * 2, btype="highpass")
@@ -394,7 +390,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         self.register_buffer("pb2", numpy_to_torch(pb2))
 
     @staticmethod
-    def fftfilt(b, x):
+    def fftfilt(b: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         nb = b.size(-1)
         nx = x.size(-1)
         fft_length = next_power_of_two(nb + nx - 1)
@@ -403,7 +399,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         y = torch.fft.ifft(X * B)[..., :nx]
         return y.real
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         if x.dtype != torch.double or self.a.dtype != torch.double:
             raise ValueError("Only double precision is supported.")
 

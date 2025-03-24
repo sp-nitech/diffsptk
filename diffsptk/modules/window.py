@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -47,12 +46,12 @@ class Window(BaseFunctionalModule):
 
     def __init__(
         self,
-        in_length,
-        out_length=None,
+        in_length: int,
+        out_length: int | None = None,
         *,
-        window="blackman",
-        norm="power",
-    ):
+        window: str | int = "blackman",
+        norm: str | int = "power",
+    ) -> None:
         super().__init__()
 
         self.in_dim = in_length
@@ -60,7 +59,7 @@ class Window(BaseFunctionalModule):
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("window", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a window function to the given waveform.
 
         Parameters
@@ -86,25 +85,32 @@ class Window(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = Window._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return Window._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(in_length, out_length):
+    def _check(in_length: int, out_length: int | None) -> None:
         if in_length <= 0:
             raise ValueError("in_length must be positive.")
         if out_length is not None and out_length <= 0:
             raise ValueError("out_length must be positive.")
 
     @staticmethod
-    def _precompute(in_length, out_length, window, norm, device=None, dtype=None):
+    def _precompute(
+        in_length: int,
+        out_length: int | None,
+        window: str | int,
+        norm: str | int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         Window._check(in_length, out_length)
 
         L = in_length
@@ -152,7 +158,9 @@ class Window(BaseFunctionalModule):
         return (out_length,), None, (to(w, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, out_length, window):
+    def _forward(
+        x: torch.Tensor, out_length: int | None, window: torch.Tensor
+    ) -> torch.Tensor:
         y = x * window
         if out_length is not None:
             in_length = x.size(-1)

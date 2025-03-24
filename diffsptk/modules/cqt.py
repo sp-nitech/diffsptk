@@ -35,15 +35,15 @@ import torch
 import torchaudio
 from torch import nn
 
-from ..third_party.librosa import cqt_frequencies
-from ..third_party.librosa import early_downsample_count
-from ..third_party.librosa import et_relative_bw
-from ..third_party.librosa import relative_bandwidth
-from ..third_party.librosa import vqt_filter_fft
-from ..third_party.librosa import wavelet_lengths
-from ..utils.private import Lambda
-from ..utils.private import get_resample_params
-from ..utils.private import numpy_to_torch
+from ..third_party.librosa import (
+    cqt_frequencies,
+    early_downsample_count,
+    et_relative_bw,
+    relative_bandwidth,
+    vqt_filter_fft,
+    wavelet_lengths,
+)
+from ..utils.private import Lambda, get_resample_params, numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .stft import ShortTimeFourierTransform as STFT
 
@@ -97,21 +97,21 @@ class ConstantQTransform(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
+        frame_period: int,
+        sample_rate: int,
         *,
-        f_min=32.7,
-        n_bin=84,
-        n_bin_per_octave=12,
-        tuning=0,
-        filter_scale=1,
-        norm=1,
-        sparsity=1e-2,
-        window="hann",
-        scale=True,
-        res_type="kaiser_best",
+        f_min: float = 32.7,
+        n_bin: float = 84,
+        n_bin_per_octave: int = 12,
+        tuning: float = 0,
+        filter_scale: float = 1,
+        norm: float = 1,
+        sparsity: float = 1e-2,
+        window: str = "hann",
+        scale: bool = True,
+        res_type: str | None = "kaiser_best",
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_period <= 0:
@@ -249,7 +249,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
         self.transforms = nn.ModuleList(transforms)
         self.resamplers = nn.ModuleList(resamplers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute constant-Q transform.
 
         Parameters
@@ -284,7 +284,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
         return c
 
     @staticmethod
-    def _trim_stack(n_bin, cqt_response):
+    def _trim_stack(n_bin: int, cqt_response: list[torch.Tensor]) -> torch.Tensor:
         max_col = min(c.shape[-2] for c in cqt_response)
         shape = list(cqt_response[0].shape)
         shape[-2] = max_col

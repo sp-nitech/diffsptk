@@ -14,14 +14,17 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import TypeAlias
+
 import numpy as np
 import torch
 from tqdm import tqdm
 
-from ..utils.private import get_logger
-from ..utils.private import outer
-from ..utils.private import to_dataloader
+from ..typing import ArrayLike
+from ..utils.private import get_logger, outer, to_dataloader
 from .base import BaseLearnerModule
+
+Params: TypeAlias = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
 
 
 class GaussianMixtureModeling(BaseLearnerModule):
@@ -76,20 +79,20 @@ class GaussianMixtureModeling(BaseLearnerModule):
 
     def __init__(
         self,
-        order,
-        n_mixture,
+        order: int,
+        n_mixture: int,
         *,
-        n_iter=100,
-        eps=1e-5,
-        weight_floor=1e-5,
-        var_floor=1e-6,
-        var_type="diag",
-        block_size=None,
-        ubm=None,
-        alpha=0,
-        batch_size=None,
-        verbose=False,
-    ):
+        n_iter: int = 100,
+        eps: float = 1e-5,
+        weight_floor: float = 1e-5,
+        var_floor: float = 1e-6,
+        var_type: str = "diag",
+        block_size: ArrayLike[int] | None = None,
+        ubm: Params | None = None,
+        alpha: float = 0,
+        batch_size: int | None = None,
+        verbose: bool | int = False,
+    ) -> None:
         super().__init__()
 
         if order < 0:
@@ -162,7 +165,10 @@ class GaussianMixtureModeling(BaseLearnerModule):
             self.register_buffer("ubm_mu", ubm_mu)
             self.register_buffer("ubm_sigma", ubm_sigma)
 
-    def set_params(self, params):
+    def set_params(
+        self,
+        params: tuple[torch.Tensor | None, torch.Tensor | None, torch.Tensor | None],
+    ) -> None:
         """Set model parameters.
 
         Parameters
@@ -179,7 +185,9 @@ class GaussianMixtureModeling(BaseLearnerModule):
         if sigma is not None:
             self.sigma[:] = sigma
 
-    def warmup(self, x, **lbg_params):
+    def warmup(
+        self, x: torch.Tensor | torch.utils.data.DataLoader, **lbg_params
+    ) -> None:
         """Initialize the model parameters by K-means clustering.
 
         Parameters
@@ -221,7 +229,11 @@ class GaussianMixtureModeling(BaseLearnerModule):
         self.set_params(params)
 
     @torch.inference_mode()
-    def forward(self, x, return_posterior=False):
+    def forward(
+        self,
+        x: torch.Tensor | torch.utils.data.DataLoader,
+        return_posterior: bool = False,
+    ) -> tuple[Params, torch.Tensor] | tuple[Params, torch.Tensor, torch.Tensor]:
         """Train Gaussian mixture models.
 
         Parameters
@@ -354,16 +366,15 @@ class GaussianMixtureModeling(BaseLearnerModule):
                 break
             prev_log_likelihood = log_likelihood
 
-        ret = [[self.w, self.mu, self.sigma]]
-
+        params = (self.w, self.mu, self.sigma)
         if return_posterior:
             posterior, _ = self._e_step(x)
-            ret.append(posterior)
+            return params, posterior, log_likelihood
+        return params, log_likelihood
 
-        ret.append(log_likelihood)
-        return ret
-
-    def transform(self, x):
+    def transform(
+        self, x: torch.Tensor
+    ) -> tuple[torch.Tensor | None, torch.Tensor, torch.Tensor]:
         """Transform the input vectors based on a single mixture sequence.
 
         Parameters
@@ -401,7 +412,12 @@ class GaussianMixtureModeling(BaseLearnerModule):
         y = E
         return y, indices, log_prob
 
-    def _e_step(self, x, reduction="sum", in_order=None):
+    def _e_step(
+        self,
+        x: torch.Tensor | torch.utils.data.DataLoader,
+        reduction: str = "sum",
+        in_order: int | None = None,
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         x = to_dataloader(x, self.batch_size)
         device = self.w.device
 

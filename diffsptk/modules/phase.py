@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import remove_gain
+from ..typing import Precomputed
+from ..utils.private import get_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -35,12 +35,14 @@ class Phase(BaseFunctionalModule):
 
     """
 
-    def __init__(self, fft_length, unwrap=False):
+    def __init__(self, fft_length: int, unwrap: bool = False) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, b=None, a=None):
+    def forward(
+        self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
+    ) -> torch.Tensor:
         """Compute phase spectrum.
 
         Parameters
@@ -68,26 +70,31 @@ class Phase(BaseFunctionalModule):
         return self._forward(b, a, *self.values)
 
     @staticmethod
-    def _func(b, a, *args, **kwargs):
+    def _func(b: torch.Tensor, a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Phase._precompute(*args, **kwargs)
         return Phase._forward(b, a, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(fft_length):
+    def _check(fft_length: int) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
 
     @staticmethod
-    def _precompute(fft_length, unwrap):
+    def _precompute(fft_length: int, unwrap: bool) -> Precomputed:
         Phase._check(fft_length)
         return (fft_length, unwrap)
 
     @staticmethod
-    def _forward(b, a, fft_length, unwrap):
+    def _forward(
+        b: torch.Tensor | None,
+        a: torch.Tensor | None,
+        fft_length: int,
+        unwrap: bool,
+    ) -> torch.Tensor:
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 

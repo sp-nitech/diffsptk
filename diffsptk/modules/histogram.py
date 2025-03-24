@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -53,14 +53,19 @@ class Histogram(BaseFunctionalModule):
     """
 
     def __init__(
-        self, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3
-    ):
+        self,
+        n_bin: int = 10,
+        lower_bound: float = 0,
+        upper_bound: float = 1,
+        norm: bool = False,
+        softness: float = 1e-3,
+    ) -> None:
         super().__init__()
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("centers", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute histogram.
 
         Parameters
@@ -89,18 +94,20 @@ class Histogram(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = Histogram._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return Histogram._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(n_bin, lower_bound, upper_bound, softness):
+    def _check(
+        n_bin: int, lower_bound: float, upper_bound: float, softness: float
+    ) -> None:
         if n_bin <= 0:
             raise ValueError("n_bin must be positive.")
         if upper_bound <= lower_bound:
@@ -110,8 +117,14 @@ class Histogram(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        n_bin, lower_bound, upper_bound, norm, softness, dtype=None, device=None
-    ):
+        n_bin: int,
+        lower_bound: float,
+        upper_bound: float,
+        norm: bool,
+        softness: float,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+    ) -> Precomputed:
         Histogram._check(n_bin, lower_bound, upper_bound, softness)
         width = (upper_bound - lower_bound) / n_bin
         bias = lower_bound + 0.5 * width
@@ -119,7 +132,9 @@ class Histogram(BaseFunctionalModule):
         return (norm, softness), None, (to(centers, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, norm, softness, centers):
+    def _forward(
+        x: torch.Tensor, norm: bool, softness: float, centers: torch.Tensor
+    ) -> torch.Tensor:
         y = x.unsqueeze(-2) - centers.unsqueeze(-1)  # (..., K, T)
         g = 0.5 * (centers[1] - centers[0])
         h = torch.sigmoid((y + g) / softness) - torch.sigmoid((y - g) / softness)

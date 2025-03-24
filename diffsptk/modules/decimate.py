@@ -14,6 +14,9 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import torch
+
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -35,12 +38,12 @@ class Decimation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, period, start=0, dim=-1):
+    def __init__(self, period: int, start: int = 0, dim: int = -1) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Decimate the input signal.
 
         Parameters
@@ -65,28 +68,28 @@ class Decimation(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Decimation._precompute(*args, **kwargs)
         return Decimation._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(period, start, dim):
+    def _check(period: int, start: int, dim: int) -> None:
         if period <= 0:
             raise ValueError("period must be positive.")
         if start < 0:
             raise ValueError("start must be non-negative.")
 
     @staticmethod
-    def _precompute(period, start, dim):
+    def _precompute(period: int, start: int, dim: int) -> Precomputed:
         Decimation._check(period, start, dim)
         return period, start, dim
 
     @staticmethod
-    def _forward(x, period, start, dim):
+    def _forward(x: torch.Tensor, period: int, start: int, dim: int) -> torch.Tensor:
         if not -x.ndim <= dim < x.ndim:
             raise ValueError(f"Dimension {dim} out of range.")
         dim = dim % x.ndim  # Handle negative dim.

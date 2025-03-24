@@ -17,11 +17,7 @@
 import torch
 from torch import nn
 
-from ..utils.private import check_size
-from ..utils.private import get_gamma
-from ..utils.private import hankel
-from ..utils.private import symmetric_toeplitz
-from ..utils.private import to
+from ..utils.private import check_size, get_gamma, hankel, symmetric_toeplitz, to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseNonFunctionalModule
 from .gnorm import GeneralizedCepstrumGainNormalization
@@ -58,7 +54,16 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, *, fft_length, cep_order, alpha=0, gamma=0, c=None, n_iter=0):
+    def __init__(
+        self,
+        *,
+        fft_length: int,
+        cep_order: int,
+        alpha: float = 0,
+        gamma: float = 0,
+        c: int | None = None,
+        n_iter: int = 0,
+    ) -> None:
         super().__init__()
 
         gamma = get_gamma(gamma, c)
@@ -114,7 +119,7 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
                 MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha),
             )
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Estimate mel-generalized cepstrum from spectrum.
 
         Parameters
@@ -221,7 +226,7 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
 
 
 class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order, out_order, alpha):
+    def __init__(self, in_order: int, out_order: int, alpha: float) -> None:
         super().__init__()
 
         beta = 1 - alpha * alpha
@@ -241,13 +246,13 @@ class CoefficientsFrequencyTransform(nn.Module):
 
         self.register_buffer("A", to(A.T))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         y = torch.matmul(x, self.A)
         return y
 
 
 class PTransform(nn.Module):
-    def __init__(self, order, alpha):
+    def __init__(self, order: int, alpha: float) -> None:
         super().__init__()
 
         # Make transform matrix.
@@ -260,13 +265,13 @@ class PTransform(nn.Module):
 
         self.register_buffer("A", to(A.T))
 
-    def forward(self, p):
+    def forward(self, p: torch.Tensor) -> torch.Tensor:
         p = torch.matmul(p, self.A)
         return p
 
 
 class QTransform(nn.Module):
-    def __init__(self, order, alpha):
+    def __init__(self, order: int, alpha: float) -> None:
         super().__init__()
 
         # Make transform matrix.
@@ -278,6 +283,6 @@ class QTransform(nn.Module):
 
         self.register_buffer("A", to(A.T))
 
-    def forward(self, q):
+    def forward(self, q: torch.Tensor) -> torch.Tensor:
         q = torch.matmul(q, self.A)
         return q

@@ -19,9 +19,8 @@ import torch
 import torchcomp
 from torch import nn
 
-from ..utils.private import get_values
-from ..utils.private import to
-from ..utils.private import to_2d
+from ..typing import Precomputed
+from ..utils.private import get_values, to, to_2d
 from .base import BaseFunctionalModule
 
 
@@ -64,15 +63,15 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
     def __init__(
         self,
-        threshold,
-        ratio,
-        attack_time,
-        release_time,
-        sample_rate,
-        makeup_gain=0,
-        abs_max=1,
-        learnable=False,
-    ):
+        threshold: float,
+        ratio: float,
+        attack_time: float,
+        release_time: float,
+        sample_rate: int,
+        makeup_gain: float = 0,
+        abs_max: float = 1,
+        learnable: bool = False,
+    ) -> None:
         super().__init__()
 
         self.values, _, tensors = self._precompute(*get_values(locals(), end=-2))
@@ -81,7 +80,7 @@ class DynamicRangeCompression(BaseFunctionalModule):
         else:
             self.register_buffer("params", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform dynamic range compression.
 
         Parameters
@@ -108,18 +107,25 @@ class DynamicRangeCompression(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers, **self._parameters)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = DynamicRangeCompression._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return DynamicRangeCompression._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max):
+    def _check(
+        ratio: float,
+        attack_time: float,
+        release_time: float,
+        sample_rate: int,
+        makeup_gain: float,
+        abs_max: float,
+    ) -> None:
         if ratio <= 1:
             raise ValueError("ratio must be greater than 1.")
         if attack_time <= 0:
@@ -135,16 +141,16 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        threshold,
-        ratio,
-        attack_time,
-        release_time,
-        sample_rate,
-        makeup_gain,
-        abs_max,
-        device=None,
-        dtype=None,
-    ):
+        threshold: float,
+        ratio: float,
+        attack_time: float,
+        release_time: float,
+        sample_rate: int,
+        makeup_gain: float,
+        abs_max: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         DynamicRangeCompression._check(
             ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max
         )
@@ -166,7 +172,11 @@ class DynamicRangeCompression(BaseFunctionalModule):
         return (abs_max,), None, (params,)
 
     @staticmethod
-    def _forward(x, abs_max, params):
+    def _forward(
+        x: torch.Tensor,
+        abs_max: float,
+        params: torch.Tensor,
+    ) -> torch.Tensor:
         eps = 1e-10
 
         y = to_2d(x)

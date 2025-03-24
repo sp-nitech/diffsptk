@@ -21,9 +21,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..third_party.world import dc_correction
-from ..third_party.world import get_windowed_waveform
-from ..third_party.world import linear_smoothing
+from ..third_party.world import dc_correction, get_windowed_waveform, linear_smoothing
 from ..utils.private import numpy_to_torch
 from .base import BaseNonFunctionalModule
 from .spec import Spectrum
@@ -71,15 +69,15 @@ class Aperiodicity(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length=None,
-        algorithm="tandem",
-        out_format="a",
-        lower_bound=0.001,
-        upper_bound=0.999,
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int | None = None,
+        algorithm: str = "tandem",
+        out_format: str | int = "a",
+        lower_bound: float = 0.001,
+        upper_bound: float = 0.999,
         **kwargs,
-    ):
+    ) -> None:
         super().__init__()
 
         if frame_period <= 0:
@@ -116,7 +114,7 @@ class Aperiodicity(BaseNonFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         """Compute aperiodicity measure.
 
         Parameters
@@ -211,13 +209,13 @@ class AperiodicityExtractionByTANDEM(nn.Module):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length=None,
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int | None = None,
         *,
-        window_length_ms=30,
-        eps=1e-5,
-    ):
+        window_length_ms: float = 30,
+        eps: float = 1e-5,
+    ) -> None:
         super().__init__()
 
         if window_length_ms <= 0:
@@ -271,7 +269,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.register_buffer("window", numpy_to_torch(window))
         self.register_buffer("window_sqrt", self.window.sqrt())
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = torch.where(f0 <= 32, self.default_f0, f0).detach()
 
         B, N = f0.shape
@@ -353,7 +351,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
             ap = torch.exp(y)
         return ap
 
-    def _qmf_high(self, dtype=np.float64):
+    def _qmf_high(self, dtype: np.dtype = np.float64) -> np.ndarray:
         hHP = np.zeros(41, dtype=dtype)
         hHP[0] = +0.00041447996898231424
         hHP[1] = +0.00078125051417292477
@@ -379,7 +377,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         hHP[21:] = hHP[19::-1]
         return hHP
 
-    def _qmf_low(self, dtype=np.float64):
+    def _qmf_low(self, dtype: np.dtype = np.float64) -> np.ndarray:
         hLP = np.zeros(37, dtype=dtype)
         hLP[0] = -0.00065488170077483048
         hLP[1] = +0.00007561994958159384
@@ -444,13 +442,13 @@ class AperiodicityExtractionByD4C(nn.Module):
 
     def __init__(
         self,
-        frame_period,
-        sample_rate,
-        fft_length=None,
+        frame_period: int,
+        sample_rate: int,
+        fft_length: int | None = None,
         *,
-        threshold=0.0,
-        default_f0=150,
-    ):
+        threshold: float = 0,
+        default_f0: float = 150,
+    ) -> None:
         super().__init__()
 
         self.frame_period = frame_period
@@ -505,7 +503,7 @@ class AperiodicityExtractionByD4C(nn.Module):
 
         self.register_buffer("ramp", torch.arange(self.fft_length_d4c))
 
-    def forward(self, x, f0):
+    def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = (
             torch.where(f0 < self.lowest_f0, self.default_f0, f0).unsqueeze(-1).detach()
         )

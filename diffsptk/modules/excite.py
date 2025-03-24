@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import TAU
-from ..utils.private import UNVOICED_SYMBOL
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import TAU, UNVOICED_SYMBOL, get_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
@@ -50,18 +49,18 @@ class ExcitationGeneration(BaseFunctionalModule):
 
     def __init__(
         self,
-        frame_period,
+        frame_period: int,
         *,
-        voiced_region="pulse",
-        unvoiced_region="gauss",
-        polarity="auto",
-        init_phase="zeros",
-    ):
+        voiced_region: str = "pulse",
+        unvoiced_region: str = "gauss",
+        polarity: str = "auto",
+        init_phase: str = "zeros",
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, p):
+    def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Generate a simple excitation signal.
 
         Parameters
@@ -86,27 +85,40 @@ class ExcitationGeneration(BaseFunctionalModule):
         return self._forward(p, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ExcitationGeneration._precompute(*args, **kwargs)
         return ExcitationGeneration._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(frame_period):
+    def _check(frame_period: int) -> None:
         if frame_period <= 0:
             raise ValueError("frame_period must be positive.")
 
     @staticmethod
-    def _precompute(frame_period, voiced_region, unvoiced_region, polarity, init_phase):
+    def _precompute(
+        frame_period: int,
+        voiced_region: str,
+        unvoiced_region: str,
+        polarity: str,
+        init_phase: str,
+    ) -> Precomputed:
         ExcitationGeneration._check(frame_period)
         return (frame_period, voiced_region, unvoiced_region, polarity, init_phase)
 
     @staticmethod
     @torch.inference_mode()
-    def _forward(p, frame_period, voiced_region, unvoiced_region, polarity, init_phase):
+    def _forward(
+        p: torch.Tensor,
+        frame_period: int,
+        voiced_region: str,
+        unvoiced_region: str,
+        polarity: str,
+        init_phase: str,
+    ) -> torch.Tensor:
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
         mask = torch.ne(base_mask, UNVOICED_SYMBOL)

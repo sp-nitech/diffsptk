@@ -16,10 +16,11 @@
 
 import inspect
 
+import torch
 from torch import nn
 
-from ..utils.private import get_layer
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import get_layer, get_values
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 from .levdur import LevinsonDurbin
@@ -42,13 +43,13 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length, lpc_order, eps=1e-6):
+    def __init__(self, frame_length: int, lpc_order: int, eps: float = 1e-6) -> None:
         super().__init__()
 
         _, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform LPC analysis.
 
         Parameters
@@ -74,22 +75,28 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.layers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = LinearPredictiveCodingAnalysis._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return LinearPredictiveCodingAnalysis._forward(x, *layers)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(frame_length, lpc_order, eps, device=None, dtype=None):
+    def _precompute(
+        frame_length: int,
+        lpc_order: int,
+        eps: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         LinearPredictiveCodingAnalysis._check()
         module = inspect.stack()[1].function == "__init__"
 
@@ -112,5 +119,5 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         return None, (acorr, levdur), None
 
     @staticmethod
-    def _forward(x, acorr, levdur):
+    def _forward(x: torch.Tensor, acorr: Callable, levdur: Callable) -> torch.Tensor:
         return levdur(acorr(x))

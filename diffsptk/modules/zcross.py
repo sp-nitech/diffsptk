@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import replicate1
+from ..typing import Precomputed
+from ..utils.private import get_values, replicate1
 from .base import BaseFunctionalModule
 
 
@@ -39,12 +39,14 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
 
     """
 
-    def __init__(self, frame_length, norm=False, softness=1e-3):
+    def __init__(
+        self, frame_length: int, norm: bool = False, softness: float = 1e-3
+    ) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute zero-crossing rate.
 
         Parameters
@@ -71,28 +73,30 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ZeroCrossingAnalysis._precompute(*args, **kwargs)
         return ZeroCrossingAnalysis._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(frame_length, softness):
+    def _check(frame_length: int, softness: float) -> None:
         if frame_length <= 0:
             raise ValueError("frame_length must be positive.")
         if softness <= 0:
             raise ValueError("softness must be positive.")
 
     @staticmethod
-    def _precompute(frame_length, norm, softness):
+    def _precompute(frame_length: int, norm: bool, softness: float) -> Precomputed:
         ZeroCrossingAnalysis._check(frame_length, softness)
         return (frame_length, norm, softness)
 
     @staticmethod
-    def _forward(x, frame_length, norm, softness):
+    def _forward(
+        x: torch.Tensor, frame_length: int, norm: bool, softness: float
+    ) -> torch.Tensor:
         x = torch.tanh(x / softness)
         x = replicate1(x, right=False)
         x = x.unfold(-1, frame_length + 1, frame_length)

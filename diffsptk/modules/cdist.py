@@ -18,6 +18,7 @@ import math
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
@@ -42,12 +43,12 @@ class CepstralDistance(BaseFunctionalModule):
 
     """
 
-    def __init__(self, full=False, reduction="mean"):
+    def __init__(self, full: bool = False, reduction: str = "mean") -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, c1, c2):
+    def forward(self, c1: torch.Tensor, c2: torch.Tensor) -> torch.Tensor:
         """Calculate the cepstral distance between two inputs.
 
         Parameters
@@ -80,26 +81,28 @@ class CepstralDistance(BaseFunctionalModule):
         return self._forward(c1, c2, *self.values)
 
     @staticmethod
-    def _func(c1, c2, *args, **kwargs):
+    def _func(c1: torch.Tensor, c2: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = CepstralDistance._precompute(*args, **kwargs)
         return CepstralDistance._forward(c1, c2, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(full, reduction):
+    def _precompute(full: bool, reduction: str) -> Precomputed:
         CepstralDistance._check()
         const = 10 * math.sqrt(2) / math.log(10) if full else 1
         return (const, reduction)
 
     @staticmethod
-    def _forward(c1, c2, const, reduction):
+    def _forward(
+        c1: torch.Tensor, c2: torch.Tensor, const: float, reduction: str
+    ) -> torch.Tensor:
         distance = torch.linalg.vector_norm(c1[..., 1:] - c2[..., 1:], dim=-1)
 
         if reduction == "none":

@@ -17,9 +17,8 @@
 import numpy as np
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 LOG_ZERO = -1.0e10
@@ -61,13 +60,13 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
     def __init__(
         self,
-        lsp_order,
-        fft_length,
-        alpha=0,
-        gamma=-1,
-        log_gain=False,
-        out_format="power",
-    ):
+        lsp_order: int,
+        fft_length: int,
+        alpha: float = 0,
+        gamma: float = -1,
+        log_gain: bool = False,
+        out_format: str | int = "power",
+    ) -> None:
         super().__init__()
 
         self.in_dim = lsp_order + 1
@@ -77,7 +76,7 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         self.register_buffer("p_bias", tensors[1])
         self.register_buffer("q_bias", tensors[2])
 
-    def forward(self, w):
+    def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Convert line spectral pairs to spectrum.
 
         Parameters
@@ -109,18 +108,18 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         return self._forward(w, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(w, *args, **kwargs):
+    def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = LineSpectralPairsToSpectrum._precompute(
             w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
         )
         return LineSpectralPairsToSpectrum._forward(w, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(lsp_order, fft_length, alpha, gamma):
+    def _check(lsp_order: int, fft_length: int, alpha: float, gamma: float) -> None:
         if lsp_order < 0:
             raise ValueError("lsp_order must be non-negative.")
         if fft_length <= 1:
@@ -132,15 +131,15 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        lsp_order,
-        fft_length,
-        alpha,
-        gamma,
-        log_gain,
-        out_format,
-        dtype=None,
-        device=None,
-    ):
+        lsp_order: int,
+        fft_length: int,
+        alpha: float,
+        gamma: float,
+        log_gain: bool,
+        out_format: str | int,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+    ) -> Precomputed:
         LineSpectralPairsToSpectrum._check(lsp_order, fft_length, alpha, gamma)
 
         if out_format in (0, "db"):
@@ -181,7 +180,16 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         return (log_gain, formatter, c1, c2), None, (cos_omega, p_bias, q_bias)
 
     @staticmethod
-    def _forward(w, log_gain, formatter, c1, c2, cos_omega, p_bias, q_bias):
+    def _forward(
+        w: torch.Tensor,
+        log_gain: bool,
+        formatter: Callable,
+        c1: float,
+        c2: float,
+        cos_omega: torch.Tensor,
+        p_bias: torch.Tensor,
+        q_bias: torch.Tensor,
+    ) -> torch.Tensor:
         def floor_log(x):
             return torch.clip(torch.log(x), min=LOG_ZERO)
 

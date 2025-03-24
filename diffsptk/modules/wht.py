@@ -16,12 +16,9 @@
 
 import numpy as np
 import torch
-from scipy.linalg import hadamard
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import is_power_of_two
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, is_power_of_two, to
 from .base import BaseFunctionalModule
 
 
@@ -44,7 +41,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, wht_length, wht_type="natural"):
+    def __init__(self, wht_length: int, wht_type: str | int = "natural") -> None:
         super().__init__()
 
         self.in_dim = wht_length
@@ -52,7 +49,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("W", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply WHT to the input.
 
         Parameters
@@ -81,23 +78,30 @@ class WalshHadamardTransform(BaseFunctionalModule):
         return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = WalshHadamardTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return WalshHadamardTransform._forward(x, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(wht_length):
+    def _check(wht_length: int) -> None:
         if wht_length <= 0 or not is_power_of_two(wht_length):
             raise ValueError("wht_length must be a power of 2.")
 
     @staticmethod
-    def _precompute(wht_length, wht_type, device=None, dtype=None):
+    def _precompute(
+        wht_length: int,
+        wht_type: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
+        from scipy.linalg import hadamard
+
         WalshHadamardTransform._check(wht_length)
         L = wht_length
         z = 2 ** -(np.log2(L) / 2)
@@ -122,5 +126,5 @@ class WalshHadamardTransform(BaseFunctionalModule):
         return None, None, (to(W, device=device, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, W):
+    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -44,7 +43,7 @@ class FrequencyTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, in_order, out_order, alpha=0):
+    def __init__(self, in_order: int, out_order: int, alpha: float = 0) -> None:
         super().__init__()
 
         self.in_dim = in_order + 1
@@ -52,7 +51,7 @@ class FrequencyTransform(BaseFunctionalModule):
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("A", tensors[0])
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Perform frequency transform.
 
         Parameters
@@ -84,18 +83,18 @@ class FrequencyTransform(BaseFunctionalModule):
         return self._forward(c, **self._buffers)
 
     @staticmethod
-    def _func(c, *args, **kwargs):
+    def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = FrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
         return FrequencyTransform._forward(c, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(in_order, out_order, alpha):
+    def _check(in_order: int, out_order: int, alpha: float) -> None:
         if in_order < 0:
             raise ValueError("in_order must be non-negative.")
         if out_order < 0:
@@ -104,7 +103,13 @@ class FrequencyTransform(BaseFunctionalModule):
             raise ValueError("alpha must be in (-1, 1).")
 
     @staticmethod
-    def _precompute(in_order, out_order, alpha, device=None, dtype=None):
+    def _precompute(
+        in_order: int,
+        out_order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         FrequencyTransform._check(in_order, out_order, alpha)
         L1 = in_order + 1
         L2 = out_order + 1
@@ -124,5 +129,5 @@ class FrequencyTransform(BaseFunctionalModule):
         return None, None, (to(A.T, dtype=dtype),)
 
     @staticmethod
-    def _forward(c, A):
+    def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(c, A)

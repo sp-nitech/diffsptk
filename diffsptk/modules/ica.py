@@ -17,9 +17,7 @@
 import torch
 from tqdm import tqdm
 
-from ..utils.private import get_generator
-from ..utils.private import get_logger
-from ..utils.private import to_dataloader
+from ..utils.private import get_generator, get_logger, to_dataloader
 from .base import BaseLearnerModule
 from .pca import PrincipalComponentAnalysis
 
@@ -63,16 +61,16 @@ class IndependentComponentAnalysis(BaseLearnerModule):
 
     def __init__(
         self,
-        order,
-        n_comp,
+        order: int,
+        n_comp: int,
         *,
-        func="logcosh",
-        n_iter=100,
-        eps=1e-4,
-        batch_size=None,
-        seed=None,
-        verbose=False,
-    ):
+        func: str = "logcosh",
+        n_iter: int = 100,
+        eps: float = 1e-4,
+        batch_size: int | None = None,
+        seed: int | None = None,
+        verbose: bool = False,
+    ) -> None:
         super().__init__()
 
         if order <= 0:
@@ -108,7 +106,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         self.register_buffer("W", W)  # (K, K)
 
     @torch.inference_mode()
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform independent component analysis.
 
         Parameters
@@ -170,7 +168,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         self.W[:] = W
         return self.W
 
-    def transform(self, x):
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Separate the input vectors into independent components.
 
         Parameters

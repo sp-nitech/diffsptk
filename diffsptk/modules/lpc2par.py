@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_gamma
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_gamma, get_values
 from .base import BaseFunctionalModule
 
 
@@ -39,7 +38,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, lpc_order, gamma=1, c=None):
+    def __init__(self, lpc_order: int, gamma: float = 1, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -48,7 +47,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
             *get_values(locals())
         )
 
-    def forward(self, a):
+    def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert LPC to PARCOR.
 
         Parameters
@@ -80,18 +79,18 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
         return self._forward(a, *self.values)
 
     @staticmethod
-    def _func(a, *args, **kwargs):
+    def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LinearPredictiveCoefficientsToParcorCoefficients._precompute(
             a.size(-1) - 1, *args, **kwargs
         )
         return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(lpc_order, gamma, c):
+    def _check(lpc_order: int, gamma: float, c: int | None) -> None:
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
         if 1 < abs(gamma):
@@ -100,12 +99,14 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
             raise ValueError("c must be greater than or equal to 1.")
 
     @staticmethod
-    def _precompute(lpc_order, gamma=1, c=None):
+    def _precompute(
+        lpc_order: int, gamma: float = 1, c: int | None = None
+    ) -> Precomputed:
         LinearPredictiveCoefficientsToParcorCoefficients._check(lpc_order, gamma, c)
         return (get_gamma(gamma, c),)
 
     @staticmethod
-    def _forward(a, gamma):
+    def _forward(a: torch.Tensor, gamma: float) -> torch.Tensor:
         M = a.size(-1) - 1
         K, a = torch.split(a, [1, M], dim=-1)
 

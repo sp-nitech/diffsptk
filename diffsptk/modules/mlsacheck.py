@@ -18,9 +18,8 @@ import warnings
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -68,17 +67,17 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
     def __init__(
         self,
-        cep_order,
+        cep_order: int,
         *,
-        alpha=0,
-        pade_order=4,
-        strict=True,
-        threshold=None,
-        fast=True,
-        n_fft=256,
-        warn_type="warn",
-        mod_type="scale",
-    ):
+        alpha: float = 0,
+        pade_order: int = 4,
+        strict: bool = True,
+        threshold: float | None = None,
+        fast: bool = True,
+        n_fft: int = 256,
+        warn_type: str = "warn",
+        mod_type: str = "scale",
+    ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
@@ -86,7 +85,7 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("alpha_vector", tensors[0])
 
-    def forward(self, mc):
+    def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Check the stability of the MLSA digital filter.
 
         Parameters
@@ -114,35 +113,35 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         return self._forward(mc, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(mc, *args, **kwargs):
+    def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = MLSADigitalFilterStabilityCheck._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
         return MLSADigitalFilterStabilityCheck._forward(mc, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(cep_order):
+    def _check(cep_order: int) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
 
     @staticmethod
     def _precompute(
-        cep_order,
-        alpha,
-        pade_order,
-        strict,
-        threshold,
-        fast,
-        n_fft,
-        warn_type,
-        mod_type,
-        dtype=None,
-        device=None,
-    ):
+        cep_order: int,
+        alpha: float,
+        pade_order: int,
+        strict: bool,
+        threshold: float | None,
+        fast: bool,
+        n_fft: int,
+        warn_type: str,
+        mod_type: str,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MLSADigitalFilterStabilityCheck._check(cep_order)
 
         if threshold is None:
@@ -168,7 +167,15 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(mc, threshold, fast, n_fft, warn_type, mod_type, alpha_vector):
+    def _forward(
+        mc: torch.Tensor,
+        threshold: float,
+        fast: bool,
+        n_fft: int,
+        warn_type: str,
+        mod_type: str,
+        alpha_vector: torch.Tensor,
+    ) -> torch.Tensor:
         gain = (mc * alpha_vector).sum(-1, keepdim=True)
 
         if fast:

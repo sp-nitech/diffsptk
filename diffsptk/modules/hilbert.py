@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import get_values
-from ..utils.private import to
+from ..typing import Precomputed
+from ..utils.private import get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -34,13 +34,13 @@ class HilbertTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, fft_length, dim=-1):
+    def __init__(self, fft_length: int, dim: int = -1) -> None:
         super().__init__()
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("h", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the analytic signal using the Hilbert transform.
 
         Parameters
@@ -70,7 +70,7 @@ class HilbertTransform(BaseFunctionalModule):
         return self._forward(x, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(x, fft_length, dim):
+    def _func(x: torch.Tensor, fft_length: int | None, dim: int) -> torch.Tensor:
         values, _, tensors = HilbertTransform._precompute(
             x.size(dim) if fft_length is None else fft_length,
             dim,
@@ -80,16 +80,21 @@ class HilbertTransform(BaseFunctionalModule):
         return HilbertTransform._forward(x, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(fft_length):
+    def _check(fft_length: int) -> None:
         if fft_length <= 0:
             raise ValueError("fft_length must be positive.")
 
     @staticmethod
-    def _precompute(fft_length, dim, device=None, dtype=None):
+    def _precompute(
+        fft_length: int,
+        dim: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         HilbertTransform._check(fft_length)
         h = torch.zeros(fft_length, device=device, dtype=torch.double)
         center = (fft_length + 1) // 2
@@ -100,7 +105,7 @@ class HilbertTransform(BaseFunctionalModule):
         return (dim,), None, (to(h, dtype=dtype),)
 
     @staticmethod
-    def _forward(x, dim, h):
+    def _forward(x: torch.Tensor, dim: int, h: torch.Tensor) -> torch.Tensor:
         L = len(h)
         target_shape = [1] * x.dim()
         target_shape[dim] = L

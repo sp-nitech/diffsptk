@@ -17,8 +17,7 @@
 import torch
 from tqdm import tqdm
 
-from ..utils.private import outer
-from ..utils.private import to_dataloader
+from ..utils.private import outer, to_dataloader
 from .base import BaseLearnerModule
 
 
@@ -50,14 +49,14 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
 
     def __init__(
         self,
-        order,
-        n_comp,
+        order: int,
+        n_comp: int,
         *,
-        cov_type="sample",
-        sort="descending",
-        batch_size=None,
-        verbose=False,
-    ):
+        cov_type: str | int = "sample",
+        sort: str = "descending",
+        batch_size: int | None = None,
+        verbose: bool = False,
+    ) -> None:
         super().__init__()
 
         if order < 0:
@@ -98,7 +97,9 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         self.register_buffer("V", torch.eye(n_comp, order + 1))
         self.register_buffer("m", torch.zeros(order + 1))
 
-    def forward(self, x):
+    def forward(
+        self, x: torch.Tensor | torch.utils.data.DataLoader
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform principal component analysis.
 
         Parameters
@@ -163,7 +164,7 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         self.m[:] = m
         return self.s, self.V, self.m
 
-    def transform(self, x):
+    def transform(self, x: torch.Tensor) -> torch.Tensor:
         """Transform the input vectors using the estimated eigenvectors.
 
         Parameters
@@ -180,7 +181,7 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         V = self.V.T.flip(-1) if self.sort == "ascending" else self.V.T
         return torch.matmul(self.center(x), V)
 
-    def center(self, x):
+    def center(self, x: torch.Tensor) -> torch.Tensor:
         """Center the input vectors using the estimated mean.
 
         Parameters
@@ -196,7 +197,7 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         """
         return x - self.m
 
-    def whiten(self, x):
+    def whiten(self, x: torch.Tensor) -> torch.Tensor:
         """Whiten the input vectors using the estimated parameters.
 
         Parameters

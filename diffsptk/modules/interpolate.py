@@ -16,6 +16,7 @@
 
 import torch
 
+from ..typing import Precomputed
 from ..utils.private import get_values
 from .base import BaseFunctionalModule
 from .decimate import Decimation
@@ -38,12 +39,12 @@ class Interpolation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, period, start=0, dim=-1):
+    def __init__(self, period: int, start: int = 0, dim: int = -1) -> None:
         super().__init__()
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate the input signal.
 
         Parameters
@@ -68,24 +69,24 @@ class Interpolation(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = Interpolation._precompute(*args, **kwargs)
         return Interpolation._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check(*args, **kwargs):
+    def _check(*args, **kwargs) -> None:
         raise NotImplementedError
 
     @staticmethod
-    def _precompute(*args, **kwargs):
+    def _precompute(*args, **kwargs) -> Precomputed:
         return Decimation._precompute(*args, **kwargs)
 
     @staticmethod
-    def _forward(x, period, start, dim):
+    def _forward(x: torch.Tensor, period: int, start: int, dim: int) -> torch.Tensor:
         if not -x.ndim <= dim < x.ndim:
             raise ValueError(f"Dimension {dim} out of range.")
 

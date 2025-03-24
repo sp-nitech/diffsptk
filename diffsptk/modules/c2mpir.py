@@ -16,9 +16,8 @@
 
 import torch
 
-from ..utils.private import cexp
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import cexp, check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -40,14 +39,14 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, ir_length, n_fft=512):
+    def __init__(self, cep_order: int, ir_length: int, n_fft: int = 512) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Convert cepstrum to minimum-phase impulse response.
 
         Parameters
@@ -73,18 +72,18 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
         return self._forward(c, *self.values)
 
     @staticmethod
-    def _func(c, *args, **kwargs):
+    def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = CepstrumToMinimumPhaseImpulseResponse._precompute(
             c.size(-1) - 1, *args, **kwargs
         )
         return CepstrumToMinimumPhaseImpulseResponse._forward(c, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(cep_order, ir_length, n_fft):
+    def _check(cep_order: int, ir_length: int, n_fft: int) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
         if ir_length <= 0:
@@ -93,12 +92,12 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
             raise ValueError("n_fft must be large value.")
 
     @staticmethod
-    def _precompute(cep_order, ir_length, n_fft):
+    def _precompute(cep_order: int, ir_length: int, n_fft: int) -> Precomputed:
         CepstrumToMinimumPhaseImpulseResponse._check(cep_order, ir_length, n_fft)
         return (ir_length, n_fft)
 
     @staticmethod
-    def _forward(c, ir_length, n_fft):
+    def _forward(c: torch.Tensor, ir_length: int, n_fft: int) -> torch.Tensor:
         C = torch.fft.fft(c, n=n_fft)
         h = torch.fft.ifft(cexp(C)).real[..., :ir_length]
         return h

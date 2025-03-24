@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Callable, Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -39,7 +39,13 @@ class PolynomialToRoots(BaseFunctionalModule):
 
     """
 
-    def __init__(self, order, *, eps=None, out_format="rectangular"):
+    def __init__(
+        self,
+        order: int,
+        *,
+        eps: float | None = None,
+        out_format: str | int = "rectangular",
+    ) -> None:
         super().__init__()
 
         self.in_dim = order + 1
@@ -47,7 +53,7 @@ class PolynomialToRoots(BaseFunctionalModule):
         self.values, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("eye", tensors[0])
 
-    def forward(self, a):
+    def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Find the roots of the input polynomial.
 
         Parameters
@@ -73,25 +79,31 @@ class PolynomialToRoots(BaseFunctionalModule):
         return self._forward(a, *self.values, **self._buffers)
 
     @staticmethod
-    def _func(a, *args, **kwargs):
+    def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, tensors = PolynomialToRoots._precompute(
             a.size(-1) - 1, *args, **kwargs, dtype=a.dtype, device=a.device
         )
         return PolynomialToRoots._forward(a, *values, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(order, eps):
+    def _check(order: int, eps: float | None) -> None:
         if order <= 0:
             raise ValueError("order must be positive.")
         if eps is not None and eps < 0:
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
-    def _precompute(order, eps=None, out_format="rectangular", device=None, dtype=None):
+    def _precompute(
+        order: int,
+        eps: float | None = None,
+        out_format: str | int = "rectangular",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         PolynomialToRoots._check(order, eps)
 
         if eps is None:
@@ -107,7 +119,9 @@ class PolynomialToRoots(BaseFunctionalModule):
         return (eps, formatter), None, (eye,)
 
     @staticmethod
-    def _forward(a, eps, formatter, eye):
+    def _forward(
+        a: torch.Tensor, eps: float, formatter: Callable, eye: torch.Tensor
+    ) -> torch.Tensor:
         if torch.any(a[..., 0] == 0):
             raise ValueError("Leading coefficient must be non-zero.")
 

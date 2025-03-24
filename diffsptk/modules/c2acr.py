@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -39,14 +39,14 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order, acr_order, n_fft=512):
+    def __init__(self, cep_order: int, acr_order: int, n_fft: int = 512) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, c):
+    def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Convert cepstrum to autocorrelation.
 
         Parameters
@@ -74,16 +74,16 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
         return self._forward(c, *self.values)
 
     @staticmethod
-    def _func(c, *args, **kwargs):
+    def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = CepstrumToAutocorrelation._precompute(c.size(-1) - 1, *args, **kwargs)
         return CepstrumToAutocorrelation._forward(c, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(cep_order, acr_order, n_fft):
+    def _check(cep_order: int, acr_order: int, n_fft: int) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
         if acr_order < 0:
@@ -92,12 +92,12 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
             raise ValueError("n_fft must be large value.")
 
     @staticmethod
-    def _precompute(cep_order, acr_order, n_fft):
+    def _precompute(cep_order: int, acr_order: int, n_fft: int) -> Precomputed:
         CepstrumToAutocorrelation._check(cep_order, acr_order, n_fft)
         return (acr_order, n_fft)
 
     @staticmethod
-    def _forward(c, acr_order, n_fft):
+    def _forward(c: torch.Tensor, acr_order: int, n_fft: int) -> torch.Tensor:
         x = torch.fft.rfft(c, n=n_fft).real
         x = torch.exp(2 * x)
         r = torch.fft.hfft(x, norm="forward")[..., : acr_order + 1]

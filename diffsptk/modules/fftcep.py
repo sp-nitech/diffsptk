@@ -17,8 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..utils.private import check_size
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 
 
@@ -47,14 +47,16 @@ class CepstralAnalysis(BaseFunctionalModule):
 
     """
 
-    def __init__(self, *, fft_length, cep_order, accel=0, n_iter=0):
+    def __init__(
+        self, *, fft_length: int, cep_order: int, accel: float = 0, n_iter: int = 0
+    ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
         self.values = self._precompute(*get_values(locals()))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstral analysis.
 
         Parameters
@@ -82,16 +84,16 @@ class CepstralAnalysis(BaseFunctionalModule):
         return self._forward(x, *self.values)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = CepstralAnalysis._precompute(2 * x.size(-1) - 2, *args, **kwargs)
         return CepstralAnalysis._forward(x, *values)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return True
 
     @staticmethod
-    def _check(fft_length, cep_order, accel, n_iter):
+    def _check(fft_length: int, cep_order: int, accel: float, n_iter: int) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
         if cep_order < 0:
@@ -104,12 +106,16 @@ class CepstralAnalysis(BaseFunctionalModule):
             raise ValueError("n_iter must be non-negative.")
 
     @staticmethod
-    def _precompute(fft_length, cep_order, accel, n_iter):
+    def _precompute(
+        fft_length: int, cep_order: int, accel: float, n_iter: int
+    ) -> Precomputed:
         CepstralAnalysis._check(fft_length, cep_order, accel, n_iter)
         return (cep_order, accel, n_iter)
 
     @staticmethod
-    def _forward(x, cep_order, accel, n_iter):
+    def _forward(
+        x: torch.Tensor, cep_order: int, accel: float, n_iter: int
+    ) -> torch.Tensor:
         N = cep_order + 1
         H = x.size(-1)
 

@@ -16,8 +16,8 @@
 
 import torch
 
-from ..utils.private import UNVOICED_SYMBOL
-from ..utils.private import get_values
+from ..typing import Precomputed
+from ..utils.private import UNVOICED_SYMBOL, get_values
 from .base import BaseFunctionalModule
 
 
@@ -32,13 +32,13 @@ class MagicNumberInterpolation(BaseFunctionalModule):
 
     """
 
-    def __init__(self, magic_number=UNVOICED_SYMBOL):
+    def __init__(self, magic_number: float = UNVOICED_SYMBOL) -> None:
         super().__init__()
 
         _, _, tensors = self._precompute(*get_values(locals()))
         self.register_buffer("magic_number", tensors[0])
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate magic number.
 
         Parameters
@@ -65,28 +65,32 @@ class MagicNumberInterpolation(BaseFunctionalModule):
         return self._forward(x, **self._buffers)
 
     @staticmethod
-    def _func(x, *args, **kwargs):
+    def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, _, tensors = MagicNumberInterpolation._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
         return MagicNumberInterpolation._forward(x, *tensors)
 
     @staticmethod
-    def _takes_input_size():
+    def _takes_input_size() -> bool:
         return False
 
     @staticmethod
-    def _check():
+    def _check() -> None:
         pass
 
     @staticmethod
-    def _precompute(magic_number, device=None, dtype=None):
+    def _precompute(
+        magic_number: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> Precomputed:
         MagicNumberInterpolation._check()
         magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
         return None, None, (magic_number,)
 
     @staticmethod
-    def _forward(x, magic_number):
+    def _forward(x: torch.Tensor, magic_number: torch.Tensor) -> torch.Tensor:
         return MagicNumberInterpolationImpl.apply(x, magic_number)
 
 
