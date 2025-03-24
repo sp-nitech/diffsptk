@@ -184,9 +184,6 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         def hz_to_mel(x):
             return 1127 * np.log1p(x / 700)
 
-        def mel_to_hz(x):
-            return 700 * np.expm1(x / 1127)
-
         mel_min = hz_to_mel(f_min)
         mel_max = hz_to_mel(f_max)
 
