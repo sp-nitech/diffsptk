@@ -14,10 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from torch import Tensor
+
 from . import modules as nn
+from .typing import ArrayLike
 
 
-def acorr(x, acr_order, out_format="naive"):
+def acorr(x: Tensor, acr_order: int, out_format: str = "naive") -> Tensor:
     """Estimate the autocorrelation of the input waveform.
 
     Parameters
@@ -40,7 +43,7 @@ def acorr(x, acr_order, out_format="naive"):
     return nn.Autocorrelation._func(x, acr_order=acr_order, out_format=out_format)
 
 
-def acr2csm(r):
+def acr2csm(r: Tensor) -> Tensor:
     """Convert autocorrelation to CSM coefficients.
 
     Parameters
@@ -57,7 +60,7 @@ def acr2csm(r):
     return nn.AutocorrelationToCompositeSinusoidalModelCoefficients._func(r)
 
 
-def alaw(x, abs_max=1, a=87.6):
+def alaw(x: Tensor, abs_max: float = 1, a: float = 87.6) -> Tensor:
     """Compress the input waveform using the A-law algorithm.
 
     Parameters
@@ -80,7 +83,7 @@ def alaw(x, abs_max=1, a=87.6):
     return nn.ALawCompression._func(x, abs_max=abs_max, a=a)
 
 
-def b2mc(b, alpha=0):
+def b2mc(b: Tensor, alpha: float = 0) -> Tensor:
     """Convert MLSA filter coefficients to mel-cepstrum.
 
     Parameters
@@ -100,7 +103,7 @@ def b2mc(b, alpha=0):
     return nn.MLSADigitalFilterCoefficientsToMelCepstrum._func(b, alpha=alpha)
 
 
-def c2acr(c, acr_order, n_fft=512):
+def c2acr(c: Tensor, acr_order: int, n_fft: int = 512) -> Tensor:
     """Convert cepstrum to autocorrelation.
 
     Parameters
@@ -123,7 +126,7 @@ def c2acr(c, acr_order, n_fft=512):
     return nn.CepstrumToAutocorrelation._func(c, acr_order=acr_order, n_fft=n_fft)
 
 
-def c2mpir(c, ir_length, n_fft=512):
+def c2mpir(c: Tensor, ir_length: int, n_fft: int = 512) -> Tensor:
     """Convert cepstrum to minimum phase impulse response.
 
     Parameters
@@ -148,7 +151,7 @@ def c2mpir(c, ir_length, n_fft=512):
     )
 
 
-def c2ndps(c, fft_length):
+def c2ndps(c: Tensor, fft_length: int) -> Tensor:
     """Convert cepstrum to NDPS.
 
     Parameters
@@ -170,7 +173,9 @@ def c2ndps(c, fft_length):
     )
 
 
-def cdist(c1, c2, full=False, reduction="mean"):
+def cdist(
+    c1: Tensor, c2: Tensor, full: bool = False, reduction: str = "mean"
+) -> Tensor:
     """Calculate the cepstral distance between two inputs.
 
     Parameters
@@ -196,7 +201,13 @@ def cdist(c1, c2, full=False, reduction="mean"):
     return nn.CepstralDistance._func(c1, c2, full=full, reduction=reduction)
 
 
-def chroma(x, n_channel, sample_rate, norm=float("inf"), use_power=True):
+def chroma(
+    x: Tensor,
+    n_channel: int,
+    sample_rate: int,
+    norm: float = float("inf"),
+    use_power: bool = True,
+) -> Tensor:
     """Apply chroma-filter banks to the STFT.
 
     Parameters
@@ -231,7 +242,7 @@ def chroma(x, n_channel, sample_rate, norm=float("inf"), use_power=True):
     )
 
 
-def csm2acr(c):
+def csm2acr(c: Tensor) -> Tensor:
     """Convert CSM coefficients to autocorrelation.
 
     Parameters
@@ -248,7 +259,7 @@ def csm2acr(c):
     return nn.CompositeSinusoidalModelCoefficientsToAutocorrelation._func(c)
 
 
-def dct(x, dct_type=2):
+def dct(x: Tensor, dct_type: int = 2) -> Tensor:
     """Compute DCT.
 
     Parameters
@@ -268,7 +279,7 @@ def dct(x, dct_type=2):
     return nn.DiscreteCosineTransform._func(x, dct_type=dct_type)
 
 
-def decimate(x, period=1, start=0, dim=-1):
+def decimate(x: Tensor, period: int = 1, start: int = 0, dim: int = -1) -> Tensor:
     """Decimate the input signal.
 
     Parameters
@@ -294,7 +305,7 @@ def decimate(x, period=1, start=0, dim=-1):
     return nn.Decimation._func(x, period=period, start=start, dim=dim)
 
 
-def delay(x, start=0, keeplen=False, dim=-1):
+def delay(x: Tensor, start: int = 0, keeplen: bool = False, dim: int = -1) -> Tensor:
     """Delay the input signal.
 
     Parameters
@@ -320,7 +331,11 @@ def delay(x, start=0, keeplen=False, dim=-1):
     return nn.Delay._func(x, start=start, keeplen=keeplen, dim=dim)
 
 
-def delta(x, seed=[[-0.5, 0, 0.5]], static_out=True):
+def delta(
+    x: Tensor,
+    seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [[-0.5, 0, 0.5]],
+    static_out: bool = True,
+) -> Tensor:
     """Compute the delta components.
 
     Parameters
@@ -343,7 +358,9 @@ def delta(x, seed=[[-0.5, 0, 0.5]], static_out=True):
     return nn.Delta._func(x, seed, static_out=static_out)
 
 
-def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
+def dequantize(
+    y: Tensor, abs_max: float = 1, n_bit: int = 8, quantizer: str = "mid-rise"
+) -> Tensor:
     """Dequantize the input waveform.
 
     Parameters
@@ -371,7 +388,12 @@ def dequantize(y, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
-def dfs(x, b=None, a=None, ir_length=None):
+def dfs(
+    x: Tensor,
+    b: Tensor | None = None,
+    a: Tensor | None = None,
+    ir_length: int | None = None,
+) -> Tensor:
     """Apply an IIR digital filter to the input waveform.
 
     Parameters
@@ -400,7 +422,7 @@ def dfs(x, b=None, a=None, ir_length=None):
     )
 
 
-def dht(x, dht_type=2):
+def dht(x: Tensor, dht_type: int = 2) -> Tensor:
     """Compute DHT.
 
     Parameters
@@ -421,15 +443,15 @@ def dht(x, dht_type=2):
 
 
 def drc(
-    x,
-    threshold,
-    ratio,
-    attack_time,
-    release_time,
-    sample_rate,
-    makeup_gain=0,
-    abs_max=1,
-):
+    x: Tensor,
+    threshold: float,
+    ratio: float,
+    attack_time: float,
+    release_time: float,
+    sample_rate: int,
+    makeup_gain: float = 0,
+    abs_max: float = 1,
+) -> Tensor:
     """Perform dynamic range compression.
 
     Parameters
@@ -476,7 +498,7 @@ def drc(
     )
 
 
-def dst(x, dst_type=2):
+def dst(x: Tensor, dst_type: int = 2) -> Tensor:
     """Compute DST.
 
     Parameters
@@ -496,7 +518,7 @@ def dst(x, dst_type=2):
     return nn.DiscreteSineTransform._func(x, dst_type=dst_type)
 
 
-def entropy(p, out_format="nat"):
+def entropy(p: Tensor, out_format: str = "nat") -> Tensor:
     """Calculate the entropy of a probability distribution.
 
     Parameters
@@ -517,14 +539,14 @@ def entropy(p, out_format="nat"):
 
 
 def excite(
-    p,
-    frame_period=80,
+    p: Tensor,
+    frame_period: int = 80,
     *,
-    voiced_region="pulse",
-    unvoiced_region="gauss",
-    polarity="auto",
-    init_phase="zeros",
-):
+    voiced_region: str = "pulse",
+    unvoiced_region: str = "gauss",
+    polarity: str = "auto",
+    init_phase: str = "zeros",
+) -> Tensor:
     """Generate a simple excitation signal.
 
     Parameters
@@ -565,15 +587,15 @@ def excite(
 
 
 def fbank(
-    x,
-    n_channel,
-    sample_rate,
-    f_min=0,
-    f_max=None,
-    floor=1e-5,
-    use_power=False,
-    out_format="y",
-):
+    x: Tensor,
+    n_channel: int,
+    sample_rate: int,
+    f_min: float = 0,
+    f_max: float | None = None,
+    floor: float = 1e-5,
+    use_power: bool = False,
+    out_format: str = "y",
+) -> tuple[Tensor, Tensor] | Tensor:
     """Apply mel-filter banks to the STFT.
 
     Parameters
@@ -624,7 +646,7 @@ def fbank(
     )
 
 
-def fftcep(x, cep_order, accel=0, n_iter=0):
+def fftcep(x: Tensor, cep_order: int, accel: float = 0, n_iter: int = 0) -> Tensor:
     """Perform cepstral analysis.
 
     Parameters
@@ -650,7 +672,13 @@ def fftcep(x, cep_order, accel=0, n_iter=0):
     return nn.CepstralAnalysis._func(x, cep_order=cep_order, accel=accel, n_iter=n_iter)
 
 
-def flux(x, y=None, lag=1, norm=2, reduction="mean"):
+def flux(
+    x: Tensor,
+    y: Tensor | None = None,
+    lag: int = 1,
+    norm: int | float = 2,
+    reduction: str = "mean",
+) -> Tensor:
     """Calculate flux.
 
     Parameters
@@ -661,7 +689,7 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
     y : Tensor [shape=(..., N, D)] or None
         The target (optional).
 
-    lag : int
+    lag : int or float
         The lag of the distance calculation, :math:`L`.
 
     norm : int or float
@@ -680,8 +708,13 @@ def flux(x, y=None, lag=1, norm=2, reduction="mean"):
 
 
 def frame(
-    x, frame_length=400, frame_period=80, center=True, zmean=False, mode="constant"
-):
+    x: Tensor,
+    frame_length: int = 400,
+    frame_period: int = 80,
+    center: bool = True,
+    zmean: bool = False,
+    mode: str = "constant",
+) -> Tensor:
     """Apply framing to the given waveform.
 
     Parameters
@@ -720,7 +753,7 @@ def frame(
     )
 
 
-def freqt(c, out_order, alpha=0):
+def freqt(c: Tensor, out_order: int, alpha: float = 0) -> Tensor:
     """Perform frequency transform.
 
     Parameters
@@ -743,7 +776,9 @@ def freqt(c, out_order, alpha=0):
     return nn.FrequencyTransform._func(c, out_order=out_order, alpha=alpha)
 
 
-def freqt2(c, out_order, alpha=0, theta=0, n_fft=512):
+def freqt2(
+    c: Tensor, out_order: int, alpha: float = 0, theta: float = 0, n_fft: int = 512
+) -> Tensor:
     """Perform second-order all-pass frequency transform.
 
     Parameters
@@ -774,7 +809,7 @@ def freqt2(c, out_order, alpha=0, theta=0, n_fft=512):
     )
 
 
-def gnorm(x, gamma=0, c=None):
+def gnorm(x: Tensor, gamma: float = 0, c: int | None = None) -> Tensor:
     """Perform cepstrum gain normalization.
 
     Parameters
@@ -797,7 +832,15 @@ def gnorm(x, gamma=0, c=None):
     return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma, c=c)
 
 
-def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
+def grpdelay(
+    b: Tensor | None = None,
+    a: Tensor | None = None,
+    *,
+    fft_length: int = 512,
+    alpha: float = 1,
+    gamma: float = 1,
+    **kwargs,
+) -> Tensor:
     """Compute group delay.
 
     Parameters
@@ -828,7 +871,7 @@ def grpdelay(b=None, a=None, *, fft_length=512, alpha=1, gamma=1, **kwargs):
     )
 
 
-def hilbert(x, fft_length=None, dim=-1):
+def hilbert(x: Tensor, fft_length: int | None = None, dim: int = -1) -> Tensor:
     """Compute the analytic signal using the Hilbert transform.
 
     Parameters
@@ -851,7 +894,11 @@ def hilbert(x, fft_length=None, dim=-1):
     return nn.HilbertTransform._func(x, fft_length=fft_length, dim=dim)
 
 
-def hilbert2(x, fft_length=None, dim=(-2, -1)):
+def hilbert2(
+    x: Tensor,
+    fft_length: ArrayLike[int] | int | None = None,
+    dim: ArrayLike[int] = (-2, -1),
+) -> Tensor:
     """Compute the analytic signal using the Hilbert transform.
 
     Parameters
@@ -874,7 +921,14 @@ def hilbert2(x, fft_length=None, dim=(-2, -1)):
     return nn.TwoDimensionalHilbertTransform._func(x, fft_length=fft_length, dim=dim)
 
 
-def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e-3):
+def histogram(
+    x: Tensor,
+    n_bin: int = 10,
+    lower_bound: float = 0,
+    upper_bound: float = 1,
+    norm: bool = False,
+    softness: float = 1e-3,
+) -> Tensor:
     """Compute histogram.
 
     Parameters
@@ -914,7 +968,7 @@ def histogram(x, n_bin=10, lower_bound=0, upper_bound=1, norm=False, softness=1e
     )
 
 
-def ialaw(y, abs_max=1, a=87.6):
+def ialaw(y: Tensor, abs_max: float = 1, a: float = 87.6) -> Tensor:
     """Expand the waveform using the A-law algorithm.
 
     Parameters
@@ -937,7 +991,7 @@ def ialaw(y, abs_max=1, a=87.6):
     return nn.ALawExpansion._func(y, abs_max=abs_max, a=a)
 
 
-def idct(y, dct_type=2):
+def idct(y: Tensor, dct_type: int = 2) -> Tensor:
     """Compute inverse DCT.
 
     Parameters
@@ -957,7 +1011,7 @@ def idct(y, dct_type=2):
     return nn.InverseDiscreteCosineTransform._func(y, dct_type=dct_type)
 
 
-def idht(y, dht_type=2):
+def idht(y: Tensor, dht_type: int = 2) -> Tensor:
     """Compute inverse DHT.
 
     Parameters
@@ -977,7 +1031,7 @@ def idht(y, dht_type=2):
     return nn.InverseDiscreteHartleyTransform._func(y, dht_type=dht_type)
 
 
-def idst(y, dst_type=2):
+def idst(y: Tensor, dst_type: int = 2) -> Tensor:
     """Compute inverse DST.
 
     Parameters
@@ -997,7 +1051,9 @@ def idst(y, dst_type=2):
     return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
 
 
-def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
+def ifreqt2(
+    c: Tensor, out_order: int, alpha: float = 0, theta: float = 0, n_fft: int = 512
+) -> Tensor:
     """Perform second-order all-pass inverse frequency transform.
 
     Parameters
@@ -1028,7 +1084,7 @@ def ifreqt2(c, out_order, alpha=0, theta=0, n_fft=512):
     )
 
 
-def ignorm(y, gamma=0, c=None):
+def ignorm(y: Tensor, gamma: float = 0, c: int | None = None) -> Tensor:
     """Perform cepstrum inverse gain normalization.
 
     Parameters
@@ -1051,7 +1107,12 @@ def ignorm(y, gamma=0, c=None):
     return nn.GeneralizedCepstrumInverseGainNormalization._func(y, gamma=gamma, c=c)
 
 
-def imdct(y, out_length=None, frame_length=400, window="sine"):
+def imdct(
+    y: Tensor,
+    out_length: int | None = None,
+    frame_length: int = 400,
+    window: str = "sine",
+) -> Tensor:
     """Compute inverse modified discrete cosine transform.
 
     Parameters
@@ -1079,7 +1140,12 @@ def imdct(y, out_length=None, frame_length=400, window="sine"):
     )
 
 
-def imdst(y, out_length=None, frame_length=400, window="sine"):
+def imdst(
+    y: Tensor,
+    out_length: int | None = None,
+    frame_length: int = 400,
+    window: str = "sine",
+) -> Tensor:
     """Compute inverse modified discrete sine transform.
 
     Parameters
@@ -1107,7 +1173,7 @@ def imdst(y, out_length=None, frame_length=400, window="sine"):
     )
 
 
-def interpolate(x, period=1, start=0, dim=-1):
+def interpolate(x: Tensor, period: int = 1, start: int = 0, dim: int = -1) -> Tensor:
     """Interpolate the input signal.
 
     Parameters
@@ -1133,7 +1199,7 @@ def interpolate(x, period=1, start=0, dim=-1):
     return nn.Interpolation._func(x, period=period, start=start, dim=dim)
 
 
-def ipnorm(y):
+def ipnorm(y: Tensor) -> Tensor:
     """Perform cepstrum inverse power normalization.
 
     Parameters
@@ -1150,7 +1216,7 @@ def ipnorm(y):
     return nn.MelCepstrumInversePowerNormalization._func(y)
 
 
-def is2par(s):
+def is2par(s: Tensor) -> Tensor:
     """Convert IS to PARCOR.
 
     Parameters
@@ -1168,16 +1234,16 @@ def is2par(s):
 
 
 def istft(
-    y,
+    y: Tensor,
     *,
-    out_length=None,
-    frame_length=400,
-    frame_period=80,
-    fft_length=512,
-    center=True,
-    window="blackman",
-    norm="power",
-):
+    out_length: int | None = None,
+    frame_length: int = 400,
+    frame_period: int = 80,
+    fft_length: int = 512,
+    center: bool = True,
+    window: str = "blackman",
+    norm: str = "power",
+) -> Tensor:
     """Compute inverse short-time Fourier transform.
 
     Parameters
@@ -1225,7 +1291,7 @@ def istft(
     )
 
 
-def iulaw(y, abs_max=1, mu=255):
+def iulaw(y: Tensor, abs_max: float = 1, mu: int = 255) -> Tensor:
     """Expand the waveform using the :math:`\\mu`-law algorithm.
 
     Parameters
@@ -1248,7 +1314,7 @@ def iulaw(y, abs_max=1, mu=255):
     return nn.MuLawExpansion._func(y, abs_max=abs_max, mu=mu)
 
 
-def iwht(y, wht_type="natural"):
+def iwht(y: Tensor, wht_type: str = "natural") -> Tensor:
     """Compute inverse WHT.
 
     Parameters
@@ -1268,7 +1334,7 @@ def iwht(y, wht_type="natural"):
     return nn.InverseWalshHadamardTransform._func(y, wht_type=wht_type)
 
 
-def lar2par(g):
+def lar2par(g: Tensor) -> Tensor:
     """Convert LAR to PARCOR.
 
     Parameters
@@ -1285,7 +1351,7 @@ def lar2par(g):
     return nn.LogAreaRatioToParcorCoefficients._func(g)
 
 
-def levdur(r, eps=0):
+def levdur(r: Tensor, eps: float = 0) -> Tensor:
     """Solve a Yule-Walker linear system.
 
     Parameters
@@ -1305,7 +1371,7 @@ def levdur(r, eps=0):
     return nn.LevinsonDurbin._func(r, eps=eps)
 
 
-def linear_intpl(x, upsampling_factor=80):
+def linear_intpl(x: Tensor, upsampling_factor: int = 80) -> Tensor:
     """Interpolate filter coefficients.
 
     Parameters
@@ -1325,7 +1391,7 @@ def linear_intpl(x, upsampling_factor=80):
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
-def lpc(x, lpc_order, eps=1e-6):
+def lpc(x: Tensor, lpc_order: int, eps: float = 1e-6) -> Tensor:
     """Perform LPC analysis.
 
     Parameters
@@ -1348,7 +1414,12 @@ def lpc(x, lpc_order, eps=1e-6):
     return nn.LinearPredictiveCodingAnalysis._func(x, lpc_order=lpc_order, eps=eps)
 
 
-def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
+def lpc2lsp(
+    a: Tensor,
+    log_gain: bool = False,
+    sample_rate: int | None = None,
+    out_format: str = "radian",
+) -> Tensor:
     """Convert LPC to LSP.
 
     Parameters
@@ -1376,7 +1447,7 @@ def lpc2lsp(a, log_gain=False, sample_rate=None, out_format="radian"):
     )
 
 
-def lpc2par(a, gamma=1, c=None):
+def lpc2par(a: Tensor, gamma: float = 1, c: int | None = None) -> Tensor:
     """Convert LPC to PARCOR.
 
     Parameters
@@ -1401,7 +1472,7 @@ def lpc2par(a, gamma=1, c=None):
     )
 
 
-def lpccheck(a, margin=1e-16, warn_type="warn"):
+def lpccheck(a: Tensor, margin: float = 1e-16, warn_type: str = "warn") -> Tensor:
     """Check stability of LPC coefficients.
 
     Parameters
@@ -1426,7 +1497,12 @@ def lpccheck(a, margin=1e-16, warn_type="warn"):
     )
 
 
-def lsp2lpc(w, log_gain=False, sample_rate=None, in_format="radian"):
+def lsp2lpc(
+    w: Tensor,
+    log_gain: bool = False,
+    sample_rate: int | None = None,
+    in_format: str = "radian",
+) -> Tensor:
     """Convert LSP to LPC.
 
     Parameters
@@ -1454,7 +1530,9 @@ def lsp2lpc(w, log_gain=False, sample_rate=None, in_format="radian"):
     )
 
 
-def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
+def lspcheck(
+    w: Tensor, rate: float = 0, n_iter: int = 1, warn_type: str = "warn"
+) -> Tensor:
     """Check the stability of the input LSP coefficients.
 
     Parameters
@@ -1482,7 +1560,14 @@ def lspcheck(w, rate=0, n_iter=1, warn_type="warn"):
     )
 
 
-def lsp2sp(w, fft_length, alpha=0, gamma=-1, log_gain=False, out_format="power"):
+def lsp2sp(
+    w: Tensor,
+    fft_length: int,
+    alpha: float = 0,
+    gamma: float = -1,
+    log_gain: bool = False,
+    out_format: str = "power",
+) -> Tensor:
     """Convert line spectral pairs to spectrum.
 
     Parameters
@@ -1521,7 +1606,7 @@ def lsp2sp(w, fft_length, alpha=0, gamma=-1, log_gain=False, out_format="power")
     )
 
 
-def magic_intpl(x, magic_number=0):
+def magic_intpl(x: Tensor, magic_number: float = 0) -> Tensor:
     """Interpolate magic number.
 
     Parameters
@@ -1541,7 +1626,7 @@ def magic_intpl(x, magic_number=0):
     return nn.MagicNumberInterpolation._func(x, magic_number=magic_number)
 
 
-def mc2b(mc, alpha=0):
+def mc2b(mc: Tensor, alpha: float = 0) -> Tensor:
     """Convert mel-cepstrum to MLSA digital filter coefficients.
 
     Parameters
@@ -1561,7 +1646,7 @@ def mc2b(mc, alpha=0):
     return nn.MelCepstrumToMLSADigitalFilterCoefficients._func(mc, alpha=alpha)
 
 
-def mcep(x, cep_order, alpha=0, n_iter=0):
+def mcep(x: Tensor, cep_order: int, alpha: float = 0, n_iter: int = 0) -> Tensor:
     """Perform mel-cepstral analysis.
 
     Parameters
@@ -1589,7 +1674,9 @@ def mcep(x, cep_order, alpha=0, n_iter=0):
     )
 
 
-def mcpf(mc, alpha=0, beta=0, onset=2, ir_length=128):
+def mcpf(
+    mc: Tensor, alpha: float = 0, beta: float = 0, onset: int = 2, ir_length: int = 128
+) -> Tensor:
     """Perform mel-cesptrum postfiltering.
 
     Parameters
@@ -1620,7 +1707,7 @@ def mcpf(mc, alpha=0, beta=0, onset=2, ir_length=128):
     )
 
 
-def mdct(x, frame_length=400, window="sine"):
+def mdct(x: Tensor, frame_length: int = 400, window: str = "sine") -> Tensor:
     """Compute modified discrete cosine transform.
 
     Parameters
@@ -1645,7 +1732,7 @@ def mdct(x, frame_length=400, window="sine"):
     )
 
 
-def mdst(x, frame_length=400, window="sine"):
+def mdst(x: Tensor, frame_length: int = 400, window: str = "sine") -> Tensor:
     """Compute modified discrete sine transform.
 
     Parameters
@@ -1671,16 +1758,16 @@ def mdst(x, frame_length=400, window="sine"):
 
 
 def mfcc(
-    x,
-    mfcc_order,
-    n_channel,
-    sample_rate,
-    lifter=1,
-    f_min=0,
-    f_max=None,
-    floor=1e-5,
-    out_format="y",
-):
+    x: Tensor,
+    mfcc_order: int,
+    n_channel: int,
+    sample_rate: int,
+    lifter: int = 1,
+    f_min: float = 0,
+    f_max: float | None = None,
+    floor: float = 1e-5,
+    out_format: str = "y",
+) -> Tensor:
     """Compute the MFCC from the power spectrum.
 
     Parameters
@@ -1738,18 +1825,18 @@ def mfcc(
 
 
 def mgc2mgc(
-    mc,
-    out_order,
-    in_alpha=0,
-    out_alpha=0,
-    in_gamma=0,
-    out_gamma=0,
-    in_norm=False,
-    out_norm=False,
-    in_mul=False,
-    out_mul=False,
-    n_fft=512,
-):
+    mc: Tensor,
+    out_order: int,
+    in_alpha: float = 0,
+    out_alpha: float = 0,
+    in_gamma: float = 0,
+    out_gamma: float = 0,
+    in_norm: bool = False,
+    out_norm: bool = False,
+    in_mul: bool = False,
+    out_mul: bool = False,
+    n_fft: int = 512,
+) -> Tensor:
     """Convert mel-generalized cepstrum to mel-generalized cepstrum.
 
     Parameters
@@ -1809,15 +1896,15 @@ def mgc2mgc(
 
 
 def mgc2sp(
-    mc,
-    fft_length,
-    alpha=0,
-    gamma=0,
-    norm=False,
-    mul=False,
-    n_fft=512,
-    out_format="power",
-):
+    mc: Tensor,
+    fft_length: int,
+    alpha: float = 0,
+    gamma: float = 0,
+    norm: bool = False,
+    mul: bool = False,
+    n_fft: int = 512,
+    out_format: str = "power",
+) -> Tensor:
     """Convert mel-cepstrum to spectrum.
 
     Parameters
@@ -1865,7 +1952,10 @@ def mgc2sp(
     )
 
 
-def mlpg(u, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
+def mlpg(
+    u: Tensor,
+    seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [[-0.5, 0, 0.5], [1, -2, 1]],
+) -> Tensor:
     """Perform MLPG given the mean vectors with delta components.
 
     Parameters
@@ -1886,17 +1976,17 @@ def mlpg(u, seed=[[-0.5, 0, 0.5], [1, -2, 1]]):
 
 
 def mlsacheck(
-    c,
+    c: Tensor,
     *,
-    alpha=0,
-    pade_order=4,
-    strict=True,
-    threshold=None,
-    fast=True,
-    n_fft=512,
-    warn_type="warn",
-    mod_type="scale",
-):
+    alpha: float = 0,
+    pade_order: int = 4,
+    strict: bool = True,
+    threshold: float | None = None,
+    fast: bool = True,
+    n_fft: int = 256,
+    warn_type: str = "warn",
+    mod_type: str = "scale",
+) -> Tensor:
     """Check the stability of the MLSA digital filter.
 
     Parameters
@@ -1948,7 +2038,7 @@ def mlsacheck(
     )
 
 
-def mpir2c(h, cep_order, n_fft=512):
+def mpir2c(h: Tensor, cep_order: int, n_fft: int = 512) -> Tensor:
     """Convert minimum-phase impulse response to cepstrum.
 
     Parameters
@@ -1974,7 +2064,7 @@ def mpir2c(h, cep_order, n_fft=512):
     )
 
 
-def ndps2c(n, cep_order):
+def ndps2c(n: Tensor, cep_order: int) -> Tensor:
     """Convert NPDS to cepstrum.
 
     Parameters
@@ -1994,7 +2084,7 @@ def ndps2c(n, cep_order):
     return nn.NegativeDerivativeOfPhaseSpectrumToCepstrum._func(n, cep_order=cep_order)
 
 
-def norm0(a):
+def norm0(a: Tensor) -> Tensor:
     """Convert all-pole to all-zero filter coefficients vice versa.
 
     Parameters
@@ -2011,7 +2101,7 @@ def norm0(a):
     return nn.AllPoleToAllZeroDigitalFilterCoefficients._func(a)
 
 
-def par2is(k):
+def par2is(k: Tensor) -> Tensor:
     """Convert PARCOR to IS.
 
     Parameters
@@ -2028,7 +2118,7 @@ def par2is(k):
     return nn.ParcorCoefficientsToInverseSine._func(k)
 
 
-def par2lar(k):
+def par2lar(k: Tensor) -> Tensor:
     """Convert PARCOR to LAR.
 
     Parameters
@@ -2045,7 +2135,7 @@ def par2lar(k):
     return nn.ParcorCoefficientsToLogAreaRatio._func(k)
 
 
-def par2lpc(k, gamma=1, c=None):
+def par2lpc(k: Tensor, gamma: float = 1, c: int | None = None) -> Tensor:
     """Convert PARCOR to LPC.
 
     Parameters
@@ -2070,7 +2160,13 @@ def par2lpc(k, gamma=1, c=None):
     )
 
 
-def phase(b=None, a=None, *, fft_length=512, unwrap=False):
+def phase(
+    b: Tensor | None = None,
+    a: Tensor | None = None,
+    *,
+    fft_length: int = 512,
+    unwrap: bool = False,
+) -> Tensor:
     """Compute phase spectrum.
 
     Parameters
@@ -2097,18 +2193,18 @@ def phase(b=None, a=None, *, fft_length=512, unwrap=False):
 
 
 def plp(
-    x,
-    plp_order,
-    n_channel,
-    sample_rate,
-    compression_factor=0.33,
-    lifter=1,
-    f_min=0,
-    f_max=None,
-    floor=1e-5,
-    n_fft=512,
-    out_format="y",
-):
+    x: Tensor,
+    plp_order: int,
+    n_channel: int,
+    sample_rate: int,
+    compression_factor: float = 0.33,
+    lifter: int = 1,
+    f_min: float = 0,
+    f_max: float | None = None,
+    floor: float = 1e-5,
+    n_fft: int = 512,
+    out_format: str = "y",
+) -> Tensor:
     """Compute the MFCC from the power spectrum.
 
     Parameters
@@ -2173,7 +2269,7 @@ def plp(
     )
 
 
-def pnorm(x, alpha=0, ir_length=128):
+def pnorm(x: Tensor, alpha: float = 0, ir_length: int = 128) -> Tensor:
     """Perform cepstrum power normalization.
 
     Parameters
@@ -2196,7 +2292,9 @@ def pnorm(x, alpha=0, ir_length=128):
     return nn.MelCepstrumPowerNormalization._func(x, alpha=alpha, ir_length=ir_length)
 
 
-def pol_root(x, *, eps=None, in_format="rectangular"):
+def pol_root(
+    x: Tensor, *, eps: float | None = None, in_format: str = "rectangular"
+) -> Tensor:
     """Convert roots to polynomial coefficients.
 
     Parameters
@@ -2220,7 +2318,9 @@ def pol_root(x, *, eps=None, in_format="rectangular"):
     return nn.RootsToPolynomial._func(x, eps=eps, in_format=in_format)
 
 
-def poledf(x, a, frame_period=80, ignore_gain=False):
+def poledf(
+    x: Tensor, a: Tensor, frame_period: int = 80, ignore_gain: bool = False
+) -> Tensor:
     """Apply an all-pole digital filter.
 
     Parameters
@@ -2248,7 +2348,9 @@ def poledf(x, a, frame_period=80, ignore_gain=False):
     )
 
 
-def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
+def quantize(
+    x: Tensor, abs_max: float = 1, n_bit: int = 8, quantizer: str = "mid-rise"
+) -> Tensor:
     """Quantize the input waveform.
 
     Parameters
@@ -2276,7 +2378,7 @@ def quantize(x, abs_max=1, n_bit=8, quantizer="mid-rise"):
     )
 
 
-def rlevdur(a):
+def rlevdur(a: Tensor) -> Tensor:
     """Solve a Yule-Walker linear system given the LPC coefficients.
 
     Parameters
@@ -2293,7 +2395,7 @@ def rlevdur(a):
     return nn.ReverseLevinsonDurbin._func(a)
 
 
-def rmse(x, y, reduction="mean"):
+def rmse(x: Tensor, y: Tensor, reduction: str = "mean") -> Tensor:
     """Calculate RMSE.
 
     Parameters
@@ -2316,7 +2418,9 @@ def rmse(x, y, reduction="mean"):
     return nn.RootMeanSquareError._func(x, y, reduction=reduction)
 
 
-def root_pol(a, *, eps=None, out_format="rectangular"):
+def root_pol(
+    a: Tensor, *, eps: float | None = None, out_format: str = "rectangular"
+) -> Tensor:
     """Compute roots of polynomial.
 
     Parameters
@@ -2344,7 +2448,14 @@ def root_pol(a, *, eps=None, out_format="rectangular"):
     )
 
 
-def smcep(x, cep_order, alpha=0, theta=0, n_iter=0, accuracy_factor=4):
+def smcep(
+    x: Tensor,
+    cep_order: int,
+    alpha: float = 0,
+    theta: float = 0,
+    n_iter: int = 0,
+    accuracy_factor: int = 4,
+) -> Tensor:
     """Perform mel-cepstral analysis.
 
     Parameters
@@ -2383,7 +2494,14 @@ def smcep(x, cep_order, alpha=0, theta=0, n_iter=0, accuracy_factor=4):
     )
 
 
-def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
+def snr(
+    s: Tensor,
+    sn: Tensor,
+    frame_length: int | None = None,
+    full: bool = False,
+    reduction: str = "mean",
+    eps: float = 1e-8,
+) -> Tensor:
     """Calculate SNR.
 
     Parameters
@@ -2418,8 +2536,14 @@ def snr(s, sn, frame_length=None, full=False, reduction="mean", eps=1e-8):
 
 
 def spec(
-    b=None, a=None, *, fft_length=512, eps=0, relative_floor=None, out_format="power"
-):
+    b: Tensor | None = None,
+    a: Tensor | None = None,
+    *,
+    fft_length: int = 512,
+    eps: float = 0,
+    relative_floor: float | None = None,
+    out_format: str = "power",
+) -> Tensor:
     """Compute spectrum.
 
     Parameters
@@ -2459,20 +2583,20 @@ def spec(
 
 
 def stft(
-    x,
+    x: Tensor,
     *,
-    frame_length=400,
-    frame_period=80,
-    fft_length=512,
-    center=True,
-    zmean=False,
-    mode="constant",
-    window="blackman",
-    norm="power",
-    eps=1e-9,
-    relative_floor=None,
-    out_format="power",
-):
+    frame_length: int = 400,
+    frame_period: int = 80,
+    fft_length: int = 512,
+    center: bool = True,
+    zmean: bool = False,
+    mode: str = "constant",
+    window: str = "blackman",
+    norm: str = "power",
+    eps: float = 1e-9,
+    relative_floor: float | None = None,
+    out_format: str = "power",
+) -> Tensor:
     """Compute short-time Fourier transform.
 
     Parameters
@@ -2536,7 +2660,7 @@ def stft(
     )
 
 
-def ulaw(x, abs_max=1, mu=255):
+def ulaw(x: Tensor, abs_max: float = 1, mu: int = 255) -> Tensor:
     """Compress the input waveform using the :math:`\\mu`-law algorithm.
 
     Parameters
@@ -2560,14 +2684,14 @@ def ulaw(x, abs_max=1, mu=255):
 
 
 def unframe(
-    y,
-    out_length=None,
+    y: Tensor,
+    out_length: int | None = None,
     *,
-    frame_period=80,
-    center=True,
-    window="rectangular",
-    norm="none",
-):
+    frame_period: int = 80,
+    center: bool = True,
+    window: str = "rectangular",
+    norm: str = "none",
+) -> Tensor:
     """Revert framed waveform.
 
     Parameters
@@ -2607,7 +2731,7 @@ def unframe(
     )
 
 
-def wht(x, wht_type="natural"):
+def wht(x: Tensor, wht_type: str = "natural") -> Tensor:
     """Apply WHT to the input.
 
     Parameters
@@ -2627,7 +2751,13 @@ def wht(x, wht_type="natural"):
     return nn.WalshHadamardTransform._func(x, wht_type=wht_type)
 
 
-def window(x, out_length=None, *, window="blackman", norm="power"):
+def window(
+    x: Tensor,
+    out_length: int | None = None,
+    *,
+    window: str = "blackman",
+    norm: str = "power",
+) -> Tensor:
     """Apply a window function to the given waveform.
 
     Parameters
@@ -2655,7 +2785,13 @@ def window(x, out_length=None, *, window="blackman", norm="power"):
     return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
 
 
-def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
+def yingram(
+    x: Tensor,
+    sample_rate: int = 22050,
+    lag_min: int = 22,
+    lag_max: int | None = None,
+    n_bin: int = 20,
+) -> Tensor:
     """Compute the YIN derivatives from the waveform.
 
     Parameters
@@ -2686,7 +2822,9 @@ def yingram(x, sample_rate=22050, lag_min=22, lag_max=None, n_bin=20):
     )
 
 
-def zcross(x, frame_length, norm=False, softness=1e-3):
+def zcross(
+    x: Tensor, frame_length: int, norm: bool = False, softness: float = 1e-3
+) -> Tensor:
     """Compute zero-crossing rate.
 
     Parameters
@@ -2715,7 +2853,9 @@ def zcross(x, frame_length, norm=False, softness=1e-3):
     )
 
 
-def zerodf(x, b, frame_period=80, ignore_gain=False):
+def zerodf(
+    x: Tensor, b: Tensor, frame_period: int = 80, ignore_gain: bool = False
+) -> Tensor:
     """Apply an all-zero digital filter.
 
     Parameters
