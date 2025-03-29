@@ -37,7 +37,28 @@ exclude_patterns = [
 
 # -- Options for HTML output -------------------------------------------------
 
+html_title = "diffsptk"
 html_theme = "pydata_sphinx_theme"
-html_theme_options = {"navigation_with_keys": False}
+html_theme_options = {
+    "navigation_with_keys": False,
+    "switcher": {
+        "json_url": "https://sp-nitech.github.io/diffsptk/switcher.json",
+        "version_match": version,
+    },
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/sp-nitech/diffsptk",
+            "icon": "fab fa-github-square",
+        },
+        {
+            "name": "Twitter",
+            "url": "https://x.com/SPTK_DSP",
+            "icon": "fab fa-twitter-square",
+        },
+    ],
+    "navbar_end": ["theme-switcher", "version-switcher", "navbar-icon-links"],
+}
 html_static_path = []
+html_show_sourcelink = False
 numpydoc_show_class_members = False

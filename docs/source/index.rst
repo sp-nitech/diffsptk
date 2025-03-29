@@ -7,12 +7,17 @@ and Hashimoto laboratory.
 
 .. toctree::
     :maxdepth: 1
+    :hidden:
 
     Modules <modules/index>
     Signals <signals>
     Utils <utils>
 
-Indices and tables
-------------------
+- :doc:`Modules <modules/index>`
+- :doc:`Signals <signals>`
+- :doc:`Utils <utils>`
+
+References
+----------
 
 - :ref:`genindex`
