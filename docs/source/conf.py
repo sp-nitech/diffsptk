@@ -43,7 +43,7 @@ html_theme_options = {
     "navigation_with_keys": False,
     "switcher": {
         "json_url": "https://sp-nitech.github.io/diffsptk/switcher.json",
-        "version_match": version,
+        "version_match": "master" if "dev" in version else version,
     },
     "icon_links": [
         {
