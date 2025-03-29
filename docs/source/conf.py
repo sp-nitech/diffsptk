@@ -56,8 +56,16 @@ html_theme_options = {
             "url": "https://x.com/SPTK_DSP",
             "icon": "fab fa-twitter-square",
         },
+        {
+            "name": "PyPI",
+            "url": "https://pypi.org/project/diffsptk",
+            "icon": "fa-brands fa-python",
+        },
     ],
-    "navbar_end": ["theme-switcher", "version-switcher", "navbar-icon-links"],
+    "navbar_start": ["navbar-logo", "version-switcher"],
+    "footer_start": ["copyright"],
+    "footer_center": ["sphinx-version"],
+    "footer_end": ["theme-version"],
 }
 html_static_path = []
 html_show_sourcelink = False
