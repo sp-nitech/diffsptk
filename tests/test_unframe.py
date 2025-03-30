@@ -53,3 +53,10 @@ def test_compatibility(device, module, fl, fp, center, T=20):
     assert torch.allclose(x2, x3)
 
     U.check_differentiability(device, unframe, [T // fp, fl])
+
+
+def test_multi_dimensional(fl=5, fp=3, B=2, C=4, T=20):
+    x = torch.randn(B, C, T)
+    y = diffsptk.functional.frame(x, fl, fp)
+    z = diffsptk.functional.unframe(y, out_length=T, frame_period=fp)
+    assert torch.allclose(x, z)

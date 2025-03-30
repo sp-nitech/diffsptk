@@ -135,9 +135,9 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         dw = SecondOrderAllPassFrequencyTransform.diff_warp(omega, alpha, theta)
 
         m2 = k[: out_order + 1]
-        wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
-        real = torch.cos(wwm2) * dw.reshape(-1, 1)
-        imag = -torch.sin(wwm2) * dw.reshape(-1, 1)
+        wwm2 = ww.unsqueeze(-1) * m2.unsqueeze(0)
+        real = torch.cos(wwm2) * dw.unsqueeze(-1)
+        imag = -torch.sin(wwm2) * dw.unsqueeze(-1)
 
         A = torch.fft.ifft(torch.complex(real, imag), dim=0).real
         L = in_order + 1

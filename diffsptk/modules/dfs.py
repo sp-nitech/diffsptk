@@ -125,7 +125,7 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
             a = to(torch.tensor(a, device=device), dtype=dtype)
 
         if fir:
-            b = b.reshape(1, 1, -1).flip(-1)
+            b = b.view(1, 1, -1).flip(-1)
             a = torch.empty(0)
         elif ir_length is not None:
             # Pre-compute the truncated impulse response.
@@ -140,7 +140,7 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
                 d[0] = y
                 y = torch.sum(d[: len(b)] * b)
                 h[t] = y
-            h = h.reshape(1, 1, -1).flip(-1)
+            h = h.view(1, 1, -1).flip(-1)
             b = to(h, dtype=dtype)
             a = torch.empty(0)
         return None, None, (b, a)

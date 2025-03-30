@@ -130,7 +130,7 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 
         m1 = torch.arange(-in_order, in_order + 1, device=device, dtype=torch.double)
-        wwm1 = ww.reshape(-1, 1) * m1.reshape(1, -1)
+        wwm1 = ww.unsqueeze(-1) * m1.unsqueeze(0)
         real = torch.cos(wwm1)
         imag = -torch.sin(wwm1)
 

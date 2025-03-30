@@ -282,7 +282,7 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
         ww = SecondOrderAllPassFrequencyTransform.warp(omega, alpha, theta)
 
         m2 = k[: out_order + 1]
-        wwm2 = ww.reshape(-1, 1) * m2.reshape(1, -1)
+        wwm2 = ww.unsqueeze(-1) * m2.unsqueeze(0)
         real = torch.cos(wwm2)
         imag = -torch.sin(wwm2)
 
