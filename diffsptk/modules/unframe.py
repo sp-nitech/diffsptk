@@ -141,8 +141,13 @@ class Unframe(BaseFunctionalModule):
         d = y.dim()
         N = y.size(-2)
 
-        if not 2 <= d <= 4:
-            raise ValueError("Input must be 2D, 3D, or 4D tensor.")
+        if d <= 1:
+            raise ValueError("Input must be at least 2D tensor.")
+
+        if 4 <= d:
+            batch_dims = y.size()[:-2]
+            space_dims = y.size()[-2:]
+            y = y.view(-1, *space_dims)
 
         def fold(x):
             x = F.fold(
@@ -168,4 +173,6 @@ class Unframe(BaseFunctionalModule):
 
         if d == 2:
             x = x.squeeze(0)
+        elif 4 <= d:
+            x = x.view(*batch_dims, -1)
         return x
