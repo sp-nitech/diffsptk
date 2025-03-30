@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import get_values, replicate1
+from ..utils.private import get_values
 from .base import BaseFunctionalModule
 
 
@@ -98,16 +98,16 @@ class LinearInterpolation(BaseFunctionalModule):
         if x.dim() != 3:
             raise ValueError("Input must be 1D, 2D, or 3D tensor.")
 
-        B, T, D = x.shape
-        x = x.transpose(-2, -1).contiguous()  # (B, D, T)
-        x = replicate1(x, left=False)
+        B, N, D = x.shape
+        x = x.transpose(-2, -1)  # (B, D, N)
+        x = F.pad(x, (0, 1, 0, 0), mode="replicate")
         x = F.interpolate(
             x,
-            size=T * upsampling_factor + 1,
+            size=N * upsampling_factor + 1,
             mode="linear",
             align_corners=True,
         )[..., :-1]  # Remove the padded value.
-        y = x.transpose(-2, -1).reshape(B, -1, D)
+        y = x.transpose(-2, -1)
 
         if d == 1:
             y = y.view(-1)
