@@ -100,7 +100,7 @@ class LinearInterpolation(BaseFunctionalModule):
 
         B, N, D = x.shape
         x = x.transpose(-2, -1)  # (B, D, N)
-        x = F.pad(x, (0, 1, 0, 0), mode="replicate")
+        x = F.pad(x, (0, 1), mode="replicate")
         x = F.interpolate(
             x,
             size=N * upsampling_factor + 1,
