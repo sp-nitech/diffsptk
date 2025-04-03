@@ -53,7 +53,7 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(*get_values(locals(), end=-2))
+        _, _, tensors = self._precompute(*get_values(locals()))
         if learnable and b is not None:
             self.b = nn.Parameter(tensors[0])
         else:

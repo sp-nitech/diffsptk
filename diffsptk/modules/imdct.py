@@ -20,7 +20,7 @@ from torch import nn
 from ..typing import Callable, Precomputed
 from ..utils.private import check_size, get_layer, get_values
 from .base import BaseFunctionalModule
-from .mdct import ModifiedDiscreteTransform
+from .mdct import LEARNABLES, ModifiedDiscreteCosineTransform, ModifiedDiscreteTransform
 from .unframe import Unframe
 from .window import Window
 
@@ -36,12 +36,22 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
         The window type.
 
+    learnable : bool or list[str]
+        Indicates whether the parameters are learnable. If a boolean, it specifies
+        whether all parameters are learnable. If a list, it contains the keys of the
+        learnable parameters, which can only be "basis" and "window".
+
     """
 
-    def __init__(self, frame_length: int, window: str = "sine") -> None:
+    def __init__(
+        self,
+        frame_length: int,
+        window: str = "sine",
+        learnable: bool | list[str] = False,
+    ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
@@ -89,15 +99,24 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check() -> None:
-        pass
+    def _check(*args, **kwargs) -> None:
+        ModifiedDiscreteCosineTransform._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(
-        frame_length: int, window: str, transform: str = "cosine", module: bool = True
+        frame_length: int,
+        window: str,
+        learnable: bool = False,
+        transform: str = "cosine",
+        module: bool = True,
     ) -> Precomputed:
-        InverseModifiedDiscreteCosineTransform._check()
+        InverseModifiedDiscreteCosineTransform._check(learnable)
         frame_period = frame_length // 2
+
+        if learnable is True:
+            learnable = LEARNABLES
+        elif learnable is False:
+            learnable = ()
 
         imdt = get_layer(
             module,
@@ -106,6 +125,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 length=frame_length,
                 window=window,
                 transform=transform,
+                learnable="basis" in learnable,
             ),
         )
         window_ = get_layer(
@@ -116,6 +136,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 out_length=None,
                 window=window,
                 norm="none",
+                learnable="window" in learnable,
             ),
         )
         unframe = get_layer(
@@ -157,15 +178,27 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
     transform : ['cosine', 'sine']
         The transform type.
 
+    learnable : bool
+        Whether to make the DCT matrix learnable.
+
     """
 
-    def __init__(self, length: int, window: str, transform: str = "cosine") -> None:
+    def __init__(
+        self,
+        length: int,
+        window: str,
+        transform: str = "cosine",
+        learnable: bool = False,
+    ) -> None:
         super().__init__()
 
         self.in_dim = length // 2
 
         _, _, tensors = self._precompute(*get_values(locals()))
-        self.register_buffer("W", tensors[0])
+        if learnable:
+            self.W = nn.Parameter(tensors[0])
+        else:
+            self.register_buffer("W", tensors[0])
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Apply inverse MDCT/MDST to the input.
@@ -182,7 +215,7 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of input")
-        return self._forward(y, **self._buffers)
+        return self._forward(y, **self._buffers, **self._parameters)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:

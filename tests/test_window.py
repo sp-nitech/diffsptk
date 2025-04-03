@@ -45,3 +45,8 @@ def test_compatibility(device, module, w, norm, L1, L2=10, B=2):
     )
 
     U.check_differentiability(device, window, [B, L1])
+
+
+def test_learnable(L=8):
+    window = diffsptk.Window(L, learnable=True)
+    U.check_learnable(window, (L,))

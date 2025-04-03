@@ -16,6 +16,7 @@
 
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 from ..typing import Precomputed
 from ..utils.private import check_size, get_values, to
@@ -42,6 +43,9 @@ class Window(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    learnable : bool
+        Whether to make the window learnable.
+
     """
 
     def __init__(
@@ -51,13 +55,17 @@ class Window(BaseFunctionalModule):
         *,
         window: str | int = "blackman",
         norm: str | int = "power",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
         self.in_dim = in_length
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
-        self.register_buffer("window", tensors[0])
+        if learnable:
+            self.window = nn.Parameter(tensors[0])
+        else:
+            self.register_buffer("window", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a window function to the given waveform.
@@ -82,7 +90,7 @@ class Window(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "input length")
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
