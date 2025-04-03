@@ -34,12 +34,22 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
     window : ['sine', 'vorbis', 'kbd', 'rectangular']
         The window type.
 
+    learnable : bool or list[str]
+        Indicates whether the parameters are learnable. If a boolean, it specifies
+        whether all parameters are learnable. If a list, it contains the keys of the
+        learnable parameters, which can only be "basis" and "window".
+
     """
 
-    def __init__(self, frame_length: int, window: str = "sine") -> None:
+    def __init__(
+        self,
+        frame_length: int,
+        window: str = "sine",
+        learnable: bool | list[str] = False,
+    ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -83,8 +93,8 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
         raise NotImplementedError
 
     @staticmethod
-    def _precompute(frame_length: int, window: str) -> Precomputed:
-        return MDCT._precompute(frame_length, window, transform="sine")
+    def _precompute(*args, **kwargs) -> Precomputed:
+        return MDCT._precompute(*args, **kwargs, transform="sine")
 
     @staticmethod
     def _forward(*args, **kwargs) -> torch.Tensor:
