@@ -43,3 +43,9 @@ def test_compatibility(device, module, window, L=512):
     )
 
     U.check_differentiability(device, mdct, [L])
+
+
+@pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])
+def test_learnable(learnable, L=16, T=80):
+    mdct = diffsptk.MDCT(L, learnable=learnable)
+    U.check_learnable(mdct, (T,))

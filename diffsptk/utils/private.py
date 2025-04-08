@@ -49,6 +49,8 @@ def get_layer(
 
     if module._takes_input_size():
         params = dict(islice(params.items(), 1, None))
+    if "learnable" in params:
+        params.pop("learnable")
 
     def layer(*args, **kwargs):
         return module._func(*args, **params, **kwargs)
@@ -56,7 +58,11 @@ def get_layer(
     return layer
 
 
-def get_values(dictionary: dict[str, Any], begin: int = 1, end: int = -1) -> list[Any]:
+def get_values(
+    dictionary: dict[str, Any], begin: int = 1, end: int = -1, full: bool = False
+) -> list[Any]:
+    if not full and "learnable" in dictionary:
+        dictionary.pop("learnable")
     return list(dictionary.values())[begin:end]
 
 
