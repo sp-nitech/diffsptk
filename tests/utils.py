@@ -42,6 +42,8 @@ def choice(is_module, module, func, params={}):
 
     if module._takes_input_size():
         params = dict(islice(params.items(), 1, None))
+    if "learnable" in params:
+        params.pop("learnable")
 
     def f(*args, **kwargs):
         return func(*args, **params, **kwargs)

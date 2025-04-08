@@ -14,11 +14,15 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
+from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values, remove_gain
+from ..utils.private import get_layer, get_values, remove_gain
 from .base import BaseFunctionalModule
+from .fftr import RealValuedFastFourierTransform
 
 
 class Spectrum(BaseFunctionalModule):
@@ -39,6 +43,9 @@ class Spectrum(BaseFunctionalModule):
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         The output format.
 
+    learnable : bool
+        Whether to make the DFT basis learnable.
+
     """
 
     def __init__(
@@ -48,10 +55,12 @@ class Spectrum(BaseFunctionalModule):
         eps: float = 0,
         relative_floor: float | None = None,
         out_format: str | int = "power",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
+        self.layers = nn.ModuleList(layers)
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -82,14 +91,14 @@ class Spectrum(BaseFunctionalModule):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        return self._forward(b, a, *self.values)
+        return self._forward(b, a, *self.values, *self.layers)
 
     @staticmethod
     def _func(
         b: torch.Tensor | None = None, a: torch.Tensor | None = None, *args, **kwargs
     ) -> torch.Tensor:
-        values = Spectrum._precompute(*args, **kwargs)
-        return Spectrum._forward(b, a, *values)
+        values, layers, _ = Spectrum._precompute(*args, **kwargs)
+        return Spectrum._forward(b, a, *values, *layers)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -110,8 +119,11 @@ class Spectrum(BaseFunctionalModule):
         eps: float,
         relative_floor: float | None,
         out_format: str | int,
+        learnable: bool = False,
     ) -> Precomputed:
         Spectrum._check(fft_length, eps, relative_floor)
+        module = inspect.stack()[1].function == "__init__"
+
         if relative_floor is not None:
             relative_floor = 10 ** (relative_floor / 10)
         if out_format in (0, "db"):
@@ -124,25 +136,36 @@ class Spectrum(BaseFunctionalModule):
             formatter = lambda x: x
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
-        return (fft_length, eps, relative_floor, formatter)
+
+        fftr = get_layer(
+            module,
+            RealValuedFastFourierTransform,
+            dict(
+                fft_length=fft_length,
+                out_format="amplitude",
+                learnable=learnable,
+            ),
+        )
+
+        return (eps, relative_floor, formatter), (fftr,), None
 
     @staticmethod
     def _forward(
         b: torch.Tensor | None,
         a: torch.Tensor | None,
-        fft_length: int,
         eps: float,
         relative_floor: float | None,
         formatter: Callable,
+        fftr: Callable,
     ) -> torch.Tensor:
         if b is None and a is None:
             raise ValueError("Either b or a must be specified.")
 
         if b is not None:
-            B = torch.fft.rfft(b, n=fft_length).abs()
+            B = fftr(b)
         if a is not None:
             K, a = remove_gain(a, return_gain=True)
-            A = torch.fft.rfft(a, n=fft_length).abs()
+            A = fftr(a)
 
         if b is None:
             X = K / A

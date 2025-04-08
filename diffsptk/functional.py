@@ -672,6 +672,33 @@ def fftcep(x: Tensor, cep_order: int, accel: float = 0, n_iter: int = 0) -> Tens
     return nn.CepstralAnalysis._func(x, cep_order=cep_order, accel=accel, n_iter=n_iter)
 
 
+def fftr(
+    x: Tensor, fft_length: int | None = None, out_format: str = "complex"
+) -> Tensor:
+    """Compute FFT of a real signal.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., N)]
+        The real input signal.
+
+    fft_length : int >= 2 or None
+        The FFT length, :math:`L`.
+
+    out_format : ['complex', 'real', 'imaginary', 'amplitude', 'power']
+        The output format.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L/2+1)]
+        The complex output spectrum.
+
+    """
+    return nn.RealValuedFastFourierTransform._func(
+        x, fft_length=fft_length, out_format=out_format
+    )
+
+
 def flux(
     x: Tensor,
     y: Tensor | None = None,

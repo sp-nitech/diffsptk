@@ -20,11 +20,14 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import Lambda, get_layer, get_values
+from ..utils.private import get_layer, get_values
 from .base import BaseFunctionalModule
+from .fftr import RealValuedFastFourierTransform
 from .frame import Frame
 from .spec import Spectrum
 from .window import Window
+
+LEARNABLES = ("basis", "window")
 
 
 class ShortTimeFourierTransform(BaseFunctionalModule):
@@ -66,6 +69,11 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     out_format : ['db', 'log-magnitude', 'magnitude', 'power', 'complex']
         The output format.
 
+    learnable : bool or list[str]
+        Indicates whether the parameters are learnable. If a boolean, it specifies
+        whether all parameters are learnable. If a list, it contains the keys of the
+        learnable parameters, which can only be "basis" and "window".
+
     """
 
     def __init__(
@@ -82,10 +90,11 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps: float = 1e-9,
         relative_floor: float | None = None,
         out_format: str = "power",
+        learnable: bool | list[str] = False,
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(*get_values(locals(), full=True))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -126,8 +135,12 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check() -> None:
-        pass
+    def _check(learnable: bool | list[str]) -> None:
+        if isinstance(learnable, (tuple, list)):
+            if any(x not in LEARNABLES for x in learnable):
+                raise ValueError("An unsupported key is found in learnable.")
+        elif not isinstance(learnable, bool):
+            raise ValueError("learnable must be boolean or list.")
 
     @staticmethod
     def _precompute(
@@ -142,9 +155,15 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps: float,
         relative_floor: float | None,
         out_format: str,
+        learnable: bool | list[str] = False,
     ) -> Precomputed:
-        ShortTimeFourierTransform._check()
+        ShortTimeFourierTransform._check(learnable)
         module = inspect.stack()[1].function == "__init__"
+
+        if learnable is True:
+            learnable = LEARNABLES
+        elif learnable is False:
+            learnable = ()
 
         frame = get_layer(
             module,
@@ -165,10 +184,19 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 out_length=fft_length,
                 window=window,
                 norm=norm,
+                learnable="window" in learnable,
             ),
         )
         if out_format == "complex":
-            spec = Lambda(torch.fft.rfft)
+            spec = get_layer(
+                module,
+                RealValuedFastFourierTransform,
+                dict(
+                    fft_length=fft_length,
+                    out_format="complex",
+                    learnable="basis" in learnable,
+                ),
+            )
         else:
             spec = get_layer(
                 module,
@@ -178,6 +206,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                     eps=eps,
                     relative_floor=relative_floor,
                     out_format=out_format,
+                    learnable="basis" in learnable,
                 ),
             )
         return None, (frame, window_, spec), None
