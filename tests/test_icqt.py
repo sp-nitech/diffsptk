@@ -81,11 +81,4 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
     except ImportError:
         pass
 
-    U.check_differentiability(
-        device,
-        icqt,
-        [1, K],
-        dtype=torch.complex128
-        if torch.get_default_dtype() == torch.double
-        else torch.complex64,
-    )
+    U.check_differentiability(device, icqt, [1, K], dtype=U.get_complex_dtype())

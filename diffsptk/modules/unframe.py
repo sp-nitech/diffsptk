@@ -16,9 +16,10 @@
 
 import torch
 import torch.nn.functional as F
+from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import check_size, get_values
 from .base import BaseFunctionalModule
 from .window import Window
 
@@ -44,6 +45,9 @@ class Unframe(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    learnable : bool
+        Whether to make the window learnable.
+
     """
 
     def __init__(
@@ -54,11 +58,17 @@ class Unframe(BaseFunctionalModule):
         center: bool = True,
         window: str = "rectangular",
         norm: str = "none",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
-        self.register_buffer("window", tensors[0])
+        self.in_dim = frame_length
+
+        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        if learnable:
+            self.window = nn.Parameter(tensors[0])
+        else:
+            self.register_buffer("window", tensors[0])
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Revert the framed waveform to the unframed waveform.
@@ -93,7 +103,10 @@ class Unframe(BaseFunctionalModule):
         tensor([1., 2., 3., 4., 5., 6., 7., 8., 9.])
 
         """
-        return self._forward(y, out_length, *self.values, **self._buffers)
+        check_size(y.size(-1), self.in_dim, "length of waveform")
+        return self._forward(
+            y, out_length, *self.values, **self._buffers, **self._parameters
+        )
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
@@ -139,10 +152,10 @@ class Unframe(BaseFunctionalModule):
         window: torch.Tensor,
     ) -> torch.Tensor:
         d = y.dim()
-        N = y.size(-2)
-
         if d <= 1:
             raise ValueError("Input must be at least 2D tensor.")
+
+        N = y.size(-2)
 
         if 4 <= d:
             batch_dims = y.size()[:-2]

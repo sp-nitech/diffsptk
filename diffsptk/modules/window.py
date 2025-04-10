@@ -61,7 +61,7 @@ class Window(BaseFunctionalModule):
 
         self.in_dim = in_length
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
         if learnable:
             self.window = nn.Parameter(tensors[0])
         else:

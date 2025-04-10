@@ -51,7 +51,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
+        self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
@@ -106,7 +106,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     def _precompute(
         frame_length: int,
         window: str,
-        learnable: bool = False,
+        learnable: bool | list[str] = False,
         transform: str = "cosine",
         module: bool = True,
     ) -> Precomputed:
@@ -194,7 +194,7 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length // 2
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(*get_values(locals(), drop=1))
         if learnable:
             self.W = nn.Parameter(tensors[0])
         else:

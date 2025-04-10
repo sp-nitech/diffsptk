@@ -49,7 +49,7 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
     ):
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
+        self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:

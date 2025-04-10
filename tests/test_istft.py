@@ -52,3 +52,9 @@ def test_compatibility(device, module, T=19200):
     )
 
     U.check_differentiability(device, [istft, stft], [T])
+
+
+@pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])
+def test_learnable(learnable, P=10, L1=12, L2=16, T=80):
+    istft = diffsptk.ISTFT(L1, P, L2, learnable=learnable)
+    U.check_learnable(istft, (T // P, L2 // 2 + 1), dtype=U.get_complex_dtype())

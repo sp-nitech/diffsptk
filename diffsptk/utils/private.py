@@ -58,11 +58,9 @@ def get_layer(
     return layer
 
 
-def get_values(
-    dictionary: dict[str, Any], begin: int = 1, end: int = -1, full: bool = False
-) -> list[Any]:
-    if not full and "learnable" in dictionary:
-        dictionary.pop("learnable")
+def get_values(dictionary: dict[str, Any], drop: int = 0) -> list[Any]:
+    begin = 1
+    end = -1 - drop
     return list(dictionary.values())[begin:end]
 
 
@@ -79,8 +77,10 @@ def get_logger(name: str) -> logging.Logger:
     return logger
 
 
-def get_generator(seed: int | None = None) -> torch.Generator:
-    generator = torch.Generator()
+def get_generator(
+    seed: int | None = None, device: torch.device = "cpu"
+) -> torch.Generator:
+    generator = torch.Generator(device)
     if seed is not None:
         generator.manual_seed(seed)
     return generator

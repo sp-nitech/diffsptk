@@ -109,9 +109,9 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         self.perturb_factor = perturb_factor
         self.metric = metric
         self.batch_size = batch_size
+        self.seed = seed
         self.verbose = verbose
 
-        self.generator = get_generator(seed)
         self.logger = get_logger("lbg")
         self.hide_progress_bar = self.verbose <= 1
 
@@ -180,6 +180,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         """
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
+        generator = get_generator(self.seed, device)
 
         # Initialize codebook.
         if self.init == "none":
@@ -222,7 +223,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
                         *codebook.size(),
                         device=codebook.device,
                         dtype=codebook.dtype,
-                        generator=self.generator,
+                        generator=generator,
                     )
                     * self.perturb_factor
                 )
@@ -281,7 +282,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
                             copied_centroids.size(),
                             dtype=copied_centroids.dtype,
                             device=device,
-                            generator=self.generator,
+                            generator=generator,
                         )
                         * self.perturb_factor
                     )
