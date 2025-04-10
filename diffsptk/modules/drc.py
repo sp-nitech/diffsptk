@@ -74,7 +74,7 @@ class DynamicRangeCompression(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
         if learnable:
             self.params = nn.Parameter(tensors[0])
         else:

@@ -14,13 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import get_values, to
 from .base import BaseFunctionalModule
 
 
@@ -63,10 +62,17 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         Returns
         -------
         out : Tensor [shape=(..., L/2+1)]
-            The complex output spectrum.
+            The output spectrum.
 
         Examples
         --------
+        >>> x = diffsptk.ramp(1, 3)
+        >>> x
+        tensor([1., 2., 3.])
+        >>> fftr = diffsptk.RealValuedFastFourierTransform(8, out_format="real")
+        >>> y = fftr(x)
+        >>> y
+        tensor([ 6.0000,  2.4142, -2.0000, -0.4142,  2.0000])
 
         """
         return self._forward(x, *self.values, **self._buffers, **self._parameters)
@@ -81,19 +87,19 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check(fft_length: int) -> None:
-        if fft_length <= 0 or fft_length % 2 == 1:
+    def _check(fft_length: int | None) -> None:
+        if fft_length is not None and (fft_length <= 0 or fft_length % 2 == 1):
             raise ValueError("fft_length must be positive even.")
 
     @staticmethod
     def _precompute(
-        fft_length: int,
+        fft_length: int | None,
         out_format: str | int,
+        learnable: bool = False,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         RealValuedFastFourierTransform._check(fft_length)
-        module = inspect.stack()[1].function == "__init__"
 
         if out_format in (0, "complex"):
             formatter = lambda x: x
@@ -108,7 +114,7 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
-        if module:
+        if learnable:
             W = torch.fft.fft(torch.eye(fft_length, device=device, dtype=torch.double))
             W = W[..., : fft_length // 2 + 1]
             W = torch.cat([W.real, W.imag], dim=-1)
@@ -120,13 +126,15 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
     @staticmethod
     def _forward(
         x: torch.Tensor,
-        fft_length: int,
+        fft_length: int | None,
         formatter: Callable,
         W: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if W is None:
             y = torch.fft.rfft(x, n=fft_length)
         else:
+            if fft_length is not None and fft_length != x.size(-1):
+                x = F.pad(x, (0, fft_length - x.size(-1)))
             y = torch.matmul(x, W)
             y = torch.complex(*torch.tensor_split(y, 2, dim=-1))
         return formatter(y)

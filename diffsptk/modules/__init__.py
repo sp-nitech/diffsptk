@@ -71,6 +71,7 @@ from .idht import InverseDiscreteHartleyTransform
 from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
+from .ifftr import RealValuedInverseFastFourierTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .igammatone import GammatoneFilterBankSynthesis
 from .ignorm import GeneralizedCepstrumInverseGainNormalization

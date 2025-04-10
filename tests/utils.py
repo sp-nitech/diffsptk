@@ -51,6 +51,14 @@ def choice(is_module, module, func, params={}):
     return f
 
 
+def get_complex_dtype():
+    return (
+        torch.complex128
+        if torch.get_default_dtype() == torch.double
+        else torch.complex64
+    )
+
+
 def allclose(a, b, rtol=None, atol=None):
     is_double = torch.get_default_dtype() == torch.double
     if rtol is None:
@@ -244,13 +252,13 @@ def check_various_shape(module, shapes, *, preprocess=None):
             assert torch.allclose(y, target)
 
 
-def check_learnable(module, shape):
+def check_learnable(module, shape, dtype=None):
     params_before = []
     for p in module.parameters():
         params_before.append(p.clone())
 
     optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
-    x = torch.randn(*shape)
+    x = torch.randn(*shape, dtype=dtype)
     y = module(x)
     optimizer.zero_grad()
     loss = y.mean()

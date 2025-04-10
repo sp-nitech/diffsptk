@@ -691,7 +691,7 @@ def fftr(
     Returns
     -------
     out : Tensor [shape=(..., L/2+1)]
-        The complex output spectrum.
+        The output spectrum.
 
     """
     return nn.RealValuedFastFourierTransform._func(
@@ -1078,6 +1078,26 @@ def idst(y: Tensor, dst_type: int = 2) -> Tensor:
     return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
 
 
+def ifftr(y: Tensor, out_length: int | None = None) -> Tensor:
+    """Compute inverse FFT of a complex spectrum.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., L/2+1)]
+        The complex input spectrum.
+
+    out_length : int or None
+        The output length, :math:`N`.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., N)]
+        The real output signal.
+
+    """
+    return nn.RealValuedInverseFastFourierTransform._func(y, out_length=out_length)
+
+
 def ifreqt2(
     c: Tensor, out_order: int, alpha: float = 0, theta: float = 0, n_fft: int = 512
 ) -> Tensor:
@@ -1086,7 +1106,7 @@ def ifreqt2(
     Parameters
     ----------
     c : Tensor [shape=(..., M1+1)]
-        Cepstral coefficients.
+        The cepstral coefficients.
 
     out_order : int >= 0
         The order of the output sequence, :math:`M_2`.

@@ -194,6 +194,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
                     center=True,
                     window="rectangular",
                     norm="none",
+                    learnable=False,  # requires very large memory
                 )
             )
 

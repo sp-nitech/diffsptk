@@ -59,7 +59,7 @@ class Spectrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
+        self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(
@@ -146,7 +146,6 @@ class Spectrum(BaseFunctionalModule):
                 learnable=learnable,
             ),
         )
-
         return (eps, relative_floor, formatter), (fftr,), None
 
     @staticmethod

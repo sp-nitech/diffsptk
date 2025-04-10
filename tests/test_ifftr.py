@@ -14,47 +14,40 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from operator import itemgetter
-
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, T=19200):
-    stft_params = {
-        "frame_length": 400,
-        "frame_period": 80,
-        "fft_length": 512,
-        "window": "hamming",
-        "norm": "power",
-    }
-    stft = diffsptk.STFT(**stft_params, out_format="complex")
-    istft = U.choice(
+@pytest.mark.parametrize("module", [True])
+def test_compatibility(device, module, L=16, B=2):
+    fftr = diffsptk.RealValuedFastFourierTransform(L)
+    ifftr = U.choice(
         module,
-        diffsptk.ISTFT,
-        diffsptk.functional.istft,
-        stft_params,
+        diffsptk.RealValuedInverseFastFourierTransform,
+        diffsptk.functional.ifftr,
+        {"fft_length": L, "learnable": "debug"},
     )
 
-    # torch.round is for float precision.
     U.check_compatibility(
         device,
-        [torch.round, itemgetter(slice(0, T)), istft, stft],
+        [ifftr, fftr],
         [],
-        "x2x +sd tools/SPTK/asset/data.short",
+        f"nrand -l {B * L}",
         "sopr",
         [],
+        dx=L,
+        dy=L,
     )
 
-    U.check_differentiability(device, [istft, stft], [T])
+    U.check_differentiability(device, [ifftr, fftr], [B, L])
 
 
-@pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])
-def test_learnable(learnable, P=10, L1=12, L2=16, T=80):
-    istft = diffsptk.ISTFT(L1, P, L2, learnable=learnable)
-    U.check_learnable(istft, (T // P, L2 // 2 + 1), dtype=U.get_complex_dtype())
+def test_learnable(L=16):
+    ifftr = diffsptk.RealValuedInverseFastFourierTransform(
+        L,
+        learnable=True,
+    )
+    U.check_learnable(ifftr, (L // 2 + 1,), dtype=U.get_complex_dtype())
