@@ -24,7 +24,7 @@ import tests.utils as U
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3, 4])
-def test_compatibility(device, module, out_format, L=16, B=2):
+def test_compatibility(device, module, out_format, M=12, L=16, B=2):
     fftr = U.choice(
         module,
         diffsptk.RealValuedFastFourierTransform,
@@ -46,10 +46,10 @@ def test_compatibility(device, module, out_format, L=16, B=2):
         device,
         fftr,
         [],
-        f"nrand -l {B * L}",
-        f"fftr -l {L} -o {out_format} -H",
+        f"nrand -l {B * (M + 1)}",
+        f"fftr -m {M} -l {L} -o {out_format} -H",
         [],
-        dx=L,
+        dx=M + 1,
         dy=2 * size if out_format == 0 else size,
         eq=eq(out_format),
     )

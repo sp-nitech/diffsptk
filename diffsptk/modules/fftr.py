@@ -36,12 +36,16 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         The output format.
 
     learnable : bool
-        Whether to make the DFT basis learnable.
+        Whether to make the DFT basis learnable. If True, the module performs DFT rather
+        than FFT.
 
     """
 
     def __init__(
-        self, fft_length: int, out_format: str = "complex", learnable: bool = False
+        self,
+        fft_length: int,
+        out_format: str | int = "complex",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
@@ -56,7 +60,7 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
 
         Parameters
         ----------
-        x : Tensor [shape=(..., L)]
+        x : Tensor [shape=(..., N)]
             The real input signal.
 
         Returns

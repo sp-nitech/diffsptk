@@ -227,7 +227,6 @@ class ConstantQTransform(BaseNonFunctionalModule):
                     norm="none",
                     eps=0,
                     out_format="complex",
-                    learnable=False,
                 )
             )
 

@@ -12,4 +12,4 @@ stft
 
 .. seealso::
 
-    :ref:`frame` :ref:`window` :ref:`spec` :ref:`istft`
+    :ref:`frame` :ref:`window` :ref:`spec` :ref:`fftr` :ref:`istft`

@@ -21,7 +21,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [True])
+@pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, module, L=16, B=2):
     fftr = diffsptk.RealValuedFastFourierTransform(L)
     ifftr = U.choice(
@@ -46,8 +46,5 @@ def test_compatibility(device, module, L=16, B=2):
 
 
 def test_learnable(L=16):
-    ifftr = diffsptk.RealValuedInverseFastFourierTransform(
-        L,
-        learnable=True,
-    )
+    ifftr = diffsptk.RealValuedInverseFastFourierTransform(L, learnable=True)
     U.check_learnable(ifftr, (L // 2 + 1,), dtype=U.get_complex_dtype())

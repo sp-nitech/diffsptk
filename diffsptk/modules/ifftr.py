@@ -35,7 +35,8 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
         The output length, :math:`N`.
 
     learnable : bool
-        Whether to make the DFT basis learnable.
+        Whether to make the DFT basis learnable. If True, the module performs DFT rather
+        than FFT.
 
     """
 
@@ -57,7 +58,7 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
 
         Parameters
         ----------
-        y : Tensor [shape=(..., L)]
+        y : Tensor [shape=(..., L/2+1)]
             The complex input spectrum.
 
         Returns
@@ -107,10 +108,6 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         RealValuedInverseFastFourierTransform._check(fft_length, out_length)
-
-        if out_length is None:
-            out_length = fft_length
-
         if learnable:
             W = torch.fft.ifft(torch.eye(fft_length, device=device, dtype=torch.double))
             W = W[: fft_length // 2 + 1, :out_length]
@@ -124,7 +121,7 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
     @staticmethod
     def _forward(
         y: torch.Tensor,
-        out_length: int,
+        out_length: int | None,
         W: torch.Tensor | None = None,
     ) -> torch.Tensor:
         if W is None:
