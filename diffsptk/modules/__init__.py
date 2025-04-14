@@ -47,6 +47,7 @@ from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
 from .fbank import MelFilterBankAnalysis as FBANK
 from .fftcep import CepstralAnalysis
+from .fftr import RealValuedFastFourierTransform
 from .flux import Flux
 from .frame import Frame
 from .freqt import FrequencyTransform
@@ -70,6 +71,7 @@ from .idht import InverseDiscreteHartleyTransform
 from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
+from .ifftr import RealValuedInverseFastFourierTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .igammatone import GammatoneFilterBankSynthesis
 from .ignorm import GeneralizedCepstrumInverseGainNormalization

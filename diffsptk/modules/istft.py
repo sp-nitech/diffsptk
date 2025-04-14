@@ -20,8 +20,10 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import Lambda, get_layer, get_values
+from ..utils.private import get_layer, get_values
 from .base import BaseFunctionalModule
+from .ifftr import RealValuedInverseFastFourierTransform
+from .stft import LEARNABLES, ShortTimeFourierTransform
 from .unframe import Unframe
 
 
@@ -49,6 +51,11 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    learnable : bool or list[str]
+        Indicates whether the parameters are learnable. If a boolean, it specifies
+        whether all parameters are learnable. If a list, it contains the keys of the
+        learnable parameters, which can only be "basis" and "window".
+
     """
 
     def __init__(
@@ -60,6 +67,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         center: bool = True,
         window: str = "blackman",
         norm: str = "power",
+        learnable: bool | list[str] = False,
     ) -> None:
         super().__init__()
 
@@ -99,12 +107,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = InverseShortTimeFourierTransform._precompute(
-            *args,
-            **kwargs,
-            device=x.device,
-            dtype=torch.float if x.dtype == torch.complex64 else torch.double,
-        )
+        _, layers, _ = InverseShortTimeFourierTransform._precompute(*args, **kwargs)
         return InverseShortTimeFourierTransform._forward(x, out_length, *layers)
 
     @staticmethod
@@ -112,8 +115,8 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check() -> None:
-        pass
+    def _check(*args, **kwargs) -> None:
+        ShortTimeFourierTransform._check(*args, **kwargs)
 
     @staticmethod
     def _precompute(
@@ -123,13 +126,25 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         center: bool,
         window: str,
         norm: str,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        learnable: bool | list[str] = False,
     ) -> Precomputed:
-        InverseShortTimeFourierTransform._check()
+        InverseShortTimeFourierTransform._check(learnable)
         module = inspect.stack()[1].function == "__init__"
 
-        ifft = Lambda(lambda x: torch.fft.irfft(x, n=fft_length)[..., :frame_length])
+        if learnable is True:
+            learnable = LEARNABLES
+        elif learnable is False:
+            learnable = ()
+
+        ifftr = get_layer(
+            module,
+            RealValuedInverseFastFourierTransform,
+            dict(
+                fft_length=fft_length,
+                out_length=frame_length,
+                learnable="basis" in learnable,
+            ),
+        )
         unframe = get_layer(
             module,
             Unframe,
@@ -139,15 +154,16 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
                 center=center,
                 norm=norm,
                 window=window,
+                learnable="window" in learnable,
             ),
         )
-        return None, (ifft, unframe), None
+        return None, (ifftr, unframe), None
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
         out_length: int | None,
-        ifft: Callable,
+        ifftr: Callable,
         unframe: Callable,
     ) -> torch.Tensor:
-        return unframe(ifft(y), out_length)
+        return unframe(ifftr(y), out_length)

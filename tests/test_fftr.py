@@ -23,44 +23,42 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("comp", [False, True])
-def test_compatibility(
-    device, module, comp, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
-):
-    stft = U.choice(
+@pytest.mark.parametrize("out_format", [0, 1, 2, 3, 4])
+def test_compatibility(device, module, out_format, M=12, L=16, B=2):
+    fftr = U.choice(
         module,
-        diffsptk.STFT,
-        diffsptk.functional.stft,
-        {
-            "frame_length": L1,
-            "frame_period": P,
-            "fft_length": L2,
-            "window": w,
-            "norm": n,
-            "eps": eps,
-            "out_format": "complex" if comp else "power",
-        },
+        diffsptk.RealValuedFastFourierTransform,
+        diffsptk.functional.fftr,
+        {"fft_length": L, "out_format": out_format, "learnable": "debug"},
     )
 
-    cmd = f"frame -l {L1} -p {P} | window -l {L1} -L {L2} -n {n} -w {w} | "
-    if comp:
-        cmd += f"fftr -l {L2} -H -o 3"
-    else:
-        cmd += f"spec -l {L2} -e {eps} -o 3"
+    size = L // 2 + 1
+
+    def eq(o):
+        def inner_eq(y_hat, y):
+            if o == 0:
+                y = y[..., :size] + 1j * y[..., size:]
+            return U.allclose(y_hat, y)
+
+        return inner_eq
+
     U.check_compatibility(
         device,
-        [torch.abs, stft] if comp else stft,
+        fftr,
         [],
-        f"nrand -l {T}",
-        cmd,
+        f"nrand -l {B * (M + 1)}",
+        f"fftr -m {M} -l {L} -o {out_format} -H",
         [],
-        dy=L2 // 2 + 1,
+        dx=M + 1,
+        dy=2 * size if out_format == 0 else size,
+        eq=eq(out_format),
     )
 
-    U.check_differentiability(device, [torch.abs, stft], [T])
+    U.check_differentiability(device, [torch.abs, fftr], [B, L])
 
 
-@pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])
-def test_learnable(learnable, P=10, L1=12, L2=16, T=80):
-    stft = diffsptk.STFT(L1, P, L2, learnable=learnable)
-    U.check_learnable(stft, (T,))
+def test_learnable(L=16):
+    fftr = diffsptk.RealValuedFastFourierTransform(
+        L, learnable=True, out_format="amplitude"
+    )
+    U.check_learnable(fftr, (L,))

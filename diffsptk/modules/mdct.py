@@ -53,7 +53,7 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals(), full=True))
+        self.values, layers, _ = self._precompute(*get_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -193,7 +193,7 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(*get_values(locals(), drop=1))
         if learnable:
             self.W = nn.Parameter(tensors[0])
         else:
