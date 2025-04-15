@@ -593,6 +593,7 @@ def fbank(
     f_min: float = 0,
     f_max: float | None = None,
     floor: float = 1e-5,
+    gamma: float = 0,
     use_power: bool = False,
     out_format: str = "y",
 ) -> tuple[Tensor, Tensor] | Tensor:
@@ -618,6 +619,9 @@ def fbank(
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -641,6 +645,7 @@ def fbank(
         f_min=f_min,
         f_max=f_max,
         floor=floor,
+        gamma=gamma,
         use_power=use_power,
         out_format=out_format,
     )
@@ -1813,6 +1818,7 @@ def mfcc(
     f_min: float = 0,
     f_max: float | None = None,
     floor: float = 1e-5,
+    gamma: float = 0,
     out_format: str = "y",
 ) -> Tensor:
     """Compute the MFCC from the power spectrum.
@@ -1843,6 +1849,9 @@ def mfcc(
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
@@ -1867,6 +1876,7 @@ def mfcc(
         f_min=f_min,
         f_max=f_max,
         floor=floor,
+        gamma=gamma,
         out_format=out_format,
     )
 
