@@ -14,17 +14,22 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any, Optional, Union
+
 import numpy as np
 import scipy
+from numpy.typing import DTypeLike
+
+from .typing import _FloatLike_co, _Number, _Real
 
 
 def normalize(
-    S,
+    S: np.ndarray,
     *,
-    norm=np.inf,
-    axis=0,
-    threshold=None,
-    fill=None,
+    norm: Optional[float] = np.inf,
+    axis: Optional[int] = 0,
+    threshold: Optional[_FloatLike_co] = None,
+    fill: Optional[bool] = None,
 ):
     # Avoid div-by-zero
     if threshold is None:
@@ -96,7 +101,9 @@ def normalize(
     return Snorm
 
 
-def pad_center(data, *, size, axis=-1, **kwargs):
+def pad_center(
+    data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any
+) -> np.ndarray:
     kwargs.setdefault("mode", "constant")
 
     n = data.shape[axis]
@@ -112,7 +119,11 @@ def pad_center(data, *, size, axis=-1, **kwargs):
     return np.pad(data, lengths, **kwargs)
 
 
-def phasor(angles, *, mag=None):
+def phasor(
+    angles: Union[np.ndarray, _Real],
+    *,
+    mag: Optional[Union[np.ndarray, _Number]] = None,
+) -> Union[np.ndarray, np.complexfloating[Any, Any]]:
     z = phasor_angles(angles)
 
     if mag is not None:
@@ -121,11 +132,13 @@ def phasor(angles, *, mag=None):
     return z
 
 
-def phasor_angles(x):
+def phasor_angles(x: Union[np.ndarray, _Real]) -> np.complexfloating[Any, Any]:
     return np.cos(x) + 1j * np.sin(x)
 
 
-def sparsify_rows(x, *, quantile=0.01, dtype=None):
+def sparsify_rows(
+    x: np.ndarray, *, quantile: float = 0.01, dtype: Optional[DTypeLike] = None
+) -> scipy.sparse.csr_matrix:
     if x.ndim == 1:
         x = x.reshape((1, -1))
 
@@ -157,7 +170,7 @@ def sparsify_rows(x, *, quantile=0.01, dtype=None):
     return x_sparse.tocsr()
 
 
-def tiny(x):
+def tiny(x: Union[float, np.ndarray]) -> _FloatLike_co:
     # Make sure we have an array view
     x = np.asarray(x)
 

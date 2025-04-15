@@ -54,7 +54,13 @@ import torch.nn.functional as F
 from ...modules.frame import Frame
 
 
-def dc_correction(power_spectrum, f0, sample_rate, fft_length, ramp):
+def dc_correction(
+    power_spectrum: torch.Tensor,
+    f0: torch.Tensor,
+    sample_rate: int,
+    fft_length: int,
+    ramp: torch.Tensor,
+) -> torch.Tensor:
     rate = sample_rate / fft_length
     low_frequency_axis = ramp[: fft_length // 2 + 1] * rate
     corrected_power_spectrum = interp1Q(f0, -rate, power_spectrum, low_frequency_axis)
@@ -64,18 +70,18 @@ def dc_correction(power_spectrum, f0, sample_rate, fft_length, ramp):
 
 
 def get_windowed_waveform(
-    x,
-    f0,
-    window_length_ratio,
-    bias_ratio,
-    frame_period,
-    sample_rate,
-    fft_length,
-    window_type,
-    normalize_window,
-    eps,
-    ramp,
-):
+    x: torch.Tensor,
+    f0: torch.Tensor,
+    window_length_ratio: float,
+    bias_ratio: float,
+    frame_period: int,
+    sample_rate: int,
+    fft_length: int,
+    window_type: str,
+    normalize_window: bool,
+    eps: float,
+    ramp: torch.Tensor,
+) -> torch.Tensor:
     # SetParametersForGetWindowedWaveform()
     half_window_length = torch.round(window_length_ratio / 2 * sample_rate / f0).long()
     bias = torch.round(bias_ratio * sample_rate / f0).long()
@@ -116,7 +122,9 @@ def get_windowed_waveform(
     return waveform
 
 
-def interp1Q(x, shift, y, xi):
+def interp1Q(
+    x: torch.Tensor, shift: float, y: torch.Tensor, xi: torch.Tensor
+) -> torch.Tensor:
     z = (xi - x) / shift
     xi_base = torch.clip(z.long(), min=0)
     xi_fraction = z - xi_base
@@ -125,7 +133,13 @@ def interp1Q(x, shift, y, xi):
     return yi
 
 
-def linear_smoothing(power_spectrum, width, sample_rate, fft_length, ramp):
+def linear_smoothing(
+    power_spectrum: torch.Tensor,
+    width: torch.Tensor,
+    sample_rate: int,
+    fft_length: int,
+    ramp: torch.Tensor,
+) -> torch.Tensor:
     one_sided_length = fft_length // 2 + 1
     rate = sample_rate / fft_length
     boundary = (width / rate).long() + 1

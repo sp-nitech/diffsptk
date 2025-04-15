@@ -14,13 +14,14 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any, Optional, Tuple, Union
+
 import numpy as np
 import scipy
+from numpy.typing import ArrayLike, DTypeLike
 
-from .util import normalize
-from .util import pad_center
-from .util import phasor
-from .util import tiny
+from .typing import _FloatLike_co, _WindowSpec
+from .util import normalize, pad_center, phasor, tiny
 
 WINDOW_BANDWIDTHS = {
     "bart": 1.3334961334912805,
@@ -67,27 +68,27 @@ WINDOW_BANDWIDTHS = {
 
 def chroma(
     *,
-    sr,
-    n_fft,
-    n_chroma=12,
-    tuning=0.0,
-    ctroct=5.0,
-    octwidth=2,
-    norm=2,
-    base_c=True,
-    dtype=np.float32,
-):
+    sr: float,
+    n_fft: int,
+    n_chroma: int = 12,
+    tuning: float = 0.0,
+    ctroct: float = 5.0,
+    octwidth: Union[float, None] = 2,
+    norm: Optional[float] = 2,
+    base_c: bool = True,
+    dtype: DTypeLike = np.float32,
+) -> np.ndarray:
     wts = np.zeros((n_chroma, n_fft))
 
     # Get the FFT bins, not counting the DC component
     frequencies = np.linspace(0, sr, n_fft, endpoint=False)[1:]
 
     def hz_to_octs(
-        frequencies,
+        frequencies: _FloatLike_co,
         *,
-        tuning=0.0,
-        bins_per_octave=12,
-    ):
+        tuning: float = 0.0,
+        bins_per_octave: int = 12,
+    ) -> np.floating[Any]:
         A440 = 440.0 * 2.0 ** (tuning / bins_per_octave)
 
         octs = np.log2(np.asanyarray(frequencies) / (float(A440) / 16))
@@ -132,7 +133,7 @@ def chroma(
     return np.ascontiguousarray(wts[:, : int(1 + n_fft / 2)], dtype=dtype)
 
 
-def float_window(window_spec):
+def float_window(window_spec: _WindowSpec) -> np.ndarray:
     def _wrap(n, *args, **kwargs):
         """Wrap the window"""
         n_min, n_max = int(np.floor(n)), int(np.ceil(n))
@@ -149,7 +150,12 @@ def float_window(window_spec):
     return _wrap
 
 
-def get_window(window, Nx, *, fftbins=True):
+def get_window(
+    window: _WindowSpec,
+    Nx: int,
+    *,
+    fftbins: Optional[bool] = True,
+) -> np.ndarray:
     if callable(window):
         return window(Nx)
 
@@ -168,10 +174,11 @@ def get_window(window, Nx, *, fftbins=True):
         raise ValueError(f"Invalid window specification: {window!r}")
 
 
-def relative_bandwidth(*, freqs):
+def relative_bandwidth(*, freqs: np.ndarray) -> np.ndarray:
     if len(freqs) <= 1:
         raise ValueError(
-            f"2 or more frequencies are required to compute bandwidths. Given freqs={freqs}"
+            "2 or more frequencies are required to compute bandwidths. "
+            f"Given freqs={freqs}"
         )
 
     # Approximate the local octave resolution around each frequency
@@ -191,17 +198,17 @@ def relative_bandwidth(*, freqs):
 
 def wavelet(
     *,
-    freqs,
-    sr=22050,
-    window="hann",
-    filter_scale=1,
-    pad_fft=True,
-    norm=1,
-    dtype=np.complex64,
-    gamma=0,
-    alpha=None,
-    **kwargs,
-):
+    freqs: np.ndarray,
+    sr: float = 22050,
+    window: _WindowSpec = "hann",
+    filter_scale: float = 1,
+    pad_fft: bool = True,
+    norm: Optional[float] = 1,
+    dtype: DTypeLike = np.complex64,
+    gamma: float = 0,
+    alpha: Optional[float] = None,
+    **kwargs: Any,
+) -> Tuple[np.ndarray, np.ndarray]:
     # Pass-through parameters to get the filter lengths
     lengths, _ = wavelet_lengths(
         freqs=freqs,
@@ -244,13 +251,13 @@ def wavelet(
 
 def wavelet_lengths(
     *,
-    freqs,
-    sr=22050,
-    window="hann",
-    filter_scale=1,
-    gamma=0,
-    alpha=None,
-):
+    freqs: ArrayLike,
+    sr: float = 22050,
+    window: _WindowSpec = "hann",
+    filter_scale: float = 1,
+    gamma: Optional[float] = 0,
+    alpha: Optional[Union[float, np.ndarray]] = None,
+) -> Tuple[np.ndarray, float]:
     freqs = np.asarray(freqs)
     if filter_scale <= 0:
         raise ValueError(f"filter_scale={filter_scale} must be positive")
@@ -286,7 +293,7 @@ def wavelet_lengths(
     return lengths, f_cutoff
 
 
-def window_bandwidth(window, n=1000):
+def window_bandwidth(window: _WindowSpec, n: int = 1000) -> float:
     if hasattr(window, "__name__"):
         key = window.__name__
     else:
