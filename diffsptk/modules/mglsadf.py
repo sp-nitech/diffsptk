@@ -57,7 +57,7 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         is allowed only if **phase** is 'mixed'.
 
     frame_period : int >= 1
-        The frame period, :math:`P`.
+        The frame period in samples, :math:`P`.
 
     alpha : float in (-1, 1)
         The frequency warping factor, :math:`\\alpha`.
