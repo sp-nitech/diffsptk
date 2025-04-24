@@ -56,12 +56,18 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
+
+    .. [2] P. Tapkir et al., "Novel spectral root cepstral features for replay spoof
+           detection," *Proceedings of APSIPA*, pp. 1945-1950, 2018.
 
     """
 
@@ -76,6 +82,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         f_min: float = 0,
         f_max: float | None = None,
         floor: float = 1e-5,
+        gamma: float = 0,
         out_format: str | int = "y",
     ) -> None:
         super().__init__()
@@ -150,6 +157,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         f_min: float,
         f_max: float | None,
         floor: float,
+        gamma: float,
         out_format: str | int,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
@@ -178,6 +186,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
                 f_min=f_min,
                 f_max=f_max,
                 floor=floor,
+                gamma=gamma,
                 use_power=False,
                 out_format="y,E",
             ),

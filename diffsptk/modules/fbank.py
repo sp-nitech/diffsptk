@@ -46,6 +46,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -68,6 +71,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_min: float = 0,
         f_max: float | None = None,
         floor: float = 1e-5,
+        gamma: float = 0,
         use_power: bool = False,
         out_format: str | int = "y",
     ) -> None:
@@ -133,6 +137,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_min: float,
         f_max: float | None,
         floor: float,
+        gamma: float,
     ) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
@@ -146,6 +151,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             raise ValueError("Invalid f_min and f_max.")
         if floor <= 0:
             raise ValueError("floor must be positive.")
+        if 1 < abs(gamma):
+            raise ValueError("gamma must be in [-1, 1].")
 
     @staticmethod
     def _precompute(
@@ -155,6 +162,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_min: float,
         f_max: float | None,
         floor: float,
+        gamma: float,
         use_power: bool,
         out_format: str | int,
         device: torch.device | None = None,
@@ -167,6 +175,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             f_min,
             f_max,
             floor,
+            gamma,
         )
 
         if out_format in (0, "y"):
@@ -211,19 +220,21 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             if m < n_channel:
                 weights[k, m] += 1 - w
 
-        return (floor, use_power, formatter), None, (to(weights, dtype=dtype),)
+        return (floor, gamma, use_power, formatter), None, (to(weights, dtype=dtype),)
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
         floor: float,
+        gamma: float,
         use_power: bool,
         formatter: Callable,
         H: torch.Tensor,
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         y = x if use_power else torch.sqrt(x)
         y = torch.matmul(y, H)
-        y = torch.log(torch.clip(y, min=floor))
+        y = torch.clip(y, min=floor)
+        y = torch.log(y) if gamma == 0 else (torch.pow(x, gamma) - 1) / gamma
         E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
         E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
         return formatter(y, E)
