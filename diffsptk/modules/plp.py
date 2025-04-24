@@ -61,6 +61,9 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
         The accurate conversion requires the large value.
@@ -86,6 +89,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         f_min: float = 0,
         f_max: float | None = None,
         floor: float = 1e-5,
+        gamma: float = 0,
         n_fft: int = 512,
         out_format: str | int = "y",
     ) -> None:
@@ -169,6 +173,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         f_min: float,
         f_max: float | None,
         floor: float,
+        gamma: float,
         n_fft: int,
         out_format: str | int,
         device: torch.device | None = None,
@@ -200,6 +205,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 f_min=f_min,
                 f_max=f_max,
                 floor=floor,
+                gamma=gamma,
                 use_power=True,
                 out_format="y,E",
             ),

@@ -2259,6 +2259,7 @@ def plp(
     f_min: float = 0,
     f_max: float | None = None,
     floor: float = 1e-5,
+    gamma: float = 0,
     n_fft: int = 512,
     out_format: str = "y",
 ) -> Tensor:
@@ -2293,6 +2294,9 @@ def plp(
     floor : float > 0
         The minimum mel filter bank output in linear scale.
 
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
 
@@ -2321,6 +2325,7 @@ def plp(
         f_min=f_min,
         f_max=f_max,
         floor=floor,
+        gamma=gamma,
         n_fft=n_fft,
         out_format=out_format,
     )
