@@ -19,7 +19,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..third_party.world import dc_correction, get_windowed_waveform, linear_smoothing
+from ..third_party.world import (
+    dc_correction,
+    get_windowed_waveform,
+    interp1,
+    linear_smoothing,
+)
 from ..typing import Callable
 from ..utils.private import TAU, iir, next_power_of_two, numpy_to_torch
 from .base import BaseNonFunctionalModule
@@ -417,23 +422,6 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         def safe_div(x, y, eps=1e-10):
             return x / (y + eps)
-
-        # https://github.com/pytorch/pytorch/issues/50334#issuecomment-2304751532
-        def interp1(x, y, xq, method="linear", batching=(False, False)):
-            if not batching[0]:
-                x = x.repeat(*xq.shape[0:-1], 1)
-            if not batching[1]:
-                y = y.repeat(*xq.shape[0:-1], 1)
-            m = torch.diff(y) / torch.diff(x)
-            b = y[..., :-1] - m * x[..., :-1]
-            indices = torch.searchsorted(x, xq, right=False)
-            if method == "linear":
-                m = F.pad(m, (1, 1))
-                b = torch.cat([y[..., :1], b, y[..., -1:]], dim=-1)
-            elif method == "*linear":
-                indices = torch.clamp(indices - 1, 0, m.shape[-1] - 1)
-            values = m.gather(-1, indices) * xq + b.gather(-1, indices)
-            return values
 
         wxe = interp1(
             self.tNominal, self.wPSGSeed, ttf / self.fNominal, method="*linear"
