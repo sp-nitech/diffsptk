@@ -143,13 +143,17 @@ class WorldSynthesis(BaseNonFunctionalModule):
         torch.Size([1120])
 
         """
-        is_1d_input = f0.ndim == 1
-        if is_1d_input:
+        is_batched_input = f0.ndim == 2
+        if not is_batched_input:
             f0 = f0.unsqueeze(0)
             ap = ap.unsqueeze(0)
             sp = sp.unsqueeze(0)
 
         # Check the input shape.
+        if f0.dim() != 2:
+            raise ValueError("f0 must be 1D or 2D tensor.")
+        if ap.dim() != 3 or sp.dim() != 3:
+            raise ValueError("ap and sp must be 2D or 3D tensor.")
         if len(set([f0.shape[0], ap.shape[0], sp.shape[0]])) != 1:
             raise ValueError("f0, ap, and sp must have the same batch size.")
         if len(set([f0.shape[1], ap.shape[1], sp.shape[1]])) != 1:
@@ -290,6 +294,6 @@ class WorldSynthesis(BaseNonFunctionalModule):
         )
         y = torch.narrow(y, dim=-1, start=H, length=T)
 
-        if is_1d_input:
+        if not is_batched_input:
             y = y.squeeze(0)
         return y
