@@ -1295,6 +1295,7 @@ def istft(
     center: bool = True,
     window: str = "blackman",
     norm: str = "power",
+    symmetric: bool = True,
 ) -> Tensor:
     """Compute inverse short-time Fourier transform.
 
@@ -1325,6 +1326,9 @@ def istft(
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     Returns
     -------
     out : Tensor [shape=(..., T)]
@@ -1340,6 +1344,7 @@ def istft(
         center=center,
         window=window,
         norm=norm,
+        symmetric=symmetric,
     )
 
 
@@ -2655,6 +2660,7 @@ def stft(
     mode: str = "constant",
     window: str = "blackman",
     norm: str = "power",
+    symmetric: bool = True,
     eps: float = 1e-9,
     relative_floor: float | None = None,
     out_format: str = "power",
@@ -2691,6 +2697,9 @@ def stft(
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     eps : float >= 0
         A small value added to the power spectrum.
 
@@ -2716,6 +2725,7 @@ def stft(
         mode=mode,
         window=window,
         norm=norm,
+        symmetric=symmetric,
         eps=eps,
         relative_floor=relative_floor,
         out_format=out_format,
@@ -2753,6 +2763,7 @@ def unframe(
     center: bool = True,
     window: str = "rectangular",
     norm: str = "none",
+    symmetric: bool = True,
 ) -> Tensor:
     """Revert framed waveform.
 
@@ -2777,6 +2788,9 @@ def unframe(
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     Returns
     -------
     out : Tensor [shape=(..., T)]
@@ -2790,6 +2804,7 @@ def unframe(
         center=center,
         window=window,
         norm=norm,
+        symmetric=symmetric,
     )
 
 
@@ -2819,6 +2834,7 @@ def window(
     *,
     window: str = "blackman",
     norm: str = "power",
+    symmetric: bool = True,
 ) -> Tensor:
     """Apply a window function to the given waveform.
 
@@ -2838,13 +2854,18 @@ def window(
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     Returns
     -------
     out : Tensor [shape=(..., L2)]
         The windowed waveform.
 
     """
-    return nn.Window._func(x, out_length=out_length, window=window, norm=norm)
+    return nn.Window._func(
+        x, out_length=out_length, window=window, norm=norm, symmetric=symmetric
+    )
 
 
 def yingram(

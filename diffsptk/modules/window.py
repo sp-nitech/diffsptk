@@ -43,6 +43,9 @@ class Window(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     learnable : bool
         Whether to make the window learnable.
 
@@ -55,6 +58,7 @@ class Window(BaseFunctionalModule):
         *,
         window: str | int = "blackman",
         norm: str | int = "power",
+        symmetric: bool = True,
         learnable: bool = False,
     ) -> None:
         super().__init__()
@@ -116,37 +120,41 @@ class Window(BaseFunctionalModule):
         out_length: int | None,
         window: str | int,
         norm: str | int,
+        symmetric: bool,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         Window._check(in_length, out_length)
 
         L = in_length
+        periodic = not symmetric
         params = {"dtype": dtype, "device": device}
         if window in (0, "blackman"):
-            w = torch.blackman_window(L, periodic=False, **params)
+            w = torch.blackman_window(L, periodic=periodic, **params)
         elif window in (1, "hamming"):
-            w = torch.hamming_window(L, periodic=False, **params)
+            w = torch.hamming_window(L, periodic=periodic, **params)
         elif window in (2, "hanning"):
-            w = torch.hann_window(L, periodic=False, **params)
+            w = torch.hann_window(L, periodic=periodic, **params)
         elif window in (3, "bartlett"):
-            w = torch.bartlett_window(L, periodic=False, **params)
+            w = torch.bartlett_window(L, periodic=periodic, **params)
         elif window in (4, "trapezoidal"):
-            slope = torch.linspace(0, 4, L, **params)
-            w = torch.minimum(torch.clip(slope, min=0, max=1), slope.flip(0))
+            w = (2 * torch.bartlett_window(L, periodic=periodic, **params)).clip(max=1)
         elif window in (5, "rectangular"):
             w = torch.ones(L, **params)
         elif window in (6, "nuttall"):
+            size = L if periodic else L - 1
             c1 = torch.tensor([0.355768, -0.487396, 0.144232, -0.012604], **params)
-            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / (L - 1))
+            c2 = torch.arange(0, 8, 2, **params) * (torch.pi / size)
             seed = torch.arange(L, **params)
             w = torch.sum(c1 * torch.cos(torch.outer(seed, c2)), dim=1)
         elif window == "sine":
-            w = torch.signal.windows.cosine(L, **params)
+            w = torch.signal.windows.cosine(L, sym=symmetric, **params)
         elif window == "vorbis":
-            seed = torch.signal.windows.cosine(L, **params)
+            seed = torch.signal.windows.cosine(L, sym=symmetric, **params)
             w = torch.sin(torch.pi * 0.5 * seed**2)
         elif window == "kbd":
+            if periodic:
+                raise ValueError("periodic is not supported for kbd window.")
             seed = torch.kaiser_window(L // 2 + 1, periodic=False, **params)
             cumsum = torch.cumsum(seed, dim=0)
             half = torch.sqrt(cumsum[:-1] / cumsum[-1])

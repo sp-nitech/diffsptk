@@ -136,6 +136,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 out_length=None,
                 window=window,
                 norm="none",
+                symmetric=True,
                 learnable="window" in learnable,
             ),
         )

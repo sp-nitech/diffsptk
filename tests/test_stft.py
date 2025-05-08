@@ -23,9 +23,9 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("comp", [False, True])
+@pytest.mark.parametrize("out_complex", [False, True])
 def test_compatibility(
-    device, module, comp, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
+    device, module, out_complex, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
 ):
     stft = U.choice(
         module,
@@ -38,18 +38,18 @@ def test_compatibility(
             "window": w,
             "norm": n,
             "eps": eps,
-            "out_format": "complex" if comp else "power",
+            "out_format": "complex" if out_complex else "power",
         },
     )
 
     cmd = f"frame -l {L1} -p {P} | window -l {L1} -L {L2} -n {n} -w {w} | "
-    if comp:
+    if out_complex:
         cmd += f"fftr -l {L2} -H -o 3"
     else:
         cmd += f"spec -l {L2} -e {eps} -o 3"
     U.check_compatibility(
         device,
-        [torch.abs, stft] if comp else stft,
+        [torch.abs, stft] if out_complex else stft,
         [],
         f"nrand -l {T}",
         cmd,
