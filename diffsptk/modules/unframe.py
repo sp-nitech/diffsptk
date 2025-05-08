@@ -45,6 +45,9 @@ class Unframe(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     learnable : bool
         Whether to make the window learnable.
 
@@ -58,6 +61,7 @@ class Unframe(BaseFunctionalModule):
         center: bool = True,
         window: str = "rectangular",
         norm: str = "none",
+        symmetric: bool = True,
         learnable: bool = False,
     ) -> None:
         super().__init__()
@@ -133,12 +137,13 @@ class Unframe(BaseFunctionalModule):
         center: bool = True,
         window: str = "rectangular",
         norm: str = "none",
+        symmetric: bool = True,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         Unframe._check(frame_length, frame_period)
         window_ = Window._precompute(
-            frame_length, None, window, norm, device=device, dtype=dtype
+            frame_length, None, window, norm, symmetric, device=device, dtype=dtype
         )[-1][0].view(1, -1, 1)
         return (frame_length, frame_period, center), None, (window_,)
 

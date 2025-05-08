@@ -51,6 +51,9 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     learnable : bool or list[str]
         Indicates whether the parameters are learnable. If a boolean, it specifies
         whether all parameters are learnable. If a list, it contains the keys of the
@@ -67,6 +70,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         center: bool = True,
         window: str = "blackman",
         norm: str = "power",
+        symmetric: bool = True,
         learnable: bool | list[str] = False,
     ) -> None:
         super().__init__()
@@ -126,6 +130,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         center: bool,
         window: str,
         norm: str,
+        symmetric: bool,
         learnable: bool | list[str] = False,
     ) -> Precomputed:
         InverseShortTimeFourierTransform._check(learnable)
@@ -152,8 +157,9 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
                 frame_length=frame_length,
                 frame_period=frame_period,
                 center=center,
-                norm=norm,
                 window=window,
+                norm=norm,
+                symmetric=symmetric,
                 learnable="window" in learnable,
             ),
         )

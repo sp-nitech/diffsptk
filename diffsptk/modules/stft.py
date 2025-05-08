@@ -60,6 +60,9 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     norm : ['none', 'power', 'magnitude']
         The normalization type of the window.
 
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
     eps : float >= 0
         A small value added to the power spectrum.
 
@@ -87,6 +90,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         mode: str = "constant",
         window: str = "blackman",
         norm: str = "power",
+        symmetric: bool = True,
         eps: float = 1e-9,
         relative_floor: float | None = None,
         out_format: str = "power",
@@ -152,6 +156,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         mode: str,
         window: str,
         norm: str,
+        symmetric: bool,
         eps: float,
         relative_floor: float | None,
         out_format: str,
@@ -184,6 +189,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 out_length=fft_length,
                 window=window,
                 norm=norm,
+                symmetric=symmetric,
                 learnable="window" in learnable,
             ),
         )
