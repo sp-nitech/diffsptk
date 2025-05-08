@@ -25,13 +25,15 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, T=19200):
+@pytest.mark.parametrize("symmetric", [False, True])
+def test_compatibility(device, module, symmetric, T=19200):
     stft_params = {
         "frame_length": 400,
         "frame_period": 80,
         "fft_length": 512,
         "window": "hamming",
         "norm": "power",
+        "symmetric": symmetric,
     }
     stft = diffsptk.STFT(**stft_params, out_format="complex")
     istft = U.choice(
