@@ -122,7 +122,7 @@ diffsptk.write("voiced.wav", x_voiced, sr)
 diffsptk.write("unvoiced.wav", x_unvoiced, sr)
 ```
 
-### WORLD analysis and mel-cepstral synthesis
+### WORLD analysis and synthesis
 
 ```python
 import diffsptk
@@ -163,26 +163,15 @@ pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
     algorithm="cheap-trick",
     out_format="power",
 )
-H = pitch_spec(x, f0)
+S = pitch_spec(x, f0)
 
-# Estimate mel-cepstrum of x.
-alpha = diffsptk.get_alpha(sr)
-mcep = diffsptk.MelCepstralAnalysis(fft_length=n_fft, cep_order=M, alpha=alpha)
-mc_a = mcep(A)
-mc_h = mcep(H)
-
-# Generate excitation signals.
-excite = diffsptk.ExcitationGeneration(frame_period=fp, unvoiced_region="zeros")
-p = (sr / f0).nan_to_num(posinf=0)
-pulse = excite(p)
-noise = diffsptk.nrand(len(pulse) - 1)
-
-# Make mixed excitation signal and reconstruct x.
-mlsa = diffsptk.MLSA(filter_order=M, frame_period=fp, alpha=alpha, taylor_order=20)
-e_p = pulse - mlsa(pulse, mc_a)
-e_a = mlsa(noise, mc_a)
-e = e_p + e_a
-x_hat = mlsa(e, mc_h)
+# Reconstruct x.
+world_synth = diffsptk.WorldSynthesis(
+    frame_period=fp,
+    sample_rate=sr,
+    fft_length=n_fft,
+)
+x_hat = world_synth(f0, A, S)
 
 # Write reconstructed waveform.
 diffsptk.write("reconst.wav", x_hat, sr)
