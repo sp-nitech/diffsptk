@@ -56,7 +56,7 @@ from .base import BaseNonFunctionalModule
 
 
 class WorldSynthesis(BaseNonFunctionalModule):
-    """See `this page <https://sp-nitech.github.io/sptk/latest/main/world_synthesis.html>`_
+    """See `this page <https://sp-nitech.github.io/sptk/latest/main/world_synth.html>`_
     for details. Note that the gradients do not propagated through F0.
 
     Parameters
@@ -125,7 +125,7 @@ class WorldSynthesis(BaseNonFunctionalModule):
 
         Returns
         -------
-        out : Tensor [shape=(B, T)] or (T,)
+        out : Tensor [shape=(B, T) or (T,)]
             The synthesized speech waveform.
 
         Examples
