@@ -52,6 +52,7 @@ import torch
 import torch.nn.functional as F
 
 from ...modules.frame import Frame
+from ...utils.private import cexp
 
 
 def dc_correction(
@@ -67,6 +68,20 @@ def dc_correction(
     mask = low_frequency_axis < f0
     power_spectrum = power_spectrum + corrected_power_spectrum * mask
     return power_spectrum
+
+
+def get_minimum_phase_spectrum(spectrum: torch.Tensor) -> torch.Tensor:
+    one_sided_fft_length = spectrum.shape[-1]
+    cepstrum = torch.fft.irfft(0.5 * torch.log(spectrum))
+    cepstrum = torch.cat(
+        (
+            cepstrum[..., :1],
+            2 * cepstrum[..., 1 : one_sided_fft_length - 1],
+            cepstrum[..., one_sided_fft_length - 1 : one_sided_fft_length],
+        ),
+        dim=-1,
+    )
+    return cexp(torch.fft.rfft(cepstrum, n=2 * (one_sided_fft_length - 1)))
 
 
 def get_windowed_waveform(
@@ -120,6 +135,32 @@ def get_windowed_waveform(
     weighting_coefficient = tmp_weight1 / tmp_weight2
     waveform -= window * weighting_coefficient
     return waveform
+
+
+# From https://github.com/pytorch/pytorch/issues/50334#issuecomment-2304751532
+def interp1(
+    x: torch.Tensor,
+    y: torch.Tensor,
+    xq: torch.Tensor,
+    method: str = "linear",
+    batching: tuple = (False, False),
+):
+    if not batching[0]:
+        x = x.repeat(*xq.shape[0:-1], 1)
+    if not batching[1]:
+        y = y.repeat(*xq.shape[0:-1], 1)
+    m = torch.diff(y) / torch.diff(x)
+    b = y[..., :-1] - m * x[..., :-1]
+    indices = torch.searchsorted(x, xq, right=False)
+    if method == "linear":
+        m = F.pad(m, (1, 1))
+        b = torch.cat([y[..., :1], b, y[..., -1:]], dim=-1)
+    elif method == "*linear":
+        indices = torch.clamp(indices - 1, 0, m.shape[-1] - 1)
+    else:
+        raise ValueError(f"Unknown method: {method}")
+    values = m.gather(-1, indices) * xq + b.gather(-1, indices)
+    return values
 
 
 def interp1Q(

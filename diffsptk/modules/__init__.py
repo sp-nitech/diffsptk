@@ -162,6 +162,7 @@ from .wht import WalshHadamardTransform as WHT
 from .wht import WalshHadamardTransform as InverseWalshHadamardTransform
 from .wht import WalshHadamardTransform as IWHT
 from .window import Window
+from .world_synth import WorldSynthesis
 from .yingram import Yingram
 from .zcross import ZeroCrossingAnalysis
 from .zerodf import AllZeroDigitalFilter

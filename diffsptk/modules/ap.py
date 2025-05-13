@@ -137,16 +137,10 @@ class Aperiodicity(BaseNonFunctionalModule):
         >>> f0 = pitch(x)
         >>> f0.shape
         torch.Size([7])
-        >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 8)
+        >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 1024)
         >>> ap = aperiodicity(x, f0)
-        >>> ap
-        tensor([[0.1010, 0.9948, 0.9990, 0.9990, 0.9990],
-                [0.0010, 0.8419, 0.3644, 0.5912, 0.9590],
-                [0.0010, 0.5316, 0.3091, 0.5430, 0.9540],
-                [0.0010, 0.3986, 0.1930, 0.4222, 0.9234],
-                [0.0010, 0.3627, 0.1827, 0.4106, 0.9228],
-                [0.0010, 0.3699, 0.1827, 0.4106, 0.9228],
-                [0.0010, 0.7659, 0.7081, 0.8378, 0.9912]])
+        >>> ap.shape
+        torch.Size([7, 513])
 
         """
         d = x.dim()
