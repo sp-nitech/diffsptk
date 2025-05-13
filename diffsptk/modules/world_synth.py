@@ -230,7 +230,7 @@ class WorldSynthesis(BaseNonFunctionalModule):
         weight = 1 - aperiodic_ratio
         spectrum = get_minimum_phase_spectrum(weight * spectral_envelope)
 
-        # GetSpectrumWithFractionalTimeShift
+        # GetSpectrumWithFractionalTimeShift()
         coefficient = (
             TAU * self.sample_rate / self.fft_length * pulse_locations_time_shift
         )
@@ -277,7 +277,6 @@ class WorldSynthesis(BaseNonFunctionalModule):
         response = (
             periodic_response * sqrt_noise_size + aperiodic_response
         ) / self.fft_length
-
         margin = (
             (self.fft_length + self.frame_period - 1)
             // self.frame_period
@@ -285,7 +284,6 @@ class WorldSynthesis(BaseNonFunctionalModule):
         )
         T_ = T + margin
         index = (batch_index * T_ + time_index).unsqueeze(-1) + self.ramp
-
         y = torch.zeros((B, T_), device=sp.device)
         y.view(-1).scatter_add_(
             dim=-1,
