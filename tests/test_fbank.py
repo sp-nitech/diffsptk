@@ -55,3 +55,13 @@ def test_compatibility(
     )
 
     U.check_differentiability(device, [fbank, spec], [B, L])
+
+
+def test_learnable(C=10, L=32, sr=8000):
+    fbank = diffsptk.MelFilterBankAnalysis(
+        fft_length=L,
+        n_channel=C,
+        sample_rate=sr,
+        learnable=True,
+    )
+    U.check_learnable(fbank, (L // 2 + 1,))

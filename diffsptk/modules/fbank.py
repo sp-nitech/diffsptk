@@ -16,6 +16,7 @@
 
 import numpy as np
 import torch
+from torch import nn
 
 from ..typing import Callable, Precomputed
 from ..utils.private import check_size, get_values, to
@@ -56,6 +57,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         `y` is mel filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
+    learnable : bool
+        Whether to make the basis learnable.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
@@ -74,13 +78,17 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         gamma: float = 0,
         use_power: bool = False,
         out_format: str | int = "y",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
-        self.register_buffer("H", tensors[0])
+        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        if learnable:
+            self.H = nn.Parameter(tensors[0])
+        else:
+            self.register_buffer("H", tensors[0])
 
     def forward(
         self, x: torch.Tensor
@@ -114,7 +122,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)
 
     @staticmethod
     def _func(

@@ -67,3 +67,14 @@ def test_compatibility(
     )
 
     U.check_differentiability(device, [plp, spec], [B, L])
+
+
+def test_learnable(M=4, C=10, L=32, sr=8000):
+    plp = diffsptk.PerceptualLinearPredictiveCoefficientsAnalysis(
+        fft_length=L,
+        plp_order=M,
+        n_channel=C,
+        sample_rate=sr,
+        learnable=True,
+    )
+    U.check_learnable(plp, (L // 2 + 1,))
