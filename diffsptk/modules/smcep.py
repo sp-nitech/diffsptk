@@ -158,7 +158,7 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
         SecondOrderAllPassMelCepstralAnalysis._check(
             fft_length, cep_order, alpha, theta, n_iter, accuracy_factor
         )
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         n_fft = fft_length * accuracy_factor
         freqt = get_layer(

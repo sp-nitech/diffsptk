@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import inspect
+
 import torch
 from torch import nn
 
@@ -88,7 +90,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
         values, layers, _ = InverseModifiedDiscreteCosineTransform._precompute(
-            *args, **kwargs, module=False
+            *args, **kwargs
         )
         return InverseModifiedDiscreteCosineTransform._forward(
             y, out_length, *values, *layers
@@ -108,9 +110,9 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         window: str,
         learnable: bool | list[str] = False,
         transform: str = "cosine",
-        module: bool = True,
     ) -> Precomputed:
         InverseModifiedDiscreteCosineTransform._check(learnable)
+        module = inspect.stack()[1].function != "_func"
         frame_period = frame_length // 2
 
         if learnable is True:

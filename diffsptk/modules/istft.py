@@ -134,7 +134,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         learnable: bool | list[str] = False,
     ) -> Precomputed:
         InverseShortTimeFourierTransform._check(learnable)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if learnable is True:
             learnable = LEARNABLES
@@ -172,4 +172,4 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         ifftr: Callable,
         unframe: Callable,
     ) -> torch.Tensor:
-        return unframe(ifftr(y), out_length)
+        return unframe(ifftr(y), out_length=out_length)

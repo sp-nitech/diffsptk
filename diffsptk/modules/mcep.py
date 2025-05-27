@@ -127,7 +127,7 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ):
         MelCepstralAnalysis._check(fft_length, cep_order, alpha, n_iter)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         freqt = get_layer(
             module,
