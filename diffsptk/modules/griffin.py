@@ -250,6 +250,7 @@ class GriffinLim(BaseFunctionalModule):
         for n in range(n_iter):
             t = stft(istft(s * angle, out_length=out_length))
             t = t[..., : s.shape[-2], :]
+
             if 0 == n:
                 c = d = t
             else:

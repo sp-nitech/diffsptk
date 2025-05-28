@@ -1,7 +1,7 @@
 .. _griffin:
 
 griffin
-======
+=======
 
 .. autoclass:: diffsptk.GriffinLim
     :members:
