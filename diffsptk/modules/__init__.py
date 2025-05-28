@@ -56,6 +56,7 @@ from .gammatone import GammatoneFilterBankAnalysis
 from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
+from .griffin import GriffinLim
 from .grpdelay import GroupDelay
 from .hilbert import HilbertTransform
 from .hilbert2 import TwoDimensionalHilbertTransform

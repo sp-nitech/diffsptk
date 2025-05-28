@@ -98,7 +98,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         LinearPredictiveCodingAnalysis._check()
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         acorr = get_layer(
             module,

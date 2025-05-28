@@ -187,7 +187,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
         )
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y

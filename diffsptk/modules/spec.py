@@ -122,7 +122,7 @@ class Spectrum(BaseFunctionalModule):
         learnable: bool = False,
     ) -> Precomputed:
         Spectrum._check(fft_length, eps, relative_floor)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if relative_floor is not None:
             relative_floor = 10 ** (relative_floor / 10)

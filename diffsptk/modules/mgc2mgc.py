@@ -187,7 +187,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         MelGeneralizedCepstrumToMelGeneralizedCepstrum._check(
             in_order, out_order, in_alpha, out_alpha, in_gamma, out_gamma, in_mul, n_fft
         )
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         seq = []
         if not in_norm and in_mul:

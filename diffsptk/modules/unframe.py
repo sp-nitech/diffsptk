@@ -179,15 +179,14 @@ class Unframe(BaseFunctionalModule):
             x = x[..., 0, 0, s:e]
             return x
 
-        w = window.repeat(1, 1, N)
         x = y.transpose(-2, -1)
-
         if d == 2:
             x = x.unsqueeze(0)
+        w = window.repeat(1, 1, N)
 
-        w = fold(w)
-        x = fold(x)
-        x = x / w
+        x = fold(x * w)
+        w = fold(w * w)
+        x = x / (w + 1e-16)
 
         if d == 2:
             x = x.squeeze(0)

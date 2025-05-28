@@ -158,7 +158,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
             raise ValueError(f"out_format {out_format} is not supported.")
 
         mgc2c = get_layer(
-            inspect.stack()[1].function == "__init__",
+            inspect.stack()[1].function != "_func",
             MelGeneralizedCepstrumToMelGeneralizedCepstrum,
             dict(
                 in_order=cep_order,

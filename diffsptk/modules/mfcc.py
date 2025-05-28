@@ -168,7 +168,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         MelFrequencyCepstralCoefficientsAnalysis._check(mfcc_order, n_channel, lifter)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y
