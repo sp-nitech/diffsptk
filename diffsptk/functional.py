@@ -864,6 +864,101 @@ def gnorm(x: Tensor, gamma: float = 0, c: int | None = None) -> Tensor:
     return nn.GeneralizedCepstrumGainNormalization._func(x, gamma=gamma, c=c)
 
 
+def griffin(
+    y: Tensor,
+    *,
+    out_length: int | None = None,
+    frame_length: int = 400,
+    frame_period: int = 80,
+    fft_length: int = 512,
+    center: bool = True,
+    mode: str = "constant",
+    window: str = "blackman",
+    norm: str = "power",
+    symmetric: bool = True,
+    n_iter: int = 100,
+    alpha: float = 0.99,
+    beta: float = 0.99,
+    gamma: float = 1.1,
+    init_phase: str = "random",
+    verbose: bool = False,
+) -> Tensor:
+    """Reconstruct a waveform from the spectrum using the Griffin-Lim algorithm.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., T/P, N/2+1)]
+        The power spectrum.
+
+    out_length : int > 0 or None
+        The length of the output waveform.
+
+    frame_length : int >= 1
+        The frame length in samples, :math:`L`.
+
+    frame_period : int >= 1
+        The frame period in samples, :math:`P`.
+
+    fft_length : int >= L
+        The number of FFT bins, :math:`N`.
+
+    center : bool
+        If True, pad the input on both sides so that the frame is centered.
+
+    window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
+              'rectangular', 'nuttall']
+        The window type.
+
+    norm : ['none', 'power', 'magnitude']
+        The normalization type of the window.
+
+    symmetric : bool
+        If True, the window is symmetric, otherwise periodic.
+
+    n_iter : int >= 1
+        The number of iterations for phase reconstruction.
+
+    alpha : float >= 0
+        The momentum factor, :math:`\\alpha`.
+
+    beta : float >= 0
+        The momentum factor, :math:`\\beta`.
+
+    gamma : float >= 0
+        The smoothing factor, :math:`\\gamma`.
+
+    init_phase : ['zeros', 'random']
+        The initial phase for the reconstruction.
+
+    verbose : bool
+        If True, print the SNR at each iteration.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        The reconstructed waveform.
+
+    """
+    return nn.GriffinLim._func(
+        y,
+        out_length=out_length,
+        frame_length=frame_length,
+        frame_period=frame_period,
+        fft_length=fft_length,
+        center=center,
+        mode=mode,
+        window=window,
+        norm=norm,
+        symmetric=symmetric,
+        n_iter=n_iter,
+        alpha=alpha,
+        beta=beta,
+        gamma=gamma,
+        init_phase=init_phase,
+        verbose=verbose,
+    )
+
+
 def grpdelay(
     b: Tensor | None = None,
     a: Tensor | None = None,
@@ -1081,6 +1176,58 @@ def idst(y: Tensor, dst_type: int = 2) -> Tensor:
 
     """
     return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
+
+
+def ifbank(
+    y: Tensor,
+    fft_length: int,
+    sample_rate: int,
+    f_min: float = 0,
+    f_max: float | None = None,
+    gamma: float = 0,
+    use_power: bool = False,
+) -> Tensor:
+    """Reconstruct the power spectrum from the mel filter bank output.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., C)]
+        The mel filter bank output.
+
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
+    use_power : bool
+        Set to True if the mel filter bank output is extracted from the power spectrum
+        instead of the amplitude spectrum.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L/2+1)]
+        The reconstructed power spectrum.
+
+    """
+    return nn.InverseMelFilterBankAnalysis._func(
+        y,
+        fft_length=fft_length,
+        sample_rate=sample_rate,
+        f_min=f_min,
+        f_max=f_max,
+        gamma=gamma,
+        use_power=use_power,
+    )
 
 
 def ifftr(y: Tensor, out_length: int | None = None) -> Tensor:

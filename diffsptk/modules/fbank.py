@@ -16,6 +16,7 @@
 
 import numpy as np
 import torch
+from torch import nn
 
 from ..typing import Callable, Precomputed
 from ..utils.private import check_size, get_values, to
@@ -56,6 +57,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         `y` is mel filber bank output and `E` is energy. If this is `yE`, the two output
         tensors are concatenated and return the tensor instead of the tuple.
 
+    learnable : bool
+        Whether to make the basis learnable.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
@@ -74,13 +78,17 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         gamma: float = 0,
         use_power: bool = False,
         out_format: str | int = "y",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
-        self.register_buffer("H", tensors[0])
+        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        if learnable:
+            self.H = nn.Parameter(tensors[0])
+        else:
+            self.register_buffer("H", tensors[0])
 
     def forward(
         self, x: torch.Tensor
@@ -114,7 +122,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)
 
     @staticmethod
     def _func(
@@ -161,10 +169,10 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         f_min: float,
         f_max: float | None,
-        floor: float,
-        gamma: float,
-        use_power: bool,
-        out_format: str | int,
+        floor: float = 1e-5,
+        gamma: float = 0,
+        use_power: bool = False,
+        out_format: str | int = "y",
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
@@ -234,7 +242,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         y = x if use_power else torch.sqrt(x)
         y = torch.matmul(y, H)
         y = torch.clip(y, min=floor)
-        y = torch.log(y) if gamma == 0 else (torch.pow(x, gamma) - 1) / gamma
+        y = torch.log(y) if gamma == 0 else ((torch.pow(y, gamma) - 1) / gamma)
         E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
         E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
         return formatter(y, E)

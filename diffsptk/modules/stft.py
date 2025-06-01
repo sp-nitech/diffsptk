@@ -163,7 +163,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         learnable: bool | list[str] = False,
     ) -> Precomputed:
         ShortTimeFourierTransform._check(learnable)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if learnable is True:
             learnable = LEARNABLES

@@ -128,7 +128,7 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         MelCepstrumPostfiltering._check(onset)
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         freqt = get_layer(
             module,

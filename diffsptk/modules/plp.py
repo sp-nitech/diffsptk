@@ -71,6 +71,9 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is PLP, `c` is C0, and `E` is energy.
 
+    learnable : bool
+        Whether to make the mel basis learnable.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
@@ -92,6 +95,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         gamma: float = 0,
         n_fft: int = 512,
         out_format: str | int = "y",
+        learnable: bool = False,
     ) -> None:
         super().__init__()
 
@@ -176,13 +180,14 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         gamma: float,
         n_fft: int,
         out_format: str | int,
+        learnable: bool = False,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
         )
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y
@@ -208,6 +213,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 gamma=gamma,
                 use_power=True,
                 out_format="y,E",
+                learnable=learnable,
             ),
         )
         levdur = get_layer(

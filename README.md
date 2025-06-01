@@ -2,7 +2,7 @@
 
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
-[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.1.0/)
+[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.2.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![ClickPy](https://img.shields.io/badge/downloads-clickpy-yellow.svg)](https://clickpy.clickhouse.com/dashboard/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
@@ -20,7 +20,7 @@
 
 ## Documentation
 
-- See [this page](https://sp-nitech.github.io/diffsptk/3.1.0/) for the reference manual.
+- See [this page](https://sp-nitech.github.io/diffsptk/3.2.0/) for the reference manual.
 - Our [paper](https://www.isca-speech.org/archive/ssw_2023/yoshimura23_ssw.html) is available on the ISCA Archive.
 
 ## Installation
@@ -129,7 +129,6 @@ import diffsptk
 
 fp = 80       # Frame period.
 n_fft = 1024  # FFT length.
-M = 24        # Mel-cepstrum dimensions.
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -212,16 +211,15 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
-### Mel-spectrogram, MFCC, and PLP extraction
+### Mel-spectrogram analysis and synthesis
 
 ```python
 import diffsptk
 
-fl = 400        # Frame length
-fp = 80         # Frame period
-n_fft = 512     # FFT length
-n_channel = 80  # Number of channels
-M = 12          # MFCC/PLP dimensions
+fl = 400         # Frame length.
+fp = 80          # Frame period.
+n_fft = 512      # FFT length.
+n_channel = 128  # Number of channels.
 
 # Read waveform.
 x, sr = diffsptk.read("assets/data.wav")
@@ -237,27 +235,29 @@ fbank = diffsptk.MelFilterBankAnalysis(
     sample_rate=sr,
 )
 Y = fbank(X)
-print(Y.shape)
 
-# Extract MFCC.
-mfcc = diffsptk.MFCC(
-    fft_length=n_fft,
-    mfcc_order=M,
+# Reconstruct linear spectrogram.
+ifbank = diffsptk.InverseMelFilterBankAnalysis(
     n_channel=n_channel,
+    fft_length=n_fft,
     sample_rate=sr,
 )
-Y = mfcc(X)
-print(Y.shape)
+X_hat = ifbank(Y)
 
-# Extract PLP.
-plp = diffsptk.PLP(
+# Reconstruct x.
+griffin = diffsptk.GriffinLim(
+    frame_length=fl,
+    frame_period=fp,
     fft_length=n_fft,
-    plp_order=M,
-    n_channel=n_channel,
-    sample_rate=sr,
 )
-Y = plp(X)
-print(Y.shape)
+x_hat = griffin(X_hat, out_length=x.size(0))
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
 ```
 
 ### Subband decomposition

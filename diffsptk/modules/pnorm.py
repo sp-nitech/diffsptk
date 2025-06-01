@@ -97,7 +97,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         MelCepstrumPowerNormalization._check()
-        module = inspect.stack()[1].function == "__init__"
+        module = inspect.stack()[1].function != "_func"
 
         freqt = get_layer(
             module,

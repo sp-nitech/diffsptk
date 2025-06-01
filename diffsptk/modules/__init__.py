@@ -56,6 +56,7 @@ from .gammatone import GammatoneFilterBankAnalysis
 from .gmm import GaussianMixtureModeling
 from .gmm import GaussianMixtureModeling as GMM
 from .gnorm import GeneralizedCepstrumGainNormalization
+from .griffin import GriffinLim
 from .grpdelay import GroupDelay
 from .hilbert import HilbertTransform
 from .hilbert2 import TwoDimensionalHilbertTransform
@@ -71,6 +72,8 @@ from .idht import InverseDiscreteHartleyTransform
 from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
+from .ifbank import InverseMelFilterBankAnalysis
+from .ifbank import InverseMelFilterBankAnalysis as IFBANK
 from .ifftr import RealValuedInverseFastFourierTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .igammatone import GammatoneFilterBankSynthesis

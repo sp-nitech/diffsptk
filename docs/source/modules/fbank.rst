@@ -12,4 +12,4 @@ fbank
 
 .. seealso::
 
-    :ref:`stft` :ref:`mfcc` :ref:`plp`
+    :ref:`ifbank` :ref:`stft` :ref:`mfcc` :ref:`plp`

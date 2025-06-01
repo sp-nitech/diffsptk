@@ -23,25 +23,48 @@ import tests.utils as U
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("io_format", [0, 1])
-def test_compatibility(device, module, io_format, M=12, L=32, B=2):
-    root_pol = diffsptk.PolynomialToRoots(M, out_format=io_format)
-    pol_root = U.choice(
+@pytest.mark.parametrize("gamma", [-1, 0, 1])
+@pytest.mark.parametrize("use_power", [False, True])
+def test_compatibility(
+    device, module, gamma, use_power, C=12, L=32, sr=8000, f_min=30, f_max=4000, B=2
+):
+    fbank_params = {
+        "n_channel": C,
+        "fft_length": L,
+        "sample_rate": sr,
+        "f_min": f_min,
+        "f_max": f_max,
+        "gamma": gamma,
+        "use_power": use_power,
+    }
+    fbank = diffsptk.FBANK(**fbank_params, out_format="y")
+    ifbank = U.choice(
         module,
-        diffsptk.RootsToPolynomial,
-        diffsptk.functional.pol_root,
-        {"order": M, "in_format": io_format},
+        diffsptk.IFBANK,
+        diffsptk.functional.ifbank,
+        fbank_params,
     )
 
     U.check_compatibility(
         device,
-        [pol_root, root_pol],
+        [ifbank, fbank],
         [],
-        f"nrand -l {B * L} | acorr -l {L} -m {M} -o 1",
-        "cat",
+        f"nrand -l {B * L} | spec -l {L} -o 3",
+        "sopr",
         [],
-        dx=M + 1,
-        dy=M + 1,
+        dx=L // 2 + 1,
+        dy=L // 2 + 1,
+        eq=lambda a, b: U.allclose(a[..., 1:7], b[..., 1:7]),
     )
 
-    U.check_differentiability(device, [torch.abs, pol_root, root_pol], [B, M + 1])
+    U.check_differentiability(device, [ifbank, fbank, torch.abs], [B, L // 2 + 1])
+
+
+def test_learnable(C=10, L=32, sr=8000):
+    ifbank = diffsptk.InverseMelFilterBankAnalysis(
+        n_channel=C,
+        fft_length=L,
+        sample_rate=sr,
+        learnable=True,
+    )
+    U.check_learnable(ifbank, (C,))

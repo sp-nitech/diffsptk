@@ -45,7 +45,11 @@ def test_compatibility(
     elif mode == "single-stage":
         params = {"ir_length": 200, "n_fft": 512}
     elif mode == "freq-domain":
-        params = {"frame_length": L, "fft_length": fft_length}
+        params = {
+            "frame_length": fft_length,
+            "fft_length": fft_length,
+            "window": "hamming",
+        }
 
     mglsadf = diffsptk.MLSA(
         M,

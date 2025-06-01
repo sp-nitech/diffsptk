@@ -56,3 +56,14 @@ def test_compatibility(
     )
 
     U.check_differentiability(device, [mfcc, spec], [B, L])
+
+
+def test_learnable(M=4, C=10, L=32, sr=8000):
+    mfcc = diffsptk.MelFrequencyCepstralCoefficientsAnalysis(
+        fft_length=L,
+        mfcc_order=M,
+        n_channel=C,
+        sample_rate=sr,
+        learnable=True,
+    )
+    U.check_learnable(mfcc, (L // 2 + 1,))

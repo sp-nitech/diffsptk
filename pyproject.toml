@@ -82,6 +82,7 @@ exclude_lines = [
   "except",
   "raise",
   "verbose",
+  "logger is not None",
   "warn_type",
   "warnings",
   "torch.float",
