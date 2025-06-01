@@ -12,4 +12,4 @@ istft
 
 .. seealso::
 
-    :ref:`unframe` :ref:`window` :ref:`ifftr` :ref:`stft`
+    :ref:`unframe` :ref:`window` :ref:`ifftr` :ref:`stft` :ref:`griffin`

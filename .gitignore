@@ -9,6 +9,9 @@ coverage.xml
 # docs
 build/
 
+# tests
+*.wav
+
 # tools
 tools/**/
 

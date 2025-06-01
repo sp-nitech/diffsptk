@@ -72,6 +72,8 @@ from .idht import InverseDiscreteHartleyTransform
 from .idht import InverseDiscreteHartleyTransform as IDHT
 from .idst import InverseDiscreteSineTransform
 from .idst import InverseDiscreteSineTransform as IDST
+from .ifbank import InverseMelFilterBankAnalysis
+from .ifbank import InverseMelFilterBankAnalysis as IFBANK
 from .ifftr import RealValuedInverseFastFourierTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
 from .igammatone import GammatoneFilterBankSynthesis
