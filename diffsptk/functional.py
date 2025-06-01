@@ -1197,9 +1197,6 @@ def ifbank(
     fft_length : int >= 2
         The number of FFT bins, :math:`L`.
 
-    n_channel : int >= 1
-        The number of mel filter banks, :math:`C`.
-
     sample_rate : int >= 1
         The sample rate in Hz.
 
