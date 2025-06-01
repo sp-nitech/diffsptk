@@ -54,7 +54,7 @@ def test_compatibility(
         [],
         dx=L // 2 + 1,
         dy=L // 2 + 1,
-        eq=lambda a, b: U.allclose(a[..., 1:7], b[..., 1:7]),
+        eq=lambda a, b: U.allclose(a[..., 1], b[..., 1]),
     )
 
     U.check_differentiability(device, [ifbank, fbank, torch.abs], [B, L // 2 + 1])

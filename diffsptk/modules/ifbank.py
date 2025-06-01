@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, get_values, to
 from .base import BaseFunctionalModule
 from .fbank import MelFilterBankAnalysis
 
@@ -147,11 +147,11 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             f_min,
             f_max,
             device=device,
-            dtype=dtype,
+            dtype=torch.double,
         )
-        H = tensors[0].pinverse()
+        weights = tensors[0].pinverse()
 
-        return (gamma, use_power), None, (H,)
+        return (gamma, use_power), None, (to(weights, dtype=dtype),)
 
     @staticmethod
     def _forward(
