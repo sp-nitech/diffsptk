@@ -22,49 +22,25 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("device", ["cpu", "cuda"])
-@pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("gamma", [-1, 0, 1])
-@pytest.mark.parametrize("use_power", [False, True])
-def test_compatibility(
-    device, module, gamma, use_power, C=12, L=32, sr=8000, f_min=30, f_max=4000, B=2
-):
-    fbank_params = {
-        "n_channel": C,
-        "fft_length": L,
-        "sample_rate": sr,
-        "f_min": f_min,
-        "f_max": f_max,
-        "gamma": gamma,
-        "use_power": use_power,
-    }
-    fbank = diffsptk.FBANK(**fbank_params, out_format="y")
-    ifbank = U.choice(
-        module,
-        diffsptk.IFBANK,
-        diffsptk.functional.ifbank,
-        fbank_params,
-    )
+@pytest.mark.parametrize("filter_order", [99, 100])
+@pytest.mark.parametrize("n_fract", [1, 2, 3])
+def test_analysis_synthesis(device, filter_order, n_fract, verbose=False):
+    if device == "cuda" and not torch.cuda.is_available():
+        return
 
-    U.check_compatibility(
-        device,
-        [ifbank, fbank],
-        [],
-        f"nrand -l {B * L} | spec -l {L} -o 3",
-        "sopr",
-        [],
-        dx=L // 2 + 1,
-        dy=L // 2 + 1,
-        eq=lambda a, b: U.allclose(a[..., 1:5], b[..., 1:5]),
-    )
+    x, sr = diffsptk.read("assets/data.wav", device=device)
 
-    U.check_differentiability(device, [ifbank, fbank, torch.abs], [B, L // 2 + 1])
+    oband = diffsptk.FractionalOctaveBandAnalysis(
+        sr, filter_order=filter_order, n_fract=n_fract
+    ).to(device)
+    y = oband(x)
+    x_hat = y.sum(dim=1).squeeze(0)
+    if verbose:
+        diffsptk.write("reconst.wav", x_hat, sr)
+
+    assert (x - x_hat).abs().sum() < 120
 
 
-def test_learnable(C=10, L=32, sr=8000):
-    ifbank = diffsptk.InverseMelFilterBankAnalysis(
-        n_channel=C,
-        fft_length=L,
-        sample_rate=sr,
-        learnable=True,
-    )
-    U.check_learnable(ifbank, (C,))
+def test_various_shape(sr=16000, T=1000):
+    oband = diffsptk.FractionalOctaveBandAnalysis(sr)
+    U.check_various_shape(oband, [(T,), (1, T), (1, 1, T)])

@@ -37,7 +37,7 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
     f_min : float >= 0
         The minimum frequency in Hz.
 
-    f_base : float >= 0
+    f_ref : float >= 0
         The base frequency in Hz.
 
     f_max : float <= sample_rate // 2
@@ -78,7 +78,7 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         *,
         desired_delay: float = 4,
         f_min: float = 70,
-        f_base: float = 1000,
+        f_ref: float = 1000,
         f_max: float = 6700,
         filter_order: int = 4,
         bandwidth_factor: float = 1,
@@ -101,7 +101,7 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         analyzer = GammatoneFilterBankAnalysis(
             sample_rate=sample_rate,
             f_min=f_min,
-            f_base=f_base,
+            f_ref=f_ref,
             f_max=f_max,
             filter_order=filter_order,
             bandwidth_factor=bandwidth_factor,

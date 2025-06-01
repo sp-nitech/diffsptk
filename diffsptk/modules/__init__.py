@@ -131,6 +131,7 @@ from .ndps2c import NegativeDerivativeOfPhaseSpectrumToCepstrum
 from .nmf import NonnegativeMatrixFactorization
 from .nmf import NonnegativeMatrixFactorization as NMF
 from .norm0 import AllPoleToAllZeroDigitalFilterCoefficients
+from .oband import FractionalOctaveBandAnalysis
 from .par2is import ParcorCoefficientsToInverseSine
 from .par2lar import ParcorCoefficientsToLogAreaRatio
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients

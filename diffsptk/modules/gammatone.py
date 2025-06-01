@@ -36,7 +36,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
     f_min : float >= 0
         The minimum frequency in Hz.
 
-    f_base : float >= 0
+    f_ref : float >= 0
         The base frequency in Hz.
 
     f_max : float <= sample_rate // 2
@@ -66,7 +66,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
         sample_rate: int,
         *,
         f_min: float = 70,
-        f_base: float = 1000,
+        f_ref: float = 1000,
         f_max: float = 6700,
         filter_order: int = 4,
         bandwidth_factor: float = 1,
@@ -75,7 +75,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
     ) -> None:
         super().__init__()
 
-        if not (0 <= f_min <= f_base <= f_max <= sample_rate / 2):
+        if not (0 <= f_min <= f_ref <= f_max <= sample_rate / 2):
             raise ValueError("Invalid frequency range.")
         if filter_order <= 0:
             raise ValueError("filter_order must be positive.")
@@ -97,9 +97,9 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
 
         # Compute center frequencies.
         erb_min = hz_to_erb(f_min)
-        erb_base = hz_to_erb(f_base)
+        erb_ref = hz_to_erb(f_ref)
         erb_max = hz_to_erb(f_max)
-        erb_begin = erb_base - np.floor((erb_base - erb_min) * density) / density
+        erb_begin = erb_ref - np.floor((erb_ref - erb_min) * density) / density
         center_frequencies = np.arange(erb_begin, erb_max + 1e-6, 1 / density)
         center_frequencies_in_hz = erb_to_hz(center_frequencies)
 

@@ -313,6 +313,29 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
+### Fractional octave band analysis and synthesis
+
+```python
+import diffsptk
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Decompose x.
+oband = diffsptk.FractionalOctaveBandAnalysis(sr)
+y = oband(x)
+
+# Reconstruct x.
+x_hat = y.sum(1).reshape(-1)
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
 ### Constant-Q transform
 
 ```python
