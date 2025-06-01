@@ -1178,6 +1178,61 @@ def idst(y: Tensor, dst_type: int = 2) -> Tensor:
     return nn.InverseDiscreteSineTransform._func(y, dst_type=dst_type)
 
 
+def ifbank(
+    y: Tensor,
+    fft_length: int,
+    sample_rate: int,
+    f_min: float = 0,
+    f_max: float | None = None,
+    gamma: float = 0,
+    use_power: bool = False,
+) -> Tensor:
+    """Reconstruct the power spectrum from the mel filter bank output.
+
+    Parameters
+    ----------
+    y : Tensor [shape=(..., C)]
+        The mel filter bank output.
+
+    fft_length : int >= 2
+        The number of FFT bins, :math:`L`.
+
+    n_channel : int >= 1
+        The number of mel filter banks, :math:`C`.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
+    f_min : float >= 0
+        The minimum frequency in Hz.
+
+    f_max : float <= sample_rate // 2
+        The maximum frequency in Hz.
+
+    gamma : float in [-1, 1]
+        The parameter of the generalized logarithmic function.
+
+    use_power : bool
+        Set to True if the mel filter bank output is extracted from the power spectrum
+        instead of the amplitude spectrum.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., L/2+1)]
+        The reconstructed power spectrum.
+
+    """
+    return nn.InverseMelFilterBankAnalysis._func(
+        y,
+        fft_length=fft_length,
+        sample_rate=sample_rate,
+        f_min=f_min,
+        f_max=f_max,
+        gamma=gamma,
+        use_power=use_power,
+    )
+
+
 def ifftr(y: Tensor, out_length: int | None = None) -> Tensor:
     """Compute inverse FFT of a complex spectrum.
 

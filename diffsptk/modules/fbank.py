@@ -169,10 +169,10 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         f_min: float,
         f_max: float | None,
-        floor: float,
-        gamma: float,
-        use_power: bool,
-        out_format: str | int,
+        floor: float = 1e-5,
+        gamma: float = 0,
+        use_power: bool = False,
+        out_format: str | int = "y",
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
@@ -242,7 +242,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         y = x if use_power else torch.sqrt(x)
         y = torch.matmul(y, H)
         y = torch.clip(y, min=floor)
-        y = torch.log(y) if gamma == 0 else (torch.pow(x, gamma) - 1) / gamma
+        y = torch.log(y) if gamma == 0 else ((torch.pow(y, gamma) - 1) / gamma)
         E = (2 * x[..., 1:-1]).sum(-1) + x[..., 0] + x[..., -1]
         E = torch.log(E / (2 * (x.size(-1) - 1))).unsqueeze(-1)
         return formatter(y, E)
