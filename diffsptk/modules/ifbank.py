@@ -126,7 +126,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     ) -> Precomputed:
         InverseMelFilterBankAnalysis._check()
 
-        _, _, H = MelFilterBankAnalysis._precompute(
+        _, _, tensors = MelFilterBankAnalysis._precompute(
             fft_length,
             n_channel,
             sample_rate,
@@ -135,7 +135,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             device=device,
             dtype=dtype,
         )
-        H = H[0].pinverse()
+        H = tensors[0].pinverse()
 
         return (gamma, use_power), None, (H,)
 
