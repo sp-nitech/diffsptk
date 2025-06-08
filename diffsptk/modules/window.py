@@ -37,7 +37,7 @@ class Window(BaseFunctionalModule):
         If None, :math:`L_2 = L_1`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular', 'nuttall']
+              'rectangular', 'nuttall', 'povey']
         The window type.
 
     norm : ['none', 'power', 'magnitude']
@@ -147,6 +147,8 @@ class Window(BaseFunctionalModule):
             c2 = torch.arange(0, 8, 2, **params) * (torch.pi / size)
             seed = torch.arange(L, **params)
             w = torch.sum(c1 * torch.cos(torch.outer(seed, c2)), dim=1)
+        elif window == "povey":
+            w = torch.hann_window(L, periodic=periodic, **params).pow(0.85)
         elif window == "sine":
             w = torch.signal.windows.cosine(L, sym=symmetric, **params)
         elif window == "vorbis":

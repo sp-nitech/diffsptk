@@ -55,6 +55,21 @@ def test_compatibility(device, module, w, norm, symmetric, L1, L2=10, B=2):
     U.check_differentiability(device, window, [B, L1])
 
 
+def test_povey_window(device="cpu", L=8):
+    window = diffsptk.Window(L, window="povey", norm="none")
+
+    U.check_compatibility(
+        device,
+        window,
+        [],
+        f"step -l {L}",
+        f"window -w 2 -n -0 -l {L} -L {L} | sopr -p 0.85",
+        [],
+        dx=L,
+        dy=L,
+    )
+
+
 def test_learnable(L=8):
     window = diffsptk.Window(L, learnable=True)
     U.check_learnable(window, (L,))
