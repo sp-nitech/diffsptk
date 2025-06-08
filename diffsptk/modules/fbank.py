@@ -65,7 +65,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
     References
     ----------
-    .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
+    .. [1] S. Young et al., "The HTK Book Version 3.4," *Cambridge University Press*,
+           2006.
 
     """
 
