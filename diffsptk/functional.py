@@ -3015,7 +3015,7 @@ def window(
         If None, :math:`L_2 = L_1`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular', 'nuttall']
+              'rectangular', 'nuttall', 'povey']
         The window type.
 
     norm : ['none', 'power', 'magnitude']

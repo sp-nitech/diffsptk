@@ -79,7 +79,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
-        scale: str = "htk",
+        scale: str = "mel",
         use_power: bool = False,
         out_format: str | int = "y",
         learnable: bool = False,
