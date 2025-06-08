@@ -230,6 +230,30 @@ def get_gamma(gamma: float, c: int | None) -> float:
     return -1 / c
 
 
+def hz_to_auditory(f: np.ndarray, scale: str) -> np.ndarray:
+    if scale == "htk" or scale == "mel":
+        return 1127 * np.log1p(f / 700)
+    elif scale == "oshaughnessy":
+        return 2595 * np.log10(1 + f / 700)
+    elif scale == "traunmuller" or scale == "bark":
+        return (26.81 * f) / (1960 + f) - 0.53
+    elif scale == "linear":
+        return f
+    raise ValueError(f"scale {scale} is not supported.")
+
+
+def auditory_to_hz(z: np.ndarray, scale: str) -> np.ndarray:
+    if scale == "htk" or scale == "mel":
+        return 700 * np.expm1(z / 1127)
+    elif scale == "oshaughnessy":
+        return 700 * (np.power(10, z / 2595) - 1)
+    elif scale == "traunmuller" or scale == "bark":
+        return 1960 * (z + 0.53) / (26.28 - z)
+    elif scale == "linear":
+        return z
+    raise ValueError(f"scale {scale} is not supported.")
+
+
 def symmetric_toeplitz(x: torch.Tensor) -> torch.Tensor:
     d = x.size(-1)
     xx = reflect(x)

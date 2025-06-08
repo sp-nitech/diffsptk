@@ -10,6 +10,7 @@ coverage.xml
 build/
 
 # tests
+*.png
 *.wav
 
 # tools

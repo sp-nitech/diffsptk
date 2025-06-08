@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import os
+
 import pytest
 
 import diffsptk
@@ -55,6 +57,28 @@ def test_compatibility(
     )
 
     U.check_differentiability(device, [fbank, spec], [B, L])
+
+
+@pytest.mark.parametrize("scale", ["htk", "oshaughnessy", "traunmuller", "linear"])
+def test_analysis(scale, C=40, L=2048, sr=8000, verbose=False):
+    fbank = diffsptk.MelFilterBankAnalysis(
+        fft_length=L,
+        n_channel=C,
+        sample_rate=sr,
+        scale=scale,
+    )
+
+    if verbose:
+        tmp = "tmp.dat"
+        fbank.H.T.numpy().astype("float64").tofile(tmp)
+        cmd = (
+            f"./tools/SPTK/tools/venv/bin/python ./tools/SPTK/bin/fdrw {tmp} "
+            f"fbank_{scale}.png -n {L // 2 + 1} -g -H 400 -W 1000 "
+            f"-xname 'Frequency [Hz]' -xscale {sr / 2} "
+            "-yname 'Amplitude' "
+        )
+        U.call(cmd, get=False)
+        os.remove(tmp)
 
 
 def test_learnable(C=10, L=32, sr=8000):
