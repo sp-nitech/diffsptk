@@ -59,6 +59,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
@@ -86,6 +89,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
+        scale: str = "mel",
         out_format: str | int = "y",
         learnable: bool = False,
     ) -> None:
@@ -162,6 +166,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         f_max: float | None,
         floor: float,
         gamma: float,
+        scale: str,
         out_format: str | int,
         learnable: bool = False,
         device: torch.device | None = None,
@@ -192,6 +197,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
                 f_max=f_max,
                 floor=floor,
                 gamma=gamma,
+                scale=scale,
                 use_power=False,
                 out_format="y,E",
                 learnable=learnable,

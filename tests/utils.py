@@ -81,7 +81,8 @@ def call(cmd, get=True):
         data = np.fromstring(
             res.stdout, sep="\n", dtype=np.double if is_double else np.float32
         )
-        assert 0 < len(data), f"Failed to run command {cmd}"
+        if len(data) == 0:
+            raise RuntimeError(f"Failed to run command: {cmd}")
         return data
     else:
         res = subprocess.run(
@@ -90,6 +91,8 @@ def call(cmd, get=True):
             stdout=subprocess.PIPE,
             check=False,
         )
+        if res.returncode != 0:
+            raise RuntimeError(f"Failed to run command: {cmd}")
         return None
 
 

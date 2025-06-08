@@ -46,6 +46,9 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     use_power : bool
         Set to True if the mel filter bank output is extracted from the power spectrum
         instead of the amplitude spectrum.
@@ -64,6 +67,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         f_min: float = 0,
         f_max: float | None = None,
         gamma: float = 0,
+        scale: str = "mel",
         use_power: bool = False,
         learnable: bool = False,
     ) -> None:
@@ -134,6 +138,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         f_min: float,
         f_max: float | None,
         gamma: float,
+        scale: str,
         use_power: bool,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
@@ -146,6 +151,11 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             sample_rate,
             f_min,
             f_max,
+            1,
+            gamma,
+            scale,
+            use_power,
+            0,
             device=device,
             dtype=torch.double,
         )

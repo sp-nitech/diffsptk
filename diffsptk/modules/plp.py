@@ -21,7 +21,15 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values, numpy_to_torch, replicate1, to
+from ..utils.private import (
+    auditory_to_hz,
+    get_layer,
+    get_values,
+    hz_to_auditory,
+    numpy_to_torch,
+    replicate1,
+    to,
+)
 from .base import BaseFunctionalModule
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
@@ -64,6 +72,9 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
         The accurate conversion requires the large value.
@@ -93,6 +104,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
+        scale: str = "mel",
         n_fft: int = 512,
         out_format: str | int = "y",
         learnable: bool = False,
@@ -178,6 +190,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         f_max: float | None,
         floor: float,
         gamma: float,
+        scale: str,
         n_fft: int,
         out_format: str | int,
         learnable: bool = False,
@@ -211,6 +224,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 f_max=f_max,
                 floor=floor,
                 gamma=gamma,
+                scale=scale,
                 use_power=True,
                 out_format="y,E",
                 learnable=learnable,
@@ -244,17 +258,11 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         if f_max is None:
             f_max = sample_rate / 2
 
-        def hz_to_mel(x):
-            return 1127 * np.log1p(x / 700)
-
-        def mel_to_hz(x):
-            return 700 * np.expm1(x / 1127)
-
-        mel_min = hz_to_mel(f_min)
-        mel_max = hz_to_mel(f_max)
+        mel_min = hz_to_auditory(f_min, scale)
+        mel_max = hz_to_auditory(f_max, scale)
         seed = np.arange(1, n_channel + 2)
         center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
-        f = mel_to_hz(center_frequencies)[:-1] ** 2
+        f = auditory_to_hz(center_frequencies, scale)[:-1] ** 2
         e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
         equal_loudness_curve = numpy_to_torch(e)
 

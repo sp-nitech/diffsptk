@@ -594,6 +594,7 @@ def fbank(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
+    scale: str = "mel",
     use_power: bool = False,
     out_format: str = "y",
 ) -> tuple[Tensor, Tensor] | Tensor:
@@ -622,6 +623,9 @@ def fbank(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -646,6 +650,7 @@ def fbank(
         f_max=f_max,
         floor=floor,
         gamma=gamma,
+        scale=scale,
         use_power=use_power,
         out_format=out_format,
     )
@@ -1185,6 +1190,7 @@ def ifbank(
     f_min: float = 0,
     f_max: float | None = None,
     gamma: float = 0,
+    scale: str = "mel",
     use_power: bool = False,
 ) -> Tensor:
     """Reconstruct the power spectrum from the mel filter bank output.
@@ -1209,6 +1215,9 @@ def ifbank(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     use_power : bool
         Set to True if the mel filter bank output is extracted from the power spectrum
         instead of the amplitude spectrum.
@@ -1226,6 +1235,7 @@ def ifbank(
         f_min=f_min,
         f_max=f_max,
         gamma=gamma,
+        scale=scale,
         use_power=use_power,
     )
 
@@ -1971,6 +1981,7 @@ def mfcc(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
+    scale: str = "mel",
     out_format: str = "y",
 ) -> Tensor:
     """Compute the MFCC from the power spectrum.
@@ -2004,6 +2015,9 @@ def mfcc(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
@@ -2029,6 +2043,7 @@ def mfcc(
         f_max=f_max,
         floor=floor,
         gamma=gamma,
+        scale=scale,
         out_format=out_format,
     )
 
@@ -2412,6 +2427,7 @@ def plp(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
+    scale: str = "mel",
     n_fft: int = 512,
     out_format: str = "y",
 ) -> Tensor:
@@ -2449,6 +2465,9 @@ def plp(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
 
@@ -2478,6 +2497,7 @@ def plp(
         f_max=f_max,
         floor=floor,
         gamma=gamma,
+        scale=scale,
         n_fft=n_fft,
         out_format=out_format,
     )
@@ -2995,7 +3015,7 @@ def window(
         If None, :math:`L_2 = L_1`.
 
     window : ['blackman', 'hamming', 'hanning', 'bartlett', 'trapezoidal', \
-              'rectangular', 'nuttall']
+              'rectangular', 'nuttall', 'povey']
         The window type.
 
     norm : ['none', 'power', 'magnitude']

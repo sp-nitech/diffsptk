@@ -19,7 +19,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, get_values, hz_to_auditory, to
 from .base import BaseFunctionalModule
 
 
@@ -50,6 +50,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
+    scale : ['mel', 'bark', 'linear']
+        The type of auditory scale used to construct the filter bank.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -76,6 +79,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
+        scale: str = "mel",
         use_power: bool = False,
         out_format: str | int = "y",
         learnable: bool = False,
@@ -169,10 +173,11 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         f_min: float,
         f_max: float | None,
-        floor: float = 1e-5,
-        gamma: float = 0,
-        use_power: bool = False,
-        out_format: str | int = "y",
+        floor: float,
+        gamma: float,
+        scale: str,
+        use_power: bool,
+        out_format: str | int,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
@@ -198,11 +203,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         if f_max is None:
             f_max = sample_rate / 2
 
-        def hz_to_mel(x):
-            return 1127 * np.log1p(x / 700)
-
-        mel_min = hz_to_mel(f_min)
-        mel_max = hz_to_mel(f_max)
+        mel_min = hz_to_auditory(f_min, scale)
+        mel_max = hz_to_auditory(f_max, scale)
 
         lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
         upper_bin_index = min(
@@ -213,7 +215,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
 
         bin_indices = np.arange(lower_bin_index, upper_bin_index)
-        mel = hz_to_mel(sample_rate * bin_indices / fft_length)
+        mel = hz_to_auditory(sample_rate * bin_indices / fft_length, scale)
         lower_channel_map = [np.argmax(0 < (m <= center_frequencies)) for m in mel]
 
         diff = center_frequencies - np.insert(center_frequencies[:-1], 0, mel_min)
