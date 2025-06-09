@@ -21,7 +21,7 @@ import tests.utils as U
 from diffsptk.utils.private import auditory_to_hz, hz_to_auditory
 
 
-@pytest.mark.parametrize("scale", ["htk", "oshaughnessy", "traunmuller", "linear"])
+@pytest.mark.parametrize("scale", ["htk", "mel", "inverted-mel", "bark", "linear"])
 def test_hz_to_auditory(scale):
     f = np.linspace(0, 8000, 100)
     g = hz_to_auditory(auditory_to_hz(f, scale), scale)

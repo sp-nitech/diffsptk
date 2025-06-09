@@ -594,7 +594,7 @@ def fbank(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
-    scale: str = "mel",
+    scale: str = "htk",
     use_power: bool = False,
     out_format: str = "y",
 ) -> tuple[Tensor, Tensor] | Tensor:
@@ -623,7 +623,7 @@ def fbank(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     use_power : bool
@@ -1190,7 +1190,7 @@ def ifbank(
     f_min: float = 0,
     f_max: float | None = None,
     gamma: float = 0,
-    scale: str = "mel",
+    scale: str = "htk",
     use_power: bool = False,
 ) -> Tensor:
     """Reconstruct the power spectrum from the mel filter bank output.
@@ -1215,7 +1215,7 @@ def ifbank(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     use_power : bool
@@ -1981,7 +1981,7 @@ def mfcc(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
-    scale: str = "mel",
+    scale: str = "htk",
     out_format: str = "y",
 ) -> Tensor:
     """Compute the MFCC from the power spectrum.
@@ -2015,7 +2015,7 @@ def mfcc(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     out_format : ['y', 'yE', 'yc', 'ycE']
@@ -2427,7 +2427,7 @@ def plp(
     f_max: float | None = None,
     floor: float = 1e-5,
     gamma: float = 0,
-    scale: str = "mel",
+    scale: str = "htk",
     n_fft: int = 512,
     out_format: str = "y",
 ) -> Tensor:
@@ -2465,7 +2465,7 @@ def plp(
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     n_fft : int >> M
