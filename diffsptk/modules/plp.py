@@ -72,7 +72,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     n_fft : int >> M
@@ -104,7 +104,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
-        scale: str = "mel",
+        scale: str = "htk",
         n_fft: int = 512,
         out_format: str | int = "y",
         learnable: bool = False,

@@ -98,9 +98,9 @@ class DiscreteCosineTransform(BaseFunctionalModule):
         L = dct_length
         n = torch.arange(L, **params)
         k = torch.arange(L, **params)
-        if dct_type == 2 or dct_type == 4:
+        if dct_type in (2, 4):
             n += 0.5
-        if dct_type == 3 or dct_type == 4:
+        if dct_type in (3, 4):
             k += 0.5
         n *= torch.pi / ((L - 1) if dct_type == 1 else L)
 

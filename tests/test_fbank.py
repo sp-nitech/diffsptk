@@ -59,7 +59,7 @@ def test_compatibility(
     U.check_differentiability(device, [fbank, spec], [B, L])
 
 
-@pytest.mark.parametrize("scale", ["htk", "oshaughnessy", "traunmuller", "linear"])
+@pytest.mark.parametrize("scale", ["htk", "mel", "inverted-mel", "bark", "linear"])
 def test_analysis(scale, C=40, L=2048, sr=8000, verbose=False):
     fbank = diffsptk.MelFilterBankAnalysis(
         fft_length=L,

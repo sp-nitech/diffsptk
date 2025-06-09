@@ -231,11 +231,35 @@ def get_gamma(gamma: float, c: int | None) -> float:
 
 
 def hz_to_auditory(f: np.ndarray, scale: str) -> np.ndarray:
-    if scale == "htk" or scale == "mel":
+    """Convert frequency in Hz to auditory scale.
+
+    Parameters
+    ----------
+    f : ndarray [shape=(...,)]
+        Frequency in Hz.
+
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
+        The auditory scale to convert to.
+
+    Returns
+    -------
+    out : ndarray [shape=(...,)]
+        Frequency in the specified auditory scale.
+
+    References
+    ----------
+    .. [1] S. Chakroborty et al., "Fusion of a complementary feature set with MFCC for
+           improved closed set text-independent speaker identification," *Proceedings of
+           IEEE ICIT*, pp. 387-390, 2006.
+
+    """
+    if scale == "htk":
         return 1127 * np.log1p(f / 700)
-    elif scale == "oshaughnessy":
+    elif scale in ("oshaughnessy", "mel"):
         return 2595 * np.log10(1 + f / 700)
-    elif scale == "traunmuller" or scale == "bark":
+    elif scale in ("chakroborty", "inverted-mel"):
+        return 2195.286 - 2595 * np.log10(1 + (4031.25 - f) / 700)
+    elif scale in ("traunmuller", "bark"):
         return (26.81 * f) / (1960 + f) - 0.53
     elif scale == "linear":
         return f
@@ -243,11 +267,13 @@ def hz_to_auditory(f: np.ndarray, scale: str) -> np.ndarray:
 
 
 def auditory_to_hz(z: np.ndarray, scale: str) -> np.ndarray:
-    if scale == "htk" or scale == "mel":
+    if scale == "htk":
         return 700 * np.expm1(z / 1127)
-    elif scale == "oshaughnessy":
+    elif scale in ("oshaughnessy", "mel"):
         return 700 * (np.power(10, z / 2595) - 1)
-    elif scale == "traunmuller" or scale == "bark":
+    elif scale in ("chakroborty", "inverted-mel"):
+        return 4031.25 - 700 * (np.power(10, (2195.286 - z) / 2595) - 1)
+    elif scale in ("traunmuller", "bark"):
         return 1960 * (z + 0.53) / (26.28 - z)
     elif scale == "linear":
         return z

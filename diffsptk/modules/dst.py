@@ -97,9 +97,9 @@ class DiscreteSineTransform(BaseFunctionalModule):
         L = dst_length
         n = torch.arange(1, L + 1, **params)
         k = torch.arange(1, L + 1, **params)
-        if dst_type == 2 or dst_type == 4:
+        if dst_type in (2, 4):
             n -= 0.5
-        if dst_type == 3 or dst_type == 4:
+        if dst_type in (3, 4):
             k -= 0.5
         n *= torch.pi / ((L + 1) if dst_type == 1 else L)
 

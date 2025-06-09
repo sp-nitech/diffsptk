@@ -50,7 +50,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     gamma : float in [-1, 1]
         The parameter of the generalized logarithmic function.
 
-    scale : ['mel', 'bark', 'linear']
+    scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
     use_power : bool
@@ -80,7 +80,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         floor: float = 1e-5,
         gamma: float = 0,
-        scale: str = "mel",
+        scale: str = "htk",
         use_power: bool = False,
         out_format: str | int = "y",
         learnable: bool = False,
