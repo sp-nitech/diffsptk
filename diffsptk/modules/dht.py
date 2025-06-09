@@ -97,9 +97,9 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
         L = dht_length
         n = torch.arange(L, **params)
         k = torch.arange(L, **params)
-        if dht_type == 2 or dht_type == 4:
+        if dht_type in (2, 4):
             n += 0.5
-        if dht_type == 3 or dht_type == 4:
+        if dht_type in (3, 4):
             k += 0.5
         n *= 2 * torch.pi / L
         z = L**-0.5
