@@ -408,9 +408,11 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         if x.dtype != torch.double or self.a.dtype != torch.double:
             raise ValueError("Only double precision is supported.")
 
+        eps = 1e-8
+
         xamp = torch.std(x, dim=-1, keepdim=True)
         scaleconst = 2200
-        x = torch.where(xamp < 1e-10, x, x * (scaleconst / xamp))
+        x = torch.where(xamp < eps, x, x * (scaleconst / xamp))
         xh = iir(x, self.b, self.a, batching=False)
         tx = self.frame(xh[..., 0, :])
 
@@ -420,13 +422,13 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         f0 = torch.where(unvoiced, self.default_f0, f0)
         ttf = self.tt * f0
 
-        def safe_div(x, y, eps=1e-10):
+        def safe_div(x, y):
             return x / (y + eps)
 
         wxe = interp1(
             self.tNominal, self.wPSGSeed, ttf / self.fNominal, method="*linear"
         )
-        wxe /= torch.linalg.vector_norm(wxe, dim=-1, keepdim=True)
+        wxe = safe_div(wxe, torch.linalg.vector_norm(wxe, dim=-1, keepdim=True))
         bcf = 0.36
         wxd = bcf * wxe * torch.sin(torch.pi * ttf)
 
@@ -435,7 +437,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             torch.fft.rfft(tx * wxe, n=self.fft_length).abs() ** 2
             + torch.fft.rfft(tx * wxd, n=self.fft_length).abs() ** 2
         )
-        pw = torch.clip(pw, min=1e-6) ** (self.pc / 2)
+        pw = torch.clip(pw, min=eps) ** (self.pc / 2)
 
         f0pr = f0 * (self.fft_length / self.sample_rate) + 1
         f0p = torch.ceil(f0pr).long()
@@ -460,14 +462,15 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             + self.ovc[1] * 2 * torch.cos(TAU * ttmf)
             + self.ovc[2] * 2 * torch.cos(2 * TAU * ttmf)
         )
-        spw = (
-            torch.fft.ihfft(wwt * torch.fft.hfft(safe_div(pw, spw2)) * self.lft).real
-            / wwt[..., :1]
+        spw = safe_div(
+            torch.fft.ihfft(wwt * torch.fft.hfft(safe_div(pw, spw2)) * self.lft).real,
+            wwt[..., :1],
         )
+        spw = torch.clip(spw, min=-100, max=100)
         n2sgram = spw2 * (
-            0.175 * torch.log(2 * torch.cosh(4 / 1.4 * spw) + 1e-10) + 0.5 * spw
+            0.175 * torch.log(2 * torch.cosh(4 / 1.4 * spw) + eps) + 0.5 * spw
         )
-        n2sgram = torch.clip(n2sgram, min=1e-6) ** (2 / self.pc)
+        n2sgram = torch.clip(n2sgram, min=eps) ** (2 / self.pc)
 
         nframe = f0.size(-2)
         pwcs = self.fftfilt(
@@ -495,13 +498,13 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         dpwt = self.fftfilt(self.ww, F.pad(torch.diff(pwch) ** 2, (0, len(self.ww))))
         dpwt = dpwt[..., begin : begin + nframe]
-        dpwt = torch.sqrt(torch.clip(dpwt, min=1e-10))
+        dpwt = torch.sqrt(dpwt + eps)
         rr = safe_div(dpwt, apwt)
         lmbd = torch.sigmoid((torch.sqrt(rr) - 0.75) * 20)
 
         pwc = lmbd * safe_div(pwcs[..., 0, :], torch.sum(n2sgram, dim=-1)) + (1 - lmbd)
         n2sgram = torch.where(unvoiced, n2sgram * pwc.unsqueeze(-1), n2sgram)
-        n2sgram = torch.sqrt(torch.abs(n2sgram + 1e-10))
+        n2sgram = torch.sqrt(torch.abs(n2sgram + eps))
 
         if 0 < self.mag:
             ccs2 = torch.fft.hfft(n2sgram)[..., :one_sided_length] * torch.clip(
@@ -511,6 +514,6 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             n2sgram = (n2sgram3.abs() + n2sgram3) / 2 + 0.1
 
         xamp = xamp.unsqueeze(-1)
-        n3sgram = torch.where(xamp < 1e-10, n2sgram, n2sgram * (xamp / scaleconst))
-        n3sgram = 2 * torch.log(torch.abs(n3sgram + 1e-10))
+        n3sgram = torch.where(xamp < eps, n2sgram, n2sgram * (xamp / scaleconst))
+        n3sgram = 2 * torch.log(torch.abs(n3sgram + eps))
         return n3sgram
