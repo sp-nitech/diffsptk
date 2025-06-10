@@ -49,7 +49,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
-    erb_factor : float or None
+    erb_factor : float > 0 or None
         The scale factor for the ERB scale, referred to as the E-factor. If not None,
         the filter bandwidths are adjusted according to the scaled ERB scale.
 
