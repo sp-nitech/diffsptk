@@ -62,6 +62,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
@@ -90,6 +94,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         floor: float = 1e-5,
         gamma: float = 0,
         scale: str = "htk",
+        erb_factor: float | None = None,
         out_format: str | int = "y",
         learnable: bool = False,
     ) -> None:
@@ -167,6 +172,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         floor: float,
         gamma: float,
         scale: str,
+        erb_factor: float | None,
         out_format: str | int,
         learnable: bool = False,
         device: torch.device | None = None,
@@ -198,6 +204,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
                 floor=floor,
                 gamma=gamma,
                 scale=scale,
+                erb_factor=erb_factor,
                 use_power=False,
                 out_format="y,E",
                 learnable=learnable,

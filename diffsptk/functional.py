@@ -595,6 +595,7 @@ def fbank(
     floor: float = 1e-5,
     gamma: float = 0,
     scale: str = "htk",
+    erb_factor: float | None = None,
     use_power: bool = False,
     out_format: str = "y",
 ) -> tuple[Tensor, Tensor] | Tensor:
@@ -626,6 +627,10 @@ def fbank(
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -651,6 +656,7 @@ def fbank(
         floor=floor,
         gamma=gamma,
         scale=scale,
+        erb_factor=erb_factor,
         use_power=use_power,
         out_format=out_format,
     )
@@ -1191,6 +1197,7 @@ def ifbank(
     f_max: float | None = None,
     gamma: float = 0,
     scale: str = "htk",
+    erb_factor: float | None = None,
     use_power: bool = False,
 ) -> Tensor:
     """Reconstruct the power spectrum from the mel filter bank output.
@@ -1218,6 +1225,10 @@ def ifbank(
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     use_power : bool
         Set to True if the mel filter bank output is extracted from the power spectrum
         instead of the amplitude spectrum.
@@ -1236,6 +1247,7 @@ def ifbank(
         f_max=f_max,
         gamma=gamma,
         scale=scale,
+        erb_factor=erb_factor,
         use_power=use_power,
     )
 
@@ -1982,6 +1994,7 @@ def mfcc(
     floor: float = 1e-5,
     gamma: float = 0,
     scale: str = "htk",
+    erb_factor: float | None = None,
     out_format: str = "y",
 ) -> Tensor:
     """Compute the MFCC from the power spectrum.
@@ -2018,6 +2031,10 @@ def mfcc(
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     out_format : ['y', 'yE', 'yc', 'ycE']
         `y` is MFCC, `c` is C0, and `E` is energy.
 
@@ -2044,6 +2061,7 @@ def mfcc(
         floor=floor,
         gamma=gamma,
         scale=scale,
+        erb_factor=erb_factor,
         out_format=out_format,
     )
 
@@ -2428,6 +2446,7 @@ def plp(
     floor: float = 1e-5,
     gamma: float = 0,
     scale: str = "htk",
+    erb_factor: float | None = None,
     n_fft: int = 512,
     out_format: str = "y",
 ) -> Tensor:
@@ -2468,6 +2487,10 @@ def plp(
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
 
@@ -2498,6 +2521,7 @@ def plp(
         floor=floor,
         gamma=gamma,
         scale=scale,
+        erb_factor=erb_factor,
         n_fft=n_fft,
         out_format=out_format,
     )
