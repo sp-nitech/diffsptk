@@ -19,7 +19,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values, hz_to_auditory, to
+from ..utils.private import auditory_to_hz, check_size, get_values, hz_to_auditory, to
 from .base import BaseFunctionalModule
 
 
@@ -53,6 +53,10 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
@@ -68,6 +72,14 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     .. [1] S. Young et al., "The HTK Book Version 3.4," *Cambridge University Press*,
            2006.
 
+    .. [2] T. Ganchev et al., "Comparative evaluation of various MFCC implementations on
+           the speaker verification task," *Proceedings of SPECOM*, vol. 1, pp. 191-194,
+           2005.
+
+    .. [3] M. D. Skowronski et al., "Exploiting independent filter bandwidth of human
+           factor cepstral coefficients in automatic speech recognition," *The Journal
+           of the Acoustical Society of America*, vol. 116, no. 3, pp. 1774-1780, 2004.
+
     """
 
     def __init__(
@@ -81,6 +93,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         floor: float = 1e-5,
         gamma: float = 0,
         scale: str = "htk",
+        erb_factor: float | None = None,
         use_power: bool = False,
         out_format: str | int = "y",
         learnable: bool = False,
@@ -151,6 +164,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None,
         floor: float,
         gamma: float,
+        erb_factor: float | None,
     ) -> None:
         if fft_length <= 1:
             raise ValueError("fft_length must be greater than 1.")
@@ -166,6 +180,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             raise ValueError("floor must be positive.")
         if 1 < abs(gamma):
             raise ValueError("gamma must be in [-1, 1].")
+        if erb_factor is not None and erb_factor <= 0:
+            raise ValueError("erb_factor must be positive.")
 
     @staticmethod
     def _precompute(
@@ -177,6 +193,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         floor: float,
         gamma: float,
         scale: str,
+        erb_factor: float | None,
         use_power: bool,
         out_format: str | int,
         device: torch.device | None = None,
@@ -190,6 +207,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
             f_max,
             floor,
             gamma,
+            erb_factor,
         )
 
         if out_format in (0, "y"):
@@ -204,34 +222,70 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         if f_max is None:
             f_max = sample_rate / 2
 
-        mel_min = hz_to_auditory(f_min, scale)
-        mel_max = hz_to_auditory(f_max, scale)
+        weights = np.zeros((fft_length // 2 + 1, n_channel))
 
-        lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
-        upper_bin_index = min(
-            fft_length // 2, int(f_max / sample_rate * fft_length + 0.5)
+        if erb_factor is None:
+            mel_min = hz_to_auditory(f_min, scale)
+            mel_max = hz_to_auditory(f_max, scale)
+
+            lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
+            upper_bin_index = min(
+                fft_length // 2, int(f_max / sample_rate * fft_length + 0.5)
+            )
+
+            seed = np.arange(1, n_channel + 2)
+            center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
+
+            bin_indices = np.arange(lower_bin_index, upper_bin_index)
+            mel = hz_to_auditory(sample_rate * bin_indices / fft_length, scale)
+            lower_channel_map = [np.argmax(0 < (m <= center_frequencies)) for m in mel]
+            diff = center_frequencies - np.insert(center_frequencies[:-1], 0, mel_min)
+            for i, k in enumerate(bin_indices):
+                m = lower_channel_map[i]
+                w = (center_frequencies[max(0, m)] - mel[i]) / diff[max(0, m)]
+                if 0 < m:
+                    weights[k, m - 1] = w
+                if m < n_channel:
+                    weights[k, m] = 1 - w
+        else:
+            a = erb_factor * 6.23e-6
+            b = erb_factor * 93.39e-3
+            c = erb_factor * 28.52
+
+            def compute_center_frequency(f, at_first):
+                sign = 1 if at_first else -1
+                a_hat = sign * 0.5 * (1 / (700 + f))
+                b_hat = sign * 700 / (700 + f)
+                c_hat = -sign * 0.5 * f * (1 + 700 / (700 + f))
+
+                b_bar = (b - b_hat) / (a - a_hat)
+                c_bar = (c - c_hat) / (a - a_hat)
+                return 0.5 * (-b_bar + np.sqrt(b_bar**2 - 4 * c_bar))
+
+            fc_1 = compute_center_frequency(f_min, True)
+            fc_C = compute_center_frequency(f_max, False)
+            zc_1 = hz_to_auditory(fc_1, scale)
+            zc_C = hz_to_auditory(fc_C, scale)
+            fc = auditory_to_hz(np.linspace(zc_1, zc_C, n_channel), scale)
+            erb = a * fc**2 + b * fc + c
+            # Note that the equation (C3) in the original paper is incorrect.
+            fl = -(700 + erb) + np.sqrt(erb**2 + (700 + fc) ** 2)
+            fh = fl + 2 * erb
+
+            f = np.linspace(0, sample_rate / 2, fft_length // 2 + 1)
+            for m, (low, center, high) in enumerate(zip(fl, fc, fh)):
+                mask = (low <= f) & (f < center)
+                weights[mask, m] = (f[mask] - low) / (center - low)
+                mask = (center <= f) & (f <= high)
+                weights[mask, m] = (high - f[mask]) / (high - center)
+
+        weights = torch.from_numpy(weights)
+
+        return (
+            (floor, gamma, use_power, formatter),
+            None,
+            (to(weights, device=device, dtype=dtype),),
         )
-
-        seed = np.arange(1, n_channel + 2)
-        center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
-
-        bin_indices = np.arange(lower_bin_index, upper_bin_index)
-        mel = hz_to_auditory(sample_rate * bin_indices / fft_length, scale)
-        lower_channel_map = [np.argmax(0 < (m <= center_frequencies)) for m in mel]
-
-        diff = center_frequencies - np.insert(center_frequencies[:-1], 0, mel_min)
-        weights = torch.zeros(
-            (fft_length // 2 + 1, n_channel), device=device, dtype=torch.double
-        )
-        for i, k in enumerate(bin_indices):
-            m = lower_channel_map[i]
-            w = (center_frequencies[max(0, m)] - mel[i]) / diff[max(0, m)]
-            if 0 < m:
-                weights[k, m - 1] += w
-            if m < n_channel:
-                weights[k, m] += 1 - w
-
-        return (floor, gamma, use_power, formatter), None, (to(weights, dtype=dtype),)
 
     @staticmethod
     def _forward(

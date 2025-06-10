@@ -75,6 +75,10 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     n_fft : int >> M
         The number of FFT bins for the conversion from LPC to cepstrum.
         The accurate conversion requires the large value.
@@ -105,6 +109,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         floor: float = 1e-5,
         gamma: float = 0,
         scale: str = "htk",
+        erb_factor: float | None = None,
         n_fft: int = 512,
         out_format: str | int = "y",
         learnable: bool = False,
@@ -191,6 +196,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         floor: float,
         gamma: float,
         scale: str,
+        erb_factor: float | None,
         n_fft: int,
         out_format: str | int,
         learnable: bool = False,
@@ -225,6 +231,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 floor=floor,
                 gamma=gamma,
                 scale=scale,
+                erb_factor=erb_factor,
                 use_power=True,
                 out_format="y,E",
                 learnable=learnable,

@@ -49,6 +49,10 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     scale : ['htk', 'mel', 'inverted-mel', 'bark', 'linear']
         The type of auditory scale used to construct the filter bank.
 
+    erb_factor : float or None
+        The scale factor for the ERB scale, referred to as the E-factor. If not None,
+        the filter bandwidths are adjusted according to the scaled ERB scale.
+
     use_power : bool
         Set to True if the mel filter bank output is extracted from the power spectrum
         instead of the amplitude spectrum.
@@ -68,6 +72,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None = None,
         gamma: float = 0,
         scale: str = "htk",
+        erb_factor: float | None = None,
         use_power: bool = False,
         learnable: bool = False,
     ) -> None:
@@ -139,6 +144,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         f_max: float | None,
         gamma: float,
         scale: str,
+        erb_factor: float | None,
         use_power: bool,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
@@ -154,6 +160,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             1,
             gamma,
             scale,
+            erb_factor,
             use_power,
             0,
             device=device,
