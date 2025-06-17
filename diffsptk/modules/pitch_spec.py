@@ -57,6 +57,10 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
     default_f0 : float > 0
         The F0 value used when the input F0 is unvoiced.
 
+    eps : float >= 0
+        A small value added to the power spectrum. Please increase this value if you
+        encounter numerical instability (valid only if **algorithm** is 'cheap-trick').
+
     **kwargs : additional keyword arguments
         Additional keyword arguments passed to the algorithm-specific extractor.
 
