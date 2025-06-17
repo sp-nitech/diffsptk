@@ -195,7 +195,7 @@ class SpectrumExtractionByCheapTrick(nn.Module):
         *,
         default_f0: float = 500,
         q1: float = -0.15,
-        eps: float = 1e-9,
+        eps: float = 0,
         relative_floor: float | None = None,
     ) -> None:
         super().__init__()
