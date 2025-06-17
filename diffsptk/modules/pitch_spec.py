@@ -57,6 +57,9 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
     default_f0 : float > 0
         The F0 value used when the input F0 is unvoiced.
 
+    **kwargs : additional keyword arguments
+        Additional keyword arguments passed to the algorithm-specific extractor.
+
     References
     ----------
     .. [1] M. Morise, "CheapTrick, a spectral envelope estimator for high-quality speech
@@ -192,6 +195,8 @@ class SpectrumExtractionByCheapTrick(nn.Module):
         *,
         default_f0: float = 500,
         q1: float = -0.15,
+        eps: float = 1e-9,
+        relative_floor: float | None = None,
     ) -> None:
         super().__init__()
 
@@ -215,7 +220,12 @@ class SpectrumExtractionByCheapTrick(nn.Module):
         self.q1 = q1
         self.default_f0 = default_f0
 
-        self.spec = Spectrum(fft_length)
+        self.spec = Spectrum(
+            fft_length,
+            eps=eps,
+            relative_floor=relative_floor,
+            out_format="power",
+        )
 
         self.register_buffer("ramp", torch.arange(fft_length))
 
