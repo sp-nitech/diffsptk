@@ -108,6 +108,7 @@ def read(
     filename: str,
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
+    channel_first: bool = True,
     **kwargs,
 ) -> tuple[torch.Tensor, int]:
     """Read a waveform from the given file.
@@ -123,13 +124,17 @@ def read(
     dtype : torch.dtype or None
         The data type of the returned tensor.
 
+    channel_first : bool
+        If True, the shape will be (C, T), where C is the number of channels
+        and T is the number of time steps. If False, the shape will be (T, C).
+
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.read
         <https://python-soundfile.readthedocs.io/en/latest/#soundfile.read>`_.
 
     Returns
     -------
-    x : Tensor
+    x : Tensor [shape=(C, T) or (T, C) or (T,)]]
         The waveform.
 
     sr : int
@@ -147,11 +152,17 @@ def read(
     x, sr = sf.read(filename, **kwargs)
     if dtype is None:
         dtype = torch.get_default_dtype()
-    x = torch.tensor(x, device=device, dtype=dtype)
+    x = torch.tensor(x.T if channel_first else x, device=device, dtype=dtype)
     return x, sr
 
 
-def write(filename: str, x: torch.Tensor, sr: int, **kwargs) -> None:
+def write(
+    filename: str,
+    x: torch.Tensor | np.ndarray,
+    sr: int,
+    channel_first: bool = True,
+    **kwargs,
+) -> None:
     """Write the given waveform to a file.
 
     Parameters
@@ -159,11 +170,15 @@ def write(filename: str, x: torch.Tensor, sr: int, **kwargs) -> None:
     filename : str
         The path of the wav file.
 
-    x : Tensor
+    x : Tensor or ndarray [shape=(C, T) or (T, C) or (T,)]]
         The waveform.
 
     sr : int
         The sample rate in Hz.
+
+    channel_first : bool
+        If True, the shape of x is (C, T), where C is the number of channels
+        and T is the number of time steps. If False, the shape is (T, C).
 
     **kwargs : additional keyword arguments
         Additional arguments passed to `soundfile.write
@@ -176,4 +191,4 @@ def write(filename: str, x: torch.Tensor, sr: int, **kwargs) -> None:
 
     """
     x = x.cpu().numpy() if torch.is_tensor(x) else x
-    sf.write(filename, x, sr, **kwargs)
+    sf.write(filename, x.T if channel_first else x, sr, **kwargs)
