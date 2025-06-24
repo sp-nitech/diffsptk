@@ -50,7 +50,7 @@ stft_params = {"frame_length": 400, "frame_period": 80, "fft_length": 512}
 x, sr = diffsptk.read("assets/data.wav", device="cuda")
 
 # Compute spectrogram using a nn.Module class.
-X1 = diffsptk.STFT(**stft_params).to("cuda")(x)
+X1 = diffsptk.STFT(**stft_params, device="cuda")(x)
 
 # Compute spectrogram using a functional method.
 X2 = diffsptk.functional.stft(x, **stft_params)

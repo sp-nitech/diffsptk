@@ -20,11 +20,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "batchmean", "mean", "sum"])
 @pytest.mark.parametrize("lag", [1, 0, -1])
-def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
+def test_compatibility(device, dtype, module, reduction, lag, norm=2, T=20, L=5):
     flux = U.choice(
         module,
         diffsptk.Flux,
@@ -47,6 +46,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
     tmp2 = "flux.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         flux,
         [f"nrand -s 1 -l {T * L} > {tmp1}", f"nrand -s 2 -l {T * L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -60,7 +60,7 @@ def test_compatibility(device, module, reduction, lag, norm=2, T=20, L=5):
         dx=L,
     )
 
-    U.check_differentiability(device, flux, [(T, L), (T, L)])
+    U.check_differentiability(device, dtype, flux, [(T, L), (T, L)])
 
 
 @pytest.mark.parametrize("module", [False, True])

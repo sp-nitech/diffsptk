@@ -21,15 +21,20 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3, 4])
-def test_compatibility(device, module, out_format, M=12, L=16, B=2):
+def test_compatibility(device, dtype, module, out_format, M=12, L=16, B=2):
     fftr = U.choice(
         module,
         diffsptk.RealValuedFastFourierTransform,
         diffsptk.functional.fftr,
-        {"fft_length": L, "out_format": out_format, "learnable": "debug"},
+        {
+            "fft_length": L,
+            "out_format": out_format,
+            "learnable": "debug",
+            "device": device,
+            "dtype": dtype,
+        },
     )
 
     size = L // 2 + 1
@@ -44,6 +49,7 @@ def test_compatibility(device, module, out_format, M=12, L=16, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         fftr,
         [],
         f"nrand -l {B * (M + 1)}",
@@ -54,7 +60,7 @@ def test_compatibility(device, module, out_format, M=12, L=16, B=2):
         eq=eq(out_format),
     )
 
-    U.check_differentiability(device, [torch.abs, fftr], [B, L])
+    U.check_differentiability(device, dtype, [torch.abs, fftr], [B, L])
 
 
 def test_learnable(L=16):

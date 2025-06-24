@@ -21,10 +21,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(
     device,
+    dtype,
     module,
     threshold=-40,
     ratio=2,
@@ -45,11 +45,14 @@ def test_compatibility(
             "release_time": release_time,
             "sample_rate": sr,
             "makeup_gain": gain,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
     U.check_compatibility(
         device,
+        dtype,
         drc,
         [],
         "x2x +sd tools/SPTK/asset/data.short | sopr -d 32768",
@@ -61,7 +64,7 @@ def test_compatibility(
         eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.99,
     )
 
-    U.check_differentiability(device, drc, [T])
+    U.check_differentiability(device, dtype, drc, [T])
 
 
 def test_learnable(T=20):

@@ -49,8 +49,9 @@ def get_layer(
 
     if module._takes_input_size():
         params = dict(islice(params.items(), 1, None))
-    if "learnable" in params:
-        params.pop("learnable")
+    for key in ("learnable", "device", "dtype"):
+        if key in params:
+            params.pop(key)
 
     def layer(*args, **kwargs):
         return module._func(*args, **params, **kwargs)
@@ -105,6 +106,8 @@ def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
         dtype = torch.complex128
     elif dtype == torch.float:
         dtype = torch.complex64
+    elif dtype in (torch.complex64, torch.complex128):
+        pass
     else:
         raise ValueError(f"Unsupported dtype: {dtype}.")
     return dtype

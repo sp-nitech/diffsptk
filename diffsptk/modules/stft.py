@@ -77,6 +77,12 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         whether all parameters are learnable. If a list, it contains the keys of the
         learnable parameters, which can only be "basis" and "window".
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -95,6 +101,8 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         relative_floor: float | None = None,
         out_format: str = "power",
         learnable: bool | list[str] = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -131,7 +139,9 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = ShortTimeFourierTransform._precompute(*args, **kwargs)
+        _, layers, _ = ShortTimeFourierTransform._precompute(
+            *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
+        )
         return ShortTimeFourierTransform._forward(x, *layers)
 
     @staticmethod
@@ -160,7 +170,9 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         eps: float,
         relative_floor: float | None,
         out_format: str,
-        learnable: bool | list[str] = False,
+        learnable: bool | list[str],
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         ShortTimeFourierTransform._check(learnable)
         module = inspect.stack()[1].function != "_func"
@@ -191,6 +203,8 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 norm=norm,
                 symmetric=symmetric,
                 learnable="window" in learnable,
+                device=device,
+                dtype=dtype,
             ),
         )
         if out_format == "complex":
@@ -201,6 +215,8 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                     fft_length=fft_length,
                     out_format="complex",
                     learnable="basis" in learnable,
+                    device=device,
+                    dtype=dtype,
                 ),
             )
         else:

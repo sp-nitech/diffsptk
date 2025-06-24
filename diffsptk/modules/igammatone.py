@@ -61,6 +61,12 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
     eps : float >= 0
         The tolerance for gain computation.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] V. Hohmann, "Frequency analysis and synthesis using a Gammatone filterbank,"
@@ -86,6 +92,8 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         exact: bool = False,
         n_iter: int = 100,
         eps: float = 1e-8,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -107,8 +115,9 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
             bandwidth_factor=bandwidth_factor,
             density=density,
             exact=exact,
+            device=device,
         )
-        impulse_signal = impulse(self.delay + 1, dtype=torch.double)
+        impulse_signal = impulse(self.delay + 1, device=device, dtype=torch.double)
         impulse_response = analyzer(impulse_signal).squeeze(0)
         max_indices = torch.argmax(impulse_response[..., :-1].abs(), dim=-1)
         row_indices = torch.arange(impulse_response.size(0))
@@ -120,11 +129,13 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         phase_factors = 1j / slopes
         delay_samples = self.delay - max_indices
 
-        self.register_buffer("phase_factors", to(phase_factors).unsqueeze(-1))  # (K, 1)
+        self.register_buffer("phase_factors", phase_factors.unsqueeze(-1))  # (K, 1)
         self.register_buffer("delay_samples", delay_samples.unsqueeze(-1))  # (K, 1)
 
         # Compute gains.
-        center_frequencies_in_hz = torch.from_numpy(analyzer.center_frequencies)
+        center_frequencies_in_hz = to(
+            analyzer.center_frequencies, device=device, dtype=torch.double
+        )
         z = torch.exp(1j * TAU * center_frequencies_in_hz / sample_rate)
         positive_response = analyzer._H(z)
         negative_response = analyzer._H(z.conj())
@@ -143,7 +154,7 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
             if diff < eps:
                 break
 
-        self.register_buffer("gains", to(gains.real).unsqueeze(-1))  # (K, 1)
+        self.register_buffer("gains", gains.real.unsqueeze(-1))  # (K, 1)
 
     def forward(
         self, y: torch.Tensor, keepdim: bool = True, compensate_delay: bool = True

@@ -20,13 +20,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("fl", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("fp", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("center", [False, True])
 @pytest.mark.parametrize("zmean", [False, True])
-def test_compatibility(device, module, fl, fp, center, zmean, T=20):
+def test_compatibility(device, dtype, module, fl, fp, center, zmean, T=20):
     frame = U.choice(
         module,
         diffsptk.Frame,
@@ -38,6 +37,7 @@ def test_compatibility(device, module, fl, fp, center, zmean, T=20):
     n = 0 if center else 1
     U.check_compatibility(
         device,
+        dtype,
         frame,
         [],
         f"ramp -l {T}",
@@ -46,4 +46,4 @@ def test_compatibility(device, module, fl, fp, center, zmean, T=20):
         dy=fl,
     )
 
-    U.check_differentiability(device, frame, [T], check_zero_grad=not zmean)
+    U.check_differentiability(device, dtype, frame, [T], check_zero_grad=not zmean)

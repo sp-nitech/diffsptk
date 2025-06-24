@@ -36,6 +36,12 @@ class FrequencyTransform(BaseFunctionalModule):
     alpha : float in (-1, 1)
         The frequency warping factor, :math:`\\alpha`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. V. Oppenheim et al, "Discrete representation of signals," *Proceedings of
@@ -43,7 +49,14 @@ class FrequencyTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, in_order: int, out_order: int, alpha: float = 0) -> None:
+    def __init__(
+        self,
+        in_order: int,
+        out_order: int,
+        alpha: float = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = in_order + 1
@@ -107,8 +120,8 @@ class FrequencyTransform(BaseFunctionalModule):
         in_order: int,
         out_order: int,
         alpha: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         FrequencyTransform._check(in_order, out_order, alpha)
         L1 = in_order + 1

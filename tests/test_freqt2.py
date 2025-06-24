@@ -20,24 +20,38 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, m=19, M=29, alpha=0.1, theta=0.2, B=2):
+def test_compatibility(device, dtype, module, m=19, M=29, alpha=0.1, theta=0.2, B=2):
     freqt2 = U.choice(
         module,
         diffsptk.SecondOrderAllPassFrequencyTransform,
         diffsptk.functional.freqt2,
-        {"in_order": m, "out_order": M, "alpha": alpha, "theta": theta},
+        {
+            "in_order": m,
+            "out_order": M,
+            "alpha": alpha,
+            "theta": theta,
+            "device": device,
+            "dtype": dtype,
+        },
     )
     ifreqt2 = U.choice(
         module,
         diffsptk.SecondOrderAllPassInverseFrequencyTransform,
         diffsptk.functional.ifreqt2,
-        {"in_order": M, "out_order": m, "alpha": alpha, "theta": theta},
+        {
+            "in_order": M,
+            "out_order": m,
+            "alpha": alpha,
+            "theta": theta,
+            "device": device,
+            "dtype": dtype,
+        },
     )
 
     U.check_compatibility(
         device,
+        dtype,
         [ifreqt2, freqt2],
         [],
         f"nrand -l {B * (m + 1)}",
@@ -47,4 +61,4 @@ def test_compatibility(device, module, m=19, M=29, alpha=0.1, theta=0.2, B=2):
         dy=m + 1,
     )
 
-    U.check_differentiability(device, [ifreqt2, freqt2], [B, m + 1])
+    U.check_differentiability(device, dtype, [ifreqt2, freqt2], [B, m + 1])

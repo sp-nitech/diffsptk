@@ -67,6 +67,12 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
     learnable : bool
         Whether to make the basis learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book Version 3.4," *Cambridge University Press*,
@@ -97,12 +103,16 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         use_power: bool = False,
         out_format: str | int = "y",
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        self.values, _, tensors = self._precompute(
+            *get_values(locals(), drop_keys=["learnable"])
+        )
         if learnable:
             self.H = nn.Parameter(tensors[0])
         else:
@@ -196,8 +206,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         erb_factor: float | None,
         use_power: bool,
         out_format: str | int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelFilterBankAnalysis._check(
             fft_length,

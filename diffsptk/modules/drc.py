@@ -54,6 +54,12 @@ class DynamicRangeCompression(BaseFunctionalModule):
     learnable : bool
         Whether to make the DRC parameters learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] C.-Y. Yu et al., "Differentiable all-pole filters for time-varying audio
@@ -71,10 +77,14 @@ class DynamicRangeCompression(BaseFunctionalModule):
         makeup_gain: float = 0,
         abs_max: float = 1,
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        self.values, _, tensors = self._precompute(
+            *get_values(locals(), drop_keys=["learnable"])
+        )
         if learnable:
             self.params = nn.Parameter(tensors[0])
         else:
@@ -148,8 +158,8 @@ class DynamicRangeCompression(BaseFunctionalModule):
         sample_rate: int,
         makeup_gain: float,
         abs_max: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         DynamicRangeCompression._check(
             ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max

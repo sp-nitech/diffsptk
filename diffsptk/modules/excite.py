@@ -205,7 +205,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         if unvoiced_region == "zeros":
             pass
         elif unvoiced_region == "gauss":
-            e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
+            e[~mask] = torch.randn(torch.sum(~mask), device=e.device, dtype=e.dtype)
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
         return e

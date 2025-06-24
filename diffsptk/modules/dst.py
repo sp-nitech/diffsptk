@@ -32,9 +32,21 @@ class DiscreteSineTransform(BaseFunctionalModule):
     dst_type : int in [1, 4]
         The DST type.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, dst_length: int, dst_type: int = 2) -> None:
+    def __init__(
+        self,
+        dst_length: int,
+        dst_type: int = 2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = dst_length
@@ -89,8 +101,8 @@ class DiscreteSineTransform(BaseFunctionalModule):
     def _precompute(
         dst_length: int,
         dst_type: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         DiscreteSineTransform._check(dst_length, dst_type)
         params = {"device": device, "dtype": torch.double}

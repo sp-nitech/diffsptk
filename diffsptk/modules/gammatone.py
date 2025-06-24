@@ -19,7 +19,7 @@ import math
 import numpy as np
 import torch
 
-from ..utils.private import TAU
+from ..utils.private import TAU, to
 from .base import BaseNonFunctionalModule
 from .poledf import AllPoleDigitalFilter
 from .zerodf import AllZeroDigitalFilter
@@ -54,6 +54,9 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
     exact : bool
         If False, use all-pole approximation.
 
+    device : torch.device or None
+        The device of this module.
+
     References
     ----------
     .. [1] V. Hohmann, "Frequency analysis and synthesis using a Gammatone filterbank,"
@@ -72,6 +75,7 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
         bandwidth_factor: float = 1,
         density: float = 1,
         exact: bool = False,
+        device: torch.device | None = None,
     ) -> None:
         super().__init__()
 
@@ -139,14 +143,16 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
             b[:, 0] = 1
 
         # These coefficients should not be complex64 due to numerical errors.
-        self.register_buffer("a", torch.from_numpy(a))
-        self.register_buffer("b", torch.from_numpy(b))
+        self.register_buffer("a", to(a, device=device, dtype=torch.complex128))
+        self.register_buffer("b", to(b, device=device, dtype=torch.complex128))
 
         # Compute normalization factors to have 0 dB at center frequencies.
         if self.exact:
-            K = 2 / self._H(torch.from_numpy(z), ignore_gain=True).diag().abs()
+            z = to(z, device=device, dtype=torch.double)
+            K = 2 / self._H(z, ignore_gain=True).diag().abs()
         else:
-            K = 2 * (1 - torch.from_numpy(a_tilde).abs()) ** gamma
+            a = to(a_tilde, device=device, dtype=torch.double)
+            K = 2 * (1 - a.abs()) ** gamma
         K[(beta == 0) | (beta == np.pi)] *= 0.5
         self.a[:, 0] = K
 

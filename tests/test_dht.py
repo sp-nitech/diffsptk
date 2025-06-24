@@ -21,15 +21,14 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("dht_type", [1, 2, 3, 4])
-def test_convolution(device, module, dht_type, L=8, B=2):
+def test_convolution(device, dtype, module, dht_type, L=8, B=2):
     dht = U.choice(
         module,
         diffsptk.DHT,
         diffsptk.functional.dht,
-        {"dht_length": L, "dht_type": dht_type},
+        {"dht_length": L, "dht_type": dht_type, "device": device, "dtype": dtype},
     )
 
     if dht_type == 1:
@@ -40,9 +39,10 @@ def test_convolution(device, module, dht_type, L=8, B=2):
 
         U.check_confidence(
             device,
+            dtype,
             dht,
             func,
             [B, L],
         )
 
-    U.check_differentiability(device, dht, [B, L])
+    U.check_differentiability(device, dtype, dht, [B, L])

@@ -41,6 +41,12 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
     n_fft : int >> M2
         The number of FFT bins. The accurate conversion requires the large value.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
@@ -56,6 +62,8 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         alpha: float = 0,
         theta: float = 0,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -124,8 +132,8 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         alpha: float,
         theta: float,
         n_fft: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         SecondOrderAllPassFrequencyTransform._check(in_order, out_order, alpha, theta)
         theta *= torch.pi
