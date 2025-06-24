@@ -222,7 +222,8 @@ class ConstantQTransform(BaseNonFunctionalModule):
 
             fft_basis *= np.sqrt(sample_rate / sr[i])
             self.register_buffer(
-                f"fft_basis_{i}", to(fft_basis.todense().T, device=device, dtype=dtype))
+                f"fft_basis_{i}", to(fft_basis.todense().T, device=device, dtype=dtype)
+            )
 
             transforms.append(
                 STFT(

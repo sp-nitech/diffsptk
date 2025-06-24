@@ -138,7 +138,10 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     @staticmethod
     def _forward(r: torch.Tensor, C: torch.Tensor) -> torch.Tensor:
         if r.dtype != torch.double or C.dtype != torch.double:
-            raise ValueError("Only double precision is supported.")
+            raise ValueError(
+                "Only double precision is supported "
+                f"(input: {r.dtype}, module: {C.dtype})."
+            )
 
         u = torch.matmul(r, C)
         u1, u2 = torch.tensor_split(u, 2, dim=-1)

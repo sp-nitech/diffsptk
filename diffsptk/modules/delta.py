@@ -34,6 +34,12 @@ class Delta(BaseFunctionalModule):
     static_out : bool
         If False, outputs only the delta components.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -43,6 +49,8 @@ class Delta(BaseFunctionalModule):
             [1, -2, 1],
         ],
         static_out: bool = True,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -101,8 +109,8 @@ class Delta(BaseFunctionalModule):
     def _precompute(
         seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
         static_out: bool,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         Delta._check(seed)
 

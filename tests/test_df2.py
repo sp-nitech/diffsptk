@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ir_length", [None, 100])
 def test_compatibility(
-    device, ir_length, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
+    device, dtype, ir_length, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
 ):
     df2 = diffsptk.SecondOrderDigitalFilter(
         **{
@@ -33,11 +32,14 @@ def test_compatibility(
             "zero_frequency": zf,
             "zero_bandwidth": zb,
             "ir_length": ir_length,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
     U.check_compatibility(
         device,
+        dtype,
         df2,
         [],
         f"nrand -l {T}",
@@ -45,4 +47,4 @@ def test_compatibility(
         [],
     )
 
-    U.check_differentiability(device, df2, [T])
+    U.check_differentiability(device, dtype, df2, [T])

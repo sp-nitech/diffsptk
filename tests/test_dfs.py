@@ -21,18 +21,18 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("b", [(1,), (-0.42, 1)])
 @pytest.mark.parametrize("a", [(1,), (1, -0.42)])
 @pytest.mark.parametrize("ir_length", [None, 30])
-def test_compatibility(device, b, a, ir_length, T=100):
-    dfs = diffsptk.IIR(b, a, ir_length=ir_length)
+def test_compatibility(device, dtype, b, a, ir_length, T=100):
+    dfs = diffsptk.IIR(b, a, ir_length=ir_length, device=device, dtype=dtype)
 
     bb = " ".join([str(x) for x in b])
     aa = " ".join([str(x) for x in a])
 
     U.check_compatibility(
         device,
+        dtype,
         dfs,
         [],
         f"nrand -l {T}",
@@ -40,7 +40,7 @@ def test_compatibility(device, b, a, ir_length, T=100):
         [],
     )
 
-    U.check_differentiability(device, dfs, [T])
+    U.check_differentiability(device, dtype, dfs, [T])
 
 
 def test_compatibility_func(b=[-0.42, 1], a=[1, -0.42], T=20):
