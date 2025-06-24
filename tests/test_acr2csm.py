@@ -15,27 +15,24 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.skip_float_check
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, M=25, L=100, B=2):
-    if torch.get_default_dtype() == torch.float:
-        pytest.skip("This test is only for torch.double.")
-
+def test_compatibility(device, dtype, module, M=25, L=100, B=2):
     acr2csm = U.choice(
         module,
         diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients,
         diffsptk.functional.acr2csm,
-        {"acr_order": M},
+        {"acr_order": M, "device": device, "dtype": dtype},
     )
 
     U.check_compatibility(
         device,
+        dtype,
         acr2csm,
         [],
         f"nrand -l {B * L} | acorr -m {M} -l {L}",
@@ -46,4 +43,4 @@ def test_compatibility(device, module, M=25, L=100, B=2):
     )
 
     acorr = diffsptk.Autocorrelation(L, M)
-    U.check_differentiability(device, [acr2csm, acorr], [B, L])
+    U.check_differentiability(device, dtype, [acr2csm, acorr], [B, L])

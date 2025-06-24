@@ -20,9 +20,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, M=19, N=30, L=512, B=2):
+def test_compatibility(device, dtype, module, M=19, N=30, L=512, B=2):
     c2mpir = U.choice(
         module,
         diffsptk.CepstrumToMinimumPhaseImpulseResponse,
@@ -32,6 +31,7 @@ def test_compatibility(device, module, M=19, N=30, L=512, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         c2mpir,
         [],
         f"nrand -l {B * L} | fftcep -l {L} -m {M}",
@@ -41,4 +41,4 @@ def test_compatibility(device, module, M=19, N=30, L=512, B=2):
         dy=N,
     )
 
-    U.check_differentiability(device, c2mpir, [B, M + 1])
+    U.check_differentiability(device, dtype, c2mpir, [B, M + 1])

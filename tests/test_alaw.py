@@ -20,9 +20,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, v=10, a=80, L=10):
+def test_compatibility(device, dtype, module, v=10, a=80, L=10):
     alaw = U.choice(
         module,
         diffsptk.ALawCompression,
@@ -32,6 +31,7 @@ def test_compatibility(device, module, v=10, a=80, L=10):
 
     U.check_compatibility(
         device,
+        dtype,
         alaw,
         [],
         f"ramp -l {L}",
@@ -39,4 +39,4 @@ def test_compatibility(device, module, v=10, a=80, L=10):
         [],
     )
 
-    U.check_differentiability(device, alaw, [L])
+    U.check_differentiability(device, dtype, alaw, [L])

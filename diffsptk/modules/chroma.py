@@ -44,6 +44,12 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -54,6 +60,8 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         norm: float = float("inf"),
         use_power: bool = True,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -117,8 +125,8 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         norm: float,
         use_power: bool,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         ChromaFilterBankAnalysis._check(fft_length, n_channel, sample_rate)
         H = chroma(

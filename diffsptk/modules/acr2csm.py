@@ -32,6 +32,12 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     acr_order : int >= 0
         The order of the autocorrelation, :math:`M`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Sagayama et al., "Duality theory of composite sinusoidal modeling and
@@ -39,7 +45,12 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
     """
 
-    def __init__(self, acr_order: int) -> None:
+    def __init__(
+        self,
+        acr_order: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = acr_order + 1
@@ -100,8 +111,8 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     @staticmethod
     def _precompute(
         acr_order: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         from scipy.special import comb
 

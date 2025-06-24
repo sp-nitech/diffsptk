@@ -1840,7 +1840,7 @@ def magic_intpl(x: Tensor, magic_number: float = 0) -> Tensor:
     x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
         The data containing magic number.
 
-    magic_number : float or Tensor
+    magic_number : float
         The magic number to be interpolated.
 
     Returns

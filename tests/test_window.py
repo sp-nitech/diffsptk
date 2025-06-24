@@ -20,13 +20,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("w", [0, 1, 2, 3, 4, 5, 6])
 @pytest.mark.parametrize("norm", [0, 1, 2])
 @pytest.mark.parametrize("symmetric", [False, True])
 @pytest.mark.parametrize("L1", [8, 10])
-def test_compatibility(device, module, w, norm, symmetric, L1, L2=10, B=2):
+def test_compatibility(device, dtype, module, w, norm, symmetric, L1, L2=10, B=2):
     window = U.choice(
         module,
         diffsptk.Window,
@@ -37,12 +36,15 @@ def test_compatibility(device, module, w, norm, symmetric, L1, L2=10, B=2):
             "window": w,
             "symmetric": symmetric,
             "norm": norm,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
     opt = "" if symmetric else "-p"
     U.check_compatibility(
         device,
+        dtype,
         window,
         [],
         f"step -l {L1}",
@@ -52,14 +54,15 @@ def test_compatibility(device, module, w, norm, symmetric, L1, L2=10, B=2):
         dy=L2,
     )
 
-    U.check_differentiability(device, window, [B, L1])
+    U.check_differentiability(device, dtype, window, [B, L1])
 
 
-def test_povey_window(device="cpu", L=8):
-    window = diffsptk.Window(L, window="povey", norm="none")
+def test_povey_window(device, dtype, L=8):
+    window = diffsptk.Window(L, window="povey", norm="none", device=device, dtype=dtype)
 
     U.check_compatibility(
         device,
+        dtype,
         window,
         [],
         f"step -l {L}",

@@ -58,10 +58,11 @@ def get_layer(
     return layer
 
 
-def get_values(dictionary: dict[str, Any], drop: int = 0) -> list[Any]:
-    begin = 1
-    end = -1 - drop
-    return list(dictionary.values())[begin:end]
+def get_values(dictionary: dict[str, Any], drop_keys: list[str] = []) -> list[Any]:
+    for key in drop_keys:
+        if key in dictionary:
+            dictionary.pop(key)
+    return list(dictionary.values())[1:-1]
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -99,50 +100,40 @@ def next_power_of_two(n: int) -> int:
     return 1 << (n - 1).bit_length()
 
 
-def default_dtype() -> np.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return np.float32
-    elif t == torch.double:
-        return np.float64
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def default_complex_dtype() -> np.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return np.complex64
-    elif t == torch.double:
-        return np.complex128
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def torch_default_complex_dtype() -> torch.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return torch.complex64
-    elif t == torch.double:
-        return torch.complex128
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def numpy_to_torch(x: np.ndarray) -> torch.Tensor:
-    if np.iscomplexobj(x):
-        return torch.from_numpy(x.astype(default_complex_dtype()))
+def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
+    if dtype == torch.double:
+        dtype = torch.complex128
+    elif dtype == torch.float:
+        dtype = torch.complex64
     else:
-        return torch.from_numpy(x.astype(default_dtype()))
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
+
+
+def numpy_to_torch():
+    pass
 
 
 def to(
-    x: torch.Tensor,
+    x: torch.Tensor | np.ndarray,
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
+    if torch.is_tensor(x) and torch.is_complex(x):
+        is_complex = True
+    elif isinstance(x, np.ndarray) and np.iscomplexobj(x):
+        is_complex = True
+    else:
+        is_complex = False
     if dtype is None:
-        if torch.is_complex(x):
-            dtype = torch_default_complex_dtype()
-        else:
-            dtype = torch.get_default_dtype()
+        dtype = torch.get_default_dtype()
+        if is_complex:
+            dtype = dtype_to_complex_dtype(dtype)
+    else:
+        if is_complex:
+            dtype = dtype_to_complex_dtype(dtype)
+    if isinstance(x, np.ndarray):
+        x = torch.from_numpy(x)
     return x.to(device=device, dtype=dtype)
 
 

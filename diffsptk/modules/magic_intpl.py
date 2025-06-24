@@ -125,7 +125,9 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
                     return_counts=True,
                     dim=-1,
                 )
-                w = torch.repeat_interleave(uniques / (counts + 1), counts, dim=-1)
+                w = torch.repeat_interleave(
+                    uniques.to(x.dtype) / (counts + 1), counts, dim=-1
+                )
                 if uniques[0]:
                     w[..., : counts[0]] = 0
                 w = torch.cumsum(w, dim=-1)
