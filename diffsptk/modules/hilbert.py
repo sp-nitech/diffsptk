@@ -32,9 +32,21 @@ class HilbertTransform(BaseFunctionalModule):
     dim : int
         The dimension along which to take the Hilbert transform.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, fft_length: int, dim: int = -1) -> None:
+    def __init__(
+        self,
+        fft_length: int,
+        dim: int = -1,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.values, _, tensors = self._precompute(*get_values(locals()))
@@ -92,8 +104,8 @@ class HilbertTransform(BaseFunctionalModule):
     def _precompute(
         fft_length: int,
         dim: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         HilbertTransform._check(fft_length)
         h = torch.zeros(fft_length, device=device, dtype=torch.double)

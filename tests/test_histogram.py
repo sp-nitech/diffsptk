@@ -20,11 +20,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("norm", [False, True])
 def test_compatibility(
-    device, module, norm, K=4, lower_bound=-1, upper_bound=1, L=50, B=2
+    device, dtype, module, norm, K=4, lower_bound=-1, upper_bound=1, L=50, B=2
 ):
     histogram = U.choice(
         module,
@@ -36,12 +35,15 @@ def test_compatibility(
             "upper_bound": upper_bound,
             "norm": norm,
             "softness": 1e-4,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
     opt = "-n" if norm else ""
     U.check_compatibility(
         device,
+        dtype,
         histogram,
         [],
         [f"nrand -l {B * L}"],
@@ -52,7 +54,6 @@ def test_compatibility(
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiability(device, K=4, L=50):
+def test_differentiability(device, dtype, K=4, L=50):
     histogram = diffsptk.Histogram(K, lower_bound=-1, upper_bound=1, softness=1e-1)
-    U.check_differentiability(device, histogram, [L])
+    U.check_differentiability(device, dtype, histogram, [L])

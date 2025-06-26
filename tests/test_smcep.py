@@ -20,11 +20,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("n_iter", [0, 3])
 @pytest.mark.parametrize("theta", [0, 0.5, 1])
-def test_compatibility(device, module, n_iter, theta, M=8, L=32, F=4, B=2, alpha=0.1):
+def test_compatibility(
+    device, dtype, module, n_iter, theta, M=8, L=32, F=4, B=2, alpha=0.1
+):
     spec = diffsptk.Spectrum(L, eps=0)
     smcep = U.choice(
         module,
@@ -37,11 +38,14 @@ def test_compatibility(device, module, n_iter, theta, M=8, L=32, F=4, B=2, alpha
             "alpha": alpha,
             "theta": theta,
             "accuracy_factor": F,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
     U.check_compatibility(
         device,
+        dtype,
         [smcep, spec],
         [],
         f"nrand -l {B * L} | sopr -SQR",
@@ -51,4 +55,4 @@ def test_compatibility(device, module, n_iter, theta, M=8, L=32, F=4, B=2, alpha
         dy=M + 1,
     )
 
-    U.check_differentiability(device, [smcep, spec], [B, L])
+    U.check_differentiability(device, dtype, [smcep, spec], [B, L])

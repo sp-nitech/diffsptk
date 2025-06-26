@@ -33,10 +33,20 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
     dim : tuple[int, int]
         The dimension along which to take the Hilbert transform.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
-        self, fft_length: ArrayLike[int] | int, dim: ArrayLike[int] = (-2, -1)
+        self,
+        fft_length: ArrayLike[int] | int,
+        dim: ArrayLike[int] = (-2, -1),
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -97,8 +107,8 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
     def _precompute(
         fft_length: ArrayLike[int] | int,
         dim: ArrayLike[int],
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         TwoDimensionalHilbertTransform._check(dim)
         if isinstance(fft_length, int):
