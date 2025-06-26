@@ -33,6 +33,12 @@ class WalshHadamardTransform(BaseFunctionalModule):
     wht_type : ['sequency', 'natural', 'dyadic']
         The order of the coefficients in the Walsh matrix.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] K. Usha et al., "Generation of Walsh codes in two different orderings using
@@ -41,7 +47,13 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
     """
 
-    def __init__(self, wht_length: int, wht_type: str | int = "natural") -> None:
+    def __init__(
+        self,
+        wht_length: int,
+        wht_type: str | int = "natural",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = wht_length
@@ -97,8 +109,8 @@ class WalshHadamardTransform(BaseFunctionalModule):
     def _precompute(
         wht_length: int,
         wht_type: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         from scipy.linalg import hadamard
 
@@ -122,8 +134,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
             W = W[np.argsort(sign_changes)][permutation]
         else:
             raise ValueError(f"wht_type {wht_type} is not supported.")
-        W = torch.from_numpy(W * z)
-        return None, None, (to(W, device=device, dtype=dtype),)
+        return None, None, (to(W * z, device=device, dtype=dtype),)
 
     @staticmethod
     def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:

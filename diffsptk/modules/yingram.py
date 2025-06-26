@@ -44,6 +44,12 @@ class Yingram(BaseFunctionalModule):
     n_bin : int >= 1
         The number of bins to represent a semitone range.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. Cheveigne and H. Kawahara, "YIN, a fundamental frequency estimator for
@@ -62,6 +68,8 @@ class Yingram(BaseFunctionalModule):
         lag_min: int = 22,
         lag_max: int | None = None,
         n_bin: int = 20,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -128,8 +136,8 @@ class Yingram(BaseFunctionalModule):
         lag_min: int,
         lag_max: int | None,
         n_bin: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         if lag_max is None:
             lag_max = frame_length - 1

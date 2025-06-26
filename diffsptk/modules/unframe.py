@@ -51,6 +51,12 @@ class Unframe(BaseFunctionalModule):
     learnable : bool
         Whether to make the window learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -63,12 +69,16 @@ class Unframe(BaseFunctionalModule):
         norm: str = "none",
         symmetric: bool = True,
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = frame_length
 
-        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        self.values, _, tensors = self._precompute(
+            *get_values(locals(), drop_keys=["learnable"])
+        )
         if learnable:
             self.window = nn.Parameter(tensors[0])
         else:

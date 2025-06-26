@@ -72,6 +72,12 @@ class GriffinLim(BaseFunctionalModule):
     verbose : bool
         If True, print the SNR at each iteration.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] R. Nenov et al., "Faster than fast: Accelerating the Griffin-Lim algorithm,"
@@ -96,6 +102,8 @@ class GriffinLim(BaseFunctionalModule):
         gamma: float = 1.1,
         init_phase: str = "random",
         verbose: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -135,7 +143,9 @@ class GriffinLim(BaseFunctionalModule):
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        values, layers, _ = GriffinLim._precompute(*args, **kwargs)
+        values, layers, _ = GriffinLim._precompute(
+            *args, **kwargs, device=y.device, dtype=y.dtype
+        )
         return GriffinLim._forward(y, out_length, *values, *layers)
 
     @staticmethod
@@ -174,6 +184,8 @@ class GriffinLim(BaseFunctionalModule):
         gamma: float,
         init_phase: str,
         verbose: bool,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         GriffinLim._check(n_iter, alpha, beta, gamma)
         module = inspect.stack()[1].function != "_func"
@@ -206,6 +218,8 @@ class GriffinLim(BaseFunctionalModule):
                 eps=0,
                 relative_floor=None,
                 out_format="complex",
+                device=device,
+                dtype=dtype,
             ),
         )
         istft = get_layer(
@@ -219,6 +233,8 @@ class GriffinLim(BaseFunctionalModule):
                 window=window,
                 norm=norm,
                 symmetric=symmetric,
+                device=device,
+                dtype=dtype,
             ),
         )
         return (

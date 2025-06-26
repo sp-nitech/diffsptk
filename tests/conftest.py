@@ -39,11 +39,9 @@ def device(request):
     return request.param
 
 
-@pytest.fixture(params=[torch.float, torch.double])
+@pytest.fixture(params=[None, torch.double])
 def dtype(request):
-    if request.param == torch.float and request.node.get_closest_marker(
-        "skip_float_check"
-    ):
+    if request.param is None and request.node.get_closest_marker("skip_float_check"):
         pytest.skip("Skipping float dtype check.")
     if request.param == torch.double and pytest.only_float:
         pytest.skip("Skipping double dtype check.")

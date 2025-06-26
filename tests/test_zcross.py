@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("norm", [False, True])
-def test_compatibility(device, module, norm, L=10, T=50):
+def test_compatibility(device, dtype, module, norm, L=10, T=50):
     zcross = U.choice(
         module,
         diffsptk.ZeroCrossingAnalysis,
@@ -34,6 +33,7 @@ def test_compatibility(device, module, norm, L=10, T=50):
     opt = "-o 1" if norm else ""
     U.check_compatibility(
         device,
+        dtype,
         zcross,
         [],
         f"nrand -l {T}",
@@ -42,7 +42,6 @@ def test_compatibility(device, module, norm, L=10, T=50):
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiability(device, L=10, T=50):
+def test_differentiability(device, dtype, L=10, T=50):
     zcross = diffsptk.ZeroCrossingAnalysis(L, softness=1e-1)
-    U.check_differentiability(device, zcross, [T])
+    U.check_differentiability(device, dtype, zcross, [T])

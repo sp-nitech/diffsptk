@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("gamma, c", [(0, None), (1, None), (0, 2)])
-def test_compatibility(device, module, gamma, c, M=4, B=2):
+def test_compatibility(device, dtype, module, gamma, c, M=4, B=2):
     gnorm = U.choice(
         module,
         diffsptk.GeneralizedCepstrumGainNormalization,
@@ -34,6 +33,7 @@ def test_compatibility(device, module, gamma, c, M=4, B=2):
     opt = f"-g {gamma}" if c is None else f"-c {c}"
     U.check_compatibility(
         device,
+        dtype,
         gnorm,
         [],
         f"nrand -l {B * (M + 1)}",
@@ -43,4 +43,4 @@ def test_compatibility(device, module, gamma, c, M=4, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, gnorm, [B, M + 1])
+    U.check_differentiability(device, dtype, gnorm, [B, M + 1])

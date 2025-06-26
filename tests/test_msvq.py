@@ -16,22 +16,21 @@
 
 from operator import itemgetter
 
-import pytest
 import torch
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, m=9, K=4, Q=2, B=8):
-    msvq = diffsptk.MultiStageVectorQuantization(m, K, Q)
+def test_compatibility(device, dtype, m=9, K=4, Q=2, B=8):
+    msvq = diffsptk.MultiStageVectorQuantization(m, K, Q, device=device)
 
     tmp1 = "msvq.tmp1"
     tmp2 = "msvq.tmp2"
     tmp3 = "msvq.tmp3"
     U.check_compatibility(
         device,
+        dtype,
         [itemgetter(1), msvq],
         [
             f"nrand -s 123 -l {B * (m + 1)} > {tmp1}",
@@ -45,4 +44,4 @@ def test_compatibility(device, m=9, K=4, Q=2, B=8):
         dy=Q,
     )
 
-    U.check_differentiability(device, [torch.sum, itemgetter(2), msvq], [m + 1])
+    U.check_differentiability(device, dtype, [torch.sum, itemgetter(2), msvq], [m + 1])

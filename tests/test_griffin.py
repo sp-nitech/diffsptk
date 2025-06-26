@@ -15,18 +15,17 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 import torchaudio
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("init_phase", ["zeros", "random"])
 def test_compatibility(
     device,
+    dtype,
     module,
     init_phase,
     n_iter=64,
@@ -35,10 +34,7 @@ def test_compatibility(
     gamma=1.1,
     verbose=False,
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
 
     stft_params = {
         "frame_length": 512,
@@ -49,6 +45,8 @@ def test_compatibility(
         "window": "blackman",
         "norm": "power",
         "symmetric": True,
+        "device": device,
+        "dtype": dtype,
     }
 
     stft = diffsptk.STFT(**stft_params, out_format="power").to(device)
@@ -68,8 +66,6 @@ def test_compatibility(
             "verbose": verbose,
         },
     )
-    if hasattr(griffin, "to"):
-        griffin = griffin.to(device)
     T = x.size(0)
     y = griffin(X, out_length=T)
 
@@ -89,4 +85,4 @@ def test_compatibility(
         diffsptk.write("reconst.wav", y, sr)
         diffsptk.write("reconst_torchaudio.wav", z, sr)
 
-    U.check_differentiability(device, [griffin, stft], [T // 10])
+    U.check_differentiability(device, dtype, [griffin, stft], [T // 10])

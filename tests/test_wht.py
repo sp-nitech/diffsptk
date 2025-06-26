@@ -21,18 +21,17 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("wht_type", [1, 2, 3])
-def test_compatibility(device, module, wht_type, L=8, B=2):
+def test_compatibility(device, dtype, module, wht_type, L=8, B=2):
     wht = U.choice(
         module,
         diffsptk.WHT,
         diffsptk.functional.wht,
-        {"wht_length": L, "wht_type": wht_type},
+        {"wht_length": L, "wht_type": wht_type, "device": device, "dtype": dtype},
     )
 
-    if device == "cpu" and module:
+    if module:
         if wht_type == 1:
             H = np.array(
                 [
@@ -72,7 +71,7 @@ def test_compatibility(device, module, wht_type, L=8, B=2):
                     [1, -1, -1, 1, -1, 1, 1, -1],
                 ]
             )
-        W = np.round(wht.W.numpy() * 2 ** (np.log2(L) / 2))
+        W = np.round(wht.W.cpu().numpy() * 2 ** (np.log2(L) / 2))
         assert U.allclose(W, H)
 
-    U.check_differentiability(device, wht, [B, L])
+    U.check_differentiability(device, dtype, wht, [B, L])

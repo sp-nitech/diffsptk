@@ -52,12 +52,22 @@ def choice(is_module, module, func, params={}):
     return f
 
 
-def allclose(a, b, rtol=None, atol=None, dtype=None):
+def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
+    if dtype == torch.double:
+        dtype = torch.complex128
+    elif dtype == torch.float:
+        dtype = torch.complex64
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
+
+
+def allclose(a, b, rtol=None, atol=None, dtype=None, factor=1):
     is_double = dtype == torch.double
     if rtol is None:
-        rtol = 1e-5 if is_double else 1e-4
+        rtol = (1e-5 if is_double else 1e-4) * factor
     if atol is None:
-        atol = 1e-8 if is_double else 1e-6
+        atol = (1e-8 if is_double else 1e-6) * factor
     return np.allclose(a, b, rtol=rtol, atol=atol)
 
 
@@ -103,6 +113,9 @@ def check_compatibility(
     verbose=False,
     **kwargs,
 ):
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
     for cmd in setup:
         call(cmd, get=False)
 
@@ -188,12 +201,7 @@ def check_differentiability(
     check_inf_grad=True,
 ):
     if complex_input:
-        if dtype == torch.double:
-            dtype = torch.complex128
-        elif dtype == torch.float:
-            dtype = torch.complex64
-        else:
-            raise ValueError(f"Unsupported dtype: {dtype}.")
+        dtype = dtype_to_complex_dtype(dtype)
 
     if not is_array(modules):
         modules = [modules]
@@ -251,7 +259,11 @@ def check_various_shape(module, shapes, *, preprocess=None):
             assert torch.allclose(y, target)
 
 
-def check_learnable(module, shape, dtype=None):
+def check_learnable(module, shape, complex_input=False):
+    dtype = None
+    if complex_input:
+        dtype = dtype_to_complex_dtype(dtype)
+
     params_before = []
     for p in module.parameters():
         params_before.append(p.clone())

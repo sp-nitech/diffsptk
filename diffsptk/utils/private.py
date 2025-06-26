@@ -113,6 +113,18 @@ def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
     return dtype
 
 
+def complex_dtype_to_dtype(dtype: torch.dtype) -> torch.dtype:
+    if dtype == torch.complex128:
+        dtype = torch.double
+    elif dtype == torch.complex64:
+        dtype = torch.float
+    elif dtype in (torch.float, torch.double):
+        pass
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
+
+
 def numpy_to_torch():
     pass
 
