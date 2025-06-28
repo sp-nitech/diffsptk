@@ -21,7 +21,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import TAU, get_layer, get_logger, get_values
+from ..utils.private import TAU, filter_values, get_layer, get_logger
 from .base import BaseFunctionalModule
 from .istft import InverseShortTimeFourierTransform
 from .stft import ShortTimeFourierTransform
@@ -107,7 +107,7 @@ class GriffinLim(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:

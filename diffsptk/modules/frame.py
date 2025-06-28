@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 
 
@@ -56,7 +56,7 @@ class Frame(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply framing to the given waveform.

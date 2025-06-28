@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values, to
+from ..utils.private import filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -57,7 +57,7 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         if learnable is True:
             self.W = nn.Parameter(tensors[0])
         elif learnable == "debug":

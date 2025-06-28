@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values
+from ..utils.private import filter_values, get_layer
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
@@ -67,7 +67,7 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, tensors = self._precompute(*get_values(locals()))
+        _, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("weight", tensors[0])
 

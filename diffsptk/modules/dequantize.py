@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 from .quantize import UniformQuantization
 
@@ -44,7 +44,7 @@ class InverseUniformQuantization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Dequantize the input waveform.

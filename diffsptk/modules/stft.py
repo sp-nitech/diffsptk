@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values
+from ..utils.private import filter_values, get_layer
 from .base import BaseFunctionalModule
 from .fftr import RealValuedFastFourierTransform
 from .frame import Frame
@@ -106,7 +106,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

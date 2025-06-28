@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class ParcorCoefficientsToLogAreaRatio(BaseFunctionalModule):
         self.in_dim = par_order + 1
 
         self.values = ParcorCoefficientsToLogAreaRatio._precompute(
-            *get_values(locals())
+            **filter_values(locals())
         )
 
     def forward(self, k: torch.Tensor) -> torch.Tensor:

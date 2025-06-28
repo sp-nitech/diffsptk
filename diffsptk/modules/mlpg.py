@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import ArrayLike, Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 from .delta import Delta
 
@@ -48,7 +48,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         self.in_length = size
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("M", tensors[0])
 
     def forward(self, u: torch.Tensor) -> torch.Tensor:

@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 LOG_ZERO = -1.0e10
@@ -71,7 +71,7 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         self.in_dim = lsp_order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("cos_omega", tensors[0])
         self.register_buffer("p_bias", tensors[1])
         self.register_buffer("q_bias", tensors[2])

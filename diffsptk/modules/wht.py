@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, is_power_of_two, to
+from ..utils.private import check_size, filter_values, is_power_of_two, to
 from .base import BaseFunctionalModule
 
 
@@ -58,7 +58,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         self.in_dim = wht_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

@@ -15,24 +15,19 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("filter_order", [99, 100])
 @pytest.mark.parametrize("n_fract", [1, 2, 3])
-def test_analysis_synthesis(device, filter_order, n_fract, verbose=False):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+def test_analysis_synthesis(device, dtype, filter_order, n_fract, verbose=False):
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
 
     oband = diffsptk.FractionalOctaveBandAnalysis(
-        sr, filter_order=filter_order, n_fract=n_fract
-    ).to(device)
+        sr, filter_order=filter_order, n_fract=n_fract, device=device, dtype=dtype
+    )
     y = oband(x)
     x_hat = y.sum(dim=1).squeeze(0)
     if verbose:

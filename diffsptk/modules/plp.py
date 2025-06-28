@@ -23,8 +23,8 @@ from torch import nn
 from ..typing import Callable, Precomputed
 from ..utils.private import (
     auditory_to_hz,
+    filter_values,
     get_layer,
-    get_values,
     hz_to_auditory,
     numpy_to_torch,
     replicate1,
@@ -116,7 +116,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.values, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("equal_loudness_curve", tensors[0])
         self.register_buffer("liftering_vector", tensors[1])

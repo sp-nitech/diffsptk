@@ -21,7 +21,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import numpy_to_torch
+from ..utils.private import to
 from .base import BaseNonFunctionalModule
 from .pqmf import make_filter_banks
 
@@ -44,6 +44,12 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
     learnable : bool
         Whether to make the filter-bank coefficients learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     **kwargs : additional keyword arguments
         The parameters to find optimal filter-bank coefficients.
 
@@ -64,6 +70,8 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
         filter_order: int,
         alpha: float = 100,
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -76,7 +84,7 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
             warnings.warn("Failed to find PQMF coefficients.")
         filters = np.expand_dims(filters, 0)
         filters = np.flip(filters, 2).copy()
-        filters = numpy_to_torch(filters)
+        filters = to(filters, device=device, dtype=dtype)
         if learnable:
             self.filters = nn.Parameter(filters)
         else:

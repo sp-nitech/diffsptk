@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 from ..third_party.librosa import chroma
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -67,7 +67,7 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("H", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

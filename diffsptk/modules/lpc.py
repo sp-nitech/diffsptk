@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values
+from ..utils.private import filter_values, get_layer
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 from .levdur import LevinsonDurbin
@@ -46,7 +46,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     def __init__(self, frame_length: int, lpc_order: int, eps: float = 1e-6) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

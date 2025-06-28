@@ -19,7 +19,13 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import auditory_to_hz, check_size, get_values, hz_to_auditory, to
+from ..utils.private import (
+    auditory_to_hz,
+    check_size,
+    filter_values,
+    hz_to_auditory,
+    to,
+)
 from .base import BaseFunctionalModule
 
 
@@ -111,7 +117,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         self.in_dim = fft_length // 2 + 1
 
         self.values, _, tensors = self._precompute(
-            *get_values(locals(), drop_keys=["learnable"])
+            **filter_values(locals(), drop_keys=["learnable"])
         )
         if learnable:
             self.H = nn.Parameter(tensors[0])

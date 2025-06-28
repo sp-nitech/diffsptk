@@ -40,19 +40,20 @@ def choice(is_module, module, func, params={}):
     if is_module:
         return module(**params)
 
+    exclude_keys = ("learnable", "device", "dtype")
+    filtered_params = {k: v for k, v in params.items() if k not in exclude_keys}
     if module._takes_input_size():
-        params = dict(islice(params.items(), 1, None))
-    for key in ("learnable", "device", "dtype"):
-        if key in params:
-            params.pop(key)
+        filtered_params = dict(islice(filtered_params.items(), 1, None))
 
     def f(*args, **kwargs):
-        return func(*args, **params, **kwargs)
+        return func(*args, **filtered_params, **kwargs)
 
     return f
 
 
-def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
+def dtype_to_complex_dtype(dtype: torch.dtype | None) -> torch.dtype:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
     if dtype == torch.double:
         dtype = torch.complex128
     elif dtype == torch.float:

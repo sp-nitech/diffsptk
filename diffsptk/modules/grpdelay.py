@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import get_values, remove_gain
+from ..utils.private import filter_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -55,7 +55,7 @@ class GroupDelay(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(

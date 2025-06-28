@@ -20,7 +20,7 @@ import torchcomp
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import get_values, to, to_2d
+from ..utils.private import filter_values, to, to_2d
 from .base import BaseFunctionalModule
 
 
@@ -83,7 +83,7 @@ class DynamicRangeCompression(BaseFunctionalModule):
         super().__init__()
 
         self.values, _, tensors = self._precompute(
-            *get_values(locals(), drop_keys=["learnable"])
+            **filter_values(locals(), drop_keys=["learnable"])
         )
         if learnable:
             self.params = nn.Parameter(tensors[0])

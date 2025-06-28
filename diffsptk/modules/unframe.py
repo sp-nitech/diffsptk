@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 from .window import Window
 
@@ -77,7 +77,7 @@ class Unframe(BaseFunctionalModule):
         self.in_dim = frame_length
 
         self.values, _, tensors = self._precompute(
-            *get_values(locals(), drop_keys=["learnable"])
+            **filter_values(locals(), drop_keys=["learnable"])
         )
         if learnable:
             self.window = nn.Parameter(tensors[0])

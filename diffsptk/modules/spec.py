@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values, remove_gain
+from ..utils.private import filter_values, get_layer, remove_gain
 from .base import BaseFunctionalModule
 from .fftr import RealValuedFastFourierTransform
 
@@ -59,7 +59,7 @@ class Spectrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(

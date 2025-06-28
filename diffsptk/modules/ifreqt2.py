@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 
@@ -70,7 +70,7 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:

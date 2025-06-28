@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, hankel, to, vander
+from ..utils.private import check_size, filter_values, hankel, to, vander
 from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 
@@ -55,7 +55,7 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
         self.in_dim = acr_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("C", tensors[0])
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:

@@ -20,7 +20,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import ArrayLike, Precomputed
-from ..utils.private import get_values, iir, to, to_3d
+from ..utils.private import filter_values, iir, to, to_3d
 from .base import BaseFunctionalModule
 
 
@@ -62,7 +62,9 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(*get_values(locals(), drop_keys=["learnable"]))
+        _, _, tensors = self._precompute(
+            **filter_values(locals(), drop_keys=["learnable"])
+        )
         if learnable and b is not None:
             self.b = nn.Parameter(tensors[0])
         else:

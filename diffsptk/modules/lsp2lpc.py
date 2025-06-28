@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Callable, Precomputed
-from ..utils.private import TAU, check_size, get_values, to_3d
+from ..utils.private import TAU, check_size, filter_values, to_3d
 from .base import BaseFunctionalModule
 from .pol_root import RootsToPolynomial
 
@@ -54,7 +54,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("kernel_p", tensors[0])
         self.register_buffer("kernel_q", tensors[1])
 

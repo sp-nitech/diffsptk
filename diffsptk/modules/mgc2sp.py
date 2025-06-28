@@ -21,7 +21,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_layer, get_values
+from ..utils.private import check_size, filter_values, get_layer
 from .base import BaseFunctionalModule
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
@@ -75,7 +75,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:

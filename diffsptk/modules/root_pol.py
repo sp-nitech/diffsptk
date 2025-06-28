@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -50,7 +50,7 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         self.in_dim = order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("eye", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:

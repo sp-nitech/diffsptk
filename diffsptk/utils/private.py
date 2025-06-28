@@ -59,11 +59,14 @@ def get_layer(
     return layer
 
 
-def get_values(dictionary: dict[str, Any], drop_keys: list[str] = []) -> list[Any]:
+def filter_values(dictionary: dict[str, Any], drop_keys: list[str] = []) -> list[Any]:
     for key in drop_keys:
         if key in dictionary:
             dictionary.pop(key)
-    return list(dictionary.values())[1:-1]
+    for key in ("self", "__class__"):
+        if key in dictionary:
+            dictionary.pop(key)
+    return dictionary
 
 
 def get_logger(name: str) -> logging.Logger:

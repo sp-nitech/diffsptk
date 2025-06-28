@@ -19,7 +19,7 @@ import math
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 
 
@@ -37,7 +37,7 @@ class Entropy(BaseFunctionalModule):
     def __init__(self, out_format: str | int = "nat") -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Compute entropy from probability sequence.

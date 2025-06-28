@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, remove_gain
+from ..utils.private import check_size, filter_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("eye", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:

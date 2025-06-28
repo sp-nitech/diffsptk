@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseNonFunctionalModule
 from .dfs import InfiniteImpulseResponseDigitalFilter
 
@@ -71,7 +71,7 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

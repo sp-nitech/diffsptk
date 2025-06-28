@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import complex_dtype_to_dtype, get_layer, get_values
+from ..utils.private import complex_dtype_to_dtype, filter_values, get_layer
 from .base import BaseFunctionalModule
 from .ifftr import RealValuedInverseFastFourierTransform
 from .stft import LEARNABLES, ShortTimeFourierTransform
@@ -83,7 +83,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:

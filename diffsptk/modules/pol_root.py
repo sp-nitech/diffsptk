@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -50,7 +50,7 @@ class RootsToPolynomial(BaseFunctionalModule):
 
         self.in_dim = order
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert roots to polynomial coefficients.

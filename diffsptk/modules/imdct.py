@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_layer, get_values
+from ..utils.private import check_size, filter_values, get_layer
 from .base import BaseFunctionalModule
 from .mdct import LEARNABLES, ModifiedDiscreteCosineTransform, ModifiedDiscreteTransform
 from .unframe import Unframe
@@ -43,6 +43,12 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         whether all parameters are learnable. If a list, it contains the keys of the
         learnable parameters, which can only be "basis" and "window".
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -50,10 +56,12 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         frame_length: int,
         window: str = "sine",
         learnable: bool | list[str] = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
@@ -109,6 +117,8 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         frame_length: int,
         window: str,
         learnable: bool | list[str] = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
         transform: str = "cosine",
     ) -> Precomputed:
         InverseModifiedDiscreteCosineTransform._check(learnable)
@@ -128,6 +138,8 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 window=window,
                 transform=transform,
                 learnable="basis" in learnable,
+                device=device,
+                dtype=dtype,
             ),
         )
         window_ = get_layer(
@@ -140,6 +152,8 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 norm="none",
                 symmetric=True,
                 learnable="window" in learnable,
+                device=device,
+                dtype=dtype,
             ),
         )
         unframe = get_layer(
@@ -148,6 +162,8 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
             dict(
                 frame_length=frame_length,
                 frame_period=frame_period,
+                device=device,
+                dtype=dtype,
             ),
         )
         return (frame_period,), (imdt, window_, unframe), None
@@ -184,6 +200,12 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
     learnable : bool
         Whether to make the DCT matrix learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -192,12 +214,16 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
         window: str,
         transform: str = "cosine",
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = length // 2
 
-        _, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        _, _, tensors = self._precompute(
+            **filter_values(locals(), drop_keys=["learnable"])
+        )
         if learnable:
             self.W = nn.Parameter(tensors[0])
         else:

@@ -19,7 +19,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 
@@ -75,7 +75,7 @@ class Yingram(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("lags", tensors[0])
         self.register_buffer("lags_ceil", tensors[1])
         self.register_buffer("lags_floor", tensors[2])

@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values, to
+from ..utils.private import filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -49,7 +49,7 @@ class HilbertTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("h", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

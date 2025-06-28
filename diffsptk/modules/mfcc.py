@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values, to
+from ..utils.private import filter_values, get_layer, to
 from .base import BaseFunctionalModule
 from .dct import DiscreteCosineTransform
 from .fbank import MelFilterBankAnalysis
@@ -100,7 +100,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.values, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("liftering_vector", tensors[0])
 

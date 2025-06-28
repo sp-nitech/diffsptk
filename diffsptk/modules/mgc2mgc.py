@@ -21,7 +21,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import cexp, check_size, clog, get_values, to
+from ..utils.private import cexp, check_size, clog, filter_values, to
 from .base import BaseFunctionalModule
 from .freqt import FrequencyTransform
 from .gnorm import GeneralizedCepstrumGainNormalization as GainNormalization
@@ -92,7 +92,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.seq = nn.Sequential(*layers[0])
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:

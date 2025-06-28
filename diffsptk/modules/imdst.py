@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
 
@@ -39,6 +39,12 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
         whether all parameters are learnable. If a list, it contains the keys of the
         learnable parameters, which can only be "basis" and "window".
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -46,10 +52,12 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
         frame_length: int,
         window: str = "sine",
         learnable: bool | list[str] = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ):
         super().__init__()
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
