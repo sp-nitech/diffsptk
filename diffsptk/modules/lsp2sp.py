@@ -48,6 +48,12 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. V. Oppenheim et al., "Discrete representation of signals," *Proceedings of
@@ -66,6 +72,8 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         gamma: float = -1,
         log_gain: bool = False,
         out_format: str | int = "power",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -137,8 +145,8 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         gamma: float,
         log_gain: bool,
         out_format: str | int,
-        dtype: torch.dtype | None = None,
-        device: torch.device | None = None,
+        dtype: torch.dtype | None,
+        device: torch.device | None,
     ) -> Precomputed:
         LineSpectralPairsToSpectrum._check(lsp_order, fft_length, alpha, gamma)
 

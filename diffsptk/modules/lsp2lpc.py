@@ -41,6 +41,12 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
     in_format : ['radian', 'cycle', 'khz', 'hz']
         The input format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -49,6 +55,8 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         log_gain: bool = False,
         sample_rate: int | None = None,
         in_format: str | int = "radian",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -115,8 +123,8 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         log_gain: bool,
         sample_rate: int | None,
         in_format: str | int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         LineSpectralPairsToLinearPredictiveCoefficients._check(
             lpc_order, log_gain, sample_rate, in_format

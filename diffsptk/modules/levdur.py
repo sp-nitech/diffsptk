@@ -33,9 +33,21 @@ class LevinsonDurbin(BaseFunctionalModule):
     eps : float >= 0
         A small value to improve numerical stability.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, lpc_order: int, eps: float = 0) -> None:
+    def __init__(
+        self,
+        lpc_order: int,
+        eps: float = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
@@ -92,9 +104,9 @@ class LevinsonDurbin(BaseFunctionalModule):
     @staticmethod
     def _precompute(
         lpc_order: int,
-        eps: float = 0,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        eps: float,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         LevinsonDurbin._check(lpc_order, eps)
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps

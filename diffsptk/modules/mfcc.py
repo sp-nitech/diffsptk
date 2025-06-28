@@ -72,6 +72,12 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     learnable : bool
         Whether to make the mel basis learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
@@ -97,6 +103,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         erb_factor: float | None = None,
         out_format: str | int = "y",
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -141,7 +149,12 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, tensors = MelFrequencyCepstralCoefficientsAnalysis._precompute(
-            2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+            2 * x.size(-1) - 2,
+            *args,
+            **kwargs,
+            learnable=False,
+            device=x.device,
+            dtype=x.dtype,
         )
         return MelFrequencyCepstralCoefficientsAnalysis._forward(
             x, *values, *layers, *tensors
@@ -174,9 +187,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         scale: str,
         erb_factor: float | None,
         out_format: str | int,
-        learnable: bool = False,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        learnable: bool,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelFrequencyCepstralCoefficientsAnalysis._check(mfcc_order, n_channel, lifter)
         module = inspect.stack()[1].function != "_func"
@@ -208,6 +221,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
                 use_power=False,
                 out_format="y,E",
                 learnable=learnable,
+                device=device,
+                dtype=dtype,
             ),
         )
         dct = get_layer(
@@ -216,6 +231,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
             dict(
                 dct_length=n_channel,
                 dct_type=2,
+                device=device,
+                dtype=dtype,
             ),
         )
 

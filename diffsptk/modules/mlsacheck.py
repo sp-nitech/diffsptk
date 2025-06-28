@@ -57,6 +57,12 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
     mod_type : ['clip', 'scale']
         The modification method.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Imai et al., "Mel log spectrum approximation (MLSA) filter for speech
@@ -77,6 +83,8 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         n_fft: int = 256,
         warn_type: str = "warn",
         mod_type: str = "scale",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -139,8 +147,8 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         n_fft: int,
         warn_type: str,
         mod_type: str,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MLSADigitalFilterStabilityCheck._check(cep_order)
 

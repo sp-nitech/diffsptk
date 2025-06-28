@@ -20,7 +20,6 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("P", [4, 5, 6, 7])
 @pytest.mark.parametrize("strict", [False, True])
@@ -28,7 +27,18 @@ import tests.utils as U
 @pytest.mark.parametrize("fast", [False, True])
 @pytest.mark.parametrize("mod_type", ["clip", "scale"])
 def test_compatibility(
-    device, module, P, strict, threshold, fast, mod_type, M=9, L=32, alpha=0.1, B=10
+    device,
+    dtype,
+    module,
+    P,
+    strict,
+    threshold,
+    fast,
+    mod_type,
+    M=9,
+    L=32,
+    alpha=0.1,
+    B=10,
 ):
     if fast and mod_type == "clip":
         return
@@ -49,6 +59,8 @@ def test_compatibility(
             "n_fft": L,
             "warn_type": "ignore",
             "mod_type": mod_type,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
@@ -58,6 +70,7 @@ def test_compatibility(
     opt += f"-R {threshold} " if threshold is not None else ""
     U.check_compatibility(
         device,
+        dtype,
         mlsacheck,
         [],
         f"nrand -l {B * L} | mgcep -m {M} -l {L} -a {alpha} | sopr -m 10",
@@ -67,4 +80,4 @@ def test_compatibility(
         dy=M + 1,
     )
 
-    U.check_differentiability(device, mlsacheck, [B, M + 1])
+    U.check_differentiability(device, dtype, mlsacheck, [B, M + 1])

@@ -41,6 +41,12 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
     out_format : ['radian', 'cycle', 'khz', 'hz']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] P. Kabal et al., "The computation of line spectral frequencies using
@@ -55,6 +61,8 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         log_gain: bool = False,
         sample_rate: int | None = None,
         out_format: str | int = "radian",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -127,8 +135,8 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
         log_gain: bool,
         sample_rate: int,
         out_format: str | int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         LinearPredictiveCoefficientsToLineSpectralPairs._check(
             lpc_order, log_gain, sample_rate, out_format
