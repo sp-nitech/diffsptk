@@ -21,12 +21,21 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("gamma", [-1, 0, 1])
 @pytest.mark.parametrize("use_power", [False, True])
 def test_compatibility(
-    device, module, gamma, use_power, C=12, L=32, sr=8000, f_min=30, f_max=4000, B=2
+    device,
+    dtype,
+    module,
+    gamma,
+    use_power,
+    C=12,
+    L=32,
+    sr=8000,
+    f_min=30,
+    f_max=4000,
+    B=2,
 ):
     fbank_params = {
         "n_channel": C,
@@ -36,6 +45,8 @@ def test_compatibility(
         "f_max": f_max,
         "gamma": gamma,
         "use_power": use_power,
+        "device": device,
+        "dtype": dtype,
     }
     fbank = diffsptk.FBANK(**fbank_params, out_format="y")
     ifbank = U.choice(
@@ -47,6 +58,7 @@ def test_compatibility(
 
     U.check_compatibility(
         device,
+        dtype,
         [ifbank, fbank],
         [],
         f"nrand -l {B * L} | spec -l {L} -o 3",
@@ -57,7 +69,9 @@ def test_compatibility(
         eq=lambda a, b: U.allclose(a[..., 1:5], b[..., 1:5]),
     )
 
-    U.check_differentiability(device, [ifbank, fbank, torch.abs], [B, L // 2 + 1])
+    U.check_differentiability(
+        device, dtype, [ifbank, fbank, torch.abs], [B, L // 2 + 1]
+    )
 
 
 def test_learnable(C=10, L=32, sr=8000):
