@@ -20,7 +20,6 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize(
     "seed",
@@ -30,12 +29,12 @@ import tests.utils as U
         [2, 3],
     ],
 )
-def test_compatibility(device, module, seed, T=100, D=2):
+def test_compatibility(device, dtype, module, seed, T=50, D=2, B=2):
     mlpg = U.choice(
         module,
         diffsptk.MaximumLikelihoodParameterGeneration,
         diffsptk.functional.mlpg,
-        {"size": T, "seed": seed},
+        {"size": T, "seed": seed, "device": device, "dtype": dtype},
     )
 
     if U.is_array(seed[0]):
@@ -49,6 +48,7 @@ def test_compatibility(device, module, seed, T=100, D=2):
     tmp3 = "mlpg.tmp3"
     U.check_compatibility(
         device,
+        dtype,
         mlpg,
         [
             f"nrand -s 1 -l {T * D * H} > {tmp1}",  # mean
@@ -62,9 +62,5 @@ def test_compatibility(device, module, seed, T=100, D=2):
         dy=D,
     )
 
-
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_differentiable(device, B=2, T=20, D=2):
-    delta = diffsptk.Delta()
-    mlpg = diffsptk.MLPG(T)
-    U.check_differentiability(device, [mlpg, delta], [B, T, D])
+    delta = diffsptk.Delta(device=device, dtype=dtype)
+    U.check_differentiability(device, dtype, [mlpg, delta], [B, T, D])

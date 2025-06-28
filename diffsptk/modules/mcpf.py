@@ -49,6 +49,12 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
     ir_length : int >= 1
         The length of the impulse response.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] T. Yoshimura et al., "Incorporating a mixed excitation model and postfilter
@@ -64,6 +70,8 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         beta: float = 0,
         onset: int = 2,
         ir_length: int = 128,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -124,8 +132,8 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         beta: float,
         onset: int,
         ir_length: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelCepstrumPostfiltering._check(onset)
         module = inspect.stack()[1].function != "_func"
@@ -137,6 +145,8 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
                 in_order=cep_order,
                 out_order=ir_length - 1,
                 alpha=-alpha,
+                device=device,
+                dtype=dtype,
             ),
         )
         c2acr = get_layer(
@@ -151,12 +161,22 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         mc2b = get_layer(
             module,
             MelCepstrumToMLSADigitalFilterCoefficients,
-            dict(cep_order=cep_order, alpha=alpha),
+            dict(
+                cep_order=cep_order,
+                alpha=alpha,
+                device=device,
+                dtype=dtype,
+            ),
         )
         b2mc = get_layer(
             module,
             MLSADigitalFilterCoefficientsToMelCepstrum,
-            dict(cep_order=cep_order, alpha=alpha),
+            dict(
+                cep_order=cep_order,
+                alpha=alpha,
+                device=device,
+                dtype=dtype,
+            ),
         )
 
         weight = torch.full((cep_order + 1,), 1 + beta, device=device, dtype=dtype)

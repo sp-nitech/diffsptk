@@ -34,6 +34,12 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
     seed : list[list[float]] or list[int]
         The delta coefficients or the width(s) of 1st (and 2nd) regression coefficients.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -43,6 +49,8 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
             [-0.5, 0, 0.5],
             [1, -2, 1],
         ],
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -110,8 +118,8 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
     def _precompute(
         size: int,
         seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MaximumLikelihoodParameterGeneration._check()
 
