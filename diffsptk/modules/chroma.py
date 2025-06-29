@@ -136,7 +136,6 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
             base_c=True,
             dtype=np.float64,
         ).T
-        H = torch.from_numpy(H)
         return (norm, use_power), None, (to(H, device=device, dtype=dtype),)
 
     @staticmethod

@@ -204,6 +204,8 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
                     center=True,
                     window="rectangular",
                     norm="none",
+                    device=device,
+                    dtype=dtype,
                 )
             )
 
@@ -213,7 +215,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
                     new_freq=sample_rate // sr[i],  # must be integer
                     dtype=dtype,
                     **kwargs,
-                )
+                ).to(device)
             )
 
         self.slices = slices

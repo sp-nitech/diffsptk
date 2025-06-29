@@ -53,7 +53,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         self,
         frame_length: int,
         lpc_order: int,
-        eps: float = 1e-6,
+        eps: float = 1e-5,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:

@@ -165,7 +165,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
                     new_freq=1,
                     dtype=dtype,
                     **kwargs,
-                )
+                ).to(device)
             )
             if scale:
                 downsample_scale = np.sqrt(downsample_factor)
@@ -235,6 +235,8 @@ class ConstantQTransform(BaseNonFunctionalModule):
                     norm="none",
                     eps=0,
                     out_format="complex",
+                    device=device,
+                    dtype=dtype,
                 )
             )
 
@@ -247,7 +249,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
                             new_freq=1,
                             dtype=dtype,
                             **kwargs,
-                        ),
+                        ).to(device),
                         Lambda(lambda x: x * resample_scale),
                     )
                 )

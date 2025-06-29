@@ -24,7 +24,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("module", [False, True])
 def test_compatibility(device, dtype, module, C=12):
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
     X = diffsptk.functional.stft(x)
 
     chroma = U.choice(

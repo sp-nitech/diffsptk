@@ -1617,7 +1617,7 @@ def linear_intpl(x: Tensor, upsampling_factor: int = 80) -> Tensor:
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
-def lpc(x: Tensor, lpc_order: int, eps: float = 1e-6) -> Tensor:
+def lpc(x: Tensor, lpc_order: int, eps: float = 1e-5) -> Tensor:
     """Perform LPC analysis.
 
     Parameters

@@ -215,4 +215,6 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         # Compensate delay.
         if compensate_delay:
             x = F.pad(x[..., self.delay :], (0, self.delay))
+        if y.dtype == torch.complex64:
+            x = x.to(torch.float)
         return x

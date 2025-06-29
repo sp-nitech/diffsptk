@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import importlib.util
 from pathlib import Path
 
 import torch
@@ -23,13 +24,17 @@ def test_readme_examples():
     # Extract code blocks from the README file.
     with Path("README.md").open("r") as f:
         lines = f.read().splitlines()
+    titles = []
     code_blocks = []
     code_block = []
     is_code_block = False
     for line in lines:
+        if line.startswith("###"):
+            title = line.strip()
         if is_code_block:
             if line == "```":
                 if 0 < len(code_block):
+                    titles.append(title)
                     code_blocks.append("\n".join(code_block))
                     code_block = []
                 is_code_block = False
@@ -42,8 +47,9 @@ def test_readme_examples():
     assert 0 < len(code_blocks)
 
     # Execute the code blocks.
-    for code_block in code_blocks:
-        if "librosa" in code_block:
+    for title, code_block in zip(titles, code_blocks):
+        print(f"{title}")
+        if "librosa" in code_block and importlib.util.find_spec("librosa") is None:
             continue
         if "cuda" in code_block and not torch.cuda.is_available():
             continue
