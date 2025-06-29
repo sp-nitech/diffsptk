@@ -34,6 +34,9 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
     n_stage : int >= 1
         The number of stages (quantizers), :math:`Q`.
 
+    device : torch.device or None
+        The device of this module.
+
     **kwargs : additional keyword arguments
         See `this page`_ for details.
 
@@ -44,7 +47,14 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, order: int, codebook_size: int, n_stage: int, **kwargs) -> None:
+    def __init__(
+        self,
+        order: int,
+        codebook_size: int,
+        n_stage: int,
+        device: torch.device | None = None,
+        **kwargs,
+    ) -> None:
         super().__init__()
 
         if order < 0:
@@ -58,7 +68,7 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
 
         self.vq = ResidualVQ(
             dim=order + 1, codebook_size=codebook_size, num_quantizers=n_stage, **kwargs
-        ).float()
+        ).to(device=device, dtype=torch.float)
 
     @property
     def codebooks(self) -> torch.Tensor:
@@ -114,6 +124,7 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
             x = x.unsqueeze(0)
 
         xq, indices, losses = self.vq(x.float(), **kwargs)
+        xq = xq.to(dtype=x.dtype)
 
         if d == 1:
             xq = xq.squeeze(0)

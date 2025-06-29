@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "batchmean", "mean", "sum"])
-def test_compatibility(device, module, reduction, B=2, M=19):
+def test_compatibility(device, dtype, module, reduction, B=2, M=19):
     cdist = U.choice(
         module,
         diffsptk.CepstralDistance,
@@ -45,6 +44,7 @@ def test_compatibility(device, module, reduction, B=2, M=19):
     tmp2 = "cdist.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         cdist,
         [
             f"nrand -s 1 -l {B * (M + 1)} > {tmp1}",
@@ -56,4 +56,4 @@ def test_compatibility(device, module, reduction, B=2, M=19):
         dx=M + 1,
     )
 
-    U.check_differentiability(device, cdist, [(B, M + 1), (B, M + 1)])
+    U.check_differentiability(device, dtype, cdist, [(B, M + 1), (B, M + 1)])

@@ -24,12 +24,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 @pytest.mark.parametrize("c", [0, 10])
 def test_compatibility(
     device,
+    dtype,
     ignore_gain,
     mode,
     c,
@@ -59,6 +59,8 @@ def test_compatibility(
         ignore_gain=ignore_gain,
         phase="minimum",
         mode=mode,
+        device=device,
+        dtype=dtype,
         **params,
     )
 
@@ -75,6 +77,7 @@ def test_compatibility(
     opt = "-k" if ignore_gain else ""
     U.check_compatibility(
         device,
+        dtype,
         mglsadf,
         [cmd1, cmd2],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -85,15 +88,16 @@ def test_compatibility(
     )
 
     S = T // 10
-    U.check_differentiability(device, mglsadf, [(B, S), (B, S // P, M + 1)])
+    U.check_differentiability(device, dtype, mglsadf, [(B, S), (B, S // P, M + 1)])
 
 
 @pytest.mark.parametrize("phase", ["zero", "maximum"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 def test_zero_and_maximum_phase(
+    device,
+    dtype,
     phase,
     ignore_gain,
-    device="cpu",
     alpha=0.42,
     M=24,
     P=80,
@@ -103,7 +107,9 @@ def test_zero_and_maximum_phase(
 ):
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
     cmd_x = f"nrand -l {T}"
-    x = torch.from_numpy(U.call(cmd_x))
+    x = torch.from_numpy(U.call(cmd_x)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
 
     cmd_mc = (
         f"x2x +sd tools/SPTK/asset/data.short | "
@@ -111,40 +117,47 @@ def test_zero_and_maximum_phase(
         f"window -w 1 -n 1 -l {L} -L {fft_length} | "
         f"mgcep -a {alpha} -m {M} -l {fft_length} -E -60"
     )
-    mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1))
+    mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
+
+    common_params = {
+        "filter_order": M,
+        "frame_period": P,
+        "ignore_gain": ignore_gain,
+        "alpha": alpha,
+        "phase": phase,
+        "device": device,
+        "dtype": dtype,
+    }
 
     params1 = {"mode": "multi-stage", "cep_order": 200}
-    mglsadf1 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase=phase, **params1
-    )
+    mglsadf1 = diffsptk.MLSA(**common_params, **params1)
     y1 = mglsadf1(x, mc).cpu().numpy()
 
     params2 = {"mode": "single-stage", "ir_length": 200, "n_fft": 512}
-    mglsadf2 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase=phase, **params2
-    )
+    mglsadf2 = diffsptk.MLSA(**common_params, **params2)
     y2 = mglsadf2(x, mc).cpu().numpy()
     assert np.corrcoef(y1, y2)[0, 1] > 0.99
 
     params3 = {"mode": "freq-domain", "frame_length": L, "fft_length": fft_length}
-    mglsadf3 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase=phase, **params3
-    )
+    mglsadf3 = diffsptk.MLSA(**common_params, **params3)
     y3 = mglsadf3(x, mc).cpu().numpy()
     assert np.corrcoef(y1, y3)[0, 1] > 0.98
 
     S = T // 10
-    U.check_differentiability(device, mglsadf1, [(B, S), (B, S // P, M + 1)])
-    U.check_differentiability(device, mglsadf2, [(B, S), (B, S // P, M + 1)])
-    U.check_differentiability(device, mglsadf3, [(B, S), (B, S // P, M + 1)])
+    U.check_differentiability(device, dtype, mglsadf1, [(B, S), (B, S // P, M + 1)])
+    U.check_differentiability(device, dtype, mglsadf2, [(B, S), (B, S // P, M + 1)])
+    U.check_differentiability(device, dtype, mglsadf3, [(B, S), (B, S // P, M + 1)])
 
 
 @pytest.mark.parametrize("phase", ["zero", "maximum"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 def test_mixed_phase(
+    device,
+    dtype,
     phase,
     ignore_gain,
-    device="cpu",
     alpha=0.42,
     M=24,
     P=80,
@@ -154,7 +167,9 @@ def test_mixed_phase(
 ):
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
     cmd_x = f"nrand -l {T}"
-    x = torch.from_numpy(U.call(cmd_x))
+    x = torch.from_numpy(U.call(cmd_x)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
 
     cmd_mc = (
         f"x2x +sd tools/SPTK/asset/data.short | "
@@ -162,41 +177,44 @@ def test_mixed_phase(
         f"window -w 1 -n 1 -l {L} -L {fft_length} | "
         f"mgcep -a {alpha} -m {M} -l {fft_length} -E -60"
     )
-    mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1))
+    mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
     if phase == "zero":
         half_mc = mc[..., 1:] * 0.5
         mc_mix = torch.cat([half_mc.flip(-1), mc[..., :1], half_mc], dim=-1)
     elif phase == "maximum":
         mc_mix = torch.cat([mc.flip(-1), 0 * mc[..., 1:]], dim=-1)
 
+    common_params = {
+        "filter_order": M,
+        "frame_period": P,
+        "ignore_gain": ignore_gain,
+        "alpha": alpha,
+        "device": device,
+        "dtype": dtype,
+    }
+
     params0 = {"mode": "multi-stage", "cep_order": 200}
-    mglsadf0 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase=phase, **params0
-    )
+    mglsadf0 = diffsptk.MLSA(**common_params, phase=phase, **params0)
     y0 = mglsadf0(x, mc).cpu().numpy()
 
     params1 = params0
-    mglsadf1 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase="mixed", **params1
-    )
+    mglsadf1 = diffsptk.MLSA(**common_params, phase="mixed", **params1)
     y1 = mglsadf1(x, mc_mix).cpu().numpy()
     assert np.corrcoef(y1, y0)[0, 1] > 0.99
 
     params2 = {"mode": "single-stage", "ir_length": 200, "n_fft": 512}
-    mglsadf2 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase="mixed", **params2
-    )
+    mglsadf2 = diffsptk.MLSA(**common_params, phase="mixed", **params2)
     y2 = mglsadf2(x, mc_mix).cpu().numpy()
     assert np.corrcoef(y1, y2)[0, 1] > 0.99
 
     params3 = {"mode": "freq-domain", "frame_length": L, "fft_length": fft_length}
-    mglsadf3 = diffsptk.MLSA(
-        M, P, ignore_gain=ignore_gain, alpha=alpha, phase="mixed", **params3
-    )
+    mglsadf3 = diffsptk.MLSA(**common_params, phase="mixed", **params3)
     y3 = mglsadf3(x, mc_mix).cpu().numpy()
     assert np.corrcoef(y1, y3)[0, 1] > 0.98
 
     S = T // 10
-    U.check_differentiability(device, mglsadf1, [(B, S), (B, S // P, 2 * M + 1)])
-    U.check_differentiability(device, mglsadf2, [(B, S), (B, S // P, 2 * M + 1)])
-    U.check_differentiability(device, mglsadf3, [(B, S), (B, S // P, 2 * M + 1)])
+    U.check_differentiability(device, dtype, mglsadf1, [(B, S), (B, S // P, 2 * M + 1)])
+    U.check_differentiability(device, dtype, mglsadf2, [(B, S), (B, S // P, 2 * M + 1)])
+    U.check_differentiability(device, dtype, mglsadf3, [(B, S), (B, S // P, 2 * M + 1)])

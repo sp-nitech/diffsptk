@@ -21,9 +21,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, P=2, S=1, T=20, L=4):
+def test_compatibility(device, dtype, module, P=2, S=1, T=20, L=4):
     decimate = U.choice(
         module,
         diffsptk.Decimation,
@@ -33,6 +32,7 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
 
     U.check_compatibility(
         device,
+        dtype,
         decimate,
         [],
         f"ramp -l {T * L}",
@@ -42,7 +42,7 @@ def test_compatibility(device, module, P=2, S=1, T=20, L=4):
         dy=L,
     )
 
-    U.check_differentiability(device, decimate, [T, L])
+    U.check_differentiability(device, dtype, decimate, [T, L])
 
 
 def test_dim_option(P=2, S=0, T=20, L=4):

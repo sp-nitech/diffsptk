@@ -22,8 +22,8 @@ from torch import nn
 from ..typing import Callable
 from ..utils.private import (
     check_size,
+    filter_values,
     get_layer,
-    get_values,
     hankel,
     symmetric_toeplitz,
     to,
@@ -51,16 +51,29 @@ class MelCepstralAnalysis(BaseFunctionalModule):
     n_iter : int >= 0
         The number of iterations.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
-        self, *, fft_length: int, cep_order: int, alpha: float = 0, n_iter: int = 0
+        self,
+        *,
+        fft_length: int,
+        cep_order: int,
+        alpha: float = 0,
+        n_iter: int = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ):
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.values, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("alpha_vector", tensors[0])
 
@@ -123,8 +136,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         cep_order: int,
         alpha: float,
         n_iter: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ):
         MelCepstralAnalysis._check(fft_length, cep_order, alpha, n_iter)
         module = inspect.stack()[1].function != "_func"
@@ -136,6 +149,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
                 in_order=fft_length // 2,
                 out_order=cep_order,
                 alpha=alpha,
+                device=device,
+                dtype=dtype,
             ),
         )
         ifreqt = get_layer(
@@ -145,6 +160,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
                 in_order=cep_order,
                 out_order=fft_length // 2,
                 alpha=-alpha,
+                device=device,
+                dtype=dtype,
             ),
         )
         rfreqt = get_layer(
@@ -154,6 +171,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
                 in_order=fft_length // 2,
                 out_order=2 * cep_order,
                 alpha=alpha,
+                device=device,
+                dtype=dtype,
             ),
         )
 
@@ -212,12 +231,19 @@ class MelCepstralAnalysis(BaseFunctionalModule):
 
 
 class CoefficientsFrequencyTransform(BaseFunctionalModule):
-    def __init__(self, in_order: int, out_order: int, alpha: float = 0):
+    def __init__(
+        self,
+        in_order: int,
+        out_order: int,
+        alpha: float = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ):
         super().__init__()
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -249,8 +275,8 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
         in_order: int,
         out_order: int,
         alpha: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ):
         CoefficientsFrequencyTransform._check(in_order, out_order, alpha)
         L1 = in_order + 1

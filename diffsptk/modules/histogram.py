@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values, to
+from ..utils.private import filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -44,6 +44,12 @@ class Histogram(BaseFunctionalModule):
         A smoothing parameter. The smaller value makes the output closer to the true
         histogram, but the gradient vanishes.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] M. Avi-Aharon et al., "DeepHist: Differentiable joint and color histogram
@@ -59,10 +65,12 @@ class Histogram(BaseFunctionalModule):
         upper_bound: float = 1,
         norm: bool = False,
         softness: float = 1e-3,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("centers", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -122,8 +130,8 @@ class Histogram(BaseFunctionalModule):
         upper_bound: float,
         norm: bool,
         softness: float,
-        dtype: torch.dtype | None = None,
-        device: torch.device | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         Histogram._check(n_bin, lower_bound, upper_bound, softness)
         width = (upper_bound - lower_bound) / n_bin

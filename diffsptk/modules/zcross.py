@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values, replicate1
+from ..utils.private import filter_values, replicate1
 from .base import BaseFunctionalModule
 
 
@@ -44,7 +44,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute zero-crossing rate.

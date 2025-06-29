@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
@@ -47,7 +47,7 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
         """Apply an all-zero digital filter.

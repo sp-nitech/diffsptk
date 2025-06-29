@@ -21,9 +21,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=32, M=9, rate=0.8, B=2):
+def test_compatibility(device, dtype, module, L=32, M=9, rate=0.8, B=2):
     lspcheck = U.choice(
         module,
         diffsptk.LineSpectralPairsStabilityCheck,
@@ -33,6 +32,7 @@ def test_compatibility(device, module, L=32, M=9, rate=0.8, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         lspcheck,
         [],
         f"nrand -l {B * L} | lpc -l {L} -m {M} | lpc2lsp -m {M}",
@@ -43,5 +43,5 @@ def test_compatibility(device, module, L=32, M=9, rate=0.8, B=2):
     )
 
     U.check_differentiability(
-        device, [lspcheck, lambda x: torch.sort(x)[0], torch.abs], [B, M + 1]
+        device, dtype, [lspcheck, lambda x: torch.sort(x)[0], torch.abs], [B, M + 1]
     )

@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, symmetric_toeplitz
+from ..utils.private import check_size, filter_values, symmetric_toeplitz
 from .base import BaseFunctionalModule
 
 
@@ -33,14 +33,26 @@ class LevinsonDurbin(BaseFunctionalModule):
     eps : float >= 0
         A small value to improve numerical stability.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, lpc_order: int, eps: float = 0) -> None:
+    def __init__(
+        self,
+        lpc_order: int,
+        eps: float | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("eye", tensors[0])
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
@@ -83,20 +95,22 @@ class LevinsonDurbin(BaseFunctionalModule):
         return True
 
     @staticmethod
-    def _check(lpc_order: int, eps: float) -> None:
+    def _check(lpc_order: int, eps: float | None) -> None:
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
-        if eps < 0:
+        if eps is not None and eps < 0:
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
     def _precompute(
         lpc_order: int,
-        eps: float = 0,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        eps: float | None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         LevinsonDurbin._check(lpc_order, eps)
+        if eps is None:
+            eps = 1e-5 if (dtype or torch.get_default_dtype()) == torch.float else 0
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
         return None, None, (eye,)
 

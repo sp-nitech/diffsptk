@@ -14,12 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
 import torch
 import torch.nn.functional as F
 from torch import nn
 
 from ..typing import ArrayLike, Precomputed
-from ..utils.private import get_values, iir, to, to_3d
+from ..utils.private import filter_values, iir, to, to_3d
 from .base import BaseFunctionalModule
 
 
@@ -42,6 +43,12 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     learnable : bool
         If True, the filter coefficients are learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -50,10 +57,14 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
         a: ArrayLike | None = None,
         ir_length: int | None = None,
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        _, _, tensors = self._precompute(
+            **filter_values(locals(), drop_keys=["learnable"])
+        )
         if learnable and b is not None:
             self.b = nn.Parameter(tensors[0])
         else:
@@ -108,8 +119,8 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
         b: ArrayLike | None,
         a: ArrayLike | None,
         ir_length: int | None,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         InfiniteImpulseResponseDigitalFilter._check(ir_length)
 
@@ -120,9 +131,9 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
         if a is None:
             a = [1]
         if not torch.is_tensor(b):
-            b = to(torch.tensor(b, device=device), dtype=dtype)
+            b = to(np.asarray(b), device=device, dtype=dtype)
         if not torch.is_tensor(a):
-            a = to(torch.tensor(a, device=device), dtype=dtype)
+            a = to(np.asarray(a), device=device, dtype=dtype)
 
         if fir:
             b = b.view(1, 1, -1).flip(-1)

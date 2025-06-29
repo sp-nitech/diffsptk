@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import ArrayLike, Precomputed
-from ..utils.private import get_values, to
+from ..utils.private import filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -34,6 +34,12 @@ class Delta(BaseFunctionalModule):
     static_out : bool
         If False, outputs only the delta components.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -43,10 +49,12 @@ class Delta(BaseFunctionalModule):
             [1, -2, 1],
         ],
         static_out: bool = True,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("window", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -101,8 +109,8 @@ class Delta(BaseFunctionalModule):
     def _precompute(
         seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
         static_out: bool,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         Delta._check(seed)
 

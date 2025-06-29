@@ -20,7 +20,7 @@ import torch.nn.functional as F
 
 from ..third_party.librosa import chroma
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -44,6 +44,12 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
     use_power : bool
         If True, use the power spectrum instead of the amplitude spectrum.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -54,12 +60,14 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         norm: float = float("inf"),
         use_power: bool = True,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("H", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -117,8 +125,8 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         sample_rate: int,
         norm: float,
         use_power: bool,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         ChromaFilterBankAnalysis._check(fft_length, n_channel, sample_rate)
         H = chroma(
@@ -128,7 +136,6 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
             base_c=True,
             dtype=np.float64,
         ).T
-        H = torch.from_numpy(H)
         return (norm, use_power), None, (to(H, device=device, dtype=dtype),)
 
     @staticmethod

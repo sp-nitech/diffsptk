@@ -22,13 +22,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("cov_type", [0, 1, 2])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
+def test_compatibility(device, dtype, cov_type, batch_size, B=10, M=4, K=3):
     # C++
     tmp1 = "pca.tmp1"
     tmp2 = "pca.tmp2"
@@ -43,8 +39,14 @@ def test_compatibility(device, cov_type, batch_size, B=10, M=4, K=3):
     U.call(f"rm {tmp1} {tmp2}", get=False)
 
     # Python
-    pca = diffsptk.PCA(M, K, cov_type=cov_type, batch_size=batch_size).to(device)
-    x = torch.from_numpy(U.call(f"nrand -l {B * (M + 1)}")).reshape(B, M + 1).to(device)
+    pca = diffsptk.PCA(
+        M, K, cov_type=cov_type, batch_size=batch_size, device=device, dtype=dtype
+    )
+    x = (
+        torch.from_numpy(U.call(f"nrand -l {B * (M + 1)}"))
+        .reshape(B, M + 1)
+        .to(device=device, dtype=torch.get_default_dtype() if dtype is None else dtype)
+    )
     s, v, m = pca(x)
     s2 = s.cpu().numpy()
     v2 = torch.cat([m.unsqueeze(0), v], dim=0).cpu().numpy()

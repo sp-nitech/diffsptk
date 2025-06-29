@@ -20,11 +20,11 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(
     device,
+    dtype,
     module,
     out_format,
     M=4,
@@ -50,6 +50,8 @@ def test_compatibility(
             "lifter": lifter,
             "floor": floor,
             "out_format": out_format,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
@@ -57,6 +59,7 @@ def test_compatibility(
     s = sr // 1000
     U.check_compatibility(
         device,
+        dtype,
         [plp, spec],
         [],
         f"nrand -l {B * L}",
@@ -66,7 +69,7 @@ def test_compatibility(
         dy=M + (o if o <= 1 else o - 1),
     )
 
-    U.check_differentiability(device, [plp, spec], [B, L])
+    U.check_differentiability(device, dtype, [plp, spec], [B, L])
 
 
 def test_learnable(M=4, C=10, L=32, sr=8000):

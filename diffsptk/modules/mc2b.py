@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule
 
@@ -34,6 +34,12 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
     alpha : float in (-1, 1)
         The frequency warping factor, :math:`\\alpha`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] K. Tokuda et al., "Spectral estimation of speech by mel-generalized cepstral
@@ -42,12 +48,18 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order: int, alpha: float = 0):
+    def __init__(
+        self,
+        cep_order: int,
+        alpha: float = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
@@ -97,8 +109,8 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
     def _precompute(
         cep_order: int,
         alpha: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelCepstrumToMLSADigitalFilterCoefficients._check(cep_order, alpha)
         a = 1

@@ -24,16 +24,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("exact", [False, True])
-def test_analysis(device, exact, M=4, L=8192, sr=16000, verbose=False):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    impulse = diffsptk.impulse(L - 1, device=device).view(1, 1, -1)
+def test_analysis(device, dtype, exact, M=4, L=8192, sr=16000, verbose=False):
+    impulse = diffsptk.impulse(L - 1, device=device, dtype=dtype).view(1, 1, -1)
     gammatone = diffsptk.GammatoneFilterBankAnalysis(
-        sr, filter_order=M, exact=exact
-    ).to(device)
+        sr, filter_order=M, exact=exact, device=device
+    )
     impulse_resonse = gammatone(impulse).squeeze(0)
     frequency_response = torch.fft.rfft(impulse_resonse.real, dim=-1)
     amplitude = 20 * torch.log10(torch.abs(frequency_response) + 1e-6)

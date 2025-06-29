@@ -52,6 +52,12 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
     n_iter : int >= 0
         THe number of iterations.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -63,6 +69,8 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
         gamma: float = 0,
         c: int | None = None,
         n_iter: int = 0,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -88,35 +96,51 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
 
         if gamma == 0:
             self.mcep = MelCepstralAnalysis(
-                fft_length=fft_length, cep_order=cep_order, alpha=alpha, n_iter=n_iter
+                fft_length=fft_length,
+                cep_order=cep_order,
+                alpha=alpha,
+                n_iter=n_iter,
+                device=device,
+                dtype=dtype,
             )
         else:
             self.cfreqt = CoefficientsFrequencyTransform(
-                cep_order, fft_length - 1, -alpha
+                cep_order, fft_length - 1, -alpha, device=device, dtype=dtype
             )
             self.pfreqt = CoefficientsFrequencyTransform(
-                fft_length - 1, 2 * cep_order, alpha
+                fft_length - 1, 2 * cep_order, alpha, device=device, dtype=dtype
             )
             self.rfreqt = CoefficientsFrequencyTransform(
-                fft_length - 1, cep_order, alpha
+                fft_length - 1, cep_order, alpha, device=device, dtype=dtype
             )
 
-            self.ptrans = PTransform(2 * cep_order, alpha)
-            self.qtrans = QTransform(2 * cep_order, alpha)
+            self.ptrans = PTransform(2 * cep_order, alpha, device=device, dtype=dtype)
+            self.qtrans = QTransform(2 * cep_order, alpha, device=device, dtype=dtype)
 
             self.b2b = nn.Sequential(
                 GeneralizedCepstrumInverseGainNormalization(cep_order, -1),
-                MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha),
-                MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                    cep_order, cep_order, in_gamma=-1, out_gamma=gamma
+                MLSADigitalFilterCoefficientsToMelCepstrum(
+                    cep_order, alpha, device=device, dtype=dtype
                 ),
-                MelCepstrumToMLSADigitalFilterCoefficients(cep_order, alpha),
+                MelGeneralizedCepstrumToMelGeneralizedCepstrum(
+                    cep_order,
+                    cep_order,
+                    in_gamma=-1,
+                    out_gamma=gamma,
+                    device=device,
+                    dtype=dtype,
+                ),
+                MelCepstrumToMLSADigitalFilterCoefficients(
+                    cep_order, alpha, device=device, dtype=dtype
+                ),
                 GeneralizedCepstrumGainNormalization(cep_order, gamma),
             )
 
             self.b2mc = nn.Sequential(
                 GeneralizedCepstrumInverseGainNormalization(cep_order, gamma),
-                MLSADigitalFilterCoefficientsToMelCepstrum(cep_order, alpha),
+                MLSADigitalFilterCoefficientsToMelCepstrum(
+                    cep_order, alpha, device=device, dtype=dtype
+                ),
             )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -158,7 +182,7 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
                 eps = r[..., 0] + gamma * (r[..., 1:] * b).sum(-1)
                 return eps
 
-            b0 = torch.zeros(*b1.shape[:-1], 1, device=b1.device)
+            b0 = torch.zeros(*b1.shape[:-1], 1, device=b1.device, dtype=b1.dtype)
             b = torch.cat((b0, b1), dim=-1)
             c = self.cfreqt(b)
             C = torch.fft.rfft(c, n=self.fft_length)
@@ -210,7 +234,7 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
             b0 = torch.sqrt(eps).unsqueeze(-1)
             return b0, b1
 
-        b1 = torch.zeros(*x.shape[:-1], M, device=x.device)
+        b1 = torch.zeros(*x.shape[:-1], M, device=x.device, dtype=x.dtype)
         b0, b1 = newton(-1, b1)
 
         if self.gamma != -1:
@@ -226,7 +250,14 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
 
 
 class CoefficientsFrequencyTransform(nn.Module):
-    def __init__(self, in_order: int, out_order: int, alpha: float) -> None:
+    def __init__(
+        self,
+        in_order: int,
+        out_order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         beta = 1 - alpha * alpha
@@ -234,7 +265,7 @@ class CoefficientsFrequencyTransform(nn.Module):
         L2 = out_order + 1
 
         # Make transform matrix.
-        A = torch.zeros((L2, L1), dtype=torch.double)
+        A = torch.zeros((L2, L1), device=device, dtype=torch.double)
         A[0, 0] = 1
         if 1 < L2 and 1 < L1:
             A[1, 1:] = alpha ** torch.arange(L1 - 1, dtype=torch.double) * beta
@@ -244,7 +275,7 @@ class CoefficientsFrequencyTransform(nn.Module):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", to(A.T))
+        self.register_buffer("A", to(A.T, dtype=dtype))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         y = torch.matmul(x, self.A)
@@ -252,18 +283,24 @@ class CoefficientsFrequencyTransform(nn.Module):
 
 
 class PTransform(nn.Module):
-    def __init__(self, order: int, alpha: float) -> None:
+    def __init__(
+        self,
+        order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         # Make transform matrix.
-        A = torch.eye(order + 1, dtype=torch.double)
+        A = torch.eye(order + 1, device=device, dtype=torch.double)
         A[:, 1:].fill_diagonal_(alpha)
 
         A[0, 0] -= alpha * alpha
         A[0, 1] += alpha
         A[-1, -1] += alpha
 
-        self.register_buffer("A", to(A.T))
+        self.register_buffer("A", to(A.T, dtype=dtype))
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         p = torch.matmul(p, self.A)
@@ -271,17 +308,23 @@ class PTransform(nn.Module):
 
 
 class QTransform(nn.Module):
-    def __init__(self, order: int, alpha: float) -> None:
+    def __init__(
+        self,
+        order: int,
+        alpha: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         # Make transform matrix.
-        A = torch.eye(order + 1, dtype=torch.double)
+        A = torch.eye(order + 1, device=device, dtype=torch.double)
         A[1:].fill_diagonal_(alpha)
 
         A[1, 0] = 0
         A[1, 1] += alpha
 
-        self.register_buffer("A", to(A.T))
+        self.register_buffer("A", to(A.T, dtype=dtype))
 
     def forward(self, q: torch.Tensor) -> torch.Tensor:
         q = torch.matmul(q, self.A)

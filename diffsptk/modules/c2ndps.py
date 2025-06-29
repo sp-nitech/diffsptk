@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -33,6 +33,12 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
     fft_length : int >= 2
         The number of FFT bins, :math:`L`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] B. Yegnanarayana, "Pole-zero decomposition of speech spectra," *Signal
@@ -40,12 +46,18 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
     """
 
-    def __init__(self, cep_order: int, fft_length: int) -> None:
+    def __init__(
+        self,
+        cep_order: int,
+        fft_length: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -99,8 +111,8 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
     def _precompute(
         cep_order: int,
         fft_length: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         CepstrumToNegativeDerivativeOfPhaseSpectrum._check(cep_order, fft_length)
         half_fft_length = fft_length // 2

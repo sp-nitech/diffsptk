@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -37,7 +37,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
 
         self.in_dim = cep_order + 2
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum inverse power normalization.

@@ -50,13 +50,12 @@ stft_params = {"frame_length": 400, "frame_period": 80, "fft_length": 512}
 x, sr = diffsptk.read("assets/data.wav", device="cuda")
 
 # Compute spectrogram using a nn.Module class.
-X1 = diffsptk.STFT(**stft_params).to("cuda")(x)
+X1 = diffsptk.STFT(**stft_params, device="cuda")(x)
 
 # Compute spectrogram using a functional method.
 X2 = diffsptk.functional.stft(x, **stft_params)
 
-assert X1.device == X2.device
-assert X1.allclose(X2)
+print(X1.allclose(X2))
 ```
 
 ### Mel-cepstral analysis and synthesis
@@ -174,6 +173,10 @@ x_hat = world_synth(f0, A, S)
 
 # Write reconstructed waveform.
 diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
 ```
 
 ### LPC analysis and synthesis
@@ -191,7 +194,7 @@ x, sr = diffsptk.read("assets/data.wav")
 # Estimate LPC of x.
 frame = diffsptk.Frame(frame_length=fl, frame_period=fp)
 window = diffsptk.Window(in_length=fl)
-lpc = diffsptk.LPC(frame_length=fl, lpc_order=M, eps=1e-6)
+lpc = diffsptk.LPC(frame_length=fl, lpc_order=M, eps=1e-5)
 a = lpc(window(frame(x)))
 
 # Convert to inverse filter coefficients.

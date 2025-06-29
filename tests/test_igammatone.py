@@ -25,20 +25,23 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("exact", [False, True])
-def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose=False):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+def test_analysis_synthesis(
+    device, dtype, exact, M=4, L=8192, desired_delay=4, verbose=False
+):
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
 
     gammatone = diffsptk.GammatoneFilterBankAnalysis(
-        sr, filter_order=M, exact=exact
-    ).to(device)
+        sr, filter_order=M, exact=exact, device=device
+    )
     igammatone = diffsptk.GammatoneFilterBankSynthesis(
-        sr, filter_order=M, exact=exact, desired_delay=desired_delay
-    ).to(device)
+        sr,
+        filter_order=M,
+        exact=exact,
+        desired_delay=desired_delay,
+        device=device,
+        dtype=dtype,
+    )
     y = igammatone(gammatone(x.unsqueeze(0)).squeeze(0), compensate_delay=True)
     assert (x - y).abs().max() < 0.1
 
@@ -55,7 +58,7 @@ def test_analysis_synthesis(device, exact, M=4, L=8192, desired_delay=4, verbose
     assert len(peaks) == len(gammatone.center_frequencies)
     assert np.abs(amplitude[peaks[1:-1]]) == pytest.approx(0, abs=0.1)
 
-    group_dleay = diffsptk.GroupDelay(L).to(device)(reconstructed_impulse)
+    group_dleay = diffsptk.functional.grpdelay(reconstructed_impulse, fft_length=L)
     group_dleay = group_dleay.cpu().numpy() / sr * 1000
     assert group_dleay.mean() == pytest.approx(desired_delay, abs=0.1)
 

@@ -21,7 +21,7 @@ import torch
 import torchaudio
 from torch import nn
 
-from ..utils.private import UNVOICED_SYMBOL, numpy_to_torch
+from ..utils.private import UNVOICED_SYMBOL, to
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .stft import ShortTimeFourierTransform
@@ -52,6 +52,12 @@ class Pitch(BaseNonFunctionalModule):
 
     voicing_threshold : float
         The voiced/unvoiced threshold.
+
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
 
     References
     ----------
@@ -212,6 +218,8 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         silence_threshold: float = -60,
         filter_length: int = 3,
         model: str = "full",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ):
         super().__init__()
 
@@ -245,15 +253,17 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
             norm="none",
             window="hanning",
             out_format="db",
+            device=device,
+            dtype=dtype,
         )
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate,
             new_freq=self.torchcrepe.SAMPLE_RATE,
-            dtype=torch.get_default_dtype(),
-        )
+            dtype=torch.get_default_dtype() if dtype is None else dtype,
+        ).to(device)
 
         weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
-        self.register_buffer("weights", numpy_to_torch(weights))
+        self.register_buffer("weights", to(weights, device=device, dtype=dtype))
 
     def forward(self, x: torch.Tensor, embed: bool = True) -> torch.Tensor:
         x = self.resample(x)
@@ -262,8 +272,10 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
 
         B, N, L = x.shape
         x = x.reshape(-1, L)
-        y = self.torchcrepe.infer(x, model=self.model, embed=embed, device=x.device)
-        y = y.reshape(B, N, -1)
+        y = self.torchcrepe.infer(
+            x.float(), model=self.model, embed=embed, device=x.device
+        )
+        y = y.reshape(B, N, -1).to(dtype=x.dtype)
         return y
 
     def calc_prob(self, x: torch.Tensor) -> torch.Tensor:
@@ -287,7 +299,9 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         periodicity = self.torchcrepe.filter.median(periodicity, self.filter_length)
         org_dtype = torch.get_default_dtype()
         torch.set_default_dtype(torch.float)
-        pitch = self.torchcrepe.filter.mean(pitch.float(), self.filter_length)
+        pitch = self.torchcrepe.filter.mean(pitch.float(), self.filter_length).to(
+            dtype=x.dtype
+        )
         torch.set_default_dtype(org_dtype)
 
         loudness = self.stft(x) + self.weights
@@ -311,6 +325,8 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
         f_min: float | None = None,
         f_max: float | None = None,
         voicing_threshold: float = 0.5,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -334,15 +350,18 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate,
             new_freq=self.penn.SAMPLE_RATE,
-            dtype=torch.get_default_dtype(),
-        )
+            dtype=torch.get_default_dtype() if dtype is None else dtype,
+        ).to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.resample(x)
         frames = self.frame(x)
         target_shape = frames.shape[:-1] + (self.penn.PITCH_BINS,)
-        logits = self.penn.infer(frames.reshape(-1, 1, self.penn.WINDOW_SIZE))
-        logits = logits.reshape(*target_shape)
+        org_dtype = torch.get_default_dtype()
+        torch.set_default_dtype(torch.float)
+        logits = self.penn.infer(frames.float().reshape(-1, 1, self.penn.WINDOW_SIZE))
+        torch.set_default_dtype(org_dtype)
+        logits = logits.reshape(*target_shape).to(dtype=x.dtype)
         return logits
 
     def calc_prob(self, x: torch.Tensor) -> torch.Tensor:

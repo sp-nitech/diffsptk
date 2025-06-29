@@ -19,7 +19,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..utils.private import TAU, numpy_to_torch
+from ..utils.private import TAU, to
 from .base import BaseNonFunctionalModule
 
 
@@ -49,6 +49,12 @@ class FractionalOctaveBandAnalysis(BaseNonFunctionalModule):
     overlap : float in [0, 1]
         The overlap factor.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] J. Antoni, "Orthogonal-like fractional-octave-band filters," *The Journal of
@@ -66,6 +72,8 @@ class FractionalOctaveBandAnalysis(BaseNonFunctionalModule):
         filter_order: int = 1000,
         n_fract: int = 1,
         overlap: float = 1,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -132,7 +140,7 @@ class FractionalOctaveBandAnalysis(BaseNonFunctionalModule):
         h = np.fft.irfft(H)
         h = h * np.hanning(h.shape[1])
         h = np.expand_dims(h, 1)
-        self.register_buffer("filters", numpy_to_torch(h))
+        self.register_buffer("filters", to(h, device=device, dtype=dtype))
 
         # Make padding module.
         delay_left = (filter_order + 1) // 2

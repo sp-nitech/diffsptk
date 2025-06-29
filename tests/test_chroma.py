@@ -17,29 +17,28 @@
 import importlib
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, C=12):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+def test_compatibility(device, dtype, module, C=12):
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
     X = diffsptk.functional.stft(x)
 
     chroma = U.choice(
         module,
         diffsptk.ChromaFilterBankAnalysis,
         diffsptk.functional.chroma,
-        {"fft_length": 2 * X.size(-1) - 2, "n_channel": C, "sample_rate": sr},
+        {
+            "fft_length": 2 * X.size(-1) - 2,
+            "n_channel": C,
+            "sample_rate": sr,
+            "device": device,
+            "dtype": dtype,
+        },
     )
-    if hasattr(chroma, "to"):
-        chroma.to(device)
 
     try:  # pragma: no cover
         librosa = importlib.import_module("librosa")
@@ -51,8 +50,8 @@ def test_compatibility(device, module, C=12):
             tuning=0,
         ).T
         c2 = chroma(X).cpu().numpy()
-        assert U.allclose(c1, c2)
+        assert U.allclose(c1, c2, dtype=dtype)
     except ImportError:
         pass
 
-    U.check_differentiability(device, chroma, [X.size(-1)])
+    U.check_differentiability(device, dtype, chroma, [X.size(-1)])

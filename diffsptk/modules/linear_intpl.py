@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class LinearInterpolation(BaseFunctionalModule):
     def __init__(self, upsampling_factor: int) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate filter coefficients.

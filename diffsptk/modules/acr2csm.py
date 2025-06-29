@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, hankel, to, vander
+from ..utils.private import check_size, filter_values, hankel, to, vander
 from .base import BaseFunctionalModule
 from .root_pol import PolynomialToRoots
 
@@ -32,6 +32,12 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     acr_order : int >= 0
         The order of the autocorrelation, :math:`M`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Sagayama et al., "Duality theory of composite sinusoidal modeling and
@@ -39,12 +45,17 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
     """
 
-    def __init__(self, acr_order: int) -> None:
+    def __init__(
+        self,
+        acr_order: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = acr_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("C", tensors[0])
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
@@ -100,8 +111,8 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     @staticmethod
     def _precompute(
         acr_order: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         from scipy.special import comb
 
@@ -127,7 +138,10 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
     @staticmethod
     def _forward(r: torch.Tensor, C: torch.Tensor) -> torch.Tensor:
         if r.dtype != torch.double or C.dtype != torch.double:
-            raise ValueError("Only double precision is supported.")
+            raise ValueError(
+                "Only double precision is supported "
+                f"(input: {r.dtype}, module: {C.dtype})."
+            )
 
         u = torch.matmul(r, C)
         u1, u2 = torch.tensor_split(u, 2, dim=-1)

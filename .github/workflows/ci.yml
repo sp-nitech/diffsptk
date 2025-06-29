@@ -46,7 +46,7 @@ jobs:
         run: make check
 
       - name: Test
-        run: make test
+        run: make test OPT="--dtype double"
 
       - name: Coverage
         uses: codecov/codecov-action@v5

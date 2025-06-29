@@ -26,7 +26,7 @@ from ..third_party.world import (
     linear_smoothing,
 )
 from ..typing import Callable
-from ..utils.private import TAU, iir, next_power_of_two, numpy_to_torch
+from ..utils.private import TAU, iir, next_power_of_two, to
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
@@ -60,6 +60,16 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
     eps : float >= 0
         A small value added to the power spectrum. Please increase this value if you
         encounter numerical instability (valid only if **algorithm** is 'cheap-trick').
+
+    relative_floor : float < 0 or None
+        The relative floor of the power spectrum in dB. Please set this value if you
+        encounter numerical instability (valid only if **algorithm** is 'cheap-trick').
+
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
 
     **kwargs : additional keyword arguments
         Additional keyword arguments passed to the algorithm-specific extractor.
@@ -201,6 +211,8 @@ class SpectrumExtractionByCheapTrick(nn.Module):
         q1: float = -0.15,
         eps: float = 0,
         relative_floor: float | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -231,7 +243,9 @@ class SpectrumExtractionByCheapTrick(nn.Module):
             out_format="power",
         )
 
-        self.register_buffer("ramp", torch.arange(fft_length))
+        self.register_buffer(
+            "ramp", torch.arange(fft_length, device=device, dtype=dtype)
+        )
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = torch.where(f0 <= self.f_min, self.default_f0, f0).unsqueeze(-1).detach()
@@ -312,6 +326,8 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         default_f0: float = 160,
         spectral_exponent: float = 0.6,
         compensation_factor: float = 0.2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -328,8 +344,12 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         b1, a1 = signal.butter(6, 70 / sample_rate * 2, btype="highpass")
         b2, a2 = signal.butter(6, 300 / sample_rate * 2, btype="highpass")
         b3, a3 = signal.butter(6, 3000 / sample_rate * 2, btype="highpass")
-        self.register_buffer("b", numpy_to_torch(np.stack([b1, b2, b3])))
-        self.register_buffer("a", numpy_to_torch(np.stack([a1, a2, a3])))
+        self.register_buffer(
+            "b", to(np.stack([b1, b2, b3]), device=device, dtype=dtype)
+        )
+        self.register_buffer(
+            "a", to(np.stack([a1, a2, a3]), device=device, dtype=dtype)
+        )
 
         frame_length_in_msec = 80
         frame_length = sample_rate * frame_length_in_msec // 1000
@@ -337,7 +357,10 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             raise ValueError(f"fft_length must be at least {frame_length}.")
         self.frame = Frame(frame_length, frame_period, zmean=True)
 
-        self.register_buffer("ramp", torch.arange(max(frame_length * 2, fft_length)))
+        self.register_buffer(
+            "ramp",
+            torch.arange(max(frame_length * 2, fft_length), device=device, dtype=dtype),
+        )
 
         tt = (self.ramp[:frame_length] + (1 - frame_length / 2)) / sample_rate
         self.register_buffer("tt", tt)
@@ -378,7 +401,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         from pylstraight.core.sp import optimumsmoothing as optimum_smoothing
 
         ovc = optimum_smoothing(eta, self.pc)
-        self.register_buffer("ovc", numpy_to_torch(ovc))
+        self.register_buffer("ovc", to(ovc, device=device, dtype=dtype))
 
         ncw = round(2 * sample_rate / 1000)
         h3 = signal.convolve(
@@ -386,13 +409,13 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             np.exp(-1400 / sample_rate * np.arange(2 * ncw + 1)),
             mode="full",
         )
-        self.register_buffer("h3", numpy_to_torch(h3))
+        self.register_buffer("h3", to(h3, device=device, dtype=dtype))
 
         ipwm = 7
         ipl = round(ipwm / (frame_period / sample_rate * 1000))
         ww = np.hanning(ipl * 2 + 3)[1:-1]
         ww /= np.sum(ww)
-        self.register_buffer("ww", numpy_to_torch(ww))
+        self.register_buffer("ww", to(ww, device=device, dtype=dtype))
 
         hh = np.array(
             [
@@ -406,7 +429,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         cc = np.array([1, 4, 9, 16])
         tt = np.arange(one_sided_length) / sample_rate
         pb2 = (np.pi / eta**2 + np.pi**2 / 3 * np.sum(bb * cc)) * tt**2
-        self.register_buffer("pb2", numpy_to_torch(pb2))
+        self.register_buffer("pb2", to(pb2, device=device, dtype=dtype))
 
     @staticmethod
     def fftfilt(b: torch.Tensor, x: torch.Tensor) -> torch.Tensor:

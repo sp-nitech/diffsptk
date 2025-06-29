@@ -21,7 +21,6 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("in_norm", [False, True])
 @pytest.mark.parametrize("out_norm", [False, True])
@@ -32,6 +31,7 @@ import tests.utils as U
 )
 def test_compatibility(
     device,
+    dtype,
     module,
     in_norm,
     out_norm,
@@ -62,6 +62,8 @@ def test_compatibility(
             "in_mul": in_mul,
             "out_mul": out_mul,
             "n_fft": L,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
@@ -83,6 +85,7 @@ def test_compatibility(
 
     U.check_compatibility(
         device,
+        dtype,
         mgc2mgc,
         [],
         f"nrand -l {B * L} | fftcep -l {L} -m {m} | mgc2mgc {opt1}",
@@ -92,4 +95,4 @@ def test_compatibility(
         dy=M + 1,
     )
 
-    U.check_differentiability(device, [mgc2mgc, torch.abs], [B, m + 1])
+    U.check_differentiability(device, dtype, [mgc2mgc, torch.abs], [B, m + 1])

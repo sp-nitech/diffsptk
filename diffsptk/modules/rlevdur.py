@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, remove_gain
+from ..utils.private import check_size, filter_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -31,14 +31,25 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, lpc_order: int) -> None:
+    def __init__(
+        self,
+        lpc_order: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("eye", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
@@ -90,8 +101,8 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
     @staticmethod
     def _precompute(
         lpc_order: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         ReverseLevinsonDurbin._check(lpc_order)
         eye = torch.eye(lpc_order + 1, device=device, dtype=dtype)

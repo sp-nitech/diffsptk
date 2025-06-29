@@ -20,18 +20,18 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, M=9, alpha=0.1, B=2):
+def test_compatibility(device, dtype, module, M=9, alpha=0.1, B=2):
     mc2b = U.choice(
         module,
         diffsptk.MelCepstrumToMLSADigitalFilterCoefficients,
         diffsptk.functional.mc2b,
-        {"cep_order": M, "alpha": alpha},
+        {"cep_order": M, "alpha": alpha, "device": device, "dtype": dtype},
     )
 
     U.check_compatibility(
         device,
+        dtype,
         mc2b,
         [],
         f"nrand -l {B * (M + 1)}",
@@ -41,4 +41,4 @@ def test_compatibility(device, module, M=9, alpha=0.1, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, mc2b, [B, M + 1])
+    U.check_differentiability(device, dtype, mc2b, [B, M + 1])

@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("P", [1, 4])
-def test_compatibility(device, module, P, N=10):
+def test_compatibility(device, dtype, module, P, N=10):
     linear_intpl = U.choice(
         module,
         diffsptk.LinearInterpolation,
@@ -34,6 +33,7 @@ def test_compatibility(device, module, P, N=10):
     tmp = "linear_intpl.tmp"
     U.check_compatibility(
         device,
+        dtype,
         linear_intpl,
         [f"ramp -s 1 -e {N} > {tmp}"],
         f"cat {tmp}",
@@ -45,7 +45,7 @@ def test_compatibility(device, module, P, N=10):
         [f"rm {tmp}"],
     )
 
-    U.check_differentiability(device, linear_intpl, [N])
+    U.check_differentiability(device, dtype, linear_intpl, [N])
 
 
 def test_various_shape(P=4, N=10):

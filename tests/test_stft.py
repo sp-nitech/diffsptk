@@ -21,11 +21,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_complex", [False, True])
 def test_compatibility(
-    device, module, out_complex, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
+    device, dtype, module, out_complex, T=100, P=10, L1=12, L2=16, n=1, w=1, eps=1e-6
 ):
     stft = U.choice(
         module,
@@ -39,6 +38,8 @@ def test_compatibility(
             "norm": n,
             "eps": eps,
             "out_format": "complex" if out_complex else "power",
+            "device": device,
+            "dtype": dtype,
         },
     )
 
@@ -49,6 +50,7 @@ def test_compatibility(
         cmd += f"spec -l {L2} -e {eps} -o 3"
     U.check_compatibility(
         device,
+        dtype,
         [torch.abs, stft] if out_complex else stft,
         [],
         f"nrand -l {T}",
@@ -57,7 +59,7 @@ def test_compatibility(
         dy=L2 // 2 + 1,
     )
 
-    U.check_differentiability(device, [torch.abs, stft], [T])
+    U.check_differentiability(device, dtype, [torch.abs, stft], [T])
 
 
 @pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])

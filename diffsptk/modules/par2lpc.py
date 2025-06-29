@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 
@@ -45,7 +45,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         self.in_dim = lpc_order + 1
 
         self.values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
-            *get_values(locals())
+            **filter_values(locals())
         )
 
     def forward(self, k: torch.Tensor) -> torch.Tensor:

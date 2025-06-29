@@ -19,7 +19,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 
@@ -44,6 +44,12 @@ class Yingram(BaseFunctionalModule):
     n_bin : int >= 1
         The number of bins to represent a semitone range.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. Cheveigne and H. Kawahara, "YIN, a fundamental frequency estimator for
@@ -62,12 +68,14 @@ class Yingram(BaseFunctionalModule):
         lag_min: int = 22,
         lag_max: int | None = None,
         n_bin: int = 20,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = frame_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("lags", tensors[0])
         self.register_buffer("lags_ceil", tensors[1])
         self.register_buffer("lags_floor", tensors[2])
@@ -128,8 +136,8 @@ class Yingram(BaseFunctionalModule):
         lag_min: int,
         lag_max: int | None,
         n_bin: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         if lag_max is None:
             lag_max = frame_length - 1

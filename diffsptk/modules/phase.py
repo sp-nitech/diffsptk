@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values, remove_gain
+from ..utils.private import filter_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -38,7 +38,7 @@ class Phase(BaseFunctionalModule):
     def __init__(self, fft_length: int, unwrap: bool = False) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None

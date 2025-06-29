@@ -21,10 +21,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1, 2])
-def test_compatibility(device, module, out_format, L=5, B=2):
+def test_compatibility(device, dtype, module, out_format, L=5, B=2):
     entropy = U.choice(
         module,
         diffsptk.Entropy,
@@ -34,6 +33,7 @@ def test_compatibility(device, module, out_format, L=5, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         entropy,
         [],
         f"nrand -l {B * L} -d 0.5 | sopr -ABS",
@@ -42,4 +42,4 @@ def test_compatibility(device, module, out_format, L=5, B=2):
         dx=L,
     )
 
-    U.check_differentiability(device, [entropy, torch.abs], [B, L])
+    U.check_differentiability(device, dtype, [entropy, torch.abs], [B, L])

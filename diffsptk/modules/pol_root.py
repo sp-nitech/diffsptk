@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -37,6 +37,9 @@ class RootsToPolynomial(BaseFunctionalModule):
     in_format : ['rectangular', 'polar']
         The input format.
 
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -45,12 +48,13 @@ class RootsToPolynomial(BaseFunctionalModule):
         *,
         eps: float | None = None,
         in_format: str | int = "rectangular",
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = order
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert roots to polynomial coefficients.
@@ -95,12 +99,15 @@ class RootsToPolynomial(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(
-        order: int, eps: float | None = None, in_format: str | int = "rectangular"
+        order: int,
+        eps: float | None = None,
+        in_format: str | int = "rectangular",
+        dtype: torch.dtype | None = None,
     ) -> Precomputed:
         RootsToPolynomial._check(order, eps)
 
         if eps is None:
-            eps = 1e-4 if torch.get_default_dtype() == torch.float else 1e-8
+            eps = 1e-4 if (dtype or torch.get_default_dtype()) == torch.float else 1e-8
         if in_format in (0, "rectangular"):
             formatter = lambda x: x
         elif in_format in (1, "polar"):

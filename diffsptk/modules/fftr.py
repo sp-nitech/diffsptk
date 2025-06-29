@@ -19,7 +19,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values, to
+from ..utils.private import filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -39,6 +39,12 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         Whether to make the DFT basis learnable. If True, the module performs DFT rather
         than FFT.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -46,10 +52,12 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         fft_length: int,
         out_format: str | int = "complex",
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         if learnable is True:
             self.W = nn.Parameter(tensors[0])
         elif learnable == "debug":
@@ -83,7 +91,9 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, _ = RealValuedFastFourierTransform._precompute(*args, **kwargs)
+        values, _, _ = RealValuedFastFourierTransform._precompute(
+            *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
+        )
         return RealValuedFastFourierTransform._forward(x, *values)
 
     @staticmethod
@@ -99,9 +109,9 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
     def _precompute(
         fft_length: int | None,
         out_format: str | int,
-        learnable: bool = False,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        learnable: bool,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         RealValuedFastFourierTransform._check(fft_length)
 

@@ -15,15 +15,13 @@
 # ------------------------------------------------------------------------ #
 
 import numpy as np
-import pytest
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu"])
-def test_compatibility(device, P=80, sr=16000, L=1024, B=2):
-    world_synth = diffsptk.WorldSynthesis(P, sr, L)
+def test_compatibility(device, dtype, P=80, sr=16000, L=1024, B=2):
+    world_synth = diffsptk.WorldSynthesis(P, sr, L, device=device, dtype=dtype)
 
     s = sr // 1000
     n = L // 2 + 1
@@ -33,6 +31,7 @@ def test_compatibility(device, P=80, sr=16000, L=1024, B=2):
     tmp4 = "world_synth.tmp4"
     U.check_compatibility(
         device,
+        dtype,
         world_synth,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
@@ -49,6 +48,7 @@ def test_compatibility(device, P=80, sr=16000, L=1024, B=2):
 
     U.check_differentiability(
         device,
+        dtype,
         world_synth,
         [(B, sr // P), (B, sr // P, n), (B, sr // P, n)],
         scales=[80, 1, 1],

@@ -51,7 +51,7 @@
 import torch
 
 from ..third_party.world import get_minimum_phase_spectrum, interp1
-from ..utils.private import TAU
+from ..utils.private import TAU, to
 from .base import BaseNonFunctionalModule
 
 
@@ -73,6 +73,12 @@ class WorldSynthesis(BaseNonFunctionalModule):
     default_f0 : float > 0
         The F0 value used when the input F0 is unvoiced.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -82,6 +88,8 @@ class WorldSynthesis(BaseNonFunctionalModule):
         fft_length: int,
         *,
         default_f0: float = 500,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -97,15 +105,15 @@ class WorldSynthesis(BaseNonFunctionalModule):
         self.fft_length = fft_length
         self.default_f0 = default_f0
 
-        self.register_buffer("ramp", torch.arange(fft_length))
+        self.register_buffer("ramp", torch.arange(fft_length, device=device))
 
         # GetDCRemover()
-        ramp = self.ramp[1 : fft_length // 2 + 1]
+        ramp = self.ramp[1 : fft_length // 2 + 1].double()
         dc_remover = 0.5 - 0.5 * torch.cos(TAU / (1 + fft_length) * ramp)
         dc_component = 2 * torch.sum(dc_remover)
         dc_remover /= dc_component
         dc_remover = torch.cat([dc_remover, dc_remover.flip(-1)], dim=-1)
-        self.register_buffer("dc_remover", dc_remover)
+        self.register_buffer("dc_remover", to(dc_remover, dtype=dtype))
 
     def forward(
         self, f0: torch.Tensor, ap: torch.Tensor, sp: torch.Tensor
@@ -175,12 +183,14 @@ class WorldSynthesis(BaseNonFunctionalModule):
         coarse_f0 = torch.where(f0 < f_min, 0, f0).detach()
         coarse_vuv = (0 < coarse_f0).type(coarse_f0.dtype)
         time_axis = (
-            torch.arange(f0.shape[-1] * self.frame_period, device=f0.device)
+            torch.arange(
+                f0.shape[-1] * self.frame_period, device=f0.device, dtype=f0.dtype
+            )
             / self.sample_rate
         )
         time_axis = time_axis.repeat(B, 1)
         coarse_time_axis = torch.arange(
-            coarse_f0.shape[-1], device=coarse_f0.device
+            coarse_f0.shape[-1], device=coarse_f0.device, dtype=coarse_f0.dtype
         ) * (self.frame_period / self.sample_rate)
         coarse_time_axis = coarse_time_axis.repeat(B, 1)
         interpolated_f0 = interp1(
@@ -284,7 +294,7 @@ class WorldSynthesis(BaseNonFunctionalModule):
         )
         T_ = T + margin
         index = (batch_index * T_ + time_index).unsqueeze(-1) + self.ramp
-        y = torch.zeros((B, T_), device=sp.device)
+        y = torch.zeros((B, T_), device=sp.device, dtype=sp.dtype)
         y.view(-1).scatter_add_(
             dim=-1,
             index=index.view(-1),

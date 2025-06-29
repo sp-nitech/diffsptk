@@ -20,14 +20,19 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
+def test_compatibility(device, dtype, module, L=16, alpha=0.4, gamma=0.9, B=2):
     grpdelay = U.choice(
         module,
         diffsptk.GroupDelay,
         diffsptk.functional.grpdelay,
-        {"fft_length": L, "alpha": alpha, "gamma": gamma},
+        {
+            "fft_length": L,
+            "alpha": alpha,
+            "gamma": gamma,
+            "device": device,
+            "dtype": dtype,
+        },
     )
 
     tmp1 = "grpdelay.tmp1"
@@ -36,6 +41,7 @@ def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
     N = L // 4
     U.check_compatibility(
         device,
+        dtype,
         grpdelay,
         [f"nrand -s 1 -l {B * M} > {tmp1}", f"nrand -s 2 -l {B * N} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -48,16 +54,16 @@ def test_compatibility(device, module, L=16, alpha=0.4, gamma=0.9, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiability(device, grpdelay, [(B, M), (B, N)])
+    U.check_differentiability(device, dtype, grpdelay, [(B, M), (B, N)])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_b(device, L=16, B=2):
-    grpdelay = diffsptk.GroupDelay(L)
+def test_compatibility_b(device, dtype, L=16, B=2):
+    grpdelay = diffsptk.GroupDelay(L, device=device, dtype=dtype)
 
     M = L // 2
     U.check_compatibility(
         device,
+        dtype,
         grpdelay,
         [],
         f"nrand -s 1 -l {B * M}",
@@ -68,14 +74,14 @@ def test_compatibility_b(device, L=16, B=2):
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_a(device, L=16, B=2):
-    grpdelay = diffsptk.GroupDelay(L)
+def test_compatibility_a(device, dtype, L=16, B=2):
+    grpdelay = diffsptk.GroupDelay(L, device=device, dtype=dtype)
 
     tmp = "grpdelay.tmp"
     N = L // 4
     U.check_compatibility(
         device,
+        dtype,
         grpdelay,
         [f"nrand -s 2 -l {B * N} > {tmp}"],
         [f"cat {tmp}"],

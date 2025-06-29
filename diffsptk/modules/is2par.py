@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -36,7 +36,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """Convert IS to PARCOR.

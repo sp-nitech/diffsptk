@@ -19,7 +19,7 @@ import math
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseFunctionalModule
 
 
@@ -40,7 +40,7 @@ class ALawCompression(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compress the input waveform using the A-law algorithm.

@@ -21,7 +21,7 @@ import torch
 from tqdm import tqdm
 
 from ..typing import ArrayLike
-from ..utils.private import get_logger, outer, to_dataloader
+from ..utils.private import get_logger, outer, to, to_dataloader
 from .base import BaseLearnerModule
 
 Params: TypeAlias = tuple[torch.Tensor, torch.Tensor, torch.Tensor]
@@ -69,6 +69,12 @@ class GaussianMixtureModeling(BaseLearnerModule):
     verbose : bool
         If 1, shows the likelihood at each iteration; if 2, shows progress bars.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] J-L. Gauvain et al., "Maximum a posteriori estimation for multivariate
@@ -92,6 +98,8 @@ class GaussianMixtureModeling(BaseLearnerModule):
         alpha: float = 0,
         batch_size: int | None = None,
         verbose: bool | int = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -138,7 +146,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
         self.is_diag = var_type == "diag" and len(block_size) == 1
 
         # Make mask for covariance matrix.
-        mask = torch.zeros((L, L))
+        mask = torch.zeros((L, L), device=device, dtype=dtype)
         cumsum = np.cumsum(np.insert(block_size, 0, 0))
         for b1, s1, e1 in zip(block_size, cumsum[:-1], cumsum[1:]):
             if var_type == "diag":
@@ -152,18 +160,19 @@ class GaussianMixtureModeling(BaseLearnerModule):
         self.register_buffer("mask", mask)
 
         # Initialize model parameters.
+        params = {"device": device, "dtype": dtype}
         K = self.n_mixture
-        self.register_buffer("w", torch.ones(K) / K)
-        self.register_buffer("mu", torch.randn(K, L))
-        self.register_buffer("sigma", torch.eye(L).repeat(K, 1, 1))
+        self.register_buffer("w", torch.ones(K, **params) / K)
+        self.register_buffer("mu", torch.randn(K, L, **params))
+        self.register_buffer("sigma", torch.eye(L, **params).repeat(K, 1, 1))
 
         # Save UBM parameters.
         if ubm is not None:
             self.set_params(ubm)
             ubm_w, ubm_mu, ubm_sigma = ubm
-            self.register_buffer("ubm_w", ubm_w)
-            self.register_buffer("ubm_mu", ubm_mu)
-            self.register_buffer("ubm_sigma", ubm_sigma)
+            self.register_buffer("ubm_w", to(ubm_w, **params))
+            self.register_buffer("ubm_mu", to(ubm_mu, **params))
+            self.register_buffer("ubm_sigma", to(ubm_sigma, **params))
 
     def set_params(
         self,

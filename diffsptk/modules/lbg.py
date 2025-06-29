@@ -64,6 +64,9 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
     verbose : bool or int
         If 1, shows the distance at each iteration; if 2, shows progress bars.
 
+    device : torch.device or None
+        The device of this module.
+
     References
     ----------
     .. [1] Y. Linde et al., "An algorithm for vector quantizer design," *IEEE
@@ -85,6 +88,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         batch_size: int | None = None,
         seed: int | None = None,
         verbose: bool | int = False,
+        device: torch.device | None = None,
     ) -> None:
         super().__init__()
 
@@ -115,7 +119,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         self.logger = get_logger("lbg")
         self.hide_progress_bar = self.verbose <= 1
 
-        self.vq = VectorQuantization(order, codebook_size).eval()
+        self.vq = VectorQuantization(order, codebook_size).to(device=device).eval()
 
         if torch.is_tensor(init):
             given_codebook_size = init.size(0)
@@ -180,7 +184,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         """
         x = to_dataloader(x, self.batch_size)
         device = self.vq.codebook.device
-        generator = get_generator(self.seed, device)
+        generator = get_generator(self.seed, device=device)
 
         # Initialize codebook.
         if self.init == "none":

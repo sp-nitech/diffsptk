@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_layer, get_values, to
+from ..utils.private import check_size, filter_values, get_layer, to
 from .base import BaseFunctionalModule
 from .freqt2 import SecondOrderAllPassFrequencyTransform
 from .ifreqt2 import SecondOrderAllPassInverseFrequencyTransform
@@ -52,6 +52,12 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
     accuracy_factor : int >= 1
         The accuracy factor multiplied by the FFT length.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
@@ -69,12 +75,14 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
         theta: float = 0,
         n_iter: int = 0,
         accuracy_factor: int = 4,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.values, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("alpha_vector", tensors[0])
 
@@ -152,8 +160,8 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
         theta: float,
         n_iter: int,
         accuracy_factor: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         SecondOrderAllPassMelCepstralAnalysis._check(
             fft_length, cep_order, alpha, theta, n_iter, accuracy_factor
@@ -170,6 +178,8 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
                 alpha=alpha,
                 theta=theta,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             ),
         )
         ifreqt = get_layer(
@@ -181,6 +191,8 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
                 alpha=alpha,
                 theta=theta,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             ),
         )
         rfreqt = get_layer(
@@ -192,6 +204,8 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
                 alpha=alpha,
                 theta=theta,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             ),
         )
 
@@ -223,12 +237,14 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
         alpha: float = 0,
         theta: float = 0,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -272,8 +288,8 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
         alpha: float,
         theta: float,
         n_fft: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         CoefficientsFrequencyTransform._check(in_order, out_order, alpha, theta, n_fft)
         theta *= torch.pi

@@ -17,19 +17,16 @@
 from operator import itemgetter
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("batch_size", [None, 5])
-def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
-    if torch.get_default_dtype() == torch.float:
-        pytest.skip("This test is only for torch.double.")
-
-    lbg = diffsptk.LBG(M, K, n_iter=n_iter, batch_size=batch_size, seed=1234)
+def test_compatibility(device, dtype, batch_size, M=1, K=4, B=10, n_iter=10):
+    lbg = diffsptk.LBG(
+        M, K, n_iter=n_iter, batch_size=batch_size, seed=1234, device=device
+    )
 
     tmp1 = "lbg.tmp1"
     tmp2 = "lbg.tmp2"
@@ -38,6 +35,7 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
     tmp5 = "lbg.tmp5"
     U.check_compatibility(
         device,
+        dtype,
         [itemgetter(-1), lbg],
         [
             f"nrand -u +2 -l {B * (M + 1)} -s 1 > {tmp1}",
@@ -53,7 +51,7 @@ def test_compatibility(device, batch_size, M=1, K=4, B=10, n_iter=10):
         ),
         [f"rm {tmp1} {tmp2} {tmp3} {tmp4} {tmp5}"],
         dx=M + 1,
-        rtol=0.1,
+        rtol=1e-1,
     )
 
 

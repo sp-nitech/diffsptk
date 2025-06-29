@@ -24,20 +24,24 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("fp", [511, 512])
 @pytest.mark.parametrize("K", [1, 24])
 @pytest.mark.parametrize("scale", [False, True])
 @pytest.mark.parametrize("res_type", ["kaiser_best", "kaiser_fast"])
-def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x, sr = diffsptk.read("assets/data.wav", device=device)
+def test_compatibility(device, dtype, fp, K, scale, res_type, B=12, f_min=32.7):
+    x, sr = diffsptk.read("assets/data.wav", device=device, dtype=dtype)
 
     cqt = diffsptk.CQT(
-        fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale, res_type=res_type
-    ).to(device)
+        fp,
+        sr,
+        f_min=f_min,
+        n_bin=K,
+        n_bin_per_octave=B,
+        scale=scale,
+        res_type=res_type,
+        device=device,
+        dtype=dtype,
+    )
 
     try:  # pragma: no cover
         librosa = importlib.import_module("librosa")
@@ -60,4 +64,4 @@ def test_compatibility(device, fp, K, scale, res_type, B=12, f_min=32.7):
     except ImportError:
         pass
 
-    U.check_differentiability(device, [torch.abs, cqt], [fp])
+    U.check_differentiability(device, dtype, [torch.abs, cqt], [fp])

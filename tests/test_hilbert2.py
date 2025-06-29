@@ -21,10 +21,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("L", [(16, 8), 8, None])
-def test_compatibility(device, module, L):
+def test_compatibility(device, dtype, module, L):
     if module and L is None:
         return
 
@@ -32,7 +31,7 @@ def test_compatibility(device, module, L):
         module,
         diffsptk.TwoDimensionalHilbertTransform,
         diffsptk.functional.hilbert2,
-        {"fft_length": L},
+        {"fft_length": L, "device": device, "dtype": dtype},
     )
 
     def func(x):
@@ -45,9 +44,10 @@ def test_compatibility(device, module, L):
 
     U.check_confidence(
         device,
+        dtype,
         hilbert2,
         func,
         L,
     )
 
-    U.check_differentiability(device, [lambda x: x.real, hilbert2], L)
+    U.check_differentiability(device, dtype, [lambda x: x.real, hilbert2], L)

@@ -95,6 +95,12 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
     ir_length : int >= 1 or tuple[int, int]
         The length of the impulse response (valid only if **mode** is 'single-stage').
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     **kwargs : additional keyword arguments
         See :func:`~diffsptk.ShortTimeFourierTransform` (valid only if **mode** is
         'freq-domain').
@@ -234,6 +240,8 @@ class MultiStageFIRFilter(nn.Module):
         taylor_order: int = 20,
         cep_order: tuple[int, int] | int = 199,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -271,6 +279,8 @@ class MultiStageFIRFilter(nn.Module):
                         in_alpha=alpha,
                         in_gamma=gamma,
                         n_fft=n_fft,
+                        device=device,
+                        dtype=dtype,
                     )
                 )
         else:
@@ -280,6 +290,8 @@ class MultiStageFIRFilter(nn.Module):
                 in_alpha=alpha,
                 in_gamma=gamma,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             )
 
         self.linear_intpl = LinearInterpolation(frame_period)
@@ -337,6 +349,8 @@ class SingleStageFIRFilter(nn.Module):
         phase: str = "minimum",
         ir_length: tuple[int, int] | int = 2000,
         n_fft: int = 4096,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -372,6 +386,8 @@ class SingleStageFIRFilter(nn.Module):
                 out_gamma=1,
                 out_mul=True,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             )
         elif self.phase == "zero":
             self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
@@ -380,6 +396,8 @@ class SingleStageFIRFilter(nn.Module):
                 in_alpha=alpha,
                 in_gamma=gamma,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             )
             self.c2ir = nn.Sequential(
                 Lambda(lambda x: torch.fft.hfft(x, n=n_fft)),
@@ -395,6 +413,8 @@ class SingleStageFIRFilter(nn.Module):
                         in_alpha=alpha,
                         in_gamma=gamma,
                         n_fft=n_fft,
+                        device=device,
+                        dtype=dtype,
                     )
                 )
             self.c2ir = CepstrumToMinimumPhaseImpulseResponse(
@@ -465,6 +485,8 @@ class FrequencyDomainFIRFilter(nn.Module):
         frame_length: int = 400,
         fft_length: int = 512,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
         **stft_kwargs,
     ) -> None:
         super().__init__()
@@ -492,12 +514,15 @@ class FrequencyDomainFIRFilter(nn.Module):
                 )
                 self.mc2b.append(
                     MelCepstrumToMLSADigitalFilterCoefficients(
-                        filter_order[i], alpha=alpha
+                        filter_order[i], alpha=alpha, device=device, dtype=dtype
                     )
                 )
                 self.b2mc.append(
                     MLSADigitalFilterCoefficientsToMelCepstrum(
-                        filter_order[i], alpha=alpha
+                        filter_order[i],
+                        alpha=alpha,
+                        device=device,
+                        dtype=dtype,
                     )
                 )
             self.mgc2sp.append(
@@ -508,14 +533,27 @@ class FrequencyDomainFIRFilter(nn.Module):
                     gamma=gamma,
                     out_format="complex",
                     n_fft=n_fft,
+                    device=device,
+                    dtype=dtype,
                 )
             )
 
         self.stft = ShortTimeFourierTransform(
-            frame_length, frame_period, fft_length, out_format="complex", **stft_kwargs
+            frame_length,
+            frame_period,
+            fft_length,
+            out_format="complex",
+            device=device,
+            dtype=dtype,
+            **stft_kwargs,
         )
         self.istft = InverseShortTimeFourierTransform(
-            frame_length, frame_period, fft_length, **stft_kwargs
+            frame_length,
+            frame_period,
+            fft_length,
+            device=device,
+            dtype=dtype,
+            **stft_kwargs,
         )
 
     def forward(

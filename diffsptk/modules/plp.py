@@ -23,10 +23,9 @@ from torch import nn
 from ..typing import Callable, Precomputed
 from ..utils.private import (
     auditory_to_hz,
+    filter_values,
     get_layer,
-    get_values,
     hz_to_auditory,
-    numpy_to_torch,
     replicate1,
     to,
 )
@@ -89,6 +88,12 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     learnable : bool
         Whether to make the mel basis learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Young et al., "The HTK Book," *Cambridge University Press*, 2006.
@@ -113,10 +118,12 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         n_fft: int = 512,
         out_format: str | int = "y",
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, layers, tensors = self._precompute(*get_values(locals()))
+        self.values, layers, tensors = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
         self.register_buffer("equal_loudness_curve", tensors[0])
         self.register_buffer("liftering_vector", tensors[1])
@@ -159,7 +166,12 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, tensors = (
             PerceptualLinearPredictiveCoefficientsAnalysis._precompute(
-                2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
+                2 * x.size(-1) - 2,
+                *args,
+                **kwargs,
+                learnable=False,
+                device=x.device,
+                dtype=x.dtype,
             )
         )
         return PerceptualLinearPredictiveCoefficientsAnalysis._forward(
@@ -199,9 +211,9 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         erb_factor: float | None,
         n_fft: int,
         out_format: str | int,
-        learnable: bool = False,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        learnable: bool,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
@@ -235,6 +247,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 use_power=True,
                 out_format="y,E",
                 learnable=learnable,
+                device=device,
+                dtype=dtype,
             ),
         )
         levdur = get_layer(
@@ -242,6 +256,9 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
             LevinsonDurbin,
             dict(
                 lpc_order=plp_order,
+                eps=0,
+                device=device,
+                dtype=dtype,
             ),
         )
         lpc2c = get_layer(
@@ -259,6 +276,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 out_norm=False,
                 out_mul=False,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             ),
         )
 
@@ -270,8 +289,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         seed = np.arange(1, n_channel + 2)
         center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
         f = auditory_to_hz(center_frequencies, scale)[:-1] ** 2
-        e = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
-        equal_loudness_curve = numpy_to_torch(e)
+        equal_loudness_curve = (f / (f + 1.6e5)) ** 2 * (f + 1.44e6) / (f + 9.61e6)
 
         ramp = torch.arange(plp_order + 1, device=device, dtype=torch.double)
         liftering_vector = 1 + (lifter / 2) * torch.sin((torch.pi / lifter) * ramp)

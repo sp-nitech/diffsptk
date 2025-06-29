@@ -20,11 +20,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
 def test_compatibility(
-    device, module, out_format, M=4, C=10, L=32, sr=8000, lifter=20, floor=1, B=2
+    device, dtype, module, out_format, M=4, C=10, L=32, sr=8000, lifter=20, floor=1, B=2
 ):
     spec = diffsptk.Spectrum(L, eps=0)
     mfcc = U.choice(
@@ -39,6 +38,8 @@ def test_compatibility(
             "lifter": lifter,
             "floor": floor,
             "out_format": out_format,
+            "device": device,
+            "dtype": dtype,
         },
     )
 
@@ -46,6 +47,7 @@ def test_compatibility(
     s = sr // 1000
     U.check_compatibility(
         device,
+        dtype,
         [mfcc, spec],
         [],
         f"nrand -l {B * L}",
@@ -55,7 +57,7 @@ def test_compatibility(
         dy=M + (o if o <= 1 else o - 1),
     )
 
-    U.check_differentiability(device, [mfcc, spec], [B, L])
+    U.check_differentiability(device, dtype, [mfcc, spec], [B, L])
 
 
 def test_learnable(M=4, C=10, L=32, sr=8000):

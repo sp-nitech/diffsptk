@@ -49,8 +49,9 @@ def get_layer(
 
     if module._takes_input_size():
         params = dict(islice(params.items(), 1, None))
-    if "learnable" in params:
-        params.pop("learnable")
+    for key in ("learnable", "device", "dtype"):
+        if key in params:
+            params.pop(key)
 
     def layer(*args, **kwargs):
         return module._func(*args, **params, **kwargs)
@@ -58,10 +59,14 @@ def get_layer(
     return layer
 
 
-def get_values(dictionary: dict[str, Any], drop: int = 0) -> list[Any]:
-    begin = 1
-    end = -1 - drop
-    return list(dictionary.values())[begin:end]
+def filter_values(dictionary: dict[str, Any], drop_keys: list[str] = []) -> list[Any]:
+    for key in drop_keys:
+        if key in dictionary:
+            dictionary.pop(key)
+    for key in ("self", "__class__"):
+        if key in dictionary:
+            dictionary.pop(key)
+    return dictionary
 
 
 def get_logger(name: str) -> logging.Logger:
@@ -99,50 +104,50 @@ def next_power_of_two(n: int) -> int:
     return 1 << (n - 1).bit_length()
 
 
-def default_dtype() -> np.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return np.float32
-    elif t == torch.double:
-        return np.float64
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def default_complex_dtype() -> np.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return np.complex64
-    elif t == torch.double:
-        return np.complex128
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def torch_default_complex_dtype() -> torch.dtype:
-    t = torch.get_default_dtype()
-    if t == torch.float:
-        return torch.complex64
-    elif t == torch.double:
-        return torch.complex128
-    raise RuntimeError("Unknown default dtype: {t}.")
-
-
-def numpy_to_torch(x: np.ndarray) -> torch.Tensor:
-    if np.iscomplexobj(x):
-        return torch.from_numpy(x.astype(default_complex_dtype()))
+def dtype_to_complex_dtype(dtype: torch.dtype) -> torch.dtype:
+    if dtype == torch.double:
+        dtype = torch.complex128
+    elif dtype == torch.float:
+        dtype = torch.complex64
+    elif dtype in (torch.complex64, torch.complex128):
+        pass
     else:
-        return torch.from_numpy(x.astype(default_dtype()))
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
+
+
+def complex_dtype_to_dtype(dtype: torch.dtype) -> torch.dtype:
+    if dtype == torch.complex128:
+        dtype = torch.double
+    elif dtype == torch.complex64:
+        dtype = torch.float
+    elif dtype in (torch.float, torch.double):
+        pass
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
 
 
 def to(
-    x: torch.Tensor,
+    x: torch.Tensor | np.ndarray,
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
+    if (torch.is_tensor(x) and torch.is_complex(x)) or (
+        isinstance(x, np.ndarray) and np.iscomplexobj(x)
+    ):
+        is_complex = True
+    else:
+        is_complex = False
     if dtype is None:
-        if torch.is_complex(x):
-            dtype = torch_default_complex_dtype()
-        else:
-            dtype = torch.get_default_dtype()
+        dtype = torch.get_default_dtype()
+        if is_complex:  # pragma: no cover
+            dtype = dtype_to_complex_dtype(dtype)
+    else:
+        if is_complex:  # pragma: no cover
+            dtype = dtype_to_complex_dtype(dtype)
+    if isinstance(x, np.ndarray):
+        x = torch.from_numpy(x)
     return x.to(device=device, dtype=dtype)
 
 

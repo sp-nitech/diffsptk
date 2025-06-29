@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 from .fbank import MelFilterBankAnalysis
 
@@ -60,6 +60,12 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     learnable : bool
         Whether to make the basis learnable.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -75,12 +81,16 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         erb_factor: float | None = None,
         use_power: bool = False,
         learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = n_channel
 
-        self.values, _, tensors = self._precompute(*get_values(locals(), drop=1))
+        self.values, _, tensors = self._precompute(
+            **filter_values(locals(), drop_keys=["learnable"])
+        )
         if learnable:
             self.H = nn.Parameter(tensors[0])
         else:
@@ -146,8 +156,8 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
         scale: str,
         erb_factor: float | None,
         use_power: bool,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         InverseMelFilterBankAnalysis._check()
 

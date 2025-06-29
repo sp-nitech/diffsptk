@@ -21,11 +21,15 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("window", ["sine", "vorbis", "kbd", "rectangular"])
-def test_compatibility(device, module, window, L=512):
-    mdst_params = {"frame_length": L, "window": window}
+def test_compatibility(device, dtype, module, window, L=512):
+    mdst_params = {
+        "frame_length": L,
+        "window": window,
+        "device": device,
+        "dtype": dtype,
+    }
     mdst = diffsptk.MDST(**mdst_params)
     imdst = U.choice(
         module,
@@ -37,6 +41,7 @@ def test_compatibility(device, module, window, L=512):
     # torch.round is for float precision.
     U.check_compatibility(
         device,
+        dtype,
         [torch.round, imdst, mdst],
         [],
         "x2x +sd tools/SPTK/asset/data.short",
@@ -44,4 +49,4 @@ def test_compatibility(device, module, window, L=512):
         [],
     )
 
-    U.check_differentiability(device, imdst, [10, L // 2])
+    U.check_differentiability(device, dtype, imdst, [10, L // 2])

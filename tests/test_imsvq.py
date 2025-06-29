@@ -14,14 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import pytest
-
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, m=9, K=4, Q=2):
+def test_compatibility(device, dtype, m=9, K=4, Q=2):
     imsvq = diffsptk.InverseMultiStageVectorQuantization()
 
     tmp1 = "imsvq.tmp1"
@@ -29,6 +26,7 @@ def test_compatibility(device, m=9, K=4, Q=2):
     tmp3 = "imsvq.tmp3"
     U.check_compatibility(
         device,
+        dtype,
         imsvq,
         [
             f"echo 0 3 1 2 3 2 1 0 | x2x +ad > {tmp1}",

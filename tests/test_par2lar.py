@@ -20,9 +20,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, M=9, B=2):
+def test_compatibility(device, dtype, module, M=9, B=2):
     par2lar = U.choice(
         module,
         diffsptk.ParcorCoefficientsToLogAreaRatio,
@@ -32,6 +31,7 @@ def test_compatibility(device, module, M=9, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         par2lar,
         [],
         f"nrand -l {B * (M + 1)} -v 0.1",
@@ -41,4 +41,4 @@ def test_compatibility(device, module, M=9, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, par2lar, [B, M + 1])
+    U.check_differentiability(device, dtype, par2lar, [B, M + 1])

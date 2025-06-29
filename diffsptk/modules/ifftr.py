@@ -18,7 +18,7 @@ import torch
 from torch import nn
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, complex_dtype_to_dtype, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -38,16 +38,27 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
         Whether to make the DFT basis learnable. If True, the module performs DFT rather
         than FFT.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
-        self, fft_length: int, out_length: int | None = None, learnable: bool = False
+        self,
+        fft_length: int,
+        out_length: int | None = None,
+        learnable: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         if learnable is True:
             self.W = nn.Parameter(tensors[0])
         elif learnable == "debug":
@@ -84,7 +95,12 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, _, _ = RealValuedInverseFastFourierTransform._precompute(
-            2 * y.size(-1) - 2, *args, **kwargs
+            2 * y.size(-1) - 2,
+            *args,
+            **kwargs,
+            learnable=False,
+            device=y.device,
+            dtype=complex_dtype_to_dtype(y.dtype),
         )
         return RealValuedInverseFastFourierTransform._forward(y, *values)
 
@@ -102,10 +118,10 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(
         fft_length: int,
-        out_length: int | None = None,
-        learnable: bool = False,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        out_length: int | None,
+        learnable: bool,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         RealValuedInverseFastFourierTransform._check(fft_length, out_length)
         if learnable:

@@ -21,7 +21,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_layer, get_values
+from ..utils.private import check_size, filter_values, get_layer
 from .base import BaseFunctionalModule
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
@@ -57,6 +57,12 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
                   'cycle', 'radian', 'degree', 'complex']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -70,12 +76,14 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         mul: bool = False,
         n_fft=512,
         out_format: str | int = "power",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        self.values, layers, _ = self._precompute(*get_values(locals()))
+        self.values, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
@@ -113,7 +121,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values, layers, _ = MelGeneralizedCepstrumToSpectrum._precompute(
-            mc.size(-1) - 1, *args, **kwargs
+            mc.size(-1) - 1, *args, **kwargs, dtype=mc.dtype, device=mc.device
         )
         return MelGeneralizedCepstrumToSpectrum._forward(mc, *values, *layers)
 
@@ -135,6 +143,8 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         mul: bool,
         n_fft: int,
         out_format: str | int,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelGeneralizedCepstrumToSpectrum._check()
 
@@ -172,6 +182,8 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
                 out_norm=False,
                 out_mul=False,
                 n_fft=n_fft,
+                device=device,
+                dtype=dtype,
             ),
         )
         return (formatter,), (mgc2c,), None

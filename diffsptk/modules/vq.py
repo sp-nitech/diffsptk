@@ -31,6 +31,9 @@ class VectorQuantization(BaseNonFunctionalModule):
     codebook_size : int >= 1
         The codebook size, :math:`K`.
 
+    device : torch.device or None
+        The device of this module.
+
     **kwargs : additional keyword arguments
         See `this page`_ for details.
 
@@ -41,7 +44,13 @@ class VectorQuantization(BaseNonFunctionalModule):
 
     """
 
-    def __init__(self, order: int, codebook_size: int, **kwargs) -> None:
+    def __init__(
+        self,
+        order: int,
+        codebook_size: int,
+        device: torch.device | None = None,
+        **kwargs,
+    ) -> None:
         super().__init__()
 
         if order < 0:
@@ -53,7 +62,7 @@ class VectorQuantization(BaseNonFunctionalModule):
 
         self.vq = VectorQuantize(
             dim=order + 1, codebook_size=codebook_size, **kwargs
-        ).float()
+        ).to(device=device, dtype=torch.float)
 
     @property
     def codebook(self) -> torch.Tensor:
@@ -105,6 +114,7 @@ class VectorQuantization(BaseNonFunctionalModule):
             x = x.unsqueeze(0)
 
         xq, indices, loss = self.vq(x.float(), **kwargs)
+        xq = xq.to(dtype=x.dtype)
 
         if d == 1:
             xq = xq.squeeze(0)

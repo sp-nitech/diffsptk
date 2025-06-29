@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values
+from ..utils.private import filter_values, get_layer
 from .base import BaseFunctionalModule
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
@@ -41,12 +41,25 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
     ir_length : int >= 1
         The length of the impulse response.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, cep_order: int, alpha: float = 0, ir_length: int = 128) -> None:
+    def __init__(
+        self,
+        cep_order: int,
+        alpha: float = 0,
+        ir_length: int = 128,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -93,8 +106,8 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         cep_order: int,
         alpha: float,
         ir_length: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MelCepstrumPowerNormalization._check()
         module = inspect.stack()[1].function != "_func"
@@ -106,6 +119,8 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
                 in_order=cep_order,
                 out_order=ir_length - 1,
                 alpha=-alpha,
+                device=device,
+                dtype=dtype,
             ),
         )
         c2acr = get_layer(

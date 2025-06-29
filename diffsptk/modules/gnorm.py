@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_gamma, get_values
+from ..utils.private import check_size, filter_values, get_gamma
 from .base import BaseFunctionalModule
 
 
@@ -48,7 +48,7 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
         super().__init__()
 
         self.in_dim = cep_order + 1
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum gain normalization.

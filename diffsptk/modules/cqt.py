@@ -43,7 +43,7 @@ from ..third_party.librosa import (
     vqt_filter_fft,
     wavelet_lengths,
 )
-from ..utils.private import Lambda, get_resample_params, numpy_to_torch
+from ..utils.private import Lambda, get_resample_params, to
 from .base import BaseNonFunctionalModule
 from .stft import ShortTimeFourierTransform as STFT
 
@@ -89,6 +89,12 @@ class ConstantQTransform(BaseNonFunctionalModule):
     res_type : ['kaiser_best', 'kaiser_fast'] or None
         The resampling type.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     **kwargs : additional keyword arguments
         See `torchaudio.transforms.Resample
         <https://pytorch.org/audio/main/generated/torchaudio.transforms.Resample.html>`_.
@@ -110,6 +116,8 @@ class ConstantQTransform(BaseNonFunctionalModule):
         window: str = "hann",
         scale: bool = True,
         res_type: str | None = "kaiser_best",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -155,9 +163,9 @@ class ConstantQTransform(BaseNonFunctionalModule):
                 torchaudio.transforms.Resample(
                     orig_freq=downsample_factor,
                     new_freq=1,
-                    dtype=torch.get_default_dtype(),
+                    dtype=torch.get_default_dtype() if dtype is None else dtype,
                     **kwargs,
-                )
+                ).to(device)
             )
             if scale:
                 downsample_scale = np.sqrt(downsample_factor)
@@ -184,7 +192,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
             cqt_scale = np.reciprocal(np.sqrt(lengths))
         else:
             cqt_scale = np.ones(K)
-        self.register_buffer("cqt_scale", numpy_to_torch(cqt_scale))
+        self.register_buffer("cqt_scale", to(cqt_scale, device=device, dtype=dtype))
 
         fp = [frame_period]
         sr = [sample_rate]
@@ -214,7 +222,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
 
             fft_basis *= np.sqrt(sample_rate / sr[i])
             self.register_buffer(
-                f"fft_basis_{i}", numpy_to_torch(fft_basis.todense()).T
+                f"fft_basis_{i}", to(fft_basis.todense().T, device=device, dtype=dtype)
             )
 
             transforms.append(
@@ -227,6 +235,8 @@ class ConstantQTransform(BaseNonFunctionalModule):
                     norm="none",
                     eps=0,
                     out_format="complex",
+                    device=device,
+                    dtype=dtype,
                 )
             )
 
@@ -237,9 +247,9 @@ class ConstantQTransform(BaseNonFunctionalModule):
                         torchaudio.transforms.Resample(
                             orig_freq=2,
                             new_freq=1,
-                            dtype=torch.get_default_dtype(),
+                            dtype=torch.get_default_dtype() if dtype is None else dtype,
                             **kwargs,
-                        ),
+                        ).to(device),
                         Lambda(lambda x: x * resample_scale),
                     )
                 )

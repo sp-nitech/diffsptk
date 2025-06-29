@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import get_values, remove_gain
+from ..utils.private import filter_values, remove_gain
 from .base import BaseFunctionalModule
 
 
@@ -37,6 +37,12 @@ class GroupDelay(BaseFunctionalModule):
     gamma : float > 0
         The tuning parameter, :math:`\\gamma`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -44,10 +50,12 @@ class GroupDelay(BaseFunctionalModule):
         fft_length: int,
         alpha: float = 1,
         gamma: float = 1,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(
@@ -107,8 +115,8 @@ class GroupDelay(BaseFunctionalModule):
         fft_length: int,
         alpha: float,
         gamma: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         GroupDelay._check(fft_length, alpha, gamma)
         ramp = torch.arange(fft_length, device=device, dtype=dtype)

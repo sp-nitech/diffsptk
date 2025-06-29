@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import UNVOICED_SYMBOL, get_values
+from ..utils.private import UNVOICED_SYMBOL, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -35,7 +35,7 @@ class MagicNumberInterpolation(BaseFunctionalModule):
     def __init__(self, magic_number: float = UNVOICED_SYMBOL) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("magic_number", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -125,7 +125,9 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
                     return_counts=True,
                     dim=-1,
                 )
-                w = torch.repeat_interleave(uniques / (counts + 1), counts, dim=-1)
+                w = torch.repeat_interleave(
+                    uniques.to(x.dtype) / (counts + 1), counts, dim=-1
+                )
                 if uniques[0]:
                     w[..., : counts[0]] = 0
                 w = torch.cumsum(w, dim=-1)

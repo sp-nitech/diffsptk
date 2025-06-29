@@ -20,11 +20,12 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("relative_floor", [None, -40])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility(device, module, relative_floor, out_format, eps=0.01, L=16, B=2):
+def test_compatibility(
+    device, dtype, module, relative_floor, out_format, eps=0.01, L=16, B=2
+):
     spec = U.choice(
         module,
         diffsptk.Spectrum,
@@ -43,6 +44,7 @@ def test_compatibility(device, module, relative_floor, out_format, eps=0.01, L=1
     tmp2 = "spec.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         spec,
         [f"nrand -s 1 -l {B * L} > {tmp1}", f"nrand -s 2 -l {B * L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -52,15 +54,15 @@ def test_compatibility(device, module, relative_floor, out_format, eps=0.01, L=1
         dy=L // 2 + 1,
     )
 
-    U.check_differentiability(device, spec, [(B, L), (B, L)])
+    U.check_differentiability(device, dtype, spec, [(B, L), (B, L)])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_b(device, L=16, B=2):
+def test_compatibility_b(device, dtype, L=16, B=2):
     spec = diffsptk.Spectrum(L)
 
     U.check_compatibility(
         device,
+        dtype,
         spec,
         [],
         f"nrand -s 1 -l {B * L}",
@@ -71,13 +73,13 @@ def test_compatibility_b(device, L=16, B=2):
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_a(device, L=16, B=2):
+def test_compatibility_a(device, dtype, L=16, B=2):
     spec = diffsptk.Spectrum(L)
 
     tmp = "spec.tmp"
     U.check_compatibility(
         device,
+        dtype,
         spec,
         [f"nrand -s 2 -l {B * L} > {tmp}"],
         [f"cat {tmp}"],

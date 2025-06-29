@@ -23,14 +23,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
 @pytest.mark.parametrize("unvoiced_region", ["gauss", "zeros"])
-def test_compatibility(device, module, voiced_region, unvoiced_region, P=80):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
+def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=80):
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
 

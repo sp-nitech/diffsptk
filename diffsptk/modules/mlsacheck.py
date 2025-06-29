@@ -19,7 +19,7 @@ import warnings
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -57,6 +57,12 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
     mod_type : ['clip', 'scale']
         The modification method.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Imai et al., "Mel log spectrum approximation (MLSA) filter for speech
@@ -77,12 +83,14 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         n_fft: int = 256,
         warn_type: str = "warn",
         mod_type: str = "scale",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("alpha_vector", tensors[0])
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
@@ -139,8 +147,8 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         n_fft: int,
         warn_type: str,
         mod_type: str,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         MLSADigitalFilterStabilityCheck._check(cep_order)
 

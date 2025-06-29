@@ -24,17 +24,22 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("fp", [127, 128])
 @pytest.mark.parametrize("K", [1, 252])
 @pytest.mark.parametrize("scale", [False, True])
-def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose=False):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
+def test_compatibility(
+    device, dtype, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose=False
+):
     icqt = diffsptk.ICQT(
-        fp, sr, f_min=f_min, n_bin=K, n_bin_per_octave=B, scale=scale
-    ).to(device)
+        fp,
+        sr,
+        f_min=f_min,
+        n_bin=K,
+        n_bin_per_octave=B,
+        scale=scale,
+        device=device,
+        dtype=dtype,
+    )
 
     try:  # pragma: no cover
         librosa = importlib.import_module("librosa")
@@ -63,9 +68,7 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
             hop_length=fp,
             scale=scale,
             res_type="kaiser_best",
-            dtype=np.float64
-            if torch.get_default_dtype() == torch.double
-            else np.float32,
+            dtype=np.float64 if dtype == torch.double else np.float32,
             length=T,
         )
         if verbose:
@@ -81,4 +84,4 @@ def test_compatibility(device, fp, K, scale, sr=22050, B=36, f_min=32.7, verbose
     except ImportError:
         pass
 
-    U.check_differentiability(device, icqt, [1, K], dtype=U.get_complex_dtype())
+    U.check_differentiability(device, dtype, icqt, [1, K], complex_input=True)

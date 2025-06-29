@@ -20,14 +20,16 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("M", [10, 11])
 @pytest.mark.parametrize("a", [10, 50, 100])
-def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
-    pqmf = diffsptk.PQMF(K, M, alpha=a, step_size=tau, eps=eps)
+def test_compatibility(device, dtype, M, a, tau=0.01, eps=0.01, K=4, T=20):
+    pqmf = diffsptk.PQMF(
+        K, M, alpha=a, step_size=tau, eps=eps, device=device, dtype=dtype
+    )
 
     U.check_compatibility(
         device,
+        dtype,
         [lambda x: x.transpose(1, 2), pqmf],
         [],
         f"nrand -l {T}",
@@ -37,7 +39,7 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         dy=K,
     )
 
-    U.check_differentiability(device, pqmf, [T])
+    U.check_differentiability(device, dtype, pqmf, [T])
 
 
 def test_various_shape(K=4, M=10, T=20):

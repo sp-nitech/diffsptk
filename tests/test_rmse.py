@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("reduction", ["none", "mean", "sum"])
-def test_compatibility(device, module, reduction, B=2, L=10):
+def test_compatibility(device, dtype, module, reduction, B=2, L=10):
     rmse = U.choice(
         module,
         diffsptk.RMSE,
@@ -37,6 +36,7 @@ def test_compatibility(device, module, reduction, B=2, L=10):
     tmp2 = "rmse.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         rmse,
         [f"nrand -s 1 -l {B * L} > {tmp1}", f"nrand -s 2 -l {B * L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -45,4 +45,4 @@ def test_compatibility(device, module, reduction, B=2, L=10):
         dx=L,
     )
 
-    U.check_differentiability(device, rmse, [(B, L), (B, L)])
+    U.check_differentiability(device, dtype, rmse, [(B, L), (B, L)])

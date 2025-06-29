@@ -21,15 +21,14 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("dst_type", [1, 2, 3, 4])
-def test_compatibility(device, module, dst_type, L=8, B=2):
+def test_compatibility(device, dtype, module, dst_type, L=8, B=2):
     dst = U.choice(
         module,
         diffsptk.DST,
         diffsptk.functional.dst,
-        {"dst_length": L, "dst_type": dst_type},
+        {"dst_length": L, "dst_type": dst_type, "device": device, "dtype": dtype},
     )
 
     def func(x):
@@ -37,9 +36,10 @@ def test_compatibility(device, module, dst_type, L=8, B=2):
 
     U.check_confidence(
         device,
+        dtype,
         dst,
         func,
         [B, L],
     )
 
-    U.check_differentiability(device, dst, [B, L])
+    U.check_differentiability(device, dtype, dst, [B, L])

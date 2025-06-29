@@ -21,7 +21,6 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize(
     "data",
@@ -32,7 +31,7 @@ import tests.utils as U
     ],
 )
 @pytest.mark.parametrize("L", [1, 2])
-def test_compatibility(device, module, data, L, N=10, magic_number=0):
+def test_compatibility(device, dtype, module, data, L, N=10, magic_number=0):
     magic_intpl = U.choice(
         module,
         diffsptk.MagicNumberInterpolation,
@@ -42,6 +41,7 @@ def test_compatibility(device, module, data, L, N=10, magic_number=0):
 
     U.check_compatibility(
         device,
+        dtype,
         magic_intpl,
         [],
         f"echo {data} | x2x +ad",
@@ -51,7 +51,7 @@ def test_compatibility(device, module, data, L, N=10, magic_number=0):
         dy=L,
     )
 
-    U.check_differentiability(device, [magic_intpl, F.dropout], [N, L])
+    U.check_differentiability(device, dtype, [magic_intpl, F.dropout], [N, L])
 
 
 def test_various_shape(N=10):

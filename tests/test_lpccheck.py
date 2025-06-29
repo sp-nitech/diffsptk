@@ -20,9 +20,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, L=32, M=9, margin=0.01, B=2):
+def test_compatibility(device, dtype, module, L=32, M=9, margin=0.01, B=2):
     lpccheck = U.choice(
         module,
         diffsptk.LinearPredictiveCoefficientsStabilityCheck,
@@ -32,6 +31,7 @@ def test_compatibility(device, module, L=32, M=9, margin=0.01, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         lpccheck,
         [],
         f"nrand -l {B * L} | lpc -l {L} -m {M}",
@@ -41,4 +41,4 @@ def test_compatibility(device, module, L=32, M=9, margin=0.01, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, lpccheck, [B, M + 1])
+    U.check_differentiability(device, dtype, lpccheck, [B, M + 1])

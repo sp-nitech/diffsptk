@@ -16,20 +16,18 @@
 
 from operator import itemgetter
 
-import pytest
-
 import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility(device, m=9, K=4, B=8):
-    vq = diffsptk.VectorQuantization(m, K)
+def test_compatibility(device, dtype, m=9, K=4, B=8):
+    vq = diffsptk.VectorQuantization(m, K, device=device)
 
     tmp1 = "vq.tmp1"
     tmp2 = "vq.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         [itemgetter(1), vq],
         [
             f"nrand -s 123 -l {B * (m + 1)} > {tmp1}",
@@ -41,4 +39,4 @@ def test_compatibility(device, m=9, K=4, B=8):
         dx=[m + 1, m + 1],
     )
 
-    U.check_differentiability(device, [itemgetter(2), vq], [m + 1])
+    U.check_differentiability(device, dtype, [itemgetter(2), vq], [m + 1])

@@ -18,7 +18,7 @@ import numpy as np
 import torch
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 LOG_ZERO = -1.0e10
@@ -48,6 +48,12 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
     out_format : ['db', 'log-magnitude', 'magnitude', 'power']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. V. Oppenheim et al., "Discrete representation of signals," *Proceedings of
@@ -66,12 +72,14 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         gamma: float = -1,
         log_gain: bool = False,
         out_format: str | int = "power",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = lsp_order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("cos_omega", tensors[0])
         self.register_buffer("p_bias", tensors[1])
         self.register_buffer("q_bias", tensors[2])
@@ -137,8 +145,8 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         gamma: float,
         log_gain: bool,
         out_format: str | int,
-        dtype: torch.dtype | None = None,
-        device: torch.device | None = None,
+        dtype: torch.dtype | None,
+        device: torch.device | None,
     ) -> Precomputed:
         LineSpectralPairsToSpectrum._check(lsp_order, fft_length, alpha, gamma)
 

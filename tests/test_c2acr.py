@@ -20,9 +20,8 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
-def test_compatibility(device, module, m=4, M=5, L=16, B=2):
+def test_compatibility(device, dtype, module, m=4, M=5, L=16, B=2):
     c2acr = U.choice(
         module,
         diffsptk.CepstrumToAutocorrelation,
@@ -32,6 +31,7 @@ def test_compatibility(device, module, m=4, M=5, L=16, B=2):
 
     U.check_compatibility(
         device,
+        dtype,
         c2acr,
         [],
         f"nrand -l {B * (m + 1)}",
@@ -41,4 +41,4 @@ def test_compatibility(device, module, m=4, M=5, L=16, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, c2acr, [B, m + 1])
+    U.check_differentiability(device, dtype, c2acr, [B, m + 1])

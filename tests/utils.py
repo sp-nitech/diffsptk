@@ -40,31 +40,35 @@ def choice(is_module, module, func, params={}):
     if is_module:
         return module(**params)
 
+    exclude_keys = ("learnable", "device", "dtype")
+    filtered_params = {k: v for k, v in params.items() if k not in exclude_keys}
     if module._takes_input_size():
-        params = dict(islice(params.items(), 1, None))
-    if "learnable" in params:
-        params.pop("learnable")
+        filtered_params = dict(islice(filtered_params.items(), 1, None))
 
     def f(*args, **kwargs):
-        return func(*args, **params, **kwargs)
+        return func(*args, **filtered_params, **kwargs)
 
     return f
 
 
-def get_complex_dtype():
-    return (
-        torch.complex128
-        if torch.get_default_dtype() == torch.double
-        else torch.complex64
-    )
+def dtype_to_complex_dtype(dtype: torch.dtype | None) -> torch.dtype:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+    if dtype == torch.double:
+        dtype = torch.complex128
+    elif dtype == torch.float:
+        dtype = torch.complex64
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype}.")
+    return dtype
 
 
-def allclose(a, b, rtol=None, atol=None):
-    is_double = torch.get_default_dtype() == torch.double
+def allclose(a, b, rtol=None, atol=None, dtype=None, factor=1):
+    is_double = dtype == torch.double
     if rtol is None:
-        rtol = 1e-5 if is_double else 1e-4
+        rtol = (1e-5 if is_double else 1e-4) * factor
     if atol is None:
-        atol = 1e-8 if is_double else 1e-6
+        atol = (1e-8 if is_double else 1e-6) * factor
     return np.allclose(a, b, rtol=rtol, atol=atol)
 
 
@@ -77,10 +81,7 @@ def call(cmd, get=True):
             stdout=subprocess.PIPE,
             check=False,
         )
-        is_double = torch.get_default_dtype() == torch.double
-        data = np.fromstring(
-            res.stdout, sep="\n", dtype=np.double if is_double else np.float32
-        )
+        data = np.fromstring(res.stdout, sep="\n", dtype=np.double)
         if len(data) == 0:
             raise RuntimeError(f"Failed to run command: {cmd}")
         return data
@@ -98,6 +99,7 @@ def call(cmd, get=True):
 
 def check_compatibility(
     device,
+    dtype,
     modules,
     setup,
     inputs,
@@ -112,8 +114,8 @@ def check_compatibility(
     verbose=False,
     **kwargs,
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    if dtype is None:
+        dtype = torch.get_default_dtype()
 
     for cmd in setup:
         call(cmd, get=False)
@@ -125,7 +127,7 @@ def check_compatibility(
 
     x = []
     for i, cmd in enumerate(inputs):
-        x.append(torch.from_numpy(call(cmd)).to(device))
+        x.append(torch.from_numpy(call(cmd)).to(device=device, dtype=dtype))
         if is_array(dx):
             if dx[i] is not None:
                 if is_array(dx[i]):
@@ -148,7 +150,7 @@ def check_compatibility(
     for cmd in teardown:
         call(cmd, get=False)
 
-    module = compose(*[m.to(device) if hasattr(m, "to") else m for m in modules])
+    module = compose(*modules)
     if len(key) == 0:
         y_hat = module(*x, **opt).cpu().numpy()
     else:
@@ -164,35 +166,33 @@ def check_compatibility(
         print(f"Target: {y}")
 
     if eq is None:
-        assert allclose(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
+        assert allclose(y_hat, y, dtype=dtype, **kwargs), (
+            f"Output: {y_hat}\nTarget: {y}"
+        )
     else:
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
 
 
 def check_confidence(
     device,
+    dtype,
     module,
     func,
     size,
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    x = torch.randn(*size, device=device)
-    if hasattr(module, "to"):
-        module = module.to(device)
+    x = torch.randn(*size, device=device, dtype=dtype)
     y = func(x.cpu().numpy())
     y_hat = module(x).cpu().numpy()
-
-    assert allclose(y_hat, y), f"Output: {y_hat}\nTarget: {y}"
+    assert allclose(y_hat, y, dtype=dtype), f"Output: {y_hat}\nTarget: {y}"
 
 
 def check_differentiability(
     device,
+    dtype,
     modules,
     shapes,
     *,
-    dtype=None,
+    complex_input=False,
     checks=None,
     scales=None,
     opt={},
@@ -201,8 +201,8 @@ def check_differentiability(
     check_nan_grad=True,
     check_inf_grad=True,
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+    if complex_input:
+        dtype = dtype_to_complex_dtype(dtype)
 
     if not is_array(modules):
         modules = [modules]
@@ -260,7 +260,11 @@ def check_various_shape(module, shapes, *, preprocess=None):
             assert torch.allclose(y, target)
 
 
-def check_learnable(module, shape, dtype=None):
+def check_learnable(module, shape, complex_input=False):
+    dtype = None
+    if complex_input:
+        dtype = dtype_to_complex_dtype(dtype)
+
     params_before = []
     for p in module.parameters():
         params_before.append(p.clone())

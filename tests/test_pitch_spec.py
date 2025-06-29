@@ -22,14 +22,16 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility_d4c(device, out_format, P=80, sr=16000, L=1024, B=2):
-    if torch.get_default_dtype() == torch.float:
-        pytest.skip("This test is only for torch.double.")
-
+def test_compatibility_d4c(device, dtype, out_format, P=80, sr=16000, L=1024, B=2):
     pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
-        P, sr, L, algorithm="cheap-trick", out_format=out_format
+        P,
+        sr,
+        L,
+        algorithm="cheap-trick",
+        out_format=out_format,
+        device=device,
+        dtype=dtype,
     )
 
     s = sr // 1000
@@ -37,6 +39,7 @@ def test_compatibility_d4c(device, out_format, P=80, sr=16000, L=1024, B=2):
     tmp2 = "pitch_spec.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         pitch_spec,
         [
             f"x2x +sd tools/SPTK/asset/data.short > {tmp1}",
@@ -46,23 +49,17 @@ def test_compatibility_d4c(device, out_format, P=80, sr=16000, L=1024, B=2):
         f"pitch_spec -x -s {s} -p {P} -l {L} -q 1 -o {out_format} {tmp2} < {tmp1}",
         [f"rm {tmp1} {tmp2}"],
         dy=L // 2 + 1,
-        rtol=1e-5 if device == "cpu" else 1e-4,
+        rtol=1e-4 if dtype == torch.double else 1e5,
     )
 
     U.check_differentiability(
-        device, pitch_spec, [(B, sr), (B, sr // P)], checks=[True, False]
+        device, dtype, pitch_spec, [(B, sr), (B, sr // P)], checks=[True, False]
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
+@pytest.mark.skip_float_check
 @pytest.mark.parametrize("out_format", [0, 1, 2, 3])
-def test_compatibility_straight(device, out_format, P=80, sr=16000, L=2048, B=2):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
-    if torch.get_default_dtype() == torch.float:
-        pytest.skip("This test is only for torch.double.")
-
+def test_compatibility_straight(device, dtype, out_format, P=80, sr=16000, L=2048, B=2):
     cmd = "x2x +sd tools/SPTK/asset/data.short"
     x = U.call(cmd)
 
@@ -71,8 +68,14 @@ def test_compatibility_straight(device, out_format, P=80, sr=16000, L=2048, B=2)
     f0 = U.call(cmd)
 
     pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(
-        P, sr, L, algorithm="straight", out_format=out_format
-    ).to(device)
+        P,
+        sr,
+        L,
+        algorithm="straight",
+        out_format=out_format,
+        device=device,
+        dtype=dtype,
+    )
 
     sp_formats = {0: "db", 1: "log", 2: "linear", 3: "power"}
     sp = pylstraight.extract_sp(
@@ -88,5 +91,5 @@ def test_compatibility_straight(device, out_format, P=80, sr=16000, L=2048, B=2)
     assert U.allclose(sp, sp_hat, rtol=1e-1)
 
     U.check_differentiability(
-        device, pitch_spec, [(B, sr), (B, sr // P)], checks=[True, False]
+        device, dtype, pitch_spec, [(B, sr), (B, sr // P)], checks=[True, False]
     )

@@ -21,14 +21,11 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("fl", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("fp", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("center", [False, True])
-def test_compatibility(device, module, fl, fp, center, T=20):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
+def test_compatibility(device, dtype, module, fl, fp, center, T=20):
     if fl < fp:
         return
 
@@ -36,23 +33,27 @@ def test_compatibility(device, module, fl, fp, center, T=20):
         fl,
         fp,
         center=center,
-    ).to(device)
+    )
     unframe = U.choice(
         module,
         diffsptk.Unframe,
         diffsptk.functional.unframe,
-        {"frame_length": fl, "frame_period": fp, "center": center},
+        {
+            "frame_length": fl,
+            "frame_period": fp,
+            "center": center,
+            "device": device,
+            "dtype": dtype,
+        },
     )
-    if module:
-        unframe = unframe.to(device)
 
-    x1 = diffsptk.ramp(T, device=device)
+    x1 = diffsptk.ramp(T, device=device, dtype=dtype)
     y = frame(x1)
-    x2 = diffsptk.ramp(torch.max(y), device=device)
+    x2 = diffsptk.ramp(torch.max(y), device=device, dtype=dtype)
     x3 = unframe(y, out_length=x2.size(0))
     assert torch.allclose(x2, x3)
 
-    U.check_differentiability(device, unframe, [T // fp, fl])
+    U.check_differentiability(device, dtype, unframe, [T // fp, fl])
 
 
 def test_multi_dimensional(fl=5, fp=3, B=2, C=4, T=20):

@@ -20,20 +20,26 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("dht_type", [1, 2, 3, 4])
-def test_compatibility(device, module, dht_type, L=8, B=2):
-    dht = diffsptk.DHT(L, dht_type)
+def test_compatibility(device, dtype, module, dht_type, L=8, B=2):
+    dht_params = {
+        "dht_length": L,
+        "dht_type": dht_type,
+        "device": device,
+        "dtype": dtype,
+    }
+    dht = diffsptk.DHT(**dht_params)
     idht = U.choice(
         module,
         diffsptk.IDHT,
         diffsptk.functional.idht,
-        {"dht_length": L, "dht_type": dht_type},
+        dht_params,
     )
 
     U.check_compatibility(
         device,
+        dtype,
         [idht, dht],
         [],
         f"nrand -l {B * L}",
@@ -43,4 +49,4 @@ def test_compatibility(device, module, dht_type, L=8, B=2):
         dy=L,
     )
 
-    U.check_differentiability(device, idht, [B, L])
+    U.check_differentiability(device, dtype, idht, [B, L])

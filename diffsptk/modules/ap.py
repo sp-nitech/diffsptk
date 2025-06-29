@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..third_party.world import dc_correction, get_windowed_waveform, linear_smoothing
-from ..utils.private import numpy_to_torch
+from ..utils.private import to
 from .base import BaseNonFunctionalModule
 from .spec import Spectrum
 from .window import Window
@@ -55,6 +55,12 @@ class Aperiodicity(BaseNonFunctionalModule):
 
     upper_bound : float <= 1
         The upper bound of aperiodicity.
+
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
 
     References
     ----------
@@ -209,6 +215,8 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         *,
         window_length_ms: float = 30,
         eps: float = 1e-5,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -236,31 +244,37 @@ class AperiodicityExtractionByTANDEM(nn.Module):
             idx = np.searchsorted(coarse_axis, freq_axis) - 1
             idx = np.clip(idx, 0, len(coarse_axis) - 2)
             idx = idx.reshape(1, 1, -1)
-            self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+            self.register_buffer(
+                "interp_indices", to(idx, device=device, dtype=torch.long)
+            )
 
             x0 = coarse_axis[:-1]
             dx = coarse_axis[1:] - x0
             weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
-            self.register_buffer("interp_weights", numpy_to_torch(weights))
+            self.register_buffer(
+                "interp_weights", to(weights, device=device, dtype=dtype)
+            )
 
         self.segment_length = [
             int(i * window_length_ms / 500 + 1.5) for i in self.cutoff_list
         ]
-        ramp = torch.arange(-1, self.segment_length[0] + 1).view(1, 1, -1)
+        ramp = torch.arange(-1, self.segment_length[0] + 1, device=device).view(
+            1, 1, -1
+        )
         self.register_buffer("ramp", ramp)
-        self.register_buffer("eye", torch.eye(6) * eps)
+        self.register_buffer("eye", torch.eye(6, device=device, dtype=dtype) * eps)
 
         hHP = self._qmf_high()
         hLP = self._qmf_low()
-        self.register_buffer("hHP", numpy_to_torch(hHP).view(1, 1, -1))
-        self.register_buffer("hLP", numpy_to_torch(hLP).view(1, 1, -1))
+        self.register_buffer("hHP", to(hHP, device=device, dtype=dtype).view(1, 1, -1))
+        self.register_buffer("hLP", to(hLP, device=device, dtype=dtype).view(1, 1, -1))
         self.hHP_pad = nn.ReflectionPad1d(self.hHP.size(-1) // 2)
         self.hLP_pad = nn.ReflectionPad1d(self.hLP.size(-1) // 2)
 
         window = np.zeros((self.n_band, self.segment_length[0]))
         for i, s in enumerate(self.segment_length):
             window[i, :s] = np.hanning(s + 2)[1:-1]
-        self.register_buffer("window", numpy_to_torch(window))
+        self.register_buffer("window", to(window, device=device, dtype=dtype))
         self.register_buffer("window_sqrt", self.window.sqrt())
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
@@ -442,6 +456,8 @@ class AperiodicityExtractionByD4C(nn.Module):
         *,
         threshold: float = 0,
         default_f0: float = 150,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -468,7 +484,9 @@ class AperiodicityExtractionByD4C(nn.Module):
         window_length = freqency_interval * self.fft_length_d4c // sample_rate * 2 + 1
         half_window_length = window_length // 2
         padded_window_length = self.fft_length_d4c // 2 + 1
-        window = Window(window_length, window="nuttall", norm="none").window
+        window = Window(
+            window_length, window="nuttall", norm="none", device=device, dtype=dtype
+        ).window
         windows = []
         for i in range(1, n_aperiodicity + 1):
             center = freqency_interval * i * self.fft_length_d4c // sample_rate
@@ -485,17 +503,21 @@ class AperiodicityExtractionByD4C(nn.Module):
             idx = np.searchsorted(coarse_axis, freq_axis) - 1
             idx = np.clip(idx, 0, len(coarse_axis) - 2)
             idx = idx.reshape(1, 1, -1)
-            self.register_buffer("interp_indices", numpy_to_torch(idx).long())
+            self.register_buffer(
+                "interp_indices", to(idx, device=device, dtype=torch.long)
+            )
 
             x0 = coarse_axis[:-1]
             dx = coarse_axis[1:] - x0
             weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
-            self.register_buffer("interp_weights", numpy_to_torch(weights))
+            self.register_buffer(
+                "interp_weights", to(weights, device=device, dtype=dtype)
+            )
 
         self.spec_love = Spectrum(self.fft_length_love)
         self.spec_d4c = Spectrum(self.fft_length_d4c)
 
-        self.register_buffer("ramp", torch.arange(self.fft_length_d4c))
+        self.register_buffer("ramp", torch.arange(self.fft_length_d4c, device=device))
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = (

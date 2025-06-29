@@ -18,7 +18,7 @@ import torch
 import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import TAU, UNVOICED_SYMBOL, get_values
+from ..utils.private import TAU, UNVOICED_SYMBOL, filter_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
 
@@ -58,7 +58,7 @@ class ExcitationGeneration(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(*get_values(locals()))
+        self.values = self._precompute(**filter_values(locals()))
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Generate a simple excitation signal.
@@ -205,7 +205,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         if unvoiced_region == "zeros":
             pass
         elif unvoiced_region == "gauss":
-            e[~mask] = torch.randn(torch.sum(~mask), device=e.device)
+            e[~mask] = torch.randn(torch.sum(~mask), device=e.device, dtype=e.dtype)
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
         return e

@@ -45,6 +45,12 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
     verbose : bool
         If True, shows progress bars.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -56,6 +62,8 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         sort: str = "descending",
         batch_size: int | None = None,
         verbose: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -93,9 +101,10 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
             raise ValueError(f"cov_type {cov_type} is not supported.")
         self.cov = cov
 
-        self.register_buffer("s", torch.zeros(n_comp))
-        self.register_buffer("V", torch.eye(n_comp, order + 1))
-        self.register_buffer("m", torch.zeros(order + 1))
+        params = {"device": device, "dtype": dtype}
+        self.register_buffer("s", torch.zeros(n_comp, **params))
+        self.register_buffer("V", torch.eye(n_comp, order + 1, **params))
+        self.register_buffer("m", torch.zeros(order + 1, **params))
 
     def forward(
         self, x: torch.Tensor | torch.utils.data.DataLoader

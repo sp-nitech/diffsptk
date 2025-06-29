@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, plateau, to
+from ..utils.private import check_size, filter_values, plateau, to
 from .base import BaseFunctionalModule
 
 
@@ -32,14 +32,26 @@ class DiscreteSineTransform(BaseFunctionalModule):
     dst_type : int in [1, 4]
         The DST type.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, dst_length: int, dst_type: int = 2) -> None:
+    def __init__(
+        self,
+        dst_length: int,
+        dst_type: int = 2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = dst_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -89,8 +101,8 @@ class DiscreteSineTransform(BaseFunctionalModule):
     def _precompute(
         dst_length: int,
         dst_type: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         DiscreteSineTransform._check(dst_length, dst_type)
         params = {"device": device, "dtype": torch.double}

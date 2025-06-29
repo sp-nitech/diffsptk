@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_layer, get_values
+from ..utils.private import filter_values, get_layer
 from .acorr import Autocorrelation
 from .base import BaseFunctionalModule
 from .levdur import LevinsonDurbin
@@ -38,15 +38,28 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
-    eps : float >= 0
+    eps : float >= 0 or None
         A small value to improve numerical stability.
+
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
 
     """
 
-    def __init__(self, frame_length: int, lpc_order: int, eps: float = 1e-6) -> None:
+    def __init__(
+        self,
+        frame_length: int,
+        lpc_order: int,
+        eps: float | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -93,9 +106,9 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     def _precompute(
         frame_length: int,
         lpc_order: int,
-        eps: float,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        eps: float | None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         LinearPredictiveCodingAnalysis._check()
         module = inspect.stack()[1].function != "_func"
@@ -114,6 +127,8 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
             dict(
                 lpc_order=lpc_order,
                 eps=eps,
+                device=device,
+                dtype=dtype,
             ),
         )
         return None, (acorr, levdur), None

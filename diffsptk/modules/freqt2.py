@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -41,6 +41,12 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
     n_fft : int >> M2
         The number of FFT bins. The accurate conversion requires the large value.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] T. Wakako et al., "Speech spectral estimation based on expansion of log
@@ -56,12 +62,14 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         alpha: float = 0,
         theta: float = 0,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -124,8 +132,8 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         alpha: float,
         theta: float,
         n_fft: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         SecondOrderAllPassFrequencyTransform._check(in_order, out_order, alpha, theta)
         theta *= torch.pi

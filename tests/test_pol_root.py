@@ -21,20 +21,22 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("io_format", [0, 1])
-def test_compatibility(device, module, io_format, M=12, L=32, B=2):
-    root_pol = diffsptk.PolynomialToRoots(M, out_format=io_format)
+def test_compatibility(device, dtype, module, io_format, M=12, L=32, B=2):
+    root_pol = diffsptk.PolynomialToRoots(
+        M, out_format=io_format, device=device, dtype=dtype
+    )
     pol_root = U.choice(
         module,
         diffsptk.RootsToPolynomial,
         diffsptk.functional.pol_root,
-        {"order": M, "in_format": io_format},
+        {"order": M, "in_format": io_format, "dtype": dtype},
     )
 
     U.check_compatibility(
         device,
+        dtype,
         [pol_root, root_pol],
         [],
         f"nrand -l {B * L} | acorr -l {L} -m {M} -o 1",
@@ -44,4 +46,6 @@ def test_compatibility(device, module, io_format, M=12, L=32, B=2):
         dy=M + 1,
     )
 
-    U.check_differentiability(device, [torch.abs, pol_root, root_pol], [B, M + 1])
+    U.check_differentiability(
+        device, dtype, [torch.abs, pol_root, root_pol], [B, M + 1]
+    )

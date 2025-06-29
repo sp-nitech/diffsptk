@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, to
+from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule
 
 
@@ -30,6 +30,12 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
     acr_order : int >= 0
         The order of the autocorrelation, :math:`M`.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] S. Sagayama et al., "Duality theory of composite sinusoidal modeling and
@@ -37,12 +43,17 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
 
     """
 
-    def __init__(self, acr_order: int) -> None:
+    def __init__(
+        self,
+        acr_order: int,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = acr_order + 1
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -98,8 +109,8 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
     @staticmethod
     def _precompute(
         acr_order: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         CompositeSinusoidalModelCoefficientsToAutocorrelation._check(acr_order)
         ramp = torch.arange(acr_order + 1, device=device)

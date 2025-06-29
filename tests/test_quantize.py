@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("quantizer", [0, 1])
-def test_compatibility(device, module, quantizer, v=3, n_bit=8, L=20):
+def test_compatibility(device, dtype, module, quantizer, v=3, n_bit=8, L=20):
     quantize = U.choice(
         module,
         diffsptk.UniformQuantization,
@@ -33,6 +32,7 @@ def test_compatibility(device, module, quantizer, v=3, n_bit=8, L=20):
 
     U.check_compatibility(
         device,
+        dtype,
         quantize,
         [],
         f"nrand -l {L}",
@@ -40,4 +40,4 @@ def test_compatibility(device, module, quantizer, v=3, n_bit=8, L=20):
         [],
     )
 
-    U.check_differentiability(device, quantize, [L])
+    U.check_differentiability(device, dtype, quantize, [L])

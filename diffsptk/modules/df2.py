@@ -20,7 +20,7 @@ import torch
 from torch import nn
 
 from ..typing import Callable, Precomputed
-from ..utils.private import get_values
+from ..utils.private import filter_values
 from .base import BaseNonFunctionalModule
 from .dfs import InfiniteImpulseResponseDigitalFilter
 
@@ -50,6 +50,12 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         The length of the truncated impulse response. If given, the filter is
         approximated by an FIR filter.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -60,10 +66,12 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         zero_frequency: float | None = None,
         zero_bandwidth: float | None = None,
         ir_length: int | None = None,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(*get_values(locals()))
+        _, layers, _ = self._precompute(**filter_values(locals()))
         self.layers = nn.ModuleList(layers)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -120,6 +128,8 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         zero_frequency: float | None,
         zero_bandwidth: float | None,
         ir_length: int | None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         SecondOrderDigitalFilter._check(
             sample_rate, pole_frequency, pole_bandwidth, zero_frequency, zero_bandwidth
@@ -135,7 +145,9 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
             a = get_filter_coefficients(sample_rate, pole_frequency, pole_bandwidth)
         if zero_frequency is not None:
             b = get_filter_coefficients(sample_rate, zero_frequency, zero_bandwidth)
-        dfs = InfiniteImpulseResponseDigitalFilter(a=a, b=b, ir_length=ir_length)
+        dfs = InfiniteImpulseResponseDigitalFilter(
+            a=a, b=b, ir_length=ir_length, device=device, dtype=dtype
+        )
         return None, (dfs,), None
 
     @staticmethod

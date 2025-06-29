@@ -1577,7 +1577,7 @@ def lar2par(g: Tensor) -> Tensor:
     return nn.LogAreaRatioToParcorCoefficients._func(g)
 
 
-def levdur(r: Tensor, eps: float = 0) -> Tensor:
+def levdur(r: Tensor, eps: float | None = None) -> Tensor:
     """Solve a Yule-Walker linear system.
 
     Parameters
@@ -1585,7 +1585,7 @@ def levdur(r: Tensor, eps: float = 0) -> Tensor:
     r : Tensor [shape=(..., M+1)]
         The autocorrelation.
 
-    eps : float >= 0
+    eps : float >= 0 or None
         A small value to improve numerical stability.
 
     Returns
@@ -1617,7 +1617,7 @@ def linear_intpl(x: Tensor, upsampling_factor: int = 80) -> Tensor:
     return nn.LinearInterpolation._func(x, upsampling_factor=upsampling_factor)
 
 
-def lpc(x: Tensor, lpc_order: int, eps: float = 1e-6) -> Tensor:
+def lpc(x: Tensor, lpc_order: int, eps: float | None = None) -> Tensor:
     """Perform LPC analysis.
 
     Parameters
@@ -1628,7 +1628,7 @@ def lpc(x: Tensor, lpc_order: int, eps: float = 1e-6) -> Tensor:
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
-    eps : float >= 0
+    eps : float >= 0 or None
         A small value to improve numerical stability.
 
     Returns
@@ -1840,7 +1840,7 @@ def magic_intpl(x: Tensor, magic_number: float = 0) -> Tensor:
     x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
         The data containing magic number.
 
-    magic_number : float or Tensor
+    magic_number : float
         The magic number to be interpolated.
 
     Returns

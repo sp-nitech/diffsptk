@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 from .dst import DiscreteSineTransform as DST
 
@@ -33,14 +33,26 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
     dst_type : int in [1, 4]
         The DST type.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, dst_length: int, dst_type: int = 2) -> None:
+    def __init__(
+        self,
+        dst_length: int,
+        dst_type: int = 2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = dst_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
@@ -88,8 +100,8 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
     def _precompute(
         dst_length: int,
         dst_type: int,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         type2type = {1: 1, 2: 3, 3: 2, 4: 4}
         return DST._precompute(

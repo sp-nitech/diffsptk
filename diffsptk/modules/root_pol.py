@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Callable, Precomputed
-from ..utils.private import check_size, get_values
+from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 
 
@@ -37,6 +37,12 @@ class PolynomialToRoots(BaseFunctionalModule):
     out_format : ['rectangular', 'polar']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -45,12 +51,14 @@ class PolynomialToRoots(BaseFunctionalModule):
         *,
         eps: float | None = None,
         out_format: str | int = "rectangular",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
         self.in_dim = order + 1
 
-        self.values, _, tensors = self._precompute(*get_values(locals()))
+        self.values, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("eye", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
@@ -107,7 +115,7 @@ class PolynomialToRoots(BaseFunctionalModule):
         PolynomialToRoots._check(order, eps)
 
         if eps is None:
-            eps = 1e-5 if torch.get_default_dtype() == torch.float else 1e-8
+            eps = 1e-4 if (dtype or torch.get_default_dtype()) == torch.float else 1e-8
         if out_format in (0, "rectangular"):
             formatter = lambda x: x
         elif out_format in (1, "polar"):

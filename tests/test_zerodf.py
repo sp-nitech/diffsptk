@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
+def test_compatibility(device, dtype, module, ignore_gain, M=3, T=100, P=10):
     zerodf = U.choice(
         module,
         diffsptk.AllZeroDigitalFilter,
@@ -36,6 +35,7 @@ def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
     opt = "-k" if ignore_gain else ""
     U.check_compatibility(
         device,
+        dtype,
         zerodf,
         [f"nrand -l {T} > {tmp1}", f"nrand -l {T // P * (M + 1)} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -44,4 +44,4 @@ def test_compatibility(device, module, ignore_gain, M=3, T=100, P=10):
         dx=[None, M + 1],
     )
 
-    U.check_differentiability(device, zerodf, [(T,), (T // P, M + 1)])
+    U.check_differentiability(device, dtype, zerodf, [(T,), (T // P, M + 1)])

@@ -17,7 +17,7 @@
 import torch
 
 from ..typing import Precomputed
-from ..utils.private import check_size, get_values, plateau, to
+from ..utils.private import check_size, filter_values, plateau, to
 from .base import BaseFunctionalModule
 
 
@@ -33,14 +33,26 @@ class DiscreteCosineTransform(BaseFunctionalModule):
     dct_type : int in [1, 4]
         The DCT type.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
-    def __init__(self, dct_length: int, dct_type: int = 2) -> None:
+    def __init__(
+        self,
+        dct_length: int,
+        dct_type: int = 2,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
 
         self.in_dim = dct_length
 
-        _, _, tensors = self._precompute(*get_values(locals()))
+        _, _, tensors = self._precompute(**filter_values(locals()))
         self.register_buffer("W", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -89,9 +101,9 @@ class DiscreteCosineTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(
         dct_length: int,
-        dct_type: int = 2,
-        device: torch.device | None = None,
-        dtype: torch.dtype | None = None,
+        dct_type: int,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         DiscreteCosineTransform._check(dct_length, dct_type)
         params = {"device": device, "dtype": torch.double}

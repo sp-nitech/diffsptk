@@ -20,10 +20,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("unwrap", [False, True])
-def test_compatibility(device, module, unwrap, L=16, B=2):
+def test_compatibility(device, dtype, module, unwrap, L=16, B=2):
     phase = U.choice(
         module,
         diffsptk.Phase,
@@ -36,6 +35,7 @@ def test_compatibility(device, module, unwrap, L=16, B=2):
     tmp2 = "phase.tmp2"
     U.check_compatibility(
         device,
+        dtype,
         phase,
         [f"nrand -s 1 -l {B * L} > {tmp1}", f"nrand -s 2 -l {B * L} > {tmp2}"],
         [f"cat {tmp1}", f"cat {tmp2}"],
@@ -45,15 +45,15 @@ def test_compatibility(device, module, unwrap, L=16, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiability(device, phase, [(B, L), (B, L)])
+    U.check_differentiability(device, dtype, phase, [(B, L), (B, L)])
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_b(device, L=16, B=2):
+def test_compatibility_b(device, dtype, L=16, B=2):
     phase = diffsptk.Phase(L)
 
     U.check_compatibility(
         device,
+        dtype,
         phase,
         [],
         f"nrand -s 1 -l {B * L}",
@@ -64,13 +64,13 @@ def test_compatibility_b(device, L=16, B=2):
     )
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
-def test_compatibility_a(device, L=16, B=2):
+def test_compatibility_a(device, dtype, L=16, B=2):
     phase = diffsptk.Phase(L)
 
     tmp = "phase.tmp"
     U.check_compatibility(
         device,
+        dtype,
         phase,
         [f"nrand -s 2 -l {B * L} > {tmp}"],
         [f"cat {tmp}"],

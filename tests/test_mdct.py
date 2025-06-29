@@ -20,11 +20,15 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("window", ["sine", "vorbis", "kbd", "rectangular"])
-def test_compatibility(device, module, window, L=512):
-    mdct_params = {"frame_length": L, "window": window}
+def test_compatibility(device, dtype, module, window, L=512):
+    mdct_params = {
+        "frame_length": L,
+        "window": window,
+        "device": device,
+        "dtype": dtype,
+    }
     mdct = U.choice(
         module,
         diffsptk.MDCT,
@@ -35,6 +39,7 @@ def test_compatibility(device, module, window, L=512):
 
     U.check_compatibility(
         device,
+        dtype,
         [imdct, mdct],
         [],
         f"nrand -l {L}",
@@ -42,7 +47,7 @@ def test_compatibility(device, module, window, L=512):
         [],
     )
 
-    U.check_differentiability(device, mdct, [L])
+    U.check_differentiability(device, dtype, mdct, [L])
 
 
 @pytest.mark.parametrize("learnable", [True, ("basis",), ("window",)])

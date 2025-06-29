@@ -21,17 +21,13 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("var_type", ["diag", "full"])
 @pytest.mark.parametrize("block_size", [None, (2, 2), (3, 1)])
 @pytest.mark.parametrize("batch_size", [None, 10])
 @pytest.mark.parametrize("alpha", [0.0, 0.1])
 def test_compatibility(
-    device, var_type, block_size, batch_size, alpha, M=3, K=4, B=32, n_iter=50
+    device, dtype, var_type, block_size, batch_size, alpha, M=3, K=4, B=32, n_iter=50
 ):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
     gmm = diffsptk.GMM(
         M,
         K,
@@ -39,7 +35,9 @@ def test_compatibility(
         var_type=var_type,
         block_size=block_size,
         batch_size=batch_size,
-    ).to(device)
+        device=device,
+        dtype=dtype,
+    )
 
     opt = ""
     if var_type == "full":
@@ -61,6 +59,7 @@ def test_compatibility(
     tmp7 = "gmm.tmp7"
     U.check_compatibility(
         device,
+        dtype,
         _gmm,
         [
             f"nrand -u +2 -l {B * (M + 1)} -s 1 > {tmp1}",
@@ -98,13 +97,16 @@ def test_compatibility(
         batch_size=batch_size,
         alpha=alpha,
         ubm=ubm,
-    ).to(device)
+        device=device,
+        dtype=dtype,
+    )
 
     def _gmm(x):
         return gmm(x)[-1]
 
     U.check_compatibility(
         device,
+        dtype,
         _gmm,
         [
             f"nrand -u +2 -l {B * (M + 1)} -s 5 > {tmp1}",
@@ -129,6 +131,7 @@ def test_compatibility(
 
     U.check_compatibility(
         device,
+        dtype,
         _gmmp,
         [],
         f"nrand -l {B * (M + 1)} -s 9",
@@ -143,6 +146,7 @@ def test_compatibility(
     N = M // 2
     U.check_compatibility(
         device,
+        dtype,
         _vc,
         [],
         f"nrand -l {B * (N + 1)} -s 10 -d 1",

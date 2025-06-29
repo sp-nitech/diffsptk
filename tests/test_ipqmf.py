@@ -20,14 +20,16 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("M", [10, 11])
 @pytest.mark.parametrize("a", [10, 50, 100])
-def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
-    ipqmf = diffsptk.IPQMF(K, M, alpha=a, step_size=tau, eps=eps)
+def test_compatibility(device, dtype, M, a, tau=0.01, eps=0.01, K=4, T=20):
+    ipqmf = diffsptk.IPQMF(
+        K, M, alpha=a, step_size=tau, eps=eps, device=device, dtype=dtype
+    )
 
     U.check_compatibility(
         device,
+        dtype,
         ipqmf,
         [],
         f"nrand -l {K * T}",
@@ -36,7 +38,7 @@ def test_compatibility(device, a, M, tau=0.01, eps=0.01, K=4, T=20):
         dx=T,
     )
 
-    U.check_differentiability(device, ipqmf, [K, T], opt={"keepdim": False})
+    U.check_differentiability(device, dtype, ipqmf, [K, T], opt={"keepdim": False})
 
 
 def test_learnable(K=4, M=10, T=20):
