@@ -21,11 +21,10 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("ignore_gain", [False, True])
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
 def test_compatibility(
-    device, ignore_gain, mode, c=0, alpha=0.42, M=24, P=80, L=400, fft_length=512
+    device, dtype, ignore_gain, mode, c=0, alpha=0.42, M=24, P=80, L=400, fft_length=512
 ):
     if mode == "multi-stage":
         params = {"taylor_order": 20, "cep_order": 100}
@@ -42,6 +41,8 @@ def test_compatibility(
         ignore_gain=ignore_gain,
         phase="minimum",
         mode=mode,
+        device=device,
+        dtype=dtype,
         **params,
     )
 
@@ -59,6 +60,7 @@ def test_compatibility(
     opt = "-k" if ignore_gain else ""
     U.check_compatibility(
         device,
+        dtype,
         imglsadf,
         [cmd1, cmd2],
         [f"cat {tmp1}", f"cat {tmp2}"],
