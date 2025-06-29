@@ -53,7 +53,7 @@ def test_compatibility(
         torch.set_default_dtype(torch.double)
         y = target(x).cpu()
         torch.set_default_dtype(org_dtype)
-    else:
+    else:  # pragma: no cover
         y = target(x).cpu()
     y_hat = yingram(frame(x)).cpu()
     assert U.allclose(y, y_hat, dtype=dtype, factor=10)

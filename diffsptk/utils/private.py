@@ -141,7 +141,7 @@ def to(
         is_complex = False
     if dtype is None:
         dtype = torch.get_default_dtype()
-        if is_complex:
+        if is_complex:  # pragma: no cover
             dtype = dtype_to_complex_dtype(dtype)
     else:
         if is_complex:  # pragma: no cover
