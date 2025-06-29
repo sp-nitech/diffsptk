@@ -259,7 +259,7 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate,
             new_freq=self.torchcrepe.SAMPLE_RATE,
-            dtype=dtype,
+            dtype=torch.get_default_dtype() if dtype is None else dtype,
         ).to(device)
 
         weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
@@ -297,9 +297,12 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         )
 
         periodicity = self.torchcrepe.filter.median(periodicity, self.filter_length)
+        org_dtype = torch.get_default_dtype()
+        torch.set_default_dtype(torch.float)
         pitch = self.torchcrepe.filter.mean(pitch.float(), self.filter_length).to(
             dtype=x.dtype
         )
+        torch.set_default_dtype(org_dtype)
 
         loudness = self.stft(x) + self.weights
         loudness = torch.clip(loudness, min=self.torchcrepe.loudness.MIN_DB)
@@ -347,14 +350,17 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
         self.resample = torchaudio.transforms.Resample(
             orig_freq=sample_rate,
             new_freq=self.penn.SAMPLE_RATE,
-            dtype=dtype,
+            dtype=torch.get_default_dtype() if dtype is None else dtype,
         ).to(device)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.resample(x)
         frames = self.frame(x)
         target_shape = frames.shape[:-1] + (self.penn.PITCH_BINS,)
+        org_dtype = torch.get_default_dtype()
+        torch.set_default_dtype(torch.float)
         logits = self.penn.infer(frames.float().reshape(-1, 1, self.penn.WINDOW_SIZE))
+        torch.set_default_dtype(org_dtype)
         logits = logits.reshape(*target_shape).to(dtype=x.dtype)
         return logits
 

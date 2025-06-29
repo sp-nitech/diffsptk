@@ -213,7 +213,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
                 torchaudio.transforms.Resample(
                     orig_freq=1,
                     new_freq=sample_rate // sr[i],  # must be integer
-                    dtype=dtype,
+                    dtype=torch.get_default_dtype() if dtype is None else dtype,
                     **kwargs,
                 ).to(device)
             )

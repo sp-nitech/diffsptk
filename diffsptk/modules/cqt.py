@@ -163,7 +163,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
                 torchaudio.transforms.Resample(
                     orig_freq=downsample_factor,
                     new_freq=1,
-                    dtype=dtype,
+                    dtype=torch.get_default_dtype() if dtype is None else dtype,
                     **kwargs,
                 ).to(device)
             )
@@ -247,7 +247,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
                         torchaudio.transforms.Resample(
                             orig_freq=2,
                             new_freq=1,
-                            dtype=dtype,
+                            dtype=torch.get_default_dtype() if dtype is None else dtype,
                             **kwargs,
                         ).to(device),
                         Lambda(lambda x: x * resample_scale),

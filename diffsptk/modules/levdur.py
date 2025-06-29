@@ -44,7 +44,7 @@ class LevinsonDurbin(BaseFunctionalModule):
     def __init__(
         self,
         lpc_order: int,
-        eps: float = 0,
+        eps: float | None = None,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -95,20 +95,24 @@ class LevinsonDurbin(BaseFunctionalModule):
         return True
 
     @staticmethod
-    def _check(lpc_order: int, eps: float) -> None:
+    def _check(lpc_order: int, eps: float | None) -> None:
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
-        if eps < 0:
+        if eps is not None and eps < 0:
             raise ValueError("eps must be non-negative.")
 
     @staticmethod
     def _precompute(
         lpc_order: int,
-        eps: float,
+        eps: float | None,
         device: torch.device | None,
         dtype: torch.dtype | None,
     ) -> Precomputed:
         LevinsonDurbin._check(lpc_order, eps)
+        if eps is None:
+            if dtype is None:
+                dtype = torch.get_default_dtype()
+            eps = 1e-5 if dtype == torch.float else 0
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
         return None, None, (eye,)
 

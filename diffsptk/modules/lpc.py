@@ -38,7 +38,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
-    eps : float >= 0
+    eps : float >= 0 or None
         A small value to improve numerical stability.
 
     device : torch.device or None
@@ -53,7 +53,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         self,
         frame_length: int,
         lpc_order: int,
-        eps: float = 1e-5,
+        eps: float | None = None,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -106,7 +106,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     def _precompute(
         frame_length: int,
         lpc_order: int,
-        eps: float,
+        eps: float | None,
         device: torch.device | None,
         dtype: torch.dtype | None,
     ) -> Precomputed:
