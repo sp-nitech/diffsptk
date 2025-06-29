@@ -128,10 +128,6 @@ def complex_dtype_to_dtype(dtype: torch.dtype) -> torch.dtype:
     return dtype
 
 
-def numpy_to_torch():
-    pass
-
-
 def to(
     x: torch.Tensor | np.ndarray,
     device: torch.device | None = None,

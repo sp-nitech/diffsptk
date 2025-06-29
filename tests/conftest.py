@@ -20,16 +20,16 @@ import torch
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--only_float",
-        action="store_true",
-        default=False,
-        help="Check only float dtype.",
+        "--dtype",
+        choices=["float", "double", "all"],
+        default="all",
+        help="Specify which dtype to check (float, double, or all). ",
     )
 
 
 @pytest.fixture(scope="session", autouse=True)
 def set_default_dtype(request):
-    pytest.only_float = request.config.getoption("--only_float")
+    pytest.dtype = request.config.getoption("--dtype")
 
 
 @pytest.fixture(params=["cpu", "cuda"])
@@ -43,6 +43,8 @@ def device(request):
 def dtype(request):
     if request.param is None and request.node.get_closest_marker("skip_float_check"):
         pytest.skip("Skipping float dtype check.")
-    if request.param == torch.double and pytest.only_float:
+    if request.param is None and pytest.dtype == "double":
+        pytest.skip("Skipping float dtype check.")
+    if request.param == torch.double and pytest.dtype == "float":
         pytest.skip("Skipping double dtype check.")
     return request.param
