@@ -58,6 +58,12 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
     verbose : bool or int
         If 1, shows the distance at each iteration; if 2, shows progress bars.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] M. Nakano et al., "Convergence-guaranteed multiplicative algorithms for
@@ -79,6 +85,8 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
         batch_size: int | None = None,
         seed: int | None = None,
         verbose: bool | int = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -100,16 +108,18 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
         self.batch_size = batch_size
         self.verbose = verbose
 
-        generator = get_generator(seed)
+        generator = get_generator(seed, device=device)
         self.logger = get_logger("nmf")
         self.hide_progress_bar = self.verbose <= 1
 
-        U = torch.rand(n_data, n_comp, generator=generator)
+        U = torch.rand(n_data, n_comp, device=device, dtype=dtype, generator=generator)
         if act_norm:
             U = U / U.sum(dim=1, keepdim=True)
         self.register_buffer("U", U)  # (T, K)
 
-        H = torch.rand(n_comp, order + 1, generator=generator)
+        H = torch.rand(
+            n_comp, order + 1, device=device, dtype=dtype, generator=generator
+        )
         self.register_buffer("H", H)  # (K, M+1)
 
         if beta < 1:

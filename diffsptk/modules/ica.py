@@ -52,6 +52,12 @@ class IndependentComponentAnalysis(BaseLearnerModule):
     verbose : bool
         If True, shows progress bars.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] A. Hyvarinen and E. Oja, "Independent component analysis: algorithms and
@@ -70,6 +76,8 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         batch_size: int | None = None,
         seed: int | None = None,
         verbose: bool = False,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -87,7 +95,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         self.batch_size = batch_size
         self.verbose = verbose
 
-        generator = get_generator(seed)
+        generator = get_generator(seed, device=device)
         self.logger = get_logger("ica")
         self.hide_progress_bar = self.verbose <= 1
 
@@ -100,9 +108,11 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         else:
             raise ValueError(f"func {func} is not supported.")
 
-        self.pca = PrincipalComponentAnalysis(order, n_comp, batch_size=batch_size)
+        self.pca = PrincipalComponentAnalysis(
+            order, n_comp, batch_size=batch_size, device=device, dtype=dtype
+        )
 
-        W = torch.randn(n_comp, n_comp, generator=generator)
+        W = torch.randn(n_comp, n_comp, device=device, dtype=dtype, generator=generator)
         self.register_buffer("W", W)  # (K, K)
 
     @torch.inference_mode()

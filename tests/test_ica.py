@@ -24,13 +24,9 @@ import diffsptk
 import tests.utils as U
 
 
-@pytest.mark.parametrize("device", ["cpu", "cuda"])
 @pytest.mark.parametrize("func", ["logcosh", "gauss"])
 @pytest.mark.parametrize("batch_size", [None, 100])
-def test_convergence(device, func, batch_size, T=1000, verbose=False):
-    if device == "cuda" and not torch.cuda.is_available():
-        return
-
+def test_convergence(device, dtype, func, batch_size, T=1000, verbose=False):
     s = torch.stack(
         [
             diffsptk.functional.excite(
@@ -52,7 +48,7 @@ def test_convergence(device, func, batch_size, T=1000, verbose=False):
             ),
         ],
         dim=1,
-    ).to(device)
+    ).to(device=device, dtype=dtype)
     K = s.shape[1]
 
     A = torch.tensor(
@@ -61,12 +57,18 @@ def test_convergence(device, func, batch_size, T=1000, verbose=False):
             [0.2, 0.7, 0.1],
             [0.3, 0.3, 0.5],
         ]
-    ).to(device)
+    ).to(device=device, dtype=dtype)
     x = torch.matmul(s, A.T)
     M = x.shape[1] - 1
 
-    ica = diffsptk.ICA(M, K, func=func, batch_size=batch_size, verbose=verbose).to(
-        device
+    ica = diffsptk.ICA(
+        M,
+        K,
+        func=func,
+        batch_size=batch_size,
+        verbose=verbose,
+        device=device,
+        dtype=dtype,
     )
     ica(x)
     p = ica.transform(x)
