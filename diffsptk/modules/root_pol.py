@@ -37,6 +37,12 @@ class PolynomialToRoots(BaseFunctionalModule):
     out_format : ['rectangular', 'polar']
         The output format.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     """
 
     def __init__(
@@ -45,6 +51,8 @@ class PolynomialToRoots(BaseFunctionalModule):
         *,
         eps: float | None = None,
         out_format: str | int = "rectangular",
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -107,7 +115,9 @@ class PolynomialToRoots(BaseFunctionalModule):
         PolynomialToRoots._check(order, eps)
 
         if eps is None:
-            eps = 1e-5 if torch.get_default_dtype() == torch.float else 1e-8
+            if dtype is None:
+                dtype = torch.get_default_dtype()
+            eps = 1e-4 if dtype == torch.float else 1e-8
         if out_format in (0, "rectangular"):
             formatter = lambda x: x
         elif out_format in (1, "polar"):

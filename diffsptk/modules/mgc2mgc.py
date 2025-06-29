@@ -69,6 +69,12 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
     n_fft : int >> M1, M2
         The number of FFT bins. Accurate conversion requires a large value.
 
+    device : torch.device or None
+        The device of this module.
+
+    dtype : torch.dtype or None
+        The data type of this module.
+
     References
     ----------
     .. [1] K. Tokuda et al., "Mel-generalized cepstral analysis - A unified approach to
@@ -89,6 +95,8 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         in_mul: bool = False,
         out_mul: bool = False,
         n_fft: int = 512,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
@@ -122,7 +130,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _, layers, _ = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
-            mc.size(-1) - 1, *args, **kwargs
+            mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
 
         def seq(x):
@@ -177,10 +185,17 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         in_mul: bool,
         out_mul: bool,
         n_fft: int,
+        device: torch.device | None,
+        dtype: torch.dtype | None,
     ) -> Precomputed:
         def choice(use_module, module, module_params, common_params):
+            other_params = {}
+            if "device" in inspect.signature(module.__init__).parameters:
+                other_params["device"] = device
+            if "dtype" in inspect.signature(module.__init__).parameters:
+                other_params["dtype"] = dtype
             if use_module:
-                return module(*module_params, *common_params)
+                return module(*module_params, *common_params, **other_params)
             else:
                 return lambda c: module._func(c, *common_params)
 
@@ -339,11 +354,17 @@ class GeneralizedCepstrumToGeneralizedCepstrum(nn.Module):
 
 
 class GammaDivision(nn.Module):
-    def __init__(self, cep_order: int, gamma: float) -> None:
+    def __init__(
+        self,
+        cep_order: int,
+        gamma: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
-        g = torch.full((cep_order + 1,), 1 / gamma)
+        g = torch.full((cep_order + 1,), 1 / gamma, device=device, dtype=torch.double)
         g[0] = 1
-        self.register_buffer("g", to(g))
+        self.register_buffer("g", to(g, dtype=dtype))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         return c * self.g
@@ -355,11 +376,17 @@ class GammaDivision(nn.Module):
 
 
 class GammaMultiplication(nn.Module):
-    def __init__(self, cep_order: int, gamma: float) -> None:
+    def __init__(
+        self,
+        cep_order: int,
+        gamma: float,
+        device: torch.device | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
         super().__init__()
-        g = torch.full((cep_order + 1,), gamma)
+        g = torch.full((cep_order + 1,), gamma, device=device, dtype=torch.double)
         g[0] = 1
-        self.register_buffer("g", to(g))
+        self.register_buffer("g", to(g, dtype=dtype))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         return c * self.g
