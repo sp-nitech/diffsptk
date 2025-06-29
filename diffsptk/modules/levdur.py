@@ -110,9 +110,7 @@ class LevinsonDurbin(BaseFunctionalModule):
     ) -> Precomputed:
         LevinsonDurbin._check(lpc_order, eps)
         if eps is None:
-            if dtype is None:
-                dtype = torch.get_default_dtype()
-            eps = 1e-5 if dtype == torch.float else 0
+            eps = 1e-5 if (dtype or torch.get_default_dtype()) == torch.float else 0
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
         return None, None, (eye,)
 

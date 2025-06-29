@@ -105,12 +105,11 @@ def test_zero_and_maximum_phase(
     fft_length=512,
     B=2,
 ):
-    if dtype is None:
-        dtype = torch.get_default_dtype()
-
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
     cmd_x = f"nrand -l {T}"
-    x = torch.from_numpy(U.call(cmd_x)).to(device=device, dtype=dtype)
+    x = torch.from_numpy(U.call(cmd_x)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
 
     cmd_mc = (
         f"x2x +sd tools/SPTK/asset/data.short | "
@@ -119,7 +118,7 @@ def test_zero_and_maximum_phase(
         f"mgcep -a {alpha} -m {M} -l {fft_length} -E -60"
     )
     mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1)).to(
-        device=device, dtype=dtype
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
     )
 
     common_params = {
@@ -166,12 +165,11 @@ def test_mixed_phase(
     fft_length=512,
     B=2,
 ):
-    if dtype is None:
-        dtype = torch.get_default_dtype()
-
     T = os.path.getsize("tools/SPTK/asset/data.short") // 2
     cmd_x = f"nrand -l {T}"
-    x = torch.from_numpy(U.call(cmd_x)).to(device=device, dtype=dtype)
+    x = torch.from_numpy(U.call(cmd_x)).to(
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
+    )
 
     cmd_mc = (
         f"x2x +sd tools/SPTK/asset/data.short | "
@@ -180,7 +178,7 @@ def test_mixed_phase(
         f"mgcep -a {alpha} -m {M} -l {fft_length} -E -60"
     )
     mc = torch.from_numpy(U.call(cmd_mc).reshape(-1, M + 1)).to(
-        device=device, dtype=dtype
+        device=device, dtype=torch.get_default_dtype() if dtype is None else dtype
     )
     if phase == "zero":
         half_mc = mc[..., 1:] * 0.5

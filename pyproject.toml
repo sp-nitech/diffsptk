@@ -87,6 +87,7 @@ exclude_lines = [
   "warnings",
   "torch.float",
   "torch.double",
+  "torch.complex",
 ]
 
 [tool.coverage.run]

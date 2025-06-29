@@ -133,9 +133,9 @@ def to(
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
-    if torch.is_tensor(x) and torch.is_complex(x):
-        is_complex = True
-    elif isinstance(x, np.ndarray) and np.iscomplexobj(x):
+    if (torch.is_tensor(x) and torch.is_complex(x)) or (
+        isinstance(x, np.ndarray) and np.iscomplexobj(x)
+    ):
         is_complex = True
     else:
         is_complex = False
@@ -144,7 +144,7 @@ def to(
         if is_complex:
             dtype = dtype_to_complex_dtype(dtype)
     else:
-        if is_complex:
+        if is_complex:  # pragma: no cover
             dtype = dtype_to_complex_dtype(dtype)
     if isinstance(x, np.ndarray):
         x = torch.from_numpy(x)
