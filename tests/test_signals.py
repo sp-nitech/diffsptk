@@ -66,3 +66,12 @@ def test_nrand(tuple_input, m=10000, u=3, v=4):
     y_ = U.call(f"nrand -m {m} -u {u} -v {v} | vstat")
     assert U.allclose(y[1], y_[0], rtol=0.1)
     assert U.allclose(y[0], y_[1], rtol=0.1)
+
+
+@pytest.mark.parametrize("tuple_input", [False, True])
+def test_rand(tuple_input, m=10000, a=-1, b=1):
+    x = diffsptk.rand((m,) if tuple_input else m, a=a, b=b)
+    y = torch.stack((torch.max(x), torch.min(x)))
+    y_ = U.call(f"rand -m {m} -a {a} -b {b} | minmax")
+    assert U.allclose(y[1], y_[0], rtol=0.1)
+    assert U.allclose(y[0], y_[1], rtol=0.1)

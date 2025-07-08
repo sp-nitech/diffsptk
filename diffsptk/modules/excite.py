@@ -214,5 +214,4 @@ class ExcitationGeneration(BaseFunctionalModule):
             )
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
-        print(e[~mask].square().mean().item())
         return e
