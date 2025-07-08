@@ -237,7 +237,7 @@ def train(
 def nrand(
     *order: int, mean: float = 0, stdv: float = 1, var: float | None = None, **kwargs
 ) -> torch.Tensor:
-    """Generate random number sequence.
+    """Generate Gaussian random number sequence.
 
     See `nrand <https://sp-nitech.github.io/sptk/latest/main/nrand.html>`_
     for details.
@@ -287,4 +287,53 @@ def nrand(
     order[-1] += 1
     x = torch.randn(*order, **kwargs)
     x = x * stdv + mean
+    return x
+
+
+def rand(*order: int, a: float = 0, b: float = 1, **kwargs) -> torch.Tensor:
+    """Generate uniform random number sequence.
+
+    See `rand <https://sp-nitech.github.io/sptk/latest/main/rand.html>`_
+    for details.
+
+    Parameters
+    ----------
+    order : int >= 0
+        The order of the sequence, :math:`M`.
+
+    a : float
+        The lower bound.
+
+    b : float >= 0
+        The upper bound.
+
+    **kwargs : additional keyword arguments
+        See `torch.rand <https://pytorch.org/docs/stable/generated/torch.rand.html>`_.
+
+    Returns
+    -------
+    out : Tensor [shape=(M+1,)]
+        The random value sequence.
+
+    Examples
+    --------
+    >>> x = diffsptk.rand(4)
+    >>> x
+    tensor([0.3425, 0.5997, 0.2882, 0.3961, 0.9791])
+    >>> x = diffsptk.rand(2, 4)
+    >>> x
+    tensor([[0.6170, 0.3649, 0.9397, 0.2408, 0.1868],
+            [0.6527, 0.1400, 0.3955, 0.9999, 0.8298]])
+
+    """
+    if b <= a:
+        raise ValueError("Lower bound must be less than upper bound.")
+
+    if any(isinstance(item, (list, tuple)) for item in order):
+        order = list(*order)
+    else:
+        order = list(order)
+    order[-1] += 1
+    x = torch.rand(*order, **kwargs)
+    x = (b - a) * x + a
     return x

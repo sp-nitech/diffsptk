@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import math
+
 import torch
 import torch.nn.functional as F
 
@@ -36,7 +38,7 @@ class ExcitationGeneration(BaseFunctionalModule):
                      'triangle', 'square']
         The type of voiced region.
 
-    unvoiced_region : ['zeros', 'gauss']
+    unvoiced_region : ['zeros', 'gauss', 'uniform']
         The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
@@ -206,6 +208,10 @@ class ExcitationGeneration(BaseFunctionalModule):
             pass
         elif unvoiced_region == "gauss":
             e[~mask] = torch.randn(torch.sum(~mask), device=e.device, dtype=e.dtype)
+        elif unvoiced_region == "uniform":
+            e[~mask] = math.sqrt(12) * (
+                torch.rand(torch.sum(~mask), device=e.device, dtype=e.dtype) - 0.5
+            )
         else:
             raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
         return e

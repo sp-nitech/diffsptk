@@ -561,7 +561,7 @@ def excite(
                      'triangle', 'square']
         The type of voiced region.
 
-    unvoiced_region : ['zeros', 'gauss']
+    unvoiced_region : ['zeros', 'gauss', 'uniform']
         The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
