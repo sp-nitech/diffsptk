@@ -290,9 +290,7 @@ def nrand(
     return x
 
 
-def rand(
-    *order: int, a: float = 0, b: float = 1, **kwargs
-) -> torch.Tensor:
+def rand(*order: int, a: float = 0, b: float = 1, **kwargs) -> torch.Tensor:
     """Generate uniform random number sequence.
 
     See `rand <https://sp-nitech.github.io/sptk/latest/main/rand.html>`_
