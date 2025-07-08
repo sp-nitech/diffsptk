@@ -25,7 +25,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
-@pytest.mark.parametrize("unvoiced_region", ["gauss", "zeros"])
+@pytest.mark.parametrize("unvoiced_region", ["gauss", "zeros", "uniform"])
 def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=80):
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
@@ -44,7 +44,14 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
     # Compute pitch and excitation on C++ version.
     cmd = "x2x +sd tools/SPTK/asset/data.short | "
     cmd += f"pitch -s 16 -p {P} -o 0 -a 2 > excite.tmp1"
-    n = 0 if unvoiced_region == "zeros" else 1
+    if unvoiced_region == "zeros":
+        n = 0
+    elif unvoiced_region == "gauss":
+        n = 1
+    elif unvoiced_region == "uniform":
+        n = 3
+    else:
+        raise ValueError(f"Unknown unvoiced region: {unvoiced_region}")
     U.call(cmd, get=False)
     U.call(f"excite -p {P} -n {n} excite.tmp1 > excite.tmp2", get=False)
 
