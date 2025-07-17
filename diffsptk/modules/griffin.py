@@ -54,7 +54,7 @@ class GriffinLim(BaseFunctionalModule):
     symmetric : bool
         If True, the window is symmetric, otherwise periodic.
 
-    n_iter : int >= 1
+    n_iter : int >= 0
         The number of iterations for phase reconstruction.
 
     alpha : float >= 0
@@ -159,8 +159,8 @@ class GriffinLim(BaseFunctionalModule):
         beta: float,
         gamma: float,
     ) -> None:
-        if n_iter <= 0:
-            raise ValueError("n_iter must be positive.")
+        if n_iter < 0:
+            raise ValueError("n_iter must be non-negative.")
         if alpha < 0:
             raise ValueError("alpha must be non-negative.")
         if beta < 0:
@@ -259,7 +259,8 @@ class GriffinLim(BaseFunctionalModule):
         if logger is not None:
             logger.info(f"alpha: {alpha}, beta: {beta}, gamma: {gamma}")
 
-        s = torch.sqrt(y)
+        eps = 1e-16
+        s = torch.sqrt(y + eps)
         angle = torch.exp(1j * phase_generator(s))
 
         t_prev = d_prev = 0  # This suppresses F821 and F841.
@@ -275,7 +276,7 @@ class GriffinLim(BaseFunctionalModule):
                 c = t + alpha * diff
                 d = t + beta * diff
 
-            angle = c / (c.abs() + 1e-16)
+            angle = c / (c.abs() + eps)
             t_prev = t
             d_prev = d
 
