@@ -16,10 +16,9 @@
 
 import numpy as np
 import torch
-import torchcomp
 from torch import nn
 
-from ..typing import Precomputed
+from ..typing import Callable, Precomputed
 from ..utils.private import filter_values, to, to_2d
 from .base import BaseFunctionalModule
 
@@ -161,6 +160,8 @@ class DynamicRangeCompression(BaseFunctionalModule):
         device: torch.device | None,
         dtype: torch.dtype | None,
     ) -> Precomputed:
+        import torchcomp
+
         DynamicRangeCompression._check(
             ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max
         )
@@ -179,12 +180,13 @@ class DynamicRangeCompression(BaseFunctionalModule):
             makeup_gain = to(torch.tensor(makeup_gain, device=device), dtype=dtype)
         makeup_gain = 10 ** (makeup_gain / 20)
         params = torch.stack([threshold, ratio, attack_time, release_time, makeup_gain])
-        return (abs_max,), None, (params,)
+        return (abs_max, torchcomp.compexp_gain), None, (params,)
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
         abs_max: float,
+        compexp_gain: Callable,
         params: torch.Tensor,
     ) -> torch.Tensor:
         eps = 1e-10
@@ -192,7 +194,7 @@ class DynamicRangeCompression(BaseFunctionalModule):
         y = to_2d(x)
         y_abs = y.abs() / abs_max + eps
 
-        g = torchcomp.compexp_gain(
+        g = compexp_gain(
             y_abs,
             params[0],
             params[1],
