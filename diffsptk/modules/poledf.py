@@ -15,9 +15,8 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torchlpc import sample_wise_lpc
 
-from ..typing import Precomputed
+from ..typing import Callable, Precomputed
 from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
@@ -105,11 +104,17 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
         filter_order: int, frame_period: int, ignore_gain: bool = False
     ) -> Precomputed:
         AllPoleDigitalFilter._check(filter_order, frame_period)
-        return (frame_period, ignore_gain)
+        from torchlpc import sample_wise_lpc
+
+        return (frame_period, ignore_gain, sample_wise_lpc)
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, a: torch.Tensor, frame_period: int, ignore_gain: bool
+        x: torch.Tensor,
+        a: torch.Tensor,
+        frame_period: int,
+        ignore_gain: bool,
+        sample_wise_lpc: Callable,
     ) -> torch.Tensor:
         check_size(x.size(-1), a.size(-2) * frame_period, "sequence length")
 

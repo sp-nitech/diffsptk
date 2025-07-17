@@ -190,5 +190,5 @@ def write(
     >>> diffsptk.write("out.wav", x, sr)
 
     """
-    x = x.cpu().numpy() if torch.is_tensor(x) else x
+    x = x.detach().cpu().numpy() if torch.is_tensor(x) else x
     sf.write(filename, x.T if channel_first else x, sr, **kwargs)
