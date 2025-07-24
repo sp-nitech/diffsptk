@@ -12,6 +12,7 @@ and Hashimoto laboratory.
     Modules <modules/index>
     Signals <signals>
     Utils <utils>
+    Versions <versions>
 
 - :doc:`Modules <modules/index>`
 - :doc:`Signals <signals>`
@@ -21,3 +22,4 @@ References
 ----------
 
 - :ref:`genindex`
+- :doc:`Previous Versions <versions>`
