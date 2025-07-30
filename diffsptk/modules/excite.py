@@ -19,6 +19,7 @@ import math
 import torch
 import torch.nn.functional as F
 
+from ..signals import mseq
 from ..typing import Precomputed
 from ..utils.private import TAU, UNVOICED_SYMBOL, filter_values
 from .base import BaseFunctionalModule
@@ -38,7 +39,7 @@ class ExcitationGeneration(BaseFunctionalModule):
                      'triangle', 'square']
         The type of voiced region.
 
-    unvoiced_region : ['zeros', 'gauss', 'uniform']
+    unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
         The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
@@ -208,6 +209,8 @@ class ExcitationGeneration(BaseFunctionalModule):
             pass
         elif unvoiced_region == "gauss":
             e[~mask] = torch.randn(torch.sum(~mask), device=e.device, dtype=e.dtype)
+        elif unvoiced_region == "m-sequence":
+            e[~mask] = mseq(torch.sum(~mask) - 1, device=e.device, dtype=e.dtype)
         elif unvoiced_region == "uniform":
             e[~mask] = math.sqrt(12) * (
                 torch.rand(torch.sum(~mask), device=e.device, dtype=e.dtype) - 0.5

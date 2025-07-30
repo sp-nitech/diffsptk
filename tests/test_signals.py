@@ -59,6 +59,12 @@ def test_train(n, m=9, p=2.3):
     assert U.allclose(y, y_)
 
 
+def test_mseq(m=10000):
+    y = diffsptk.mseq(m)
+    y_ = U.call(f"mseq -m {m}")
+    assert U.allclose(y, y_)
+
+
 @pytest.mark.parametrize("tuple_input", [False, True])
 def test_nrand(tuple_input, m=10000, u=3, v=4):
     x = diffsptk.nrand((m,) if tuple_input else m, mean=u, var=v)
