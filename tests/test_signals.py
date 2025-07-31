@@ -60,7 +60,7 @@ def test_train(n, m=9, p=2.3):
 
 
 @pytest.mark.parametrize("tuple_input", [False, True])
-def test_mseq(m=10000):
+def test_mseq(tuple_input, m=10000):
     y = diffsptk.mseq((m,) if tuple_input else m)
     y_ = U.call(f"mseq -m {m}")
     assert U.allclose(y, y_)
