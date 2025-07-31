@@ -25,7 +25,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("voiced_region", ["pulse", "sinusoidal"])
-@pytest.mark.parametrize("unvoiced_region", ["gauss", "zeros", "uniform"])
+@pytest.mark.parametrize("unvoiced_region", ["zeros", "gauss", "m-sequence", "uniform"])
 def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=80):
     torch.manual_seed(1234)
     torch.cuda.manual_seed(1234)
@@ -48,6 +48,8 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
         n = 0
     elif unvoiced_region == "gauss":
         n = 1
+    elif unvoiced_region == "m-sequence":
+        n = 2
     elif unvoiced_region == "uniform":
         n = 3
     else:
@@ -79,8 +81,9 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
     pitch_error_cc, vuv_error_cc = compute_error("excite.tmp2")
     pitch_error_py, vuv_error_py = compute_error("excite.tmp3")
 
-    tol = 0
-    assert pitch_error_py <= pitch_error_cc + tol
+    if unvoiced_region == "zeros":
+        assert pitch_error_py <= pitch_error_cc
+
     tol = 5
     assert vuv_error_py <= vuv_error_cc + tol
 

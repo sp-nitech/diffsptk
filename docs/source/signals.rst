@@ -11,6 +11,8 @@ signals
 
 .. autofunction:: diffsptk.train
 
+.. autofunction:: diffsptk.mseq
+
 .. autofunction:: diffsptk.nrand
 
 .. autofunction:: diffsptk.rand

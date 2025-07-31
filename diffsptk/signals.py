@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import math
+
 import torch
 
 
@@ -232,6 +234,65 @@ def train(
     x = torch.zeros(order + 1, **kwargs)
     x[index] = pulse
     return x
+
+
+def mseq(*order: int, **kwargs) -> torch.Tensor:
+    """Generate M-sequence.
+
+    See `rand <https://sp-nitech.github.io/sptk/latest/main/mseq.html>`_
+    for details.
+
+    Parameters
+    ----------
+    order : int >= 0
+        The order of the sequence, :math:`M`.
+
+    **kwargs : additional keyword arguments
+        See `torch.rand <https://pytorch.org/docs/stable/generated/torch.ones.html>`_.
+
+    Returns
+    -------
+    out : Tensor [shape=(M+1,)]
+        The random value sequence.
+
+    Examples
+    --------
+    >>> x = diffsptk.mseq(4)
+    >>> x
+    tensor([-1.,  1., -1.,  1., -1.])
+
+    """
+    if any(isinstance(item, (list, tuple)) for item in order):
+        order = list(*order)
+    else:
+        order = list(order)
+    order[-1] += 1
+
+    out_length = math.prod(order)
+    out = torch.ones(out_length, **kwargs)
+
+    init = 0x55555555  # int("01010101010101010101010101010101", 2)
+    B0 = 0x00000001  # 1 << 0
+    B28 = 0x10000000  # 1 << 28
+    B31 = 0x80000000  # 1 << 31
+    B31F = 0x7FFFFFFF  # ~(1 << 31) & 0xFFFFFFFF
+
+    x = init
+    for i in range(out_length):
+        x >>= 1
+
+        x0 = 1 if x & B0 else -1
+        x28 = 1 if x & B28 else -1
+
+        if x0 + x28:
+            x &= B31F
+        else:
+            x |= B31
+
+        if x0 != 1:
+            out[i] = x0
+
+    return out.reshape(order)
 
 
 def nrand(
