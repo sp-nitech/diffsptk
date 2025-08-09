@@ -239,7 +239,7 @@ def train(
 def mseq(*order: int, **kwargs) -> torch.Tensor:
     """Generate M-sequence.
 
-    See `rand <https://sp-nitech.github.io/sptk/latest/main/mseq.html>`_
+    See `mseq <https://sp-nitech.github.io/sptk/latest/main/mseq.html>`_
     for details.
 
     Parameters
@@ -248,7 +248,7 @@ def mseq(*order: int, **kwargs) -> torch.Tensor:
         The order of the sequence, :math:`M`.
 
     **kwargs : additional keyword arguments
-        See `torch.rand <https://pytorch.org/docs/stable/generated/torch.ones.html>`_.
+        See `torch.ones <https://pytorch.org/docs/stable/generated/torch.ones.html>`_.
 
     Returns
     -------
