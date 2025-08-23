@@ -73,5 +73,6 @@ html_theme_options = {
 }
 html_favicon = "_static/favicon.png"
 html_static_path = ["_static"]
+html_css_files = ["custom.css"]
 html_show_sourcelink = False
 numpydoc_show_class_members = False
