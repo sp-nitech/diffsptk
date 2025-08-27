@@ -247,7 +247,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
 
             dist_func = sym_kl
         else:
-            ValueError(f"metric {metric} is not supported.")
+            raise ValueError(f"metric {metric} is not supported.")
 
         dtw_func = _soft_dtw_core
 
@@ -309,7 +309,6 @@ class DynamicTimeWarping(BaseFunctionalModule):
             y = y.unsqueeze(0)
         else:
             raise ValueError("x and y must be 1D, 2D, or 3D tensor.")
-
         if x.dim() != y.dim():
             raise ValueError("x and y must have the same number of dimensions.")
 
@@ -318,7 +317,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
         if lengths is None:
             B, T1, T2 = D.shape
             lengths = torch.tensor(B * [[T1, T2]], device=x.device, dtype=torch.long)
-        elif lengths.dim() != 2:
+        if lengths.dim() != 2:
             raise ValueError("lengths must be 2D tensor.")
 
         distance, indices = dtw_func(
