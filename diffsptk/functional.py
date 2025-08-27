@@ -518,6 +518,59 @@ def dst(x: Tensor, dst_type: int = 2) -> Tensor:
     return nn.DiscreteSineTransform._func(x, dst_type=dst_type)
 
 
+def dtw(
+    x: Tensor,
+    y: Tensor,
+    lengths: Tensor | None = None,
+    return_indices: bool = False,
+    metric: str | int = "euclidean",
+    p: int = 4,
+    softness: float = 1e-3,
+) -> Tensor | tuple[Tensor, list[Tensor]]:
+    """Compute dynamic time warping distance.
+
+    x : Tensor [shape=(B, T1, D) or (T1, D) or (T1,)]
+        The query vector sequence.
+
+    y : Tensor [shape=(B, T2, D), (T2, D) or (T2,)]
+        The reference vector sequence.
+
+    lengths : Tensor [shape=(B, 2)] or None
+        The lengths of the sequences.
+
+    return_indices : bool
+        If True, returns the indices of the viterbi path.
+
+    metric : ['manhattan', 'euclidean', 'squared-euclidean', 'symmetric-kl']
+        The metric to compute the distance between two vectors.
+
+    p : int in [0, 6]
+        The local path constraint type.
+
+    softness : float > 0
+        A smoothing parameter. The smaller value makes the output closer to the true
+        dynamic time warping distance, but the gradient vanishes.
+
+    Returns
+    -------
+    distance : Tensor [shape=(B,)]
+        The dynamic time warping distance.
+
+    indices : list[Tensor [shape=(T, 2)]] (optional)
+        The indices of the viterbi path for each batch.
+
+    """
+    return nn.DynamicTimeWarping._func(
+        x,
+        y,
+        lengths=lengths,
+        return_indices=return_indices,
+        metric=metric,
+        p=p,
+        softness=softness,
+    )
+
+
 def entropy(p: Tensor, out_format: str = "nat") -> Tensor:
     """Calculate the entropy of a probability distribution.
 
@@ -598,7 +651,7 @@ def fbank(
     erb_factor: float | None = None,
     use_power: bool = False,
     out_format: str = "y",
-) -> tuple[Tensor, Tensor] | Tensor:
+) -> Tensor | tuple[Tensor, Tensor]:
     """Apply mel-filter banks to the STFT.
 
     Parameters

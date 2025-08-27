@@ -109,6 +109,7 @@ def check_compatibility(
     dy=None,
     eq=None,
     opt={},
+    get=None,
     key=[],
     sr=None,
     verbose=False,
@@ -152,10 +153,17 @@ def check_compatibility(
 
     module = compose(*modules)
     if len(key) == 0:
-        y_hat = module(*x, **opt).cpu().numpy()
+        y_hat = module(*x, **opt)
     else:
         x = {k: v for k, v in zip(key, x)}
-        y_hat = module(**x, **opt).cpu().numpy()
+        y_hat = module(**x, **opt)
+
+    if get is not None:
+        if not is_array(get):
+            get = [get]
+        for g in get:
+            y_hat = y_hat[g]
+    y_hat = y_hat.cpu().numpy()
 
     if sr is not None:
         sf.write("output.wav", y_hat / 32768, sr)

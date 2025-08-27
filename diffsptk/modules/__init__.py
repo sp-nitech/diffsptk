@@ -42,6 +42,8 @@ from .drc import DynamicRangeCompression
 from .drc import DynamicRangeCompression as DRC
 from .dst import DiscreteSineTransform
 from .dst import DiscreteSineTransform as DST
+from .dtw import DynamicTimeWarping
+from .dtw import DynamicTimeWarping as DTW
 from .entropy import Entropy
 from .excite import ExcitationGeneration
 from .fbank import MelFilterBankAnalysis
