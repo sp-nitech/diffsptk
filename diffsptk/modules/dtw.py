@@ -34,16 +34,19 @@ def _soft_dtw_core(
     R = torch.full_like(D, float("inf"))
     R[:, 0, 0] = D[:, 0, 0]
     R_ = R.clone() if has_two_step_transition else None
-    P = torch.full((B, T1, T2, 2), -1, device=D.device, dtype=torch.long)
-    P_ = P.clone() if has_two_step_transition else None
+
+    if return_indices:
+        P = torch.full((B, T1, T2, 2), -1, device=D.device, dtype=torch.long)
+        P_ = P.clone() if has_two_step_transition else None
 
     # Forward computation.
     for i in range(T1):
         for j in range(T2):
             rs = []
             rs_ = []
-            ps = []
-            ps_ = []
+            if return_indices:
+                ps = []
+                ps_ = []
 
             d = D[:, i, j]
             for k in range(len(steps)):
@@ -52,42 +55,48 @@ def _soft_dtw_core(
                 if i_k < 0 or j_k < 0:
                     continue
 
-                p = torch.tensor([i_k, j_k], device=D.device, dtype=torch.long)
+                if return_indices:
+                    p = torch.tensor([i_k, j_k], device=D.device, dtype=torch.long)
                 w = sum(steps[k])
 
                 if has_two_step_transition:
                     if steps[k][0] == 0 or steps[k][1] == 0:
                         if R_[:, i_k, j_k] != float("inf"):
                             rs.append(d * w + R_[:, i_k, j_k])
-                            ps.append(p)
+                            if return_indices:
+                                ps.append(p)
                     else:
                         if R[:, i_k, j_k] != float("inf"):
                             rs.append(d * w + R[:, i_k, j_k])
                             rs_.append(rs[-1])
-                            ps.append(p)
-                            ps_.append(ps[-1])
+                            if return_indices:
+                                ps.append(p)
+                                ps_.append(ps[-1])
                 else:
                     if R[:, i_k, j_k] != float("inf"):
                         rs.append(d * w + R[:, i_k, j_k])
-                        ps.append(p)
+                        if return_indices:
+                            ps.append(p)
 
             if 0 < len(rs):
                 rs = torch.stack(rs, dim=0)
                 r = -gamma * torch.logsumexp(-rs / gamma, dim=0)
                 R[:, i, j] = r
 
-                ps = torch.stack(ps, dim=0)  # (K, 2)
-                p = torch.argmin(rs, dim=0)  # (B,)
-                P[:, i, j] = ps[p]
+                if return_indices:
+                    ps = torch.stack(ps, dim=0)  # (K, 2)
+                    p = torch.argmin(rs, dim=0)  # (B,)
+                    P[:, i, j] = ps[p]
 
             if 0 < len(rs_):
                 rs_ = torch.stack(rs_, dim=0)
                 r_ = -gamma * torch.logsumexp(-rs_ / gamma, dim=0)
                 R_[:, i, j] = r_
 
-                ps_ = torch.stack(ps_, dim=0)
-                p_ = torch.argmin(rs_, dim=0)
-                P_[:, i, j] = ps_[p_]
+                if return_indices:
+                    ps_ = torch.stack(ps_, dim=0)
+                    p_ = torch.argmin(rs_, dim=0)
+                    P_[:, i, j] = ps_[p_]
 
     distance = R[torch.arange(B, device=D.device), lengths[:, 0] - 1, lengths[:, 1] - 1]
     distance = distance / lengths.sum(dim=1).to(distance.dtype)
