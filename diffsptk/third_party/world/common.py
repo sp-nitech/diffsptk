@@ -156,7 +156,7 @@ def interp1(
         m = F.pad(m, (1, 1))
         b = torch.cat([y[..., :1], b, y[..., -1:]], dim=-1)
     elif method == "*linear":
-        indices = torch.clamp(indices - 1, 0, m.shape[-1] - 1)
+        indices = torch.clip(indices - 1, min=0, max=m.shape[-1] - 1)
     else:
         raise ValueError(f"Unknown method: {method}")
     values = m.gather(-1, indices) * xq + b.gather(-1, indices)

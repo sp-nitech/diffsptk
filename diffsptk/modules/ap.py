@@ -38,7 +38,7 @@ class Aperiodicity(BaseNonFunctionalModule):
         The frame period in samples, :math:`P`.
 
     sample_rate : int >= 8000
-        The sample rate in Hz.
+        The sample rate in Hz. If **algorithm** is 'd4c', it must be at least 12000 Hz.
 
     fft_length : int >= 16 or None
         The size of double-sided aperiodicity, :math:`L`. If None, the band aperiodicity
@@ -460,6 +460,13 @@ class AperiodicityExtractionByD4C(nn.Module):
         dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
+
+        if sample_rate < 12000:
+            raise ValueError("sample_rate must be at least 12000 Hz.")
+        if threshold < 0:
+            raise ValueError("threshold must be non-negative.")
+        if default_f0 <= 0:
+            raise ValueError("default_f0 must be positive.")
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
