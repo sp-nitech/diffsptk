@@ -14,8 +14,6 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from operator import itemgetter
-
 import pytest
 
 import diffsptk
@@ -36,7 +34,7 @@ def test_compatibility(device, dtype, batch_size, M=1, K=4, B=10, n_iter=10):
     U.check_compatibility(
         device,
         dtype,
-        [itemgetter(-1), lbg],
+        lbg,
         [
             f"nrand -u +2 -l {B * (M + 1)} -s 1 > {tmp1}",
             f"nrand -u -2 -l {B * (M + 1)} -s 2 > {tmp2}",
@@ -52,6 +50,7 @@ def test_compatibility(device, dtype, batch_size, M=1, K=4, B=10, n_iter=10):
         [f"rm {tmp1} {tmp2} {tmp3} {tmp4} {tmp5}"],
         dx=M + 1,
         rtol=1e-1,
+        get=-1,
     )
 
 
