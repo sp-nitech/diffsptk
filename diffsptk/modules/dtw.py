@@ -32,8 +32,8 @@ def _soft_dtw_core(
     B, T1, T2 = D.shape
 
     R = torch.full_like(D, float("inf"))
-    R[:, 0, 0] = D[:, 0, 0]
     R_ = R.clone() if has_two_step_transition else None
+    R[:, 0, 0] = D[:, 0, 0]
 
     if return_indices:
         P = torch.full((B, T1, T2, 2), -1, device=D.device, dtype=torch.long)
@@ -300,14 +300,13 @@ class DynamicTimeWarping(BaseFunctionalModule):
         dist_func: Callable,
         dtw_func: Callable,
     ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
-        d = x.dim()
-        if d == 1:
+        if x.dim() == 1:
             x = x.view(1, -1, 1)
             y = y.view(1, -1, 1)
-        elif d == 2:
+        elif x.dim() == 2:
             x = x.unsqueeze(0)
             y = y.unsqueeze(0)
-        else:
+        if x.dim() != 3:
             raise ValueError("x and y must be 1D, 2D, or 3D tensor.")
         if x.dim() != y.dim():
             raise ValueError("x and y must have the same number of dimensions.")

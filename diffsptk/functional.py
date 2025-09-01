@@ -571,6 +571,38 @@ def dtw(
     )
 
 
+def dtw_merge(x: Tensor, y: Tensor, indices: Tensor) -> tuple[Tensor, Tensor]:
+    """Align two vector sequences according to the given path.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(T1, ...)]
+        The query vector sequence.
+
+    y : Tensor [shape=(T2, ...)]
+        The reference vector sequence.
+
+    indices : Tensor [shape=(T, 2)]
+        The indices of the path.
+
+    Returns
+    -------
+    x_align : Tensor [shape=(T, ...)]
+        The aligned query vector sequence.
+
+    y_align : Tensor [shape=(T, ...)]
+        The aligned reference vector sequence.
+
+    """
+    if x.dim() != y.dim():
+        raise ValueError("x and y must have the same number of dimensions.")
+    if indices.dim() != 2 or indices.size(-1) != 2:
+        raise ValueError("The shape of indices must be (T, 2).")
+    x_align = x[indices[:, 0]]
+    y_align = y[indices[:, 1]]
+    return x_align, y_align
+
+
 def entropy(p: Tensor, out_format: str = "nat") -> Tensor:
     """Calculate the entropy of a probability distribution.
 

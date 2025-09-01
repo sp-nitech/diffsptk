@@ -148,9 +148,6 @@ def check_compatibility(
     if dy is not None:
         y = y.reshape(-1, dy)
 
-    for cmd in teardown:
-        call(cmd, get=False)
-
     module = compose(*modules)
     if len(key) == 0:
         y_hat = module(*x, **opt)
@@ -179,6 +176,9 @@ def check_compatibility(
         )
     else:
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
+
+    for cmd in teardown:
+        call(cmd, get=False)
 
 
 def check_confidence(
@@ -256,12 +256,18 @@ def check_differentiability(
 
 
 def check_various_shape(module, shapes, *, preprocess=None):
-    x = torch.randn(*shapes[0])
+    if is_array(shapes[0][0]):
+        xs = [torch.randn(*shape) for shape in shapes[0]]
+    else:
+        xs = [torch.randn(*shapes[0])]
     if preprocess is not None:
-        x = preprocess(x)
+        xs = [preprocess(x) for x in xs]
     for i, shape in enumerate(shapes):
-        x = x.view(shape)
-        y = module(x).view(-1)
+        if is_array(shapes[0][0]):
+            x = [x.view(*shape) for x, shape in zip(xs, shape)]
+        else:
+            x = [xs[0].view(shape)]
+        y = module(*x).view(-1)
         if i == 0:
             target = y
         else:
