@@ -9,3 +9,7 @@ dtw
     :members:
 
 .. autofunction:: diffsptk.functional.dtw
+
+.. seealso::
+
+    :ref:`dtw_merge`
