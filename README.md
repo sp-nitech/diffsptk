@@ -214,7 +214,7 @@ error = (x_hat - x).abs().sum()
 print(error)
 ```
 
-### Mel-spectrogram analysis and synthesis
+### Mel spectrogram analysis and synthesis
 
 ```python
 import diffsptk
@@ -231,7 +231,7 @@ x, sr = diffsptk.read("assets/data.wav")
 stft = diffsptk.STFT(frame_length=fl, frame_period=fp, fft_length=n_fft)
 X = stft(x)
 
-# Extract log mel-spectrogram.
+# Extract log-mel spectrogram.
 fbank = diffsptk.FBANK(
     fft_length=n_fft,
     n_channel=n_channel,
