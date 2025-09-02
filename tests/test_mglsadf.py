@@ -26,7 +26,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("ignore_gain", [False, True])
 @pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
-@pytest.mark.parametrize("c", [0, 10])
+@pytest.mark.parametrize("c", [0, 2])
 def test_compatibility(
     device,
     dtype,

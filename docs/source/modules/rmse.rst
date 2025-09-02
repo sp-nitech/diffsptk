@@ -12,4 +12,4 @@ rmse
 
 .. seealso::
 
-    :ref:`snr`
+    :ref:`snr` :ref:`f0eval`

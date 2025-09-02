@@ -50,4 +50,6 @@ def test_compatibility(device, dtype, module, M, out_format, L=16, B=2):
         dy=L // 2 + 1,
     )
 
-    U.check_differentiability(device, dtype, [lsp2sp, torch.abs], [B, M + 1])
+    U.check_differentiability(
+        device, dtype, [lsp2sp, lambda x: torch.sort(x)[0], torch.abs], [B, M + 1]
+    )

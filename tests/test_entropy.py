@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -42,4 +41,4 @@ def test_compatibility(device, dtype, module, out_format, L=5, B=2):
         dx=L,
     )
 
-    U.check_differentiability(device, dtype, [entropy, torch.abs], [B, L])
+    U.check_differentiability(device, dtype, entropy, [B, L], nonnegative_input=True)
