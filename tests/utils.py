@@ -201,6 +201,7 @@ def check_differentiability(
     shapes,
     *,
     complex_input=False,
+    nonnegative_input=False,
     checks=None,
     scales=None,
     opt={},
@@ -221,7 +222,11 @@ def check_differentiability(
 
     x = []
     for shape in shapes:
-        x.append(torch.randn(*shape, requires_grad=True, device=device, dtype=dtype))
+        params = {"requires_grad": True, "device": device, "dtype": dtype}
+        if nonnegative_input:
+            x.append(torch.rand(*shape, **params))
+        else:
+            x.append(torch.randn(*shape, **params))
     if scales is None:
         xs = x
     else:

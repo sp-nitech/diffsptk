@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -26,9 +25,7 @@ import tests.utils as U
 @pytest.mark.parametrize("out_norm", [False, True])
 @pytest.mark.parametrize("in_mul", [False, True])
 @pytest.mark.parametrize("out_mul", [False, True])
-@pytest.mark.parametrize(
-    "M, A, G", [[4, 0, 0.1], [4, 0, 0.2], [2, 0.1, 0.1], [6, 0.1, 0.2]]
-)
+@pytest.mark.parametrize("M, A, G", [(4, 0, 0.1), (2, 0.1, 0.1), (6, 0.1, 0.2)])
 def test_compatibility(
     device,
     dtype,
@@ -95,4 +92,6 @@ def test_compatibility(
         dy=M + 1,
     )
 
-    U.check_differentiability(device, dtype, [mgc2mgc, torch.abs], [B, m + 1])
+    U.check_differentiability(
+        device, dtype, mgc2mgc, [B, m + 1], nonnegative_input=True
+    )

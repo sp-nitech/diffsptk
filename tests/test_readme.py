@@ -47,6 +47,7 @@ def test_readme_examples():
     assert 0 < len(code_blocks)
 
     # Execute the code blocks.
+    print()
     for title, code_block in zip(titles, code_blocks):
         print(f"{title}")
         if "librosa" in code_block and importlib.util.find_spec("librosa") is None:

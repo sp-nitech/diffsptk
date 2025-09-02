@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -70,7 +69,7 @@ def test_compatibility(
     )
 
     U.check_differentiability(
-        device, dtype, [ifbank, fbank, torch.abs], [B, L // 2 + 1]
+        device, dtype, [ifbank, fbank], [B, L // 2 + 1], nonnegative_input=True
     )
 
 
