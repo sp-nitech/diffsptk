@@ -46,6 +46,7 @@ from .dtw import DynamicTimeWarping
 from .dtw import DynamicTimeWarping as DTW
 from .entropy import Entropy
 from .excite import ExcitationGeneration
+from .f0eval import F0Evaluation
 from .fbank import MelFilterBankAnalysis
 from .fbank import MelFilterBankAnalysis as FBANK
 from .fftcep import CepstralAnalysis

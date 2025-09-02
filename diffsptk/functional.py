@@ -671,6 +671,35 @@ def excite(
     )
 
 
+def f0eval(
+    x: Tensor, y: Tensor, reduction: str = "mean", out_format: str = "f0-rmse-cent"
+) -> Tensor:
+    """Calculate F0 metric.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., N)]
+        The input F0 in Hz.
+
+    y : Tensor [shape=(..., N)]
+        The target F0 in Hz.
+
+    reduction : ['none', 'mean', 'sum']
+        The reduction type.
+
+    out_format : ['f0-rmse-hz', 'f0-rmse-cent', 'f0-rmse-semitone', 'vuv-error-rate', \
+                  'vuv-error-percent', 'vuv-macro-f1-score']
+        The output format.
+
+    Returns
+    -------
+    out : Tensor [shape=(...,) or scalar]
+        The F0 metric.
+
+    """
+    return nn.F0Evaluation._func(x, y, reduction=reduction, out_format=out_format)
+
+
 def fbank(
     x: Tensor,
     n_channel: int,
