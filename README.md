@@ -20,8 +20,9 @@
 
 ## Documentation
 
-- See [this page](https://sp-nitech.github.io/diffsptk/3.3.1/) for the reference manual.
-- Our [paper](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) is available on the ISCA Archive.
+- Online [documentation](https://sp-nitech.github.io/diffsptk/3.3.1/) for the reference manual
+- Conference [paper](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) on the ISCA Archive
+- Hands-on [tutorial](https://colab.research.google.com/drive/1xAoUKqXadvJXJ7RzN0OceB6y7q5i7Sn6?usp=drive_link) on Google Colab
 
 ## Installation
 
