@@ -87,8 +87,12 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
         --------
         >>> sr = 16000
         >>> x = diffsptk.sin(500, period=sr/440)
-        >>> stft = diffsptk.STFT(frame_length=512, frame_period=512, fft_length=512)
-        >>> chroma = diffsptk.ChromaFilterBankAnalysis(12, 512, sr)
+        >>> stft = diffsptk.STFT(
+        ...     frame_length=512, frame_period=512, fft_length=512, window="hanning"
+        ... )
+        >>> chroma = diffsptk.ChromaFilterBankAnalysis(
+        ...     fft_length=512, n_channel=12, sample_rate=sr
+        ... )
         >>> y = chroma(stft(x))
         >>> y
         tensor([[0.1146, 0.0574, 0.0457, 0.0468, 0.0519, 0.0789, 0.1736, 0.4285, 0.7416,
