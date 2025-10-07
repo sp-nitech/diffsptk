@@ -138,12 +138,13 @@ class Aperiodicity(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.sin(1000, 80)
+        >>> import diffsptk
         >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
+        >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 1024)
+        >>> x = diffsptk.sin(1000, 80)
         >>> f0 = pitch(x)
         >>> f0.shape
         torch.Size([7])
-        >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 1024)
         >>> ap = aperiodicity(x, f0)
         >>> ap.shape
         torch.Size([7, 513])

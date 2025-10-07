@@ -26,10 +26,10 @@ jobs:
 
     steps:
       - name: Clone
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python }}
           architecture: x64
@@ -46,7 +46,7 @@ jobs:
         run: make check
 
       - name: Test
-        run: make test OPT="--dtype double"
+        run: make test-all OPT="--dtype double"
 
       - name: Coverage
         uses: codecov/codecov-action@v5

@@ -61,11 +61,12 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c = diffsptk.ramp(3)
-        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(3, 5)
+        >>> import diffsptk
+        >>> c2mpir = diffsptk.CepstrumToMinimumPhaseImpulseResponse(4, 5)
+        >>> c = torch.tensor([0.5, -0.3, 0.2, -0.1, 0.05])
         >>> h = c2mpir(c)
         >>> h
-        tensor([1.0000, 1.0000, 2.5000, 5.1667, 6.0417])
+        tensor([ 1.6487, -0.4946,  0.4039, -0.2712,  0.1803])
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")

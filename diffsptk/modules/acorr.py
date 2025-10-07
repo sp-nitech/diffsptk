@@ -62,8 +62,9 @@ class Autocorrelation(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> acorr = diffsptk.Autocorrelation(5, 3)
+        >>> x = diffsptk.ramp(4)
         >>> r = acorr(x)
         >>> r
         tensor([30.0000, 20.0000, 11.0000,  4.0000])
