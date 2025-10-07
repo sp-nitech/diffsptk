@@ -274,11 +274,12 @@ class ConstantQTransform(BaseNonFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> cqt = diffsptk.CQT(100, 8000, n_bin=4, res_type=None)
         >>> x = diffsptk.sin(99)
-        >>> cqt = diffsptk.CQT(100, 8000, n_bin=4)
         >>> c = cqt(x).abs()
         >>> c
-        tensor([[1.1259, 1.2069, 1.3008, 1.3885]])
+        tensor([[1.1231, 1.2045, 1.2976, 1.3867]])
 
         """
         x = self.early_downsample(x)

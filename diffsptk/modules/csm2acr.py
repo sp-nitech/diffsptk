@@ -71,16 +71,17 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
+        >>> import diffsptk
         >>> acorr = diffsptk.Autocorrelation(5, 3)
         >>> acr2csm = diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients(3)
         >>> csm2acr = diffsptk.CompositeSinusoidalModelCoefficientsToAutocorrelation(3)
+        >>> x = diffsptk.ramp(4)
         >>> r = acorr(x)
         >>> r
-        tensor([ 8.8894, -0.1102, -4.1748,  0.7501])
+        tensor([30.0000, 20.0000, 11.0000,  4.0000])
         >>> r2 = csm2acr(acr2csm(r))
         >>> r2
-        tensor([ 8.8894, -0.1102, -4.1748,  0.7501])
+        tensor([30.0000, 20.0000, 11.0000,  4.0000])
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of autocorrelation")

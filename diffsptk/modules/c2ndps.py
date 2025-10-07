@@ -75,8 +75,9 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> c2ndps = diffsptk.CepstrumToNegativeDerivativeOfPhaseSpectrum(4, 8)
+        >>> c = diffsptk.ramp(4)
         >>> n = c2ndps(c)
         >>> n
         tensor([ 30.0000, -21.6569,  12.0000, -10.3431,  10.0000])
