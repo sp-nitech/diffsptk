@@ -61,11 +61,12 @@ class InverseUniformQuantization(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> quantize = diffsptk.UniformQuantization(4, 2)
+        >>> dequantize = diffsptk.InverseUniformQuantization(4, 2)
         >>> x = diffsptk.ramp(-4, 4)
         >>> x
         tensor([-4., -3., -2., -1.,  0.,  1.,  2.,  3.,  4.])
-        >>> quantize = diffsptk.UniformQuantization(4, 2)
-        >>> dequantize = diffsptk.InverseUniformQuantization(4, 2)
         >>> x2 = dequantize(quantize(x))
         >>> x2
         tensor([-3., -3., -1., -1.,  1.,  1.,  3.,  3.,  3.])

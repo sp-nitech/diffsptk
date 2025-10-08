@@ -444,11 +444,12 @@ def dht(x: Tensor, dht_type: int = 2) -> Tensor:
 
 def drc(
     x: Tensor,
+    *,
+    sample_rate: int,
     threshold: float,
     ratio: float,
     attack_time: float,
     release_time: float,
-    sample_rate: int,
     makeup_gain: float = 0,
     abs_max: float = 1,
 ) -> Tensor:
@@ -458,6 +459,9 @@ def drc(
     ----------
     x : Tensor [shape=(..., T)]
         The input waveform.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
 
     threshold : float <= 0
         The threshold in dB.
@@ -470,9 +474,6 @@ def drc(
 
     release_time : float > 0
         The release time in msec.
-
-    sample_rate : int >= 1
-        The sample rate in Hz.
 
     makeup_gain : float >= 0
         The make-up gain in dB.

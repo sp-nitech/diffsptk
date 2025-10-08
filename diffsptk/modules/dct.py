@@ -70,8 +70,9 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> dct = diffsptk.DCT(4)
+        >>> x = diffsptk.ramp(3)
         >>> y = dct(x)
         >>> y
         tensor([ 3.0000, -2.2304,  0.0000, -0.1585])

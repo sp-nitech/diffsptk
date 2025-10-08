@@ -58,8 +58,9 @@ class Decimation(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(9)
+        >>> import diffsptk
         >>> decimate = diffsptk.Decimation(3, start=1)
+        >>> x = diffsptk.ramp(9)
         >>> y = decimate(x)
         >>> y
         tensor([1., 4., 7.])
