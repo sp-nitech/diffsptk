@@ -61,6 +61,16 @@ class F0Evaluation(BaseFunctionalModule):
         out : Tensor [shape=(...,) or scalar]
             The F0 metric.
 
+        Examples
+        --------
+        >>> import diffsptk
+        >>> f0eval = diffsptk.F0Evaluation(out_format="f0-rmse-cent")
+        >>> x = torch.tensor([100, 200, 300, 0, 400])
+        >>> y = torch.tensor([110, 180, 0, 290, 410])
+        >>> error = f0eval(x, y)
+        >>> error
+        tensor(144.1353)
+
         """
         return self._forward(x, y, *self.values)
 

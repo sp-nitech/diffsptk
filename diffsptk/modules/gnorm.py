@@ -65,8 +65,9 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, 0.5)
         >>> x = diffsptk.ramp(1, 4)
-        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, c=2)
         >>> y = gnorm(x)
         >>> y
         tensor([2.2500, 1.3333, 2.0000, 2.6667])

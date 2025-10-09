@@ -79,17 +79,18 @@ class FrequencyTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c1 = diffsptk.ramp(3)
-        >>> c1
-        tensor([0., 1., 2., 3.])
+        >>> import diffsptk
         >>> freqt = diffsptk.FrequencyTransform(3, 4, 0.02)
+        >>> ifreqt = diffsptk.FrequencyTransform(4, 3, -0.02)
+        >>> c1 = diffsptk.ramp(1, 4)
+        >>> c1
+        tensor([1., 2., 3., 4.])
         >>> c2 = freqt(c1)
         >>> c2
-        tensor([ 0.0208,  1.0832,  2.1566,  2.9097, -0.1772])
-        >>> freqt2 = diffsptk.FrequencyTransform(4, 3, -0.02)
-        >>> c3 = freqt2(c2)
+        tensor([ 1.0412,  2.1240,  3.1949,  3.8666, -0.2358])
+        >>> c3 = ifreqt(c2)
         >>> c3
-        tensor([-9.8953e-10,  1.0000e+00,  2.0000e+00,  3.0000e+00])
+        tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")

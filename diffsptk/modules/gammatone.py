@@ -173,8 +173,9 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.impulse(15999)
+        >>> import diffsptk
         >>> gammatone = diffsptk.GammatoneFilterBankAnalysis(16000)
+        >>> x = diffsptk.impulse(16000 - 1)
         >>> y = gammatone(x)
         >>> y.shape
         torch.Size([1, 30, 16000])
