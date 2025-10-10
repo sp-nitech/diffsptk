@@ -67,9 +67,10 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, 0.5)
+        >>> ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(3, 0.5)
         >>> x = diffsptk.ramp(1, 4)
-        >>> gnorm = diffsptk.GeneralizedCepstrumGainNormalization(3, c=2)
-        >>> ignorm = diffsptk.GeneralizedCepstrumInverseGainNormalization(3, c=2)
         >>> x2 = ignorm(gnorm(x))
         >>> x2
         tensor([1., 2., 3., 4.])

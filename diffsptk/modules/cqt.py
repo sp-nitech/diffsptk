@@ -276,7 +276,7 @@ class ConstantQTransform(BaseNonFunctionalModule):
         --------
         >>> import diffsptk
         >>> cqt = diffsptk.CQT(100, 8000, n_bin=4, res_type=None)
-        >>> x = diffsptk.sin(99)
+        >>> x = diffsptk.sin(100 - 1)
         >>> c = cqt(x).abs()
         >>> c
         tensor([[1.1231, 1.2045, 1.2976, 1.3867]])

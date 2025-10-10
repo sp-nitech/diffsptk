@@ -88,17 +88,18 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c1 = diffsptk.nrand(3)
-        >>> c1
-        tensor([ 0.0304,  0.5849, -0.8668, -0.7278])
-        >>> freqt2 = diffsptk.SecondOrderAllPassFrequencyTransform(3, 4, .1, .3)
-        >>> c2 = freqt2(c1)
+        >>> import diffsptk
+        >>> import torch
+        >>> freqt2 = diffsptk.SecondOrderAllPassFrequencyTransform(
+        ...     3, 4, alpha=0.05, theta=0.3
+        ... )
+        >>> ifreqt2 = diffsptk.SecondOrderAllPassInverseFrequencyTransform(
+        ...     4, 3, alpha=0.05, theta=0.3
+        ... )
+        >>> c1 = torch.tensor([0.8, 0.6, -1.0, -0.5])
+        >>> c2 = ifreqt2(freqt2(c1))
         >>> c2
-        tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
-        >>> ifreqt2 = diffsptk.SecondOrderAllPassInverseFrequencyTransform(4, 3, .1, .3)
-        >>> c3 = ifreqt2(c2)
-        >>> c3
-        tensor([ 0.0682,  0.4790, -1.0168, -0.6026,  0.1094])
+        tensor([ 0.8000,  0.6000, -1.0000, -0.5000])
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")

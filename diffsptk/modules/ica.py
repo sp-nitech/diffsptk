@@ -81,8 +81,8 @@ class IndependentComponentAnalysis(BaseLearnerModule):
     ) -> None:
         super().__init__()
 
-        if order <= 0:
-            raise ValueError("order must be positive.")
+        if order < 0:
+            raise ValueError("order must be non-negative.")
         if order + 1 < n_comp:
             raise ValueError("n_comp must be less than or equal to input dimension.")
         if n_iter <= 0:
@@ -128,6 +128,25 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         -------
         W : Tensor [shape=(K, K)]
             The separating matrix.
+
+        Examples
+        --------
+        >>> import diffsptk
+        >>> ica = diffsptk.IndependentComponentAnalysis(order=1, n_comp=2, n_iter=10)
+        >>> x = diffsptk.ramp(1, 6).view(-1, 2)
+        >>> x
+        tensor([[1., 2.],
+                [3., 4.],
+                [5., 6.]])
+        >>> W = ica(x)
+        >>> W
+        tensor([[ 0.9928,  0.0292],
+                [-0.0844,  2.8666]])
+        >>> s = ica.transform(x)
+        >>> s
+        tensor([[ 1.2169, -0.0138],
+                [ 0.0000,  0.0000],
+                [-1.2169,  0.0138]])
 
         """
         x = to_dataloader(x, self.batch_size)
