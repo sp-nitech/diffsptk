@@ -59,8 +59,9 @@ class Interpolation(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 3)
+        >>> import diffsptk
         >>> interpolate = diffsptk.Interpolation(3, start=1)
+        >>> x = diffsptk.ramp(1, 3)
         >>> y = interpolate(x)
         >>> y
         tensor([0., 1., 0., 0., 2., 0., 0., 3., 0., 0.])

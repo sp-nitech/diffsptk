@@ -53,8 +53,9 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
 
         Examples
         --------
-        >>> s = diffsptk.ramp(1, 4) * 0.1
+        >>> import diffsptk
         >>> is2par = diffsptk.InverseSineToParcorCoefficients(3)
+        >>> s = diffsptk.ramp(1, 4) * 0.1
         >>> k = is2par(s)
         >>> k
         tensor([0.1000, 0.3090, 0.4540, 0.5878])
