@@ -54,10 +54,11 @@ class Entropy(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> entropy = diffsptk.Entropy("bit")
         >>> p = diffsptk.step(3) / 4
         >>> p
         tensor([0.2500, 0.2500, 0.2500, 0.2500])
-        >>> entropy = diffsptk.Entropy("bit")
         >>> h = entropy(p)
         >>> h
         tensor(2.)

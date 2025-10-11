@@ -51,15 +51,13 @@ class InverseVectorQuantization(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> vq = diffsptk.VectorQuantization(4, 2)
+        >>> import diffsptk
+        >>> vq = diffsptk.VectorQuantization(4, 3)
         >>> ivq = diffsptk.InverseVectorQuantization()
-        >>> indices = torch.tensor([[0, 1], [1, 0]])
+        >>> indices = torch.tensor([0, 1, 2, 1])
         >>> xq = ivq(indices, vq.codebook)
-        >>> xq
-        tensor([[[ 1.9246, -1.4498, -0.9959,  0.3809,  0.0478],
-                 [-0.3040,  0.0568,  0.0113, -0.7284, -0.5103]],
-                [[-0.3040,  0.0568,  0.0113, -0.7284, -0.5103],
-                 [ 1.9246, -1.4498, -0.9959,  0.3809,  0.0478]]])
+        >>> xq.shape
+        torch.Size([4, 5])
 
         """
         target_shape = list(indices.shape)

@@ -29,6 +29,9 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
     Parameters
     ----------
+    sample_rate : int >= 1
+        The sample rate in Hz.
+
     threshold : float <= 0
         The threshold in dB.
 
@@ -40,9 +43,6 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
     release_time : float > 0
         The release time in msec.
-
-    sample_rate : int >= 1
-        The sample rate in Hz.
 
     makeup_gain : float >= 0
         The make-up gain in dB.
@@ -68,11 +68,12 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
     def __init__(
         self,
-        threshold: float,
-        ratio: float,
-        attack_time: float,
-        release_time: float,
+        *,
         sample_rate: int,
+        threshold: float = -20,
+        ratio: float = 2,
+        attack_time: float = 1,
+        release_time: float = 500,
         makeup_gain: float = 0,
         abs_max: float = 1,
         learnable: bool = False,
@@ -104,13 +105,16 @@ class DynamicRangeCompression(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = torch.randn(16000)
-        >>> x.abs().max()
-        tensor(4.2224)
-        >>> drc = diffsptk.DynamicRangeCompression(-20, 4, 10, 100, 16000)
+        >>> import diffsptk
+        >>> drc = diffsptk.DynamicRangeCompression(
+        ...     sample_rate=8000, threshold=-20, ratio=2, makeup_gain=10
+        ... )
+        >>> x = diffsptk.sin(8000)
+        >>> torch.var(x, correction=0)
+        tensor(0.5000)
         >>> y = drc(x)
-        >>> y.abs().max()
-        tensor(2.5779)
+        >>> torch.var(y, correction=0)
+        tensor(0.5651)
 
         """
         return self._forward(x, *self.values, **self._buffers, **self._parameters)

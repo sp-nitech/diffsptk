@@ -120,14 +120,13 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = torch.arange(0, 1, 0.25)
-        >>> x
-        tensor([0.0000, 0.2500, 0.5000, 0.7500, 1.0000])
+        >>> import diffsptk
         >>> pqmf = diffsptk.PQMF(2, 10)
         >>> ipqmf = diffsptk.IPQMF(2, 10)
-        >>> x2 = ipqmf(pmqf(x), keepdim=False)
-        >>> x2
-        tensor([[[8.1887e-04, 2.4754e-01, 5.0066e-01, 7.4732e-01, 9.9419e-01]]])
+        >>> x = diffsptk.ramp(1, 4)
+        >>> x2 = ipqmf(pqmf(x))
+        >>> x2.squeeze()
+        tensor([0.5372, 1.9768, 2.9893, 3.9759])
 
         """
         if y.dim() == 2:

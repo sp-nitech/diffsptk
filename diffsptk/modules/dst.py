@@ -69,8 +69,9 @@ class DiscreteSineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> dst = diffsptk.DST(4)
+        >>> x = diffsptk.ramp(3)
         >>> y = dst(x)
         >>> y
         tensor([ 2.7716, -2.0000,  1.1481, -1.0000])

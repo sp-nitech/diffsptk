@@ -54,9 +54,10 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 4)
+        >>> import diffsptk
         >>> pnorm = diffsptk.MelCepstrumPowerNormalization(3, alpha=0.1)
         >>> ipnorm = diffsptk.MelCepstrumInversePowerNormalization(3)
+        >>> x = diffsptk.ramp(1, 4)
         >>> y = ipnorm(pnorm(x))
         >>> y
         tensor([1., 2., 3., 4.])

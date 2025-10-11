@@ -69,15 +69,14 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(3)
-        >>> x
-        tensor([[ 1.1809, -0.2834, -0.4169,  0.3883]])
+        >>> import diffsptk
         >>> hilbert2 = diffsptk.TwoDimensionalHilbertTransform((1, 4))
+        >>> x = diffsptk.ramp(3).unsqueeze(0)
         >>> z = hilbert2(x)
         >>> z.real
-        tensor([[ 1.1809, -0.2834, -0.4169,  0.3883]])
+        tensor([[0., 1., 2., 3.]])
         >>> z.imag
-        tensor([[ 0.3358,  0.7989, -0.3358, -0.7989]])
+        tensor([[ 1., -1., -1.,  1.]])
 
         """
         return self._forward(x, *self.values, **self._buffers)

@@ -189,9 +189,10 @@ class DynamicTimeWarping(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> dtw = diffsptk.DynamicTimeWarping(p=1)
         >>> x = torch.tensor([1., 3., 6., 9.])
         >>> y = torch.tensor([2., 3., 8., 8.])
-        >>> dtw = diffsptk.DynamicTimeWarping(p=1)
         >>> distance, indices = dtw(x, y, return_indices=True)
         >>> distance
         tensor([0.8749])

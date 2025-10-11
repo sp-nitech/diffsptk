@@ -79,11 +79,10 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 3)
-        >>> x
-        tensor([1., 2., 3.])
+        >>> import diffsptk
         >>> fftr = diffsptk.RealValuedFastFourierTransform(8)
         >>> ifftr = diffsptk.RealValuedInverseFastFourierTransform(8, 3)
+        >>> x = diffsptk.ramp(1, 3)
         >>> x2 = ifftr(fftr(x))
         >>> x2
         tensor([1., 2., 3.])

@@ -66,16 +66,14 @@ class CepstralDistance(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c1 = diffsptk.nrand(2, 2)
-        tensor([[ 0.4296,  1.6517, -0.6022],
-                [-1.0464, -0.6088, -0.9274]])
-        >>> c2 = diffsptk.nrand(2, 2)
-        tensor([[ 1.6441, -0.6962, -0.2524],
-                [ 0.9344,  0.3965,  1.1494]])
-        >>> cdist = diffsptk.CepstralDistance()
+        >>> import diffsptk
+        >>> import torch
+        >>> cdist = diffsptk.CepstralDistance(reduction="none")
+        >>> c1 = torch.tensor([[ 0.4296,  1.6517], [-1.0464, -0.6088]])
+        >>> c2 = torch.tensor([[ 1.6441, -0.6962], [ 0.9344,  0.3965]])
         >>> distance = cdist(c1, c2)
         >>> distance
-        tensor(1.6551)
+        tensor([2.3479, 1.0053])
 
         """
         return self._forward(c1, c2, *self.values)

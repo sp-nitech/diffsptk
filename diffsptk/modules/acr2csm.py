@@ -73,14 +73,13 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([ 0.0165, -2.3693,  0.1375, -0.2262,  1.3307])
+        >>> import diffsptk
         >>> acorr = diffsptk.Autocorrelation(5, 3)
         >>> acr2csm = diffsptk.AutocorrelationToCompositeSinusoidalModelCoefficients(3)
+        >>> x = diffsptk.ramp(4)
         >>> c = acr2csm(acorr(x))
         >>> c
-        tensor([0.9028, 2.5877, 3.8392, 3.6153])
+        tensor([ 0.5261,  2.1403, 25.7668,  4.2332])
 
         """
         check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")
@@ -137,12 +136,6 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
     @staticmethod
     def _forward(r: torch.Tensor, C: torch.Tensor) -> torch.Tensor:
-        if r.dtype != torch.double or C.dtype != torch.double:
-            raise ValueError(
-                "Only double precision is supported "
-                f"(input: {r.dtype}, module: {C.dtype})."
-            )
-
         u = torch.matmul(r, C)
         u1, u2 = torch.tensor_split(u, 2, dim=-1)
 

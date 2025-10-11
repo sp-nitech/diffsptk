@@ -89,11 +89,12 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
-        >>> df2 = diffsptk.SecondOrderDigitalFilter(16000, 100, 200, 1000, 50, 5)
+        >>> import diffsptk
+        >>> df2 = diffsptk.SecondOrderDigitalFilter(16000, 1000, 200)
+        >>> x = diffsptk.impulse(4)
         >>> y = df2(x)
         >>> y
-        tensor([0.0000, 1.0000, 2.0918, 3.4161, 5.1021])
+        tensor([1.0000, 1.7766, 2.2319, 2.3227, 2.0633])
 
         """
         return self._forward(x, *self.layers)

@@ -59,11 +59,16 @@ class Delay(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 3)
+        >>> import diffsptk
         >>> delay = diffsptk.Delay(2)
+        >>> x = diffsptk.ramp(1, 3)
         >>> y = delay(x)
         >>> y
         tensor([0., 0., 1., 2., 3.])
+        >>> delay = diffsptk.Delay(-2)
+        >>> y = delay(x)
+        >>> y
+        tensor([3.])
 
         """
         return self._forward(x, *self.values)

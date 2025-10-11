@@ -77,9 +77,10 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> b = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> mc2b = diffsptk.MelCepstrumToMLSADigitalFilterCoefficients(4, 0.3)
         >>> b2mc = diffsptk.MLSADigitalFilterCoefficientsToMelCepstrum(4, 0.3)
+        >>> b = diffsptk.ramp(4)
         >>> b2 = mc2b(b2mc(b))
         >>> b2
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])

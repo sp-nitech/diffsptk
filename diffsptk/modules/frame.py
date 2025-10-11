@@ -73,8 +73,9 @@ class Frame(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 9)
+        >>> import diffsptk
         >>> frame = diffsptk.Frame(5, 2)
+        >>> x = diffsptk.ramp(1, 9)
         >>> y = frame(x)
         >>> y
         tensor([[0., 0., 1., 2., 3.],

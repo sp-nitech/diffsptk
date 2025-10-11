@@ -240,9 +240,12 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.sin(99)
+        >>> import diffsptk
         >>> cqt = diffsptk.CQT(100, 8000, n_bin=4)
         >>> icqt = diffsptk.ICQT(100, 8000, n_bin=4)
+        >>> x = diffsptk.sin(100 - 1)
+        >>> x.shape
+        torch.Size([100])
         >>> y = icqt(cqt(x), out_length=x.size(0))
         >>> y.shape
         torch.Size([100])

@@ -61,12 +61,13 @@ class Flux(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> flux = diffsptk.Flux(reduction="none", norm=1)
         >>> x = diffsptk.ramp(5).view(3, 2)
         >>> x
         tensor([[0., 1.],
                 [2., 3.],
                 [4., 5.]])
-        >>> flux = diffsptk.Flux(reduction="none", norm=1)
         >>> f = flux(x)
         >>> f
         tensor([4., 4.])

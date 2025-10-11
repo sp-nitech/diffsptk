@@ -69,8 +69,9 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> dht = diffsptk.DHT(4)
+        >>> x = diffsptk.ramp(3)
         >>> y = dht(x)
         >>> y
         tensor([ 3.0000, -1.4142, -1.0000, -1.4142])

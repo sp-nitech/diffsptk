@@ -71,13 +71,14 @@ class CepstralAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
         >>> fftcep = diffsptk.CepstralAnalysis(fft_length=16, cep_order=3)
+        >>> x = diffsptk.ramp(19)
         >>> c = fftcep(stft(x))
         >>> c
         tensor([[-0.9663,  0.8190, -0.0932, -0.0152],
-                [-0.8539,  4.6173, -0.5496, -0.3207]])
+                [-0.8540,  4.6173, -0.5496, -0.3206]])
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")

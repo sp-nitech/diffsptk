@@ -78,15 +78,14 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
-        >>> x
-        tensor([0., 1., 2., 3.])
+        >>> import diffsptk
         >>> mdst_params = {"frame_length": 4}
         >>> mdst = diffsptk.MDST(**mdst_params)
         >>> imdst = diffsptk.IMDST(**mdst_params)
+        >>> x = diffsptk.ramp(1, 4)
         >>> y = imdst(mdst(x))
         >>> y
-        tensor([-8.9407e-08, 1.0000e+00, 2.0000e+00, 3.0000e+00])
+        tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
         return self._forward(y, out_length, *self.values, *self.layers)

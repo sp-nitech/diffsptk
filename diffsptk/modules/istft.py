@@ -104,12 +104,11 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 3)
-        >>> x
-        tensor([1., 2., 3.])
+        >>> import diffsptk
         >>> stft_params = {"frame_length": 3, "frame_period": 1, "fft_length": 8}
         >>> stft = diffsptk.STFT(**stft_params, out_format="complex")
         >>> istft = diffsptk.ISTFT(**stft_params)
+        >>> x = diffsptk.ramp(1, 3)
         >>> y = istft(stft(x), out_length=3)
         >>> y
         tensor([1., 2., 3.])

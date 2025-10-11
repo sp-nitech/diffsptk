@@ -266,22 +266,29 @@ class GaussianMixtureModeling(BaseLearnerModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(10, 1)
+        >>> import diffsptk
+        >>> import torch
         >>> gmm = diffsptk.GMM(1, 2)
+        >>> x = torch.tensor([
+        ...     [-0.5, 0.3], [0.0, 0.7], [0.2, -0.1], [3.4, 2.0], [-2.8, 1.0],
+        ...     [2.9, -3.0], [2.2, -2.5], [1.5, -1.6], [1.8, 0.5], [1.3, 0.0],
+        ... ])
+        >>> gmm.warmup(x)
         >>> params, log_likelihood = gmm(x)
         >>> w, mu, sigma = params
         >>> w
-        tensor([0.1917, 0.8083])
+        tensor([0.5471, 0.4529])
         >>> mu
-        tensor([[ 1.2321,  0.2058],
-                [-0.1326, -0.7006]])
-        >>> sigma
-        tensor([[[3.4010e-01, 0.0000e+00],
-                 [0.0000e+00, 6.2351e-04]],
-                [[3.0944e-01, 0.0000e+00],
-                 [0.0000e+00, 8.6096e-01]]])
+        tensor([[-0.1507,  0.4112],
+                [ 2.3901, -1.0930]])
+        >>> print(sigma)
+        tensor([[[2.1197, 0.0000],
+                 [0.0000, 0.1536]],
+        <BLANKLINE>
+                [[0.5578, -0.0000],
+                 [-0.0000, 3.6378]]])
         >>> log_likelihood
-        tensor(-19.5235)
+        tensor(-32.5925)
 
         """
         x = to_dataloader(x, batch_size=self.batch_size)

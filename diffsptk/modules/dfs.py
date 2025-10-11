@@ -89,8 +89,9 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> dfs = diffsptk.IIR(b=[1, -0.97])
+        >>> x = diffsptk.ramp(4)
         >>> y = dfs(x)
         >>> y
         tensor([0.0000, 1.0000, 1.0300, 1.0600, 1.0900])

@@ -82,15 +82,14 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
-        >>> x
-        tensor([0., 1., 2., 3.])
+        >>> import diffsptk
         >>> mdct_params = {"frame_length": 4, "window": "vorbis"}
         >>> mdct = diffsptk.MDCT(**mdct_params)
         >>> imdct = diffsptk.IMDCT(**mdct_params)
+        >>> x = diffsptk.ramp(1, 4)
         >>> y = imdct(mdct(x))
         >>> y
-        tensor([1.0431e-07, 1.0000e+00, 2.0000e+00, 3.0000e+00])
+        tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
         return self._forward(y, out_length, *self.values, *self.layers)

@@ -70,12 +70,13 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> dst = diffsptk.DST(4)
         >>> idst = diffsptk.IDST(4)
+        >>> x = diffsptk.ramp(1, 4)
         >>> x2 = idst(dst(x))
         >>> x2
-        tensor([1.1921e-07, 1.0000e+00, 2.0000e+00, 3.0000e+00])
+        tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of input")

@@ -179,11 +179,12 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.impulse(15999)
-        >>> x[:5]
-        tensor([1., 0., 0., 0., 0.])
+        >>> import diffsptk
         >>> f = diffsptk.GammatoneFilterBankAnalysis(16000)
         >>> g = diffsptk.GammatoneFilterBankSynthesis(16000)
+        >>> x = diffsptk.impulse(16000 - 1)
+        >>> x[:5]
+        tensor([1., 0., 0., 0., 0.])
         >>> y = g(f(x)).squeeze()
         >>> y[:5]
         tensor([ 0.8349,  0.0682, -0.1085,  0.0559, -0.0947])

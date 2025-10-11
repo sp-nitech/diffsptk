@@ -49,16 +49,14 @@ class PseudoInverseMGLSADigitalFilter(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> M = 4
+        >>> import diffsptk
+        >>> import torch
+        >>> imglsadf = diffsptk.IMLSA(1, frame_period=2)
         >>> y = diffsptk.step(3)
-        >>> mc = diffsptk.nrand(2, M)
-        >>> mc
-        tensor([[ 0.8457,  1.5812,  0.1379,  1.6558,  1.4591],
-                [-1.3714, -0.9669, -1.2025, -1.3683, -0.2352]])
-        >>> imglsadf = diffsptk.IMLSA(M, frame_period=2)
-        >>> x = imglsadf(y.view(1, -1), mc.view(1, 2, M + 1))
+        >>> mc = torch.tensor([[0.3, 0.5], [-0.2, 0.1]])
+        >>> x = imglsadf(y, mc)
         >>> x
-        tensor([[ 0.4293,  1.0592,  7.9349, 14.9794]])
+        tensor([0.7408, 0.6659, 1.1176, 1.1048])
 
         """
         x = self.mglsadf(y, -mc)

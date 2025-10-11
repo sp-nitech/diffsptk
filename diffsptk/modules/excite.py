@@ -78,8 +78,9 @@ class ExcitationGeneration(BaseFunctionalModule):
 
         Examples
         --------
-        >>> p = torch.tensor([2.0, 3.0])
+        >>> import diffsptk
         >>> excite = diffsptk.ExcitationGeneration(3)
+        >>> p = torch.tensor([2.0, 3.0])
         >>> e = excite(p)
         >>> e
         tensor([1.4142, 0.0000, 1.6330, 0.0000, 0.0000, 1.7321])

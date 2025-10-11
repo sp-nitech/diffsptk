@@ -57,8 +57,9 @@ class ALawCompression(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> alaw = diffsptk.ALawCompression(4)
+        >>> x = diffsptk.ramp(4)
         >>> y = alaw(x)
         >>> y
         tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
