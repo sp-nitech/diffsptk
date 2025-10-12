@@ -118,8 +118,9 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c1 = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> mgc2mgc = diffsptk.MelGeneralizedCepstrumToMelGeneralizedCepstrum(3, 4, 0.1)
+        >>> c1 = diffsptk.ramp(3)
         >>> c2 = mgc2mgc(c1)
         >>> c2
         tensor([-0.0830,  0.6831,  1.1464,  3.1334,  0.9063])

@@ -103,15 +103,18 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([-0.5206,  1.0048, -0.3370,  1.3364, -0.2933])
+        >>> import diffsptk
         >>> msvq = diffsptk.MultiStageVectorQuantization(4, 3, 2).eval()
-        >>> xq, indices, _ = msvq(x)
-        >>> xq
-        tensor([-0.4561,  0.9835, -0.3787, -0.1488, -0.8025])
-        >>> indices
-        tensor([0, 2])
+        >>> x = diffsptk.nrand(4)
+        >>> x.shape
+        torch.Size([5])
+        >>> xq, indices, losses = msvq(x)
+        >>> xq.shape
+        torch.Size([5])
+        >>> indices.shape
+        torch.Size([2])
+        >>> losses.shape
+        torch.Size([2])
 
         """
         if codebooks is not None:

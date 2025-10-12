@@ -54,8 +54,11 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
 
         Examples
         --------
-        >>> a = diffsptk.ramp(4, 1, -1)
+        >>> import diffsptk
         >>> norm0 = diffsptk.AllPoleToAllZeroDigitalFilterCoefficients(3)
+        >>> a = diffsptk.ramp(4, 1, -1)
+        >>> a
+        tensor([4., 3., 2., 1.])
         >>> b = norm0(a)
         >>> b
         tensor([0.2500, 0.7500, 0.5000, 0.2500])

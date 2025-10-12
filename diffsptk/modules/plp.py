@@ -149,11 +149,12 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
         >>> plp = diffsptk.PLP(
-        ...     fft_length=32, mfcc_order=4, n_channel=8, sample_rate=8000
+        ...     fft_length=32, plp_order=4, n_channel=8, sample_rate=8000
         ... )
+        >>> x = diffsptk.ramp(19)
         >>> y = plp(stft(x))
         >>> y
         tensor([[-0.2896, -0.2356, -0.0586, -0.0387],

@@ -238,9 +238,10 @@ class PseudoQuadratureMirrorFilterBankAnalysis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(0, 1, 0.25)
+        >>> import diffsptk
         >>> pqmf = diffsptk.PQMF(2, 10)
-        >>> y = pmqf(x)
+        >>> x = diffsptk.ramp(0, 1, 0.25)
+        >>> y = pqmf(x)
         >>> y
         tensor([[[ 0.1605,  0.4266,  0.6927,  0.9199,  1.0302],
                  [-0.0775, -0.0493, -0.0211, -0.0318,  0.0743]]])

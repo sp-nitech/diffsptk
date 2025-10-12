@@ -133,15 +133,16 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
         >>> mfcc = diffsptk.MFCC(
         ...     fft_length=32, mfcc_order=4, n_channel=8, sample_rate=8000
         ... )
+        >>> x = diffsptk.ramp(19)
         >>> y = mfcc(stft(x))
         >>> y
-        tensor([[-7.7745e-03, -1.4447e-02,  1.6157e-02,  1.1069e-03],
-                [ 2.8049e+00, -1.6257e+00, -2.3566e-02,  1.2804e-01]])
+        tensor([[-0.3397, -0.6577, -0.0208, -0.1943],
+                [ 4.5527, -3.2103,  1.3192, -0.9303]])
 
         """
         return self._forward(x, *self.values, *self.layers, **self._buffers)

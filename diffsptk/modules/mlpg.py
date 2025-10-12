@@ -74,6 +74,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
         >>> x = diffsptk.ramp(1, 8).view(1, -1, 2)
         >>> x
         tensor([[[1., 2.],

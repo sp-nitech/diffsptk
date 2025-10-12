@@ -72,12 +72,13 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> poledf = diffsptk.AllPoleDigitalFilter(0, 1)
         >>> x = diffsptk.step(4)
         >>> a = diffsptk.ramp(4)
-        >>> poledf = diffsptk.AllPoleDigitalFilter(0, 1)
         >>> y = poledf(x, a.view(-1, 1))
         >>> y
-        tensor([[0., 1., 2., 3., 4.]])
+        tensor([0., 1., 2., 3., 4.])
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")

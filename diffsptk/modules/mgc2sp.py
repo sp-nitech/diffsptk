@@ -101,18 +101,18 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
-        >>> mcep = diffsptk.MelCepstralAnalysis(3, 16, 0.1, n_iter=1)
+        >>> mcep = diffsptk.MelCepstralAnalysis(
+        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ... )
+        >>> mc2sp = diffsptk.MelGeneralizedCepstrumToSpectrum(3, 8, alpha=0.1)
+        >>> x = diffsptk.ramp(19)
         >>> mc = mcep(stft(x))
-        >>> mc
-        tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
-                [-0.3522,  4.4222, -1.0882, -0.0511]])
-        >>> mc2sp = diffsptk.MelGeneralizedCepstrumToSpectrum(3, 8, 0.1)
         >>> sp = mc2sp(mc)
         >>> sp
         tensor([[6.0634e-01, 4.6702e-01, 1.7489e-01, 4.4821e-02, 2.3869e-02],
-                [3.5677e+02, 1.9435e+02, 6.0078e-01, 2.4278e-04, 8.8537e-06]])
+                [3.5678e+02, 1.9434e+02, 6.0081e-01, 2.4274e-04, 8.8505e-06]])
 
         """
         check_size(mc.size(-1), self.in_dim, "dimension of cepstrum")

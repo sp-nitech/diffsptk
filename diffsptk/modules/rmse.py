@@ -55,16 +55,14 @@ class RootMeanSquareError(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([-0.5945, -0.2401,  0.8633, -0.6464,  0.4515])
-        >>> y = diffsptk.nrand(4)
-        >>> y
-        tensor([-0.4025,  0.9367,  1.1299,  3.1986, -0.2832])
-        >>> rmse = diffsptk.RootMeanSquaredError()
+        >>> import diffsptk
+        >>> import torch
+        >>> rmse = diffsptk.RootMeanSquareError()
+        >>> x = torch.tensor([0.1, -0.2, 0.3, -0.4, 0.5])
+        >>> y = torch.tensor([-0.4, 0.9, 1.1, 3.2, -0.3])
         >>> e = rmse(x, y)
         >>> e
-        tensor(1.8340)
+        tensor(1.7720)
 
         """
         return self._forward(x, y, *self.values)
