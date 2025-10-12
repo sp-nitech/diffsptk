@@ -54,8 +54,9 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
 
         Examples
         --------
-        >>> g = diffsptk.ramp(1, 4) * 0.1
+        >>> import diffsptk
         >>> lar2par = diffsptk.LogAreaRatioToParcorCoefficients(3)
+        >>> g = diffsptk.ramp(1, 4) * 0.1
         >>> k = lar2par(g)
         >>> k
         tensor([0.1000, 0.0997, 0.1489, 0.1974])

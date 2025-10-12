@@ -75,10 +75,9 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
-        >>> x
-        tensor([0., 1., 2., 3.])
+        >>> import diffsptk
         >>> mdst = diffsptk.MDST(frame_length=4)
+        >>> x = diffsptk.ramp(3)
         >>> y = mdst(x)
         >>> y
         tensor([[-0.2071, -0.5000],

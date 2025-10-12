@@ -55,10 +55,11 @@ class LinearInterpolation(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> linear_intpl = diffsptk.LinearInterpolation(2)
         >>> x = diffsptk.ramp(2)
         >>> x
         tensor([0., 1., 2.])
-        >>> linear_intpl = diffsptk.LinearInterpolation(2)
         >>> y = linear_intpl(x)
         >>> y
         tensor([0.0000, 0.5000, 1.0000, 1.5000, 2.0000, 2.0000])
