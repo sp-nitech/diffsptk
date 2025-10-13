@@ -140,9 +140,9 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         ... )
         >>> x = diffsptk.ramp(19)
         >>> y = mfcc(stft(x))
-        >>> y
-        tensor([[-0.3397, -0.6577, -0.0208, -0.1943],
-                [ 4.5527, -3.2103,  1.3192, -0.9303]])
+        >>> y.round(decimals=3)
+        tensor([[-0.3400, -0.6580, -0.0210, -0.1940],
+                [ 4.5530, -3.2100,  1.3190, -0.9300]])
 
         """
         return self._forward(x, *self.values, *self.layers, **self._buffers)
