@@ -57,8 +57,9 @@ class MuLawCompression(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> ulaw = diffsptk.MuLawCompression(4)
+        >>> x = diffsptk.ramp(4)
         >>> y = ulaw(x)
         >>> y
         tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])

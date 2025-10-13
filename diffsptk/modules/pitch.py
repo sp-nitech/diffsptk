@@ -268,6 +268,11 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
 
     def forward(self, x: torch.Tensor, embed: bool = True) -> torch.Tensor:
         x = self.resample(x)
+        if x.size(-1) < self.torchcrepe.WINDOW_SIZE // 2:
+            raise ValueError(
+                f"Input length must be greater than {self.torchcrepe.WINDOW_SIZE // 2}"
+                f" at {self.torchcrepe.SAMPLE_RATE} Hz."
+            )
         x = self.frame(x)
         x = x / torch.clip(x.std(dim=-1, keepdim=True), min=1e-10)
 
@@ -356,6 +361,11 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.resample(x)
+        if x.size(-1) <= self.penn.WINDOW_SIZE // 2:
+            raise ValueError(
+                f"Input length must be greater than {self.penn.WINDOW_SIZE // 2}"
+                f" at {self.penn.SAMPLE_RATE} Hz."
+            )
         frames = self.frame(x)
         target_shape = frames.shape[:-1] + (self.penn.PITCH_BINS,)
         org_dtype = torch.get_default_dtype()

@@ -76,8 +76,9 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> wht = diffsptk.WHT(4)
+        >>> x = diffsptk.ramp(3)
         >>> y = wht(x)
         >>> y
         tensor([ 3., -1., -2.,  0.])

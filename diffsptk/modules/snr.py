@@ -70,16 +70,14 @@ class SignalToNoiseRatio(BaseFunctionalModule):
 
         Examples
         --------
-        >>> s = diffsptk.nrand(4)
-        >>> s
-        tensor([-0.5804, -0.8002, -0.0645,  0.6101,  0.4396])
-        >>> n = diffsptk.nrand(4) * 0.1
-        >>> n
-        tensor([ 0.0854,  0.0485, -0.0826,  0.1455,  0.0257])
+        >>> import diffsptk
+        >>> import torch
         >>> snr = diffsptk.SignalToNoiseRatio(full=True)
+        >>> s = torch.tensor([0.1, -0.2, 0.3, -0.4, 0.5])
+        >>> n = s * 0.1
         >>> y = snr(s, s + n)
         >>> y
-        tensor(16.0614)
+        tensor(20.0000)
 
         """
         return self._forward(s, sn, *self.values)

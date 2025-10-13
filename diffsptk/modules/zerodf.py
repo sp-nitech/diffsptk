@@ -67,12 +67,13 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> zerodf = diffsptk.AllZeroDigitalFilter(0, 1)
         >>> x = diffsptk.step(4)
         >>> b = diffsptk.ramp(4)
-        >>> zerodf = diffsptk.AllZeroDigitalFilter(0, 1)
         >>> y = zerodf(x, b.view(-1, 1))
         >>> y
-        tensor([[0., 1., 2., 3., 4.]])
+        tensor([0., 1., 2., 3., 4.])
 
         """
         check_size(b.size(-1), self.in_dim, "dimension of impulse response")

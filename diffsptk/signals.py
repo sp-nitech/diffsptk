@@ -40,6 +40,7 @@ def impulse(order: int, **kwargs) -> torch.Tensor:
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.impulse(4)
     >>> x
     tensor([1., 0., 0., 0., 0.])
@@ -73,6 +74,7 @@ def step(order: int, value: float = 1, **kwargs) -> torch.Tensor:
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.step(4, 2)
     >>> x
     tensor([2., 2., 2., 2., 2.])
@@ -115,6 +117,7 @@ def ramp(
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.ramp(4)
     >>> x
     tensor([0., 1., 2., 3., 4.])
@@ -165,6 +168,7 @@ def sin(
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.sin(4)
     >>> x
     tensor([ 0.0000,  0.9511,  0.5878, -0.5878, -0.9511])
@@ -208,6 +212,7 @@ def train(
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.train(5, 2.3)
     >>> x
     tensor([1.5166, 0.0000, 0.0000, 1.5166, 0.0000, 1.5166])
@@ -257,6 +262,7 @@ def mseq(*order: int, **kwargs) -> torch.Tensor:
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.mseq(4)
     >>> x
     tensor([-1.,  1., -1.,  1., -1.])
@@ -327,13 +333,13 @@ def nrand(
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.nrand(4)
-    >>> x
-    tensor([-0.8603,  0.6743, -0.9178,  1.5382, -0.2574])
+    >>> x.shape
+    torch.Size([5])
     >>> x = diffsptk.nrand(2, 4)
-    >>> x
-    tensor([[-0.2385, -0.0778, -0.0418, -1.6217,  0.1560],
-            [ 1.6646,  0.8429,  0.9357, -0.5123,  0.9571]])
+    >>> x.shape
+    torch.Size([2, 5])
 
     """
     if var is not None:
@@ -378,13 +384,13 @@ def rand(*order: int, a: float = 0, b: float = 1, **kwargs) -> torch.Tensor:
 
     Examples
     --------
+    >>> import diffsptk
     >>> x = diffsptk.rand(4)
-    >>> x
-    tensor([0.3425, 0.5997, 0.2882, 0.3961, 0.9791])
+    >>> x.shape
+    torch.Size([5])
     >>> x = diffsptk.rand(2, 4)
-    >>> x
-    tensor([[0.6170, 0.3649, 0.9397, 0.2408, 0.1868],
-            [0.6527, 0.1400, 0.3955, 0.9999, 0.8298]])
+    >>> x.shape
+    torch.Size([2, 5])
 
     """
     if b <= a:

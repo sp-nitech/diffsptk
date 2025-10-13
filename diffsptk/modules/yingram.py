@@ -96,9 +96,10 @@ class Yingram(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(22050)
+        >>> import diffsptk
         >>> frame = diffsptk.Frame(2048, 441)
         >>> yingram = diffsptk.Yingram(2048)
+        >>> x = diffsptk.nrand(22050)
         >>> y = yingram(frame(x))
         >>> y.shape
         torch.Size([51, 1580])

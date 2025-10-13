@@ -64,7 +64,7 @@ format: tool
 test-all: test test-example
 
 test: tool
-	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
+	[ -n "$(MODULE)" ] && module="--no-cov tests/test_$(MODULE).py" || module=; \
 	. .venv/bin/activate && export PATH=./tools/SPTK/bin:$$PATH NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 PYLSTRAIGHT_DEBUG=1 && \
 	python -m pytest $$module $(OPT)
 

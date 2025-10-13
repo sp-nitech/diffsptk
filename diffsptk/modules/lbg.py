@@ -342,14 +342,6 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         indices : Tensor [shape=(T,)]
             The codebook indices.
 
-        Examples
-        --------
-        >>> lbg = diffsptk.LBG(0, 2)
-        >>> torch.save(lbg.state_dict(), "lbg.pt")
-        >>> lbg.load_state_dict(torch.load("lbg.pt"))
-        >>> x = diffsptk.nrand(10, 0)
-        >>> xq, indices = lbg.transform(x)
-
         """
         xq, indices, _ = self.vq(x)
         return xq, indices

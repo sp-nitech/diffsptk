@@ -124,10 +124,11 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> stft = diffsptk.STFT(frame_length=3, frame_period=1, fft_length=8)
         >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
-        >>> stft = diffsptk.STFT(frame_length=3, frame_period=1, fft_length=8)
         >>> y = stft(x)
         >>> y
         tensor([[1.0000, 1.0000, 1.0000, 1.0000, 1.0000],

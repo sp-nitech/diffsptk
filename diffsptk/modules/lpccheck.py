@@ -68,7 +68,9 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
         --------
         >>> import diffsptk
         >>> import torch
-        >>> lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(4)
+        >>> lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(
+        ...     4, warn_type="ignore"
+        ... )
         >>> a = torch.tensor([1.0, -2.5, 2.8, -1.5, 0.4])
         >>> a2 = lpccheck(a)
         >>> a2

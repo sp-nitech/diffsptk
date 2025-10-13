@@ -111,7 +111,7 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         >>> import diffsptk
         >>> import torch
         >>> mlsacheck = diffsptk.MLSADigitalFilterStabilityCheck(
-        ...     cep_odder=4, alpha=0.1, warn_type="ignore"
+        ...     cep_order=4, alpha=0.1, warn_type="ignore"
         ... )
         >>> c1 = torch.tensor([1.8963, 7.6629, 4.4804, 8.0669, -1.2768])
         >>> c2 = mlsacheck(c1)
