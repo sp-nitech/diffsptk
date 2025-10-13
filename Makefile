@@ -61,7 +61,7 @@ format: tool
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
-test-all: test test-example
+test-all: test-example test
 
 test: tool
 	[ -n "$(MODULE)" ] && module="--no-cov tests/test_$(MODULE).py" || module=; \
