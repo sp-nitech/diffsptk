@@ -25,7 +25,7 @@ import diffsptk
 
 @pytest.mark.parametrize("mode", ["hts", "auto"])
 def test_get_alpha(mode):
-    alpha = diffsptk.get_alpha(sr=48000, mode=mode)
+    alpha = diffsptk.get_alpha(48000, mode=mode)
     assert alpha == 0.55
 
 
