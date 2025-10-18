@@ -61,8 +61,9 @@ class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> h = diffsptk.ramp(4, 0, -1)
+        >>> import diffsptk
         >>> mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(5, 3)
+        >>> h = diffsptk.ramp(4, 0, -1)
         >>> c = mpir2c(h)
         >>> c
         tensor([1.3863, 0.7500, 0.2188, 0.0156])

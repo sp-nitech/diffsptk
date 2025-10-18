@@ -76,11 +76,12 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> root_pol = diffsptk.PolynomialToRoots(2)
         >>> a = torch.tensor([3, 4, 5])
-        >>> root_pol = diffsptk.PolynomialToRoots(a.size(-1) - 1)
         >>> x = root_pol(a)
         >>> x
-        tensor([[-0.6667+1.1055j, -0.6667-1.1055j]])
+        tensor([-0.6667+1.1055j, -0.6667-1.1055j])
 
         """
         check_size(a.size(-1), self.in_dim, "order of polynomial")

@@ -61,10 +61,10 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(5)
-        >>> x
-        tensor([-0.2388,  0.3587, -0.6606, -0.6929,  0.5239,  0.4501])
+        >>> import diffsptk
+        >>> import torch
         >>> zcross = diffsptk.ZeroCrossingAnalysis(3)
+        >>> x = torch.tensor([-0.2, 0.3, -0.5, -0.7, 0.4, 0.2])
         >>> z = zcross(x)
         >>> z
         tensor([2., 1.])

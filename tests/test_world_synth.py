@@ -44,6 +44,7 @@ def test_compatibility(device, dtype, P=80, sr=16000, L=1024, B=2):
         [f"rm {tmp1} {tmp2} {tmp3} {tmp4}"],
         dx=[None, n, n],
         eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.95,
+        opt={"out_length": 19200},
     )
 
     U.check_differentiability(

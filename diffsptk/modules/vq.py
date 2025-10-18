@@ -97,13 +97,14 @@ class VectorQuantization(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([ 0.7947,  0.1007,  1.2290, -0.5019,  1.5552])
+        >>> import diffsptk
         >>> vq = diffsptk.VectorQuantization(4, 2).eval()
+        >>> x = diffsptk.nrand(4)
+        >>> x.shape
+        torch.Size([5])
         >>> xq, _, _ = vq(x)
-        >>> xq
-        tensor([0.3620, 0.2736, 0.7098, 0.7106, 0.6494]
+        >>> xq.shape
+        torch.Size([5])
 
         """
         if codebook is not None:

@@ -61,10 +61,17 @@ format: tool
 	./tools/taplo/taplo fmt *.toml
 	./tools/yamlfmt/yamlfmt *.cff *.yml .github/workflows/*.yml
 
+test-all: test-example test
+
 test: tool
-	[ -n "$(MODULE)" ] && module=tests/test_$(MODULE).py || module=; \
+	[ -n "$(MODULE)" ] && module="--no-cov tests/test_$(MODULE).py" || module=; \
 	. .venv/bin/activate && export PATH=./tools/SPTK/bin:$$PATH NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 PYLSTRAIGHT_DEBUG=1 && \
 	python -m pytest $$module $(OPT)
+
+test-example: tool
+	[ -n "$(MODULE)" ] && module=modules/$(MODULE).py || module=; \
+	. .venv/bin/activate && export NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
+	python -m pytest --doctest-modules --no-cov --ignore=diffsptk/third_party diffsptk/$$module
 
 test-clean:
 	rm -rf tests/__pycache__

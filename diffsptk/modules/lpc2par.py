@@ -62,17 +62,14 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([ 0.7829, -0.2028,  1.6912,  0.1454,  0.4861])
-        >>> lpc = diffsptk.LPC(5, 3)
+        >>> import diffsptk
+        >>> lpc = diffsptk.LPC(5, 2)
+        >>> lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(2)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> a = lpc(x)
-        >>> a
-        tensor([ 1.6036,  0.0573, -0.5615, -0.0638])
-        >>> lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(3)
         >>> k = lpc2par(a)
         >>> k
-        tensor([ 1.6036,  0.0491, -0.5601, -0.0638])
+        tensor([ 0.5054, -0.7273,  0.1193])
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC")

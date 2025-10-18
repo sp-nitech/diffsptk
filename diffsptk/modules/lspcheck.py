@@ -67,11 +67,15 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
         Examples
         --------
-        >>> w1 = torch.tensor([0, 0, 1]) * torch.pi
-        >>> lspcheck = diffsptk.LineSpectralPairsStabilityCheck(2, rate=0.01)
+        >>> import diffsptk
+        >>> import torch
+        >>> w1 = torch.tensor([1.0 / torch.pi, 0.0, 0.0, 0.5, 1.0]) * torch.pi
+        >>> lspcheck = diffsptk.LineSpectralPairsStabilityCheck(
+        ...     4, rate=0.01, n_iter=10, warn_type="ignore"
+        ... )
         >>> w2 = lspcheck(w1)
         >>> w2
-        tensor([0.0000, 0.0105, 3.1311])
+        tensor([1.0000, 0.0063, 0.0126, 1.5708, 3.1353])
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")

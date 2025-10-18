@@ -170,16 +170,21 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(10, 0)
-        >>> lbg = diffsptk.LBG(0, 2)
+        >>> import diffsptk
+        >>> import torch
+        >>> lbg = diffsptk.LBG(1, 2)
+        >>> x = torch.tensor([
+        ...     [-0.5, 0.3], [0.0, 0.7], [0.2, -0.1], [3.4, 2.0], [-2.8, 1.0],
+        ...     [2.9, -3.0], [2.2, -2.5], [1.5, -1.6], [1.8, 0.5], [1.3, 0.0],
+        ... ])
         >>> codebook, indices, distance = lbg(x, return_indices=True)
         >>> codebook
-        tensor([[-0.5277],
-                [ 0.6747]])
+        tensor([[ 1.6250,  0.8000],
+                [ 0.5833, -0.9833]])
         >>> indices
-        tensor([0, 0, 0, 1, 0, 1, 1, 1, 1, 0])
+        tensor([1, 0, 1, 0, 1, 1, 1, 1, 0, 0])
         >>> distance
-        tensor(0.2331)
+        tensor(4.2804)
 
         """
         x = to_dataloader(x, self.batch_size)
@@ -336,14 +341,6 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
 
         indices : Tensor [shape=(T,)]
             The codebook indices.
-
-        Examples
-        --------
-        >>> lbg = diffsptk.LBG(0, 2)
-        >>> torch.save(lbg.state_dict(), "lbg.pt")
-        >>> lbg.load_state_dict(torch.load("lbg.pt"))
-        >>> x = diffsptk.nrand(10, 0)
-        >>> xq, indices = lbg.transform(x)
 
         """
         xq, indices, _ = self.vq(x)

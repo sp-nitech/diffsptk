@@ -116,7 +116,11 @@ class WorldSynthesis(BaseNonFunctionalModule):
         self.register_buffer("dc_remover", to(dc_remover, dtype=dtype))
 
     def forward(
-        self, f0: torch.Tensor, ap: torch.Tensor, sp: torch.Tensor
+        self,
+        f0: torch.Tensor,
+        ap: torch.Tensor,
+        sp: torch.Tensor,
+        out_length: int | None = None,
     ) -> torch.Tensor:
         """Synthesize speech using WORLD vocoder.
 
@@ -131,6 +135,9 @@ class WorldSynthesis(BaseNonFunctionalModule):
         sp : Tensor [shape=(B, T/P, L/2+1) or (T/P, L/2+1)]
             The spectral envelope (power spectrum).
 
+        out_length : int > 0 or None
+            The length of the output waveform.
+
         Returns
         -------
         out : Tensor [shape=(B, T) or (T,)]
@@ -138,17 +145,18 @@ class WorldSynthesis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.sin(1000, 80)
-        >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
-        >>> f0 = pitch(x)
+        >>> import diffsptk
+        >>> pitch = diffsptk.Pitch(160, 16000, out_format="f0")
         >>> aperiodicity = diffsptk.Aperiodicity(160, 16000, 1024)
+        >>> spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 16000, 1024)
+        >>> world_synth = diffsptk.WorldSynthesis(160, 16000, 1024)
+        >>> x = diffsptk.sin(2000 - 1, 80)
+        >>> f0 = pitch(x)
         >>> ap = aperiodicity(x, f0)
-        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 8000, 1024)
-        >>> sp = pitch_spec(x, f0)
-        >>> world_synth = diffsptk.WorldSynthesis(160, 8000, 1024)
-        >>> y = world_synth(f0, ap, sp)
+        >>> sp = spec(x, f0)
+        >>> y = world_synth(f0, ap, sp, out_length=x.size(0))
         >>> y.shape
-        torch.Size([1120])
+        torch.Size([2000])
 
         """
         is_batched_input = f0.ndim == 2
@@ -304,4 +312,6 @@ class WorldSynthesis(BaseNonFunctionalModule):
 
         if not is_batched_input:
             y = y.squeeze(0)
+        if out_length is not None:
+            y = y[..., :out_length]
         return y

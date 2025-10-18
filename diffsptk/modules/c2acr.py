@@ -61,13 +61,13 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c = diffsptk.nrand(4)
-        >>> c
-        tensor([-0.1751,  0.1950, -0.3211,  0.3523, -0.5453])
-        >>> c2acr = diffsptk.CepstrumToAutocorrelation(4, 4, 16)
+        >>> import diffsptk
+        >>> import torch
+        >>> c2acr = diffsptk.CepstrumToAutocorrelation(4, 3)
+        >>> c = torch.tensor([0.5, -0.3, 0.2, -0.1, 0.05])
         >>> r = c2acr(c)
         >>> r
-        tensor([ 1.0672, -0.0485, -0.1564,  0.2666, -0.4551])
+        tensor([ 3.2404, -1.1920,  0.9037, -0.5838])
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")

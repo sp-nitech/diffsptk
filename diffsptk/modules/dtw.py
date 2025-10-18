@@ -189,9 +189,10 @@ class DynamicTimeWarping(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> dtw = diffsptk.DynamicTimeWarping(p=1)
         >>> x = torch.tensor([1., 3., 6., 9.])
         >>> y = torch.tensor([2., 3., 8., 8.])
-        >>> dtw = diffsptk.DynamicTimeWarping(p=1)
         >>> distance, indices = dtw(x, y, return_indices=True)
         >>> distance
         tensor([0.8749])
@@ -326,3 +327,55 @@ class DynamicTimeWarping(BaseFunctionalModule):
         if return_indices:
             return distance, indices
         return distance
+
+    @staticmethod
+    def merge(
+        x: torch.Tensor,
+        y: torch.Tensor,
+        indices: torch.Tensor,
+    ) -> torch.Tensor:
+        """Merge two sequences according to the given indices.
+
+        Parameters
+        ----------
+        x : Tensor [shape=(T1, D) or (T1,)]
+            The query vector sequence.
+
+        y : Tensor [shape=(T2, D) or (T2,)]
+            The reference vector sequence.
+
+        indices : Tensor [shape=(T, 2)]
+            The indices of the viterbi path.
+
+        Returns
+        -------
+        z : Tensor [shape=(T, 2D) or (T, 2)]
+            The merged vector sequence.
+
+        Examples
+        --------
+        >>> import diffsptk
+        >>> dtw = diffsptk.DynamicTimeWarping(p=1)
+        >>> x = torch.tensor([1., 3., 6., 9.])
+        >>> y = torch.tensor([2., 3., 8., 8.])
+        >>> _, indices = dtw(x, y, return_indices=True)
+        >>> z = dtw.merge(x, y, indices[0])
+        >>> z
+        tensor([[1., 2.],
+                [3., 3.],
+                [6., 8.],
+                [9., 8.],
+                [9., 8.]])
+
+        """
+        if x.dim() != y.dim():
+            raise ValueError("x and y must have the same number of dimensions.")
+        if indices.dim() != 2 or indices.size(-1) != 2:
+            raise ValueError("The shape of indices must be (T, 2).")
+        x_expanded = x[indices[:, 0]]
+        y_expanded = y[indices[:, 1]]
+        if x.dim() == 1:
+            z = torch.stack([x_expanded, y_expanded], dim=-1)
+        else:
+            z = torch.cat([x_expanded, y_expanded], dim=-1)
+        return z

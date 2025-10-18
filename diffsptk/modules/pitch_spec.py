@@ -135,12 +135,13 @@ class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.sin(1000, 80)
+        >>> import diffsptk
         >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
+        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 8000, 1024)
+        >>> x = diffsptk.sin(1000, 80)
         >>> f0 = pitch(x)
         >>> f0.shape
         torch.Size([7])
-        >>> pitch_spec = diffsptk.PitchAdaptiveSpectralAnalysis(160, 8000, 1024)
         >>> sp = pitch_spec(x, f0)
         >>> sp.shape
         torch.Size([7, 513])

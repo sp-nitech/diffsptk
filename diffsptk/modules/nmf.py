@@ -175,8 +175,11 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> nmf = diffsptk.NMF(10, 3, 2, n_iter=10)
         >>> x = diffsptk.nrand(10, 3) ** 2
-        >>> nmf = diffsptk.NMF(10, 3, 2)
+        >>> x.shape
+        torch.Size([10, 4])
         >>> (U, H), _ = nmf(x)
         >>> U.shape
         torch.Size([10, 2])

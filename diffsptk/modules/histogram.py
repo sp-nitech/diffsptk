@@ -88,8 +88,9 @@ class Histogram(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(9)
+        >>> import diffsptk
         >>> histogram = diffsptk.Histogram(n_bin=4, lower_bound=0, upper_bound=9)
+        >>> x = diffsptk.ramp(9)
         >>> h = histogram(x)
         >>> h
         tensor([2.5000, 2.0000, 2.0000, 2.5000])

@@ -78,10 +78,9 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 3)
-        >>> x
-        tensor([1., 2., 3.])
+        >>> import diffsptk
         >>> fftr = diffsptk.RealValuedFastFourierTransform(8, out_format="real")
+        >>> x = diffsptk.ramp(1, 3)
         >>> y = fftr(x)
         >>> y
         tensor([ 6.0000,  2.4142, -2.0000, -0.4142,  2.0000])

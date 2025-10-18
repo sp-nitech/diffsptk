@@ -51,13 +51,13 @@ class InverseMultiStageVectorQuantization(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> msvq = diffsptk.MultiStageVectorQuantization(4, 3, 2)
+        >>> import diffsptk
+        >>> msvq = diffsptk.MultiStageVectorQuantization(4, 3, n_stage=2)
         >>> imsvq = diffsptk.InverseMultiStageVectorQuantization()
-        >>> indices = torch.tensor([[0, 1], [1, 0]])
+        >>> indices = torch.tensor([[0, 1], [2, 1]])
         >>> xq = imsvq(indices, msvq.codebooks)
-        >>> xq
-        tensor([[-0.8029, -0.1674,  0.5697,  0.9734,  0.1920],
-                [ 0.0720, -1.0491, -0.4491, -0.2043, -0.3582]])
+        >>> xq.shape
+        torch.Size([2, 5])
 
         """
         target_shape = list(indices.shape[:-1])

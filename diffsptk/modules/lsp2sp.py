@@ -99,17 +99,16 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([ 2.1110, -1.4767,  1.2490,  2.4201,  1.5429])
-        >>> lpc = diffsptk.LPC(3, 5)
+        >>> import diffsptk
+        >>> lpc = diffsptk.LPC(5, 2)
+        >>> lpc2lsp = diffsptk.LinearPredictiveCoefficientsToLineSpectralPairs(2)
+        >>> lsp2sp = diffsptk.LineSpectralPairsToSpectrum(2, 8)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> a = lpc(x)
-        >>> lpc2lsp = diffsptk.LinearPredictiveCoefficientsToLineSpectralPairs(3)
         >>> w = lpc2lsp(a)
-        >>> lsp2sp = diffsptk.LineSpectralPairsToSpectrum(3, 8)
         >>> sp = lsp2sp(w)
         >>> sp
-        tensor([31.3541, 13.7932, 14.7454, 16.9510, 10.4759])
+        tensor([2.7407, 0.6577, 0.1776, 0.0861, 0.0683])
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")

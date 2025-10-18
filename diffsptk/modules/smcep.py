@@ -101,15 +101,16 @@ class SecondOrderAllPassMelCepstralAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
         >>> smcep = diffsptk.SecondOrderAllPassMelCepstralAnalysis(
-        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ...     fft_length=16, cep_order=3, alpha=0.1, theta=0.1, n_iter=1
         ... )
+        >>> x = diffsptk.ramp(19)
         >>> mc = smcep(stft(x))
         >>> mc
-        tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
-                [-0.3523,  4.4223, -1.0883, -0.0510]])
+        tensor([[-0.8889,  0.7930, -0.1700,  0.0159],
+                [-0.3738,  4.4321, -1.0657, -0.0642]])
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")

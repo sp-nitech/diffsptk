@@ -68,5 +68,5 @@ def test_compatibility(
 
 
 def test_learnable(T=20):
-    drc = diffsptk.DRC(-20, 2, 50, 50, 16000, learnable=True)
+    drc = diffsptk.DRC(sample_rate=16000, learnable=True)
     U.check_learnable(drc, (T,))

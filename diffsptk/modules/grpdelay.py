@@ -78,8 +78,9 @@ class GroupDelay(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> grpdelay = diffsptk.GroupDelay(8)
+        >>> x = diffsptk.ramp(3)
         >>> g = grpdelay(x)
         >>> g
         tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])

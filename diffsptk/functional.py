@@ -444,11 +444,12 @@ def dht(x: Tensor, dht_type: int = 2) -> Tensor:
 
 def drc(
     x: Tensor,
+    *,
+    sample_rate: int,
     threshold: float,
     ratio: float,
     attack_time: float,
     release_time: float,
-    sample_rate: int,
     makeup_gain: float = 0,
     abs_max: float = 1,
 ) -> Tensor:
@@ -458,6 +459,9 @@ def drc(
     ----------
     x : Tensor [shape=(..., T)]
         The input waveform.
+
+    sample_rate : int >= 1
+        The sample rate in Hz.
 
     threshold : float <= 0
         The threshold in dB.
@@ -470,9 +474,6 @@ def drc(
 
     release_time : float > 0
         The release time in msec.
-
-    sample_rate : int >= 1
-        The sample rate in Hz.
 
     makeup_gain : float >= 0
         The make-up gain in dB.
@@ -571,36 +572,27 @@ def dtw(
     )
 
 
-def dtw_merge(x: Tensor, y: Tensor, indices: Tensor) -> tuple[Tensor, Tensor]:
-    """Align two vector sequences according to the given path.
+def dtw_merge(x: Tensor, y: Tensor, indices: Tensor) -> Tensor:
+    """Merge two sequences according to the given indices.
 
     Parameters
     ----------
-    x : Tensor [shape=(T1, ...)]
+    x : Tensor [shape=(T1, D) or (T1,)]
         The query vector sequence.
 
-    y : Tensor [shape=(T2, ...)]
+    y : Tensor [shape=(T2, D) or (T2,)]
         The reference vector sequence.
 
     indices : Tensor [shape=(T, 2)]
-        The indices of the path.
+        The indices of the viterbi path.
 
     Returns
     -------
-    x_align : Tensor [shape=(T, ...)]
-        The aligned query vector sequence.
-
-    y_align : Tensor [shape=(T, ...)]
-        The aligned reference vector sequence.
+    z : Tensor [shape=(T, 2D) or (T, 2)]
+        The merged vector sequence.
 
     """
-    if x.dim() != y.dim():
-        raise ValueError("x and y must have the same number of dimensions.")
-    if indices.dim() != 2 or indices.size(-1) != 2:
-        raise ValueError("The shape of indices must be (T, 2).")
-    x_align = x[indices[:, 0]]
-    y_align = y[indices[:, 1]]
-    return x_align, y_align
+    return nn.DynamicTimeWarping.merge(x=x, y=y, indices=indices)
 
 
 def entropy(p: Tensor, out_format: str = "nat") -> Tensor:

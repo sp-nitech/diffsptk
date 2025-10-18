@@ -70,14 +70,13 @@ class LevinsonDurbin(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
+        >>> import diffsptk
         >>> acorr = diffsptk.Autocorrelation(5, 2)
         >>> levdur = diffsptk.LevinsonDurbin(2)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> a = levdur(acorr(x))
         >>> a
-        tensor([0.8726, 0.1475, 0.5270])
+        tensor([ 0.5054, -0.8140,  0.1193])
 
         """
         check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")

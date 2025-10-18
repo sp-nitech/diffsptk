@@ -56,9 +56,10 @@ class MuLawExpansion(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> ulaw = diffsptk.MuLawCompression(4)
         >>> iulaw = diffsptk.MuLawExpansion(4)
+        >>> x = diffsptk.ramp(4)
         >>> x2 = iulaw(ulaw(x))
         >>> x2
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])

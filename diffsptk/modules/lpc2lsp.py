@@ -87,17 +87,14 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        >>> x
-        tensor([-1.5326,  1.0875, -1.5925,  0.6913,  1.6217])
-        >>> lpc = diffsptk.LPC(3, 5)
+        >>> import diffsptk
+        >>> lpc = diffsptk.LPC(5, 2)
+        >>> lpc2lsp = diffsptk.LinearPredictiveCoefficientsToLineSpectralPairs(2)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> a = lpc(x)
-        >>> a
-        tensor([ 2.7969,  0.3908,  0.0458, -0.0859])
-        >>> lpc2lsp = diffsptk.LinearPredictiveCoefficientsToLineSpectralPairs(3)
         >>> w = lpc2lsp(a)
         >>> w
-        tensor([2.7969, 0.9037, 1.8114, 2.4514])
+        tensor([0.5054, 0.5598, 1.6042])
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC")

@@ -58,9 +58,10 @@ class ALawExpansion(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(4)
+        >>> import diffsptk
         >>> alaw = diffsptk.ALawCompression(4)
         >>> ialaw = diffsptk.ALawExpansion(4)
+        >>> x = diffsptk.ramp(4)
         >>> x2 = ialaw(alaw(x))
         >>> x2
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])

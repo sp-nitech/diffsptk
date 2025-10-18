@@ -102,8 +102,10 @@ class Unframe(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 9)
+        >>> import diffsptk
         >>> frame = diffsptk.Frame(5, 2)
+        >>> unframe = diffsptk.Unframe(5, 2)
+        >>> x = diffsptk.ramp(1, 9)
         >>> y = frame(x)
         >>> y
         tensor([[0., 0., 1., 2., 3.],
@@ -111,7 +113,6 @@ class Unframe(BaseFunctionalModule):
                 [3., 4., 5., 6., 7.],
                 [5., 6., 7., 8., 9.],
                 [7., 8., 9., 0., 0.]])
-        >>> unframe = diffsptk.Unframe(5, 2)
         >>> z = unframe(y, out_length=x.size(0))
         >>> z
         tensor([1., 2., 3., 4., 5., 6., 7., 8., 9.])

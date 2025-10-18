@@ -165,10 +165,11 @@ class FractionalOctaveBandAnalysis(BaseNonFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> oband = diffsptk.FractionalOctaveBandAnalysis(16000)
         >>> x = diffsptk.ramp(0, 1, 0.25)
         >>> x
         tensor([0.0000, 0.2500, 0.5000, 0.7500, 1.0000])
-        >>> oband = diffsptk.FractionalOctaveBandAnalysis(16000)
         >>> y = oband(x)
         >>> y.shape
         torch.Size([1, 9, 5])

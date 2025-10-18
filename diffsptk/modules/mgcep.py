@@ -158,15 +158,16 @@ class MelGeneralizedCepstralAnalysis(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=16)
         >>> mgcep = diffsptk.MelGeneralizedCepstralAnalysis(
-        ...     fft_length=16, cep_order=3, alpha=0.1, n_iter=1
+        ...     fft_length=16, cep_order=3, alpha=0.1, gamma=0.0, n_iter=1
         ... )
+        >>> x = diffsptk.ramp(19)
         >>> mc = mgcep(stft(x))
         >>> mc
         tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
-                [-0.3522,  4.4222, -1.0882, -0.0511]])
+                [-0.3522,  4.4222, -1.0882, -0.0510]])
 
         """
         if self.gamma == 0:

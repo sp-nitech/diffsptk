@@ -66,15 +66,15 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        tensor([-0.9966, -0.2970, -0.2173,  0.0594,  0.5831])
-        >>> lpc = diffsptk.LPC(3, 5)
-        >>> a = lpc(x)
-        >>> a
-        tensor([ 1.1528, -0.2613, -0.0274,  0.1778])
-        >>> lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(3)
+        >>> import diffsptk
+        >>> import torch
+        >>> lpccheck = diffsptk.LinearPredictiveCoefficientsStabilityCheck(
+        ...     4, warn_type="ignore"
+        ... )
+        >>> a = torch.tensor([1.0, -2.5, 2.8, -1.5, 0.4])
         >>> a2 = lpccheck(a)
-        tensor([ 1.1528, -0.2613, -0.0274,  0.1778])
+        >>> a2
+        tensor([ 1.0000, -2.4825,  2.7743, -1.4930,  0.4000])
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC")

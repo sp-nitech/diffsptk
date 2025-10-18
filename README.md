@@ -2,11 +2,12 @@
 
 *diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
 
-[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.3.1/)
+[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.4.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![ClickPy](https://img.shields.io/badge/downloads-clickpy-yellow.svg)](https://clickpy.clickhouse.com/dashboard/diffsptk)
+[![Advisor](https://snyk.io/advisor/python/diffsptk/badge.svg)](https://snyk.io/advisor/python/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
-[![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.8.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
+[![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.9.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![Codecov](https://codecov.io/gh/sp-nitech/diffsptk/branch/master/graph/badge.svg)](https://app.codecov.io/gh/sp-nitech/diffsptk)
 [![License](https://img.shields.io/github/license/sp-nitech/diffsptk.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
@@ -20,7 +21,7 @@
 
 ## Documentation
 
-- Online [documentation](https://sp-nitech.github.io/diffsptk/3.3.1/) for the reference manual
+- Online [documentation](https://sp-nitech.github.io/diffsptk/3.4.0/) for the reference manual
 - Conference [paper](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) on the ISCA Archive
 - Hands-on [tutorial](https://colab.research.google.com/drive/1xAoUKqXadvJXJ7RzN0OceB6y7q5i7Sn6?usp=drive_link) on Google Colab
 

@@ -53,10 +53,11 @@ class MagicNumberInterpolation(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> magic_intpl = diffsptk.MagicNumberInterpolation(0)
         >>> x = torch.tensor([0, 1, 2, 0, 4, 0]).float()
         >>> x
         tensor([0., 1., 2., 0., 4., 0.])
-        >>> magic_intpl = diffsptk.MagicNumberInterpolation(0)
         >>> y = magic_intpl(x)
         >>> y
         tensor([1., 1., 2., 3., 4., 4.])

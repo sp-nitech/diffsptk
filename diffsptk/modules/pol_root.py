@@ -71,8 +71,10 @@ class RootsToPolynomial(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> import torch
+        >>> pol_root = diffsptk.RootsToPolynomial(3)
         >>> x = torch.tensor([3, 4, -1])
-        >>> pol_root = diffsptk.RootsToPolynomial(x.size(-1))
         >>> a = pol_root(x)
         >>> a
         tensor([ 1, -6,  5, 12])

@@ -77,11 +77,12 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(1, 4)
+        >>> import diffsptk
         >>> pnorm = diffsptk.MelCepstrumPowerNormalization(3, alpha=0.1)
+        >>> x = diffsptk.ramp(1, 4)
         >>> y = pnorm(x)
         >>> y
-        tensor([ 8.2942, -7.2942,  2.0000,  3.0000,  4.0000])
+        tensor([16.5884, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
         return self._forward(x, *self.layers)

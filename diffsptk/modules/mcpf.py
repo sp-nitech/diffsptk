@@ -94,17 +94,19 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
 
         Examples
         --------
-        >>> X = diffsptk.nrand(4).square()
-        >>> X
-        tensor([0.2725, 2.5650, 0.3552, 0.3757, 0.1904])
-        >>> mcep = diffsptk.MelCepstralAnalysis(3, 8, 0.1)
+        >>> import diffsptk
+        >>> import torch
+        >>> mcep = diffsptk.MelCepstralAnalysis(
+        ...     fft_length=8, cep_order=3, alpha=0.1, n_iter=1
+        ... )
         >>> mcpf = diffsptk.MelCepstrumPostfiltering(3, 0.1, 0.2)
+        >>> X = torch.tensor([1.2, 0.9, 0.2, 0.1, 0.3])
         >>> mc1 = mcep(X)
         >>> mc1
-        tensor([-0.2819,  0.3486, -0.2487, -0.3600])
+        tensor([-0.4989,  0.5941,  0.1558, -0.2130])
         >>> mc2 = mcpf(mc1)
         >>> mc2
-        tensor([-0.3256,  0.3486, -0.2984, -0.4320])
+        tensor([-0.5097,  0.5941,  0.1869, -0.2556])
 
         """
         return self._forward(mc, *self.layers, **self._buffers)

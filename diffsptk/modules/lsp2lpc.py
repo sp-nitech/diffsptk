@@ -81,8 +81,9 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         Examples
         --------
-        >>> w = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> lsp2lpc = diffsptk.LineSpectralPairsToLinearPredictiveCoefficients(3)
+        >>> w = diffsptk.ramp(3)
         >>> a = lsp2lpc(w)
         >>> a
         tensor([ 0.0000,  0.8658, -0.0698,  0.0335])

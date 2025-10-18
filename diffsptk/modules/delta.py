@@ -72,13 +72,14 @@ class Delta(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> delta = diffsptk.Delta([[-0.5, 0], [0, 0, 0.5]])
         >>> x = diffsptk.ramp(1, 8).view(1, -1, 2)
         >>> x
         tensor([[[1., 2.],
                  [3., 4.],
                  [5., 6.],
                  [7., 8.]]])
-        >>> delta = diffsptk.Delta([[-0.5, 0], [0, 0, 0.5]])
         >>> y = delta(x)
         >>> y
         tensor([[[ 1.0000,  2.0000, -0.5000, -1.0000,  1.5000,  2.0000],

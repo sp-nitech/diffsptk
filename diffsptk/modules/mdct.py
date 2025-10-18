@@ -81,15 +81,14 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
-        >>> x
-        tensor([0., 1., 2., 3.])
+        >>> import diffsptk
         >>> mdct = diffsptk.MDCT(frame_length=4)
+        >>> x = diffsptk.ramp(3)
         >>> y = mdct(x)
         >>> y
-        tensor([[-0.3536, -0.1464],
-                [-3.1213, -0.2929],
-                [-0.7678,  1.8536]])
+        tensor([[-0.5000, -0.2071],
+                [-4.4142, -0.4142],
+                [-1.0858,  2.6213]])
 
         """
         return self._forward(x, *self.values, *self.layers)

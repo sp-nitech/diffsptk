@@ -82,10 +82,11 @@ class Spectrum(BaseFunctionalModule):
 
         Examples
         --------
+        >>> import diffsptk
+        >>> spec = diffsptk.Spectrum(8)
         >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
-        >>> spec = diffsptk.Spectrum(8)
         >>> y = spec(x)
         >>> y
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])

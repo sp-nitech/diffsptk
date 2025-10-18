@@ -60,8 +60,9 @@ class Phase(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(3)
+        >>> import diffsptk
         >>> phase = diffsptk.Phase(8)
+        >>> x = diffsptk.ramp(3)
         >>> p = phase(x)
         >>> p
         tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])

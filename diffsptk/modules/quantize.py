@@ -80,8 +80,9 @@ class UniformQuantization(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(-4, 4)
+        >>> import diffsptk
         >>> quantize = diffsptk.UniformQuantization(4, 2)
+        >>> x = diffsptk.ramp(-4, 4)
         >>> y = quantize(x).int()
         >>> y
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)

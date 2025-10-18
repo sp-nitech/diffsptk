@@ -67,16 +67,17 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
+        >>> import diffsptk
         >>> acorr = diffsptk.Autocorrelation(5, 2)
         >>> levdur = diffsptk.LevinsonDurbin(2)
         >>> rlevdur = diffsptk.ReverseLevinsonDurbin(2)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> r = acorr(x)
         >>> r
-        tensor([ 5.8784,  0.8978, -2.0951])
+        tensor([0.5500, 0.4000, 0.2600])
         >>> r2 = rlevdur(levdur(r))
         >>> r2
-        tensor([ 5.8784,  0.8978, -2.0951])
+        tensor([0.5500, 0.4000, 0.2600])
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")

@@ -129,16 +129,19 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(10, 3)
-        >>> x.size()
-        torch.Size([10, 4])
-        >>> pca = diffsptk.PCA(3, 3)
+        >>> import diffsptk
+        >>> import torch
+        >>> pca = diffsptk.PCA(1, 1)
+        >>> x = torch.tensor([
+        ...     [-0.5, 0.3], [0.0, 0.7], [0.2, -0.1], [3.4, 2.0], [-2.8, 1.0],
+        ...     [2.9, -3.0], [2.2, -2.5], [1.5, -1.6], [1.8, 0.5], [1.3, 0.0],
+        ... ])
         >>> s, _, _ = pca(x)
         >>> s
-        tensor([1.3465, 0.7497, 0.4447])
+        tensor([3.6372])
         >>> y = pca.transform(x)
-        >>> y.size()
-        torch.Size([10, 3])
+        >>> y.shape
+        torch.Size([10, 1])
 
         """
         x = to_dataloader(x, self.batch_size)

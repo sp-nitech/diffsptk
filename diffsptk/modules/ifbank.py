@@ -111,17 +111,18 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.ramp(19)
+        >>> import diffsptk
         >>> stft = diffsptk.STFT(frame_length=10, frame_period=10, fft_length=32)
-        >>> X = stft(x)
-        >>> X.shape
-        torch.Size([2, 17])
         >>> fbank = diffsptk.MelFilterBankAnalysis(
         ...     fft_length=32, n_channel=4, sample_rate=8000
         ... )
         >>> ifbank = diffsptk.InverseMelFilterBankAnalysis(
         ...     fft_length=32, n_channel=4, sample_rate=8000
         ... )
+        >>> x = diffsptk.ramp(19)
+        >>> X = stft(x)
+        >>> X.shape
+        torch.Size([2, 17])
         >>> X2 = ifbank(fbank(X))
         >>> X2.shape
         torch.Size([2, 17])

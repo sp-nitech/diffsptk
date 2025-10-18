@@ -96,8 +96,9 @@ class Window(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = torch.ones(5)
+        >>> import diffsptk
         >>> window = diffsptk.Window(5, out_length=7, window="hamming", norm="none")
+        >>> x = diffsptk.step(4, value=1)
         >>> y = window(x)
         >>> y
         tensor([0.0800, 0.5400, 1.0000, 0.5400, 0.0800, 0.0000, 0.0000])

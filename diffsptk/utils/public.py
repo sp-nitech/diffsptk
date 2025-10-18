@@ -20,13 +20,13 @@ import torch
 
 
 def get_alpha(
-    sr: int, mode: str = "hts", n_freq: int = 10, n_alpha: int = 100
+    sample_rate: int, mode: str = "hts", n_freq: int = 10, n_alpha: int = 100
 ) -> float:
     """Compute an appropriate frequency warping factor given the sample rate.
 
     Parameters
     ----------
-    sr : int >= 1
+    sample_rate : int >= 1
         The sample rate in Hz.
 
     mode : ['hts', 'auto']
@@ -46,8 +46,8 @@ def get_alpha(
 
     Examples
     --------
-    >>> _, sr = diffsptk.read("assets/data.wav")
-    >>> alpha = diffsptk.get_alpha(sr)
+    >>> import diffsptk
+    >>> alpha = diffsptk.get_alpha(sample_rate=16000, mode="hts")
     >>> alpha
     0.42
 
@@ -95,9 +95,9 @@ def get_alpha(
         return selected_alpha
 
     if mode == "hts":
-        alpha = get_hts_alpha(sr)
+        alpha = get_hts_alpha(sample_rate)
     elif mode == "auto":
-        alpha = get_auto_alpha(sr, n_freq, n_alpha)
+        alpha = get_auto_alpha(sample_rate, n_freq, n_alpha)
     else:
         raise ValueError("Only hts and auto are supported.")
 
@@ -137,29 +137,30 @@ def read(
     x : Tensor [shape=(C, T) or (T, C) or (T,)]]
         The waveform.
 
-    sr : int
+    sample_rate : int
         The sample rate in Hz.
 
     Examples
     --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> x
-    tensor([ 0.0002,  0.0004,  0.0006,  ...,  0.0006, -0.0006, -0.0007])
-    >>> sr
+    >>> import diffsptk
+    >>> x, sample_rate = diffsptk.read("assets/data.wav")
+    >>> x.shape
+    torch.Size([19200])
+    >>> sample_rate
     16000
 
     """
-    x, sr = sf.read(filename, **kwargs)
+    x, sample_rate = sf.read(filename, **kwargs)
     if dtype is None:
         dtype = torch.get_default_dtype()
     x = torch.tensor(x.T if channel_first else x, device=device, dtype=dtype)
-    return x, sr
+    return x, sample_rate
 
 
 def write(
     filename: str,
     x: torch.Tensor | np.ndarray,
-    sr: int,
+    sample_rate: int,
     channel_first: bool = True,
     **kwargs,
 ) -> None:
@@ -173,7 +174,7 @@ def write(
     x : Tensor or ndarray [shape=(C, T) or (T, C) or (T,)]]
         The waveform.
 
-    sr : int
+    sample_rate : int
         The sample rate in Hz.
 
     channel_first : bool
@@ -186,9 +187,12 @@ def write(
 
     Examples
     --------
-    >>> x, sr = diffsptk.read("assets/data.wav")
-    >>> diffsptk.write("out.wav", x, sr)
+    >>> import diffsptk
+    >>> import os
+    >>> x, sample_rate = diffsptk.read("assets/data.wav")
+    >>> diffsptk.write("out.wav", x, sample_rate)
+    >>> os.remove("out.wav")
 
     """
     x = x.detach().cpu().numpy() if torch.is_tensor(x) else x
-    sf.write(filename, x.T if channel_first else x, sr, **kwargs)
+    sf.write(filename, x.T if channel_first else x, sample_rate, **kwargs)

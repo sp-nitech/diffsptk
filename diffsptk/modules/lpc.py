@@ -77,12 +77,12 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
 
         Examples
         --------
-        >>> x = diffsptk.nrand(4)
-        tensor([ 0.8226, -0.0284, -0.5715,  0.2127,  0.1217])
+        >>> import diffsptk
         >>> lpc = diffsptk.LPC(5, 2)
+        >>> x = diffsptk.ramp(1, 5) * 0.1
         >>> a = lpc(x)
         >>> a
-        tensor([0.8726, 0.1475, 0.5270])
+        tensor([ 0.5054, -0.8140,  0.1193])
 
         """
         return self._forward(x, *self.layers)

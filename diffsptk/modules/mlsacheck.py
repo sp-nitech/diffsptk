@@ -108,10 +108,12 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
         Examples
         --------
-        >>> c1 = diffsptk.nrand(4, stdv=10)
-        >>> c1
-        tensor([ 1.8963,  7.6629,  4.4804,  8.0669, -1.2768])
-        >>> mlsacheck = diffsptk.MLSADigitalFilterStabilityCheck(4, warn_type="ignore")
+        >>> import diffsptk
+        >>> import torch
+        >>> mlsacheck = diffsptk.MLSADigitalFilterStabilityCheck(
+        ...     cep_order=4, alpha=0.1, warn_type="ignore"
+        ... )
+        >>> c1 = torch.tensor([1.8963, 7.6629, 4.4804, 8.0669, -1.2768])
         >>> c2 = mlsacheck(c1)
         >>> c2
         tensor([ 1.3336,  1.7537,  1.0254,  1.8462, -0.2922])

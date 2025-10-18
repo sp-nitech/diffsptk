@@ -205,16 +205,14 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
 
         Examples
         --------
-        >>> M = 4
-        >>> x = diffsptk.step(3)
-        >>> mc = diffsptk.nrand(2, M)
-        >>> mc
-        tensor([[-0.9134, -0.5774, -0.4567,  0.7423, -0.5782],
-                [ 0.6904,  0.5175,  0.8765,  0.1677,  2.4624]])
-        >>> mglsadf = diffsptk.MLSA(M, frame_period=2)
-        >>> y = mglsadf(x.view(1, -1), mc.view(1, 2, M + 1))
-        >>> y
-        tensor([[0.4011, 0.8760, 3.5677, 4.8725]])
+        >>> import diffsptk
+        >>> import torch
+        >>> mglsadf = diffsptk.MLSA(1, frame_period=2)
+        >>> y = diffsptk.step(3)
+        >>> mc = torch.tensor([[0.3, 0.5], [-0.2, 0.1]])
+        >>> x = mglsadf(y, mc)
+        >>> x
+        tensor([1.3499, 1.3667, 0.9129, 0.9051])
 
         """
         check_size(mc.size(-1), sum(self.split_sections), "dimension of mel-cepstrum")
