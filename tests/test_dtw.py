@@ -45,7 +45,7 @@ def test_compatibility(device, dtype, module, metric, p, M=2, T1=10, T2=10):
         assert np.allclose(output_distance, target_distance), (
             f"Output: {output_distance}\nTarget: {target_distance}"
         )
-        return torch.cat(diffsptk.functional.dtw_merge(x, y, indices[0]), dim=-1)
+        return diffsptk.functional.dtw_merge(x, y, indices[0])
 
     U.check_compatibility(
         device,
@@ -73,5 +73,15 @@ def test_various_shape(T=10):
             [(T,), (T,)],
             [(T, 1), (T, 1)],
             [(1, T, 1), (1, T, 1)],
+        ],
+    )
+
+    indices = torch.stack([torch.arange(T), torch.arange(T)], dim=-1)
+    dtw_merge = lambda x, y: diffsptk.functional.dtw_merge(x, y, indices)
+    U.check_various_shape(
+        dtw_merge,
+        [
+            [(T,), (T,)],
+            [(T, 1), (T, 1)],
         ],
     )
