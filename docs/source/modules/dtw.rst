@@ -10,6 +10,4 @@ dtw
 
 .. autofunction:: diffsptk.functional.dtw
 
-.. seealso::
-
-    :ref:`dtw_merge`
+.. autofunction:: diffsptk.functional.dtw_merge
