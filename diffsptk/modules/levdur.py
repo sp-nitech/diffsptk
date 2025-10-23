@@ -30,7 +30,7 @@ class LevinsonDurbin(BaseFunctionalModule):
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
-    eps : float >= 0
+    eps : float >= 0 or None
         A small value to improve numerical stability.
 
     device : torch.device or None
