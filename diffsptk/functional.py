@@ -1692,7 +1692,8 @@ def levdur(r: Tensor, eps: float | None = None) -> Tensor:
         The autocorrelation.
 
     eps : float >= 0 or None
-        A small value to improve numerical stability.
+        A small value to improve numerical stability. If None, automatically set
+        based on the input data type.
 
     Returns
     -------
@@ -1735,7 +1736,8 @@ def lpc(x: Tensor, lpc_order: int, eps: float | None = None) -> Tensor:
         The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0 or None
-        A small value to improve numerical stability.
+        A small value to improve numerical stability. If None, automatically set
+        based on the input data type.
 
     Returns
     -------

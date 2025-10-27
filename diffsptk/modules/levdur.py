@@ -31,7 +31,8 @@ class LevinsonDurbin(BaseFunctionalModule):
         The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0 or None
-        A small value to improve numerical stability.
+        A small value to improve numerical stability. If None, automatically set
+        based on the data type.
 
     device : torch.device or None
         The device of this module.
