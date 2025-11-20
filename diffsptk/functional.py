@@ -622,7 +622,7 @@ def excite(
     voiced_region: str = "pulse",
     unvoiced_region: str = "gauss",
     polarity: str = "auto",
-    init_phase: str = "zeros",
+    init_phase: str | float = "zeros",
 ) -> Tensor:
     """Generate a simple excitation signal.
 
@@ -638,14 +638,14 @@ def excite(
                      'triangle', 'square']
         The type of voiced region.
 
-    unvoiced_region : ['zeros', 'gauss', 'uniform']
+    unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
         The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
         The polarity.
 
-    init_phase : ['zeros', 'random']
-        The initial phase.
+    init_phase : ['zeros', 'random'] or float
+        The initial phase in radians.
 
     Returns
     -------

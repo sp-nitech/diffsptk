@@ -95,7 +95,7 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
     ["pulse", "sinusoidal", "sawtooth", "inverted-sawtooth", "triangle", "square"],
 )
 @pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
-@pytest.mark.parametrize("init_phase", ["zeros", "random"])
+@pytest.mark.parametrize("init_phase", ["zeros", "random", np.round(np.pi / 2, 2)])
 def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=False):
     excite = diffsptk.ExcitationGeneration(
         P,
