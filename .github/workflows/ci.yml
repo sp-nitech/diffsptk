@@ -20,13 +20,13 @@ jobs:
           - python: "3.10"
             torch: 2.3.1
             torchaudio: 2.3.1
-          - python: "3.14"
+          - python: "3.13"
             torch: 2.9.1
             torchaudio: 2.9.1
 
     steps:
       - name: Clone
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Python
         uses: actions/setup-python@v6
