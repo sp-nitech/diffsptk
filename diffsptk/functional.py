@@ -2744,7 +2744,7 @@ def quantize(
     )
 
 
-def rlevdur(a: Tensor) -> Tensor:
+def rlevdur(a: Tensor, n_fft: int = 1024) -> Tensor:
     """Solve a Yule-Walker linear system given the LPC coefficients.
 
     Parameters
@@ -2752,13 +2752,16 @@ def rlevdur(a: Tensor) -> Tensor:
     a : Tensor [shape=(..., M+1)]
         The gain and the LPC coefficients.
 
+    n_fft : int >> M
+        The number of FFT bins. Accurate conversion requires a large value.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         The autocorrelation.
 
     """
-    return nn.ReverseLevinsonDurbin._func(a)
+    return nn.ReverseLevinsonDurbin._func(a, n_fft=n_fft)
 
 
 def rmse(x: Tensor, y: Tensor, reduction: str = "mean") -> Tensor:

@@ -169,7 +169,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
         if 1 < abs(out_gamma):
             raise ValueError("out_gamma must be in [-1, 1].")
         if n_fft <= max(in_order, out_order) + 1:
-            raise ValueError("n_fft must be much larger then order of cepstrum.")
+            raise ValueError("n_fft must be much larger than order of cepstrum.")
         if 0 == in_gamma and in_mul:
             raise ValueError("Invalid combination of in_gamma and in_mul.")
 
