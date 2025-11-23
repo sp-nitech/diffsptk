@@ -45,8 +45,8 @@ class ExcitationGeneration(BaseFunctionalModule):
     polarity : ['auto', 'unipolar', 'bipolar']
         The polarity.
 
-    init_phase : ['zeros', 'random']
-        The initial phase.
+    init_phase : ['zeros', 'random'] or float
+        The initial phase in radians.
 
     """
 
@@ -57,7 +57,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         voiced_region: str = "pulse",
         unvoiced_region: str = "gauss",
         polarity: str = "auto",
-        init_phase: str = "zeros",
+        init_phase: str | float = "zeros",
     ) -> None:
         super().__init__()
 
@@ -108,7 +108,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         voiced_region: str,
         unvoiced_region: str,
         polarity: str,
-        init_phase: str,
+        init_phase: str | float,
     ) -> Precomputed:
         ExcitationGeneration._check(frame_period)
         return (frame_period, voiced_region, unvoiced_region, polarity, init_phase)
@@ -121,7 +121,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         voiced_region: str,
         unvoiced_region: str,
         polarity: str,
-        init_phase: str,
+        init_phase: str | float,
     ) -> torch.Tensor:
         # Make mask represents voiced region.
         base_mask = torch.clip(p, min=0, max=1)
@@ -148,12 +148,15 @@ class ExcitationGeneration(BaseFunctionalModule):
         s = torch.cumsum(q.double(), dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
-        if init_phase == "zeros":
-            pass
-        elif init_phase == "random":
-            phase += torch.rand_like(p[..., :1])
+        if isinstance(init_phase, str):
+            if init_phase == "zeros":
+                pass
+            elif init_phase == "random":
+                phase += torch.rand_like(p[..., :1])
+            else:
+                raise ValueError(f"init_phase {init_phase} is not supported.")
         else:
-            raise ValueError(f"init_phase {init_phase} is not supported.")
+            phase += init_phase / TAU
 
         # Generate excitation signal using phase.
         if polarity == "auto":

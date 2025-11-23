@@ -622,7 +622,7 @@ def excite(
     voiced_region: str = "pulse",
     unvoiced_region: str = "gauss",
     polarity: str = "auto",
-    init_phase: str = "zeros",
+    init_phase: str | float = "zeros",
 ) -> Tensor:
     """Generate a simple excitation signal.
 
@@ -638,14 +638,14 @@ def excite(
                      'triangle', 'square']
         The type of voiced region.
 
-    unvoiced_region : ['zeros', 'gauss', 'uniform']
+    unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
         The type of unvoiced region.
 
     polarity : ['auto', 'unipolar', 'bipolar']
         The polarity.
 
-    init_phase : ['zeros', 'random']
-        The initial phase.
+    init_phase : ['zeros', 'random'] or float
+        The initial phase in radians.
 
     Returns
     -------
@@ -1692,7 +1692,8 @@ def levdur(r: Tensor, eps: float | None = None) -> Tensor:
         The autocorrelation.
 
     eps : float >= 0 or None
-        A small value to improve numerical stability.
+        A small value to improve numerical stability. If None, automatically set
+        based on the input data type.
 
     Returns
     -------
@@ -1735,7 +1736,8 @@ def lpc(x: Tensor, lpc_order: int, eps: float | None = None) -> Tensor:
         The order of the LPC coefficients, :math:`M`.
 
     eps : float >= 0 or None
-        A small value to improve numerical stability.
+        A small value to improve numerical stability. If None, automatically set
+        based on the input data type.
 
     Returns
     -------
@@ -2742,7 +2744,7 @@ def quantize(
     )
 
 
-def rlevdur(a: Tensor) -> Tensor:
+def rlevdur(a: Tensor, n_fft: int = 1024) -> Tensor:
     """Solve a Yule-Walker linear system given the LPC coefficients.
 
     Parameters
@@ -2750,13 +2752,16 @@ def rlevdur(a: Tensor) -> Tensor:
     a : Tensor [shape=(..., M+1)]
         The gain and the LPC coefficients.
 
+    n_fft : int >> M
+        The number of FFT bins. Accurate conversion requires a large value.
+
     Returns
     -------
     out : Tensor [shape=(..., M+1)]
         The autocorrelation.
 
     """
-    return nn.ReverseLevinsonDurbin._func(a)
+    return nn.ReverseLevinsonDurbin._func(a, n_fft=n_fft)
 
 
 def rmse(x: Tensor, y: Tensor, reduction: str = "mean") -> Tensor:

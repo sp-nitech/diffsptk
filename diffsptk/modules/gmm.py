@@ -346,6 +346,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
                     nu = px / y.view(-1, 1)
                     nm = nu * self.mu
                     a = pxx - y.view(-1, 1) * (2 * nm - mm)
+                    a = torch.nan_to_num(a, nan=0.0, posinf=0.0, neginf=0.0)
                     b = xi.view(-1, 1) * self.ubm_sigma.diagonal(dim1=-2, dim2=-1)
                     c = xi.view(-1, 1) * (self.ubm_mu - self.mu) ** 2
                     sigma = (a + b + c) * z.view(-1, 1)
@@ -368,6 +369,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
                     nm = outer(nu, self.mu)
                     mn = nm.transpose(-2, -1)
                     a = pxx - y.view(-1, 1, 1) * (nm + mn - mm)
+                    a = torch.nan_to_num(a, nan=0.0, posinf=0.0, neginf=0.0)
                     b = xi.view(-1, 1, 1) * self.ubm_sigma
                     c = xi.view(-1, 1, 1) * outer(self.ubm_mu - self.mu)
                     sigma = (a + b + c) * z.view(-1, 1, 1)

@@ -14,11 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import numpy as np
 import torch
-import torch.nn.functional as F
 
 from ..typing import Precomputed
-from ..utils.private import check_size, filter_values, remove_gain
+from ..utils.private import check_size, filter_values, remove_gain, to
 from .base import BaseFunctionalModule
 
 
@@ -31,6 +31,9 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
     lpc_order : int >= 0
         The order of the LPC coefficients, :math:`M`.
 
+    n_fft : int >> M
+        The number of FFT bins. Accurate conversion requires a large value.
+
     device : torch.device or None
         The device of this module.
 
@@ -42,6 +45,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
     def __init__(
         self,
         lpc_order: int,
+        n_fft: int = 1024,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -50,7 +54,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         self.in_dim = lpc_order + 1
 
         _, _, tensors = self._precompute(**filter_values(locals()))
-        self.register_buffer("eye", tensors[0])
+        self.register_buffer("phase_factors", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Solve a Yule-Walker linear system given the LPC coefficients.
@@ -95,39 +99,30 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         return True
 
     @staticmethod
-    def _check(lpc_order: int) -> None:
+    def _check(lpc_order: int, n_fft: int) -> None:
         if lpc_order < 0:
             raise ValueError("lpc_order must be non-negative.")
+        if n_fft <= lpc_order + 1:
+            raise ValueError("n_fft must be much larger than lpc_order.")
 
     @staticmethod
     def _precompute(
         lpc_order: int,
+        n_fft: int,
         device: torch.device | None,
         dtype: torch.dtype | None,
     ) -> Precomputed:
-        ReverseLevinsonDurbin._check(lpc_order)
-        eye = torch.eye(lpc_order + 1, device=device, dtype=dtype)
-        return None, None, (eye,)
+        ReverseLevinsonDurbin._check(lpc_order, n_fft)
+        n_freq = n_fft // 2 + 1
+        omega = torch.linspace(0, np.pi, n_freq, device=device, dtype=torch.double)
+        m = torch.arange(lpc_order + 1, device=device, dtype=torch.double)
+        phase_factors = torch.exp(-1j * omega * m.unsqueeze(-1))
+        return None, None, (to(phase_factors, dtype=dtype),)
 
     @staticmethod
-    def _forward(a: torch.Tensor, eye: torch.Tensor) -> torch.Tensor:
+    def _forward(a: torch.Tensor, phase_factors: torch.Tensor) -> torch.Tensor:
         M = a.size(-1) - 1
         K, a = remove_gain(a, return_gain=True)
-
-        U = [a.flip(-1)]
-        E = [K**2]
-        for m in range(M):
-            u0 = U[-1][..., :1]
-            u1 = U[-1][..., 1 : M - m]
-            t = 1 / (1 - u0**2)
-            u = (u1 - u0 * u1.flip(-1)) * t
-            u = F.pad(u, (0, m + 2))
-            e = E[-1] * t
-            U.append(u)
-            E.append(e)
-        U = torch.stack(U[::-1], dim=-1)
-        E = torch.stack(E[::-1], dim=-1)
-
-        V = torch.linalg.solve_triangular(U, eye, upper=True, unitriangular=True)
-        r = torch.matmul(V[..., :1].transpose(-2, -1) * E, V).squeeze(-2)
+        A = torch.sum(a.unsqueeze(-1) * phase_factors, dim=-2)
+        r = torch.fft.irfft((K / A.abs()) ** 2)[..., : M + 1]
         return r
