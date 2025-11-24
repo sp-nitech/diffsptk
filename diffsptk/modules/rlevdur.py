@@ -45,7 +45,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
     def __init__(
         self,
         lpc_order: int,
-        n_fft: int = 1024,
+        n_fft: int = 512,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -113,8 +113,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         dtype: torch.dtype | None,
     ) -> Precomputed:
         ReverseLevinsonDurbin._check(lpc_order, n_fft)
-        n_freq = n_fft // 2 + 1
-        omega = torch.linspace(0, np.pi, n_freq, device=device, dtype=torch.double)
+        omega = torch.linspace(0, np.pi, n_fft, device=device, dtype=torch.double)
         m = torch.arange(lpc_order + 1, device=device, dtype=torch.double)
         phase_factors = torch.exp(-1j * omega * m.unsqueeze(-1))
         return None, None, (to(phase_factors, dtype=dtype),)

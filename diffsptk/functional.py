@@ -2744,7 +2744,7 @@ def quantize(
     )
 
 
-def rlevdur(a: Tensor, n_fft: int = 1024) -> Tensor:
+def rlevdur(a: Tensor, n_fft: int = 512) -> Tensor:
     """Solve a Yule-Walker linear system given the LPC coefficients.
 
     Parameters
