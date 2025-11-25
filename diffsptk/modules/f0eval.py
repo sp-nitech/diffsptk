@@ -111,8 +111,8 @@ class F0Evaluation(BaseFunctionalModule):
             )
         else:
             TP = torch.sum((x != UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL), dim=-1)
-            FP = torch.sum((x == UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL), dim=-1)
-            FN = torch.sum((x != UNVOICED_SYMBOL) & (y == UNVOICED_SYMBOL), dim=-1)
+            FP = torch.sum((x != UNVOICED_SYMBOL) & (y == UNVOICED_SYMBOL), dim=-1)
+            FN = torch.sum((x == UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL), dim=-1)
             TN = torch.sum((x == UNVOICED_SYMBOL) & (y == UNVOICED_SYMBOL), dim=-1)
             FPFN = FP + FN
             if out_format == "vuv-error-rate":
