@@ -140,12 +140,12 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
         u1, u2 = torch.tensor_split(u, 2, dim=-1)
 
         U = hankel(-u)
-        p = torch.matmul(U.inverse(), u2.unsqueeze(-1)).squeeze(-1)
+        p = torch.linalg.solve(U, u2.unsqueeze(-1)).squeeze(-1)
         x = PolynomialToRoots._func(F.pad(p.flip(-1), (1, 0), value=1))
         x, _ = torch.sort(x.real, descending=True)
         w = torch.acos(x)
 
         V = vander(x)
-        m = torch.matmul(V.inverse(), u1.unsqueeze(-1)).squeeze(-1)
+        m = torch.linalg.solve(V, u1.unsqueeze(-1)).squeeze(-1)
         c = torch.cat((w, m), dim=-1)
         return c

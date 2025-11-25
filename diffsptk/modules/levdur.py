@@ -122,7 +122,7 @@ class LevinsonDurbin(BaseFunctionalModule):
         R = symmetric_toeplitz(r[..., :-1]) + eye  # [..., M, M]
 
         # Solve system.
-        a = torch.matmul(R.inverse(), -r1.unsqueeze(-1)).squeeze(-1)
+        a = torch.linalg.solve(R, -r1.unsqueeze(-1)).squeeze(-1)
 
         # Compute gain.
         K = torch.sqrt((r1 * a).sum(-1, keepdim=True) + r0)
