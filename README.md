@@ -1,11 +1,12 @@
 # diffsptk
 
-*diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) based on the PyTorch framework.
+*diffsptk* is a differentiable version of [SPTK](https://github.com/sp-nitech/SPTK) built on the PyTorch framework.
+It provides various speech signal processing modules as PyTorch layers,
+allowing users to integrate classic signal processing algorithms directly into neural network architectures and optimize them through backpropagation.
 
 [![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.4.0/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![ClickPy](https://img.shields.io/badge/downloads-clickpy-yellow.svg)](https://clickpy.clickhouse.com/dashboard/diffsptk)
-[![Advisor](https://snyk.io/advisor/python/diffsptk/badge.svg)](https://snyk.io/advisor/python/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.9.1-orange.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
@@ -21,19 +22,19 @@
 
 ## Documentation
 
-- Online [documentation](https://sp-nitech.github.io/diffsptk/3.4.0/) for the reference manual
-- Conference [paper](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) on the ISCA Archive
-- Hands-on [tutorial](https://colab.research.google.com/drive/1xAoUKqXadvJXJ7RzN0OceB6y7q5i7Sn6?usp=drive_link) on Google Colab
+- [**Reference Manual**](https://sp-nitech.github.io/diffsptk/3.4.0/) - Detailed API documentation and module specifications.
+- [**Interactive Tutorial**](https://colab.research.google.com/drive/1xAoUKqXadvJXJ7RzN0OceB6y7q5i7Sn6?usp=drive_link) (Google Colab) - Hands-on examples to get started with `diffsptk` in your browser.
+- [**Conference Paper**](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) - Technical background and implementation details available on the ISCA Archive.
 
 ## Installation
 
-The latest stable release can be installed through PyPI by running
+The latest stable release can be installed via PyPI:
 
 ```sh
 pip install diffsptk
 ```
 
-The development release can be installed from the master branch:
+Alternatively, the development version can be installed directly from the GitHub repository:
 
 ```sh
 pip install git+https://github.com/sp-nitech/diffsptk.git@master
