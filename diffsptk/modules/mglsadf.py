@@ -746,7 +746,9 @@ class MultiStageIIRFilter(nn.Module):
         else:
             self.register_buffer("a", a)
 
-    def forward(self, x: torch.Tensor, mc: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = True
+    ) -> torch.Tensor:
         if x.dim() == 1:
             x = x.unsqueeze(0)
             mc = mc.unsqueeze(0)
@@ -783,10 +785,14 @@ class MultiStageIIRFilter(nn.Module):
             c_a = c_a.reshape(y.size(0), y.size(1), M)
 
         pade_coefficients = torch.cumprod(self.weights, 0) * self.a
-        roots = self.root_pol(pade_coefficients.flip(0))
-        p = torch.reciprocal(roots)
+        pade_coefficients[0] = 1.0
+        roots = self.root_pol(pade_coefficients.flip(0).double())
+        roots = roots.to(
+            torch.complex64 if y.dtype == torch.float32 else torch.complex128
+        )
 
-        y = y.to(torch.complex64 if y.dtype == torch.float32 else torch.complex128)
+        y = y.to(roots.dtype)
+        p = torch.reciprocal(roots)
         for i in range(len(p)):
             y = self.sample_wise_lpc(y, p[i] * c_a)
         y = y.real
@@ -802,4 +808,7 @@ class MultiStageIIRFilter(nn.Module):
 
         if unsqueezed:
             y = y.squeeze(0)
+
+        if return_roots:
+            return y, roots
         return y
