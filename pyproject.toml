@@ -49,6 +49,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "ruff",
+  "scipy >= 1.17.0",
   "sphinx",
   "twine",
 ]

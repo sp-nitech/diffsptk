@@ -112,13 +112,19 @@ class TwoDimensionalHilbertTransform(BaseFunctionalModule):
         TwoDimensionalHilbertTransform._check(dim)
         if isinstance(fft_length, int):
             fft_length = (fft_length, fft_length)
-        _, _, h1 = HilbertTransform._precompute(
-            fft_length[0], None, device=device, dtype=torch.double
-        )
-        _, _, h2 = HilbertTransform._precompute(
-            fft_length[1], None, device=device, dtype=torch.double
-        )
-        h = h1[0].unsqueeze(1) * h2[0].unsqueeze(0)
+
+        def get_weights(n: int) -> torch.Tensor:
+            _, _, h = HilbertTransform._precompute(
+                n, None, device=device, dtype=torch.double
+            )
+            h = h[0]
+            if 2 <= n:
+                h[(n + 1) // 2] = 0
+            return h
+
+        h1 = get_weights(fft_length[0])
+        h2 = get_weights(fft_length[1])
+        h = h1.unsqueeze(1) * h2.unsqueeze(0)
         return (dim,), None, (to(h, dtype=dtype),)
 
     @staticmethod
