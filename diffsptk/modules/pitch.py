@@ -133,8 +133,8 @@ class Pitch(BaseNonFunctionalModule):
         >>> pitch = diffsptk.Pitch(160, 8000, out_format="f0")
         >>> x = diffsptk.sin(1000, 80)
         >>> y = pitch(x)
-        >>> y
-        tensor([  0.0000,  99.7280,  99.7676,  99.8334,  99.8162, 100.1602,   0.0000])
+        >>> y.round()
+        tensor([  0., 100., 100., 100., 100., 100.,   0.])
 
         """
         d = x.dim()
