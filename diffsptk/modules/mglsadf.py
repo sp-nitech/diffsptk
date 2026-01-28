@@ -647,6 +647,7 @@ class MultiStageIIRFilter(nn.Module):
         chunk_length: int | None = None,
         warmup_length: int | None = None,
         learnable: bool = False,
+        shared_a: bool = True,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -654,8 +655,6 @@ class MultiStageIIRFilter(nn.Module):
 
         if phase != "minimum":
             raise ValueError("Only minimum-phase filter is supported.")
-        if pade_order <= 3 or 15 <= pade_order:
-            raise ValueError("pade_order must be in [4, 14].")
 
         self.ignore_gain = ignore_gain
 
@@ -692,41 +691,6 @@ class MultiStageIIRFilter(nn.Module):
                 cep_order * chunk_length, cep_order * frame_period, center=False
             )
 
-        if pade_order == 4:
-            modified_pade_coefficients = [
-                0.4999273,
-                0.1067005,
-                0.01170221,
-                0.0005656279,
-            ]
-        elif pade_order == 5:
-            modified_pade_coefficients = [
-                0.4999391,
-                0.1107098,
-                0.01369984,
-                0.0009564853,
-                0.00003041721,
-            ]
-        elif pade_order == 6:
-            modified_pade_coefficients = [
-                0.499962892438014,
-                0.113301885013440,
-                0.014990477313604,
-                0.001229199693052,
-                0.000059608811847,
-                0.000001343163774,
-            ]
-        elif pade_order == 7:
-            modified_pade_coefficients = [
-                0.499969087072637,
-                0.115077033090460,
-                0.015876603489178,
-                0.001424479579072,
-                0.000083492347365,
-                0.000002972456979,
-                0.000000049755937,
-            ]
-
         cr = mp.taylor(mp.exp, 0, pade_order * 2)
         cp, cq = mp.pade(cr, pade_order, pade_order)
         cp = np.array([float(x) for x in cp])
@@ -734,17 +698,33 @@ class MultiStageIIRFilter(nn.Module):
         weights = np.insert(weights, 0, 1)
         self.register_buffer("weights", to(weights, device=device, dtype=dtype))
 
-        if 4 <= pade_order <= 7:
-            modified_pade_coefficients.insert(0, 1)
-            modified_pade_coefficients = np.array(modified_pade_coefficients)
-            a = modified_pade_coefficients / cp
+        if pade_order == 3:
+            a1 = np.linspace(1.0, 0.4, pade_order + 1)
+        elif pade_order == 4:
+            a1 = np.linspace(1.0, 0.6, pade_order + 1)
+        elif 5 <= pade_order <= 14:
+            a1 = np.ones(pade_order + 1)
         else:
-            a = np.ones(pade_order + 1)
-        a = to(a, device=device, dtype=dtype)
-        if learnable:
-            self.a = nn.Parameter(a)
+            raise ValueError("pade_order must be in [3, 14].")
+
+        if shared_a:
+            a1 = to(a1, device=device, dtype=dtype)
+            if learnable:
+                self.a1 = nn.Parameter(a1)
+            else:
+                self.register_buffer("a1", a1)
+            self.a2 = self.a1
         else:
-            self.register_buffer("a", a)
+            a2 = a1
+            a1 = np.ones(pade_order + 1)
+            a1 = to(a1, device=device, dtype=dtype)
+            a2 = to(a2, device=device, dtype=dtype)
+            if learnable:
+                self.a1 = nn.Parameter(a1)
+                self.a2 = nn.Parameter(a2)
+            else:
+                self.register_buffer("a1", a1)
+                self.register_buffer("a2", a2)
 
     def forward(
         self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = True
@@ -760,19 +740,36 @@ class MultiStageIIRFilter(nn.Module):
             raise ValueError("x and mc must be 2-D and 3-D tensors, respectively.")
 
         c = self.mgc2c(mc)
-        c0, c = remove_gain(c, value=0, return_gain=True)
-        c_b = self.linear_intpl(c.flip(-1))
-        c_a = self.linear_intpl(c[..., 1:])
+        c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
+        c_b = self.linear_intpl(c1.flip(-1))
+        c_a = self.linear_intpl(c1)
 
         T = x.size(-1)
         B, _, M = c_a.size()
 
-        y = x * self.a[0]
-        for i in range(1, len(self.a)):
+        a1 = torch.clip(self.a1, min=1e-1, max=1e+1)
+        a1[0] = 1.0
+        a2 = torch.clip(self.a2, min=1e-1, max=1e+1)
+        a2[0] = 1.0
+
+        c_b2, c_b1 = torch.split(c_b, [c_b.size(-1) - 1, 1], dim=-1)
+        c_b1 = c_b1.squeeze(-1)
+
+        # Numerator, 1st stage:
+        y = x * a1[0]
+        for i in range(1, len(a1)):
+            x = F.pad(x[..., :-1], (1, 0))
+            x = x * c_b1 * self.weights[i]
+            y += x * a1[i]
+
+        # Numerator, 2nd stage:
+        x = y
+        y = x * a2[0]
+        for i in range(1, len(a2)):
             x = F.pad(x, (M, 0))
             x = x.unfold(-1, M + 1, 1)
-            x = (x * c_b).sum(-1) * self.weights[i]
-            y += x * self.a[i]
+            x = (x[..., :-2] * c_b2).sum(-1) * self.weights[i]
+            y += x * a2[i]
 
         if self.chuking:
             y = F.pad(y, (self.warmup_length, 0))
@@ -784,18 +781,32 @@ class MultiStageIIRFilter(nn.Module):
             c_a = self.frame_c(c_a)
             c_a = c_a.reshape(y.size(0), y.size(1), M)
 
-        pade_coefficients = torch.cumprod(self.weights, 0) * self.a
-        pade_coefficients[0] = 1.0
-        roots = self.root_pol(pade_coefficients.flip(0).double())
-        roots = roots.to(
-            torch.complex64 if y.dtype == torch.float32 else torch.complex128
-        )
+        c_a1, c_a2 = torch.split(c_a, [1, c_a.size(-1) - 1], dim=-1)
+        c_a2 = F.pad(c_a2, (1, 0))
 
-        y = y.to(roots.dtype)
-        p = torch.reciprocal(roots)
-        for i in range(len(p)):
-            y = self.sample_wise_lpc(y, p[i] * c_a)
-        y = y.real
+        def compute_roots(a: torch.Tensor) -> torch.Tensor:
+            pade_coefficients = torch.cumprod(self.weights, 0) * a
+            roots = self.root_pol(pade_coefficients.flip(0).double())
+            roots = roots.to(
+                torch.complex64 if a.dtype == torch.float32 else torch.complex128
+            )
+            return roots
+
+        roots1 = compute_roots(a1)
+        roots2 = compute_roots(a2)
+        roots = torch.stack([roots1, roots2], dim=0)
+
+        # Denominator, 1st stage:
+        y = y.to(device="cpu", dtype=roots.dtype)
+        p1 = torch.reciprocal(roots1)
+        for i in range(len(p1)):
+            y = self.sample_wise_lpc(y, (p1[i] * c_a1).cpu())
+
+        # Denominator, 2nd stage:
+        p2 = torch.reciprocal(roots2)
+        for i in range(len(p2)):
+            y = self.sample_wise_lpc(y, (p2[i] * c_a2).cpu())
+        y = y.real.to(x.device)
 
         if self.chuking:
             y = y[..., self.warmup_length :]
