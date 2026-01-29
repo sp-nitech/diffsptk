@@ -76,9 +76,9 @@ class CepstralAnalysis(BaseFunctionalModule):
         >>> fftcep = diffsptk.CepstralAnalysis(fft_length=16, cep_order=3)
         >>> x = diffsptk.ramp(19)
         >>> c = fftcep(stft(x))
-        >>> c
-        tensor([[-0.9663,  0.8190, -0.0932, -0.0152],
-                [-0.8540,  4.6173, -0.5496, -0.3206]])
+        >>> c.round(decimals=3)
+        tensor([[-0.9660,  0.8190, -0.0930, -0.0150],
+                [-0.8540,  4.6170, -0.5500, -0.3210]])
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
