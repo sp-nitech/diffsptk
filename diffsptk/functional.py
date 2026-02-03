@@ -2074,7 +2074,7 @@ def medfilt(
 
     Parameters
     ----------
-    x : Tensor [shape=(B, T, D) or (T, D) or (T,)]
+    x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
         The input sequence.
 
     filter_length : int > 0
@@ -2088,7 +2088,7 @@ def medfilt(
 
     Returns
     -------
-    out : Tensor [shape=(B, T, D) or (B, T) or (T, D) or (T,)]
+    out : Tensor [shape=(B, N, D) or (B, N) or (N, D) or (N,)]
         The filtered sequence.
 
     """
