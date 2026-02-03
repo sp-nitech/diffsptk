@@ -2064,6 +2064,42 @@ def mdst(x: Tensor, frame_length: int = 400, window: str = "sine") -> Tensor:
     )
 
 
+def medfilt(
+    x: Tensor,
+    filter_length: int = 3,
+    across_features: bool = False,
+    magic_number: float | None = None,
+) -> Tensor:
+    """Apply median filtering to the input sequence.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(B, T, D) or (T, D) or (T,)]
+        The input sequence.
+
+    filter_length : int > 0
+         The length of the median filter, :math:`L`.
+
+    across_features : bool
+        If True, apply the filter across the feature dimension.
+
+    magic_number : float or None
+        The magic number representing unvoiced frames.
+
+    Returns
+    -------
+    out : Tensor [shape=(B, T, D) or (B, T) or (T, D) or (T,)]
+        The filtered sequence.
+
+    """
+    return nn.MedianFilter._func(
+        x,
+        filter_length=filter_length,
+        across_features=across_features,
+        magic_number=magic_number,
+    )
+
+
 def mfcc(
     x: Tensor,
     mfcc_order: int,
