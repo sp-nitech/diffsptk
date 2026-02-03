@@ -83,7 +83,8 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         derived from the impulse response converted from the input mel-cepstral
         coefficients using FFT. 'freq-domain' performs filtering in the frequency domain
         rather than the time domain. 'pade-approx' implements the MLSA filter by
-        cascading all-zero and all-pole filters based on the factorization.
+        cascading all-zero and all-pole filters based on the factorization. This is slow,
+        but can be used to optimize the Pade approximation coefficients.
 
     n_fft : int >= 1
         The number of FFT bins used for conversion. Higher values result in increased
@@ -93,7 +94,7 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         The order of the Taylor series expansion (valid only if **mode** is
         'multi-stage').
 
-    pade_order : int >= 4
+    pade_order : int >= 3
         The order of Pade approximation (valid only if **mode** is 'pade-approx').
 
     cep_order : int >= 0 or tuple[int, int]
@@ -102,14 +103,6 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
 
     ir_length : int >= 1 or tuple[int, int]
         The length of the impulse response (valid only if **mode** is 'single-stage').
-
-    chunk_length : int >= 1 or None
-        The chunk length for processing. If None is given, chunking is not applied
-        (valid only if **mode** is 'pade-approx')
-
-    warmup_length : int >= 0 or None
-        The warm-up length for chunk processing. This is required to reduce artifacts
-        caused by chunking (valid only if **mode** is 'pade-approx').
 
     learnable : bool
         If True, the polynomial coefficients used in the approximation are learnable
@@ -647,13 +640,13 @@ class MultiStageIIRFilter(nn.Module):
         chunk_length: int | None = None,
         warmup_length: int | None = None,
         learnable: bool = False,
-        shared_a: bool = True,
+        per_stage_pade_coefficients: bool = False,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
         super().__init__()
 
-        if phase != "minimum":
+        if phase != "minimum" or is_array_like(filter_order):
             raise ValueError("Only minimum-phase filter is supported.")
 
         self.ignore_gain = ignore_gain
@@ -707,14 +700,7 @@ class MultiStageIIRFilter(nn.Module):
         else:
             raise ValueError("pade_order must be in [3, 14].")
 
-        if shared_a:
-            a1 = to(a1, device=device, dtype=dtype)
-            if learnable:
-                self.a1 = nn.Parameter(a1)
-            else:
-                self.register_buffer("a1", a1)
-            self.a2 = self.a1
-        else:
+        if per_stage_pade_coefficients:
             a2 = a1
             a1 = np.ones(pade_order + 1)
             a1 = to(a1, device=device, dtype=dtype)
@@ -725,9 +711,16 @@ class MultiStageIIRFilter(nn.Module):
             else:
                 self.register_buffer("a1", a1)
                 self.register_buffer("a2", a2)
+        else:
+            a1 = to(a1, device=device, dtype=dtype)
+            if learnable:
+                self.a1 = nn.Parameter(a1)
+            else:
+                self.register_buffer("a1", a1)
+            self.a2 = self.a1
 
     def forward(
-        self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = True
+        self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = False
     ) -> torch.Tensor:
         if x.dim() == 1:
             x = x.unsqueeze(0)
@@ -797,16 +790,16 @@ class MultiStageIIRFilter(nn.Module):
         roots = torch.stack([roots1, roots2], dim=0)
 
         # Denominator, 1st stage:
-        y = y.to(device="cpu", dtype=roots.dtype)
+        y = y.to(roots.dtype)
         p1 = torch.reciprocal(roots1)
         for i in range(len(p1)):
-            y = self.sample_wise_lpc(y, (p1[i] * c_a1).cpu())
+            y = self.sample_wise_lpc(y, (p1[i] * c_a1))
 
         # Denominator, 2nd stage:
         p2 = torch.reciprocal(roots2)
         for i in range(len(p2)):
-            y = self.sample_wise_lpc(y, (p2[i] * c_a2).cpu())
-        y = y.real.to(x.device)
+            y = self.sample_wise_lpc(y, (p2[i] * c_a2))
+        y = y.real
 
         if self.chuking:
             y = y[..., self.warmup_length :]
