@@ -148,15 +148,16 @@ class ExcitationGeneration(BaseFunctionalModule):
         s = torch.cumsum(q.double(), dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
         phase = (s - bias).to(p.dtype)
-        if isinstance(init_phase, str):
-            if init_phase == "zeros":
-                pass
-            elif init_phase == "random":
-                phase += torch.rand_like(p[..., :1])
-            else:
-                raise ValueError(f"init_phase {init_phase} is not supported.")
+        if not isinstance(init_phase, str):
+            shift = init_phase / TAU
+        elif init_phase == "zeros":
+            shift = 0.0
+        elif init_phase == "random":
+            shift = torch.rand_like(p[..., :1])
         else:
-            phase += init_phase / TAU
+            raise ValueError(f"init_phase {init_phase} is not supported.")
+        if isinstance(shift, torch.Tensor) or shift != 0.0:
+            phase += shift
 
         # Generate excitation signal using phase.
         if polarity == "auto":
@@ -170,15 +171,19 @@ class ExcitationGeneration(BaseFunctionalModule):
 
             def get_pulse_pos(p):
                 r = torch.ceil(p)
-                r = F.pad(r, (1, 0))
                 return torch.ge(torch.diff(r), 1)
 
+            if isinstance(shift, float):
+                padded_phase = F.pad(phase, (1, 0), value=shift)
+            else:
+                padded_phase = torch.cat([shift, phase], dim=-1)
+
             if unipolar:
-                pulse_pos = get_pulse_pos(phase)
+                pulse_pos = get_pulse_pos(padded_phase)
                 e[pulse_pos] = torch.sqrt(p[pulse_pos])
             else:
-                pulse_pos1 = get_pulse_pos(phase)
-                pulse_pos2 = get_pulse_pos(0.5 * phase)
+                pulse_pos1 = get_pulse_pos(padded_phase)
+                pulse_pos2 = get_pulse_pos(0.5 * padded_phase)
                 e[pulse_pos1] = torch.sqrt(p[pulse_pos1])
                 e[pulse_pos1 & ~pulse_pos2] *= -1
         elif voiced_region == "sinusoidal":

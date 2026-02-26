@@ -7,7 +7,3 @@ hilbert
     :members:
 
 .. autofunction:: diffsptk.functional.hilbert
-
-.. seealso::
-
-    :ref:`hilbert2`

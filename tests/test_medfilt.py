@@ -15,39 +15,48 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-from scipy.signal import hilbert2 as scipy_hilbert2
 
 import diffsptk
 import tests.utils as U
 
 
 @pytest.mark.parametrize("module", [False, True])
-@pytest.mark.parametrize("L", [(16, 8), 8, None])
-def test_compatibility(device, dtype, module, L):
-    if module and L is None:
-        return
-
-    hilbert2 = U.choice(
+@pytest.mark.parametrize("K", [1, 2, 3])
+@pytest.mark.parametrize("L", [1, 2])
+@pytest.mark.parametrize("across_features", [False, True])
+@pytest.mark.parametrize("magic_number", [None, 0])
+def test_compatibility(
+    device, dtype, module, K, L, across_features, magic_number, N=10
+):
+    medfilt = U.choice(
         module,
-        diffsptk.TwoDimensionalHilbertTransform,
-        diffsptk.functional.hilbert2,
-        {"fft_length": L, "device": device, "dtype": dtype},
+        diffsptk.MedianFilter,
+        diffsptk.functional.medfilt,
+        {
+            "filter_length": K,
+            "across_features": across_features,
+            "magic_number": magic_number,
+        },
     )
 
-    def func(x):
-        return scipy_hilbert2(x, N=L)
+    w = 1 if across_features else 0
+    opt = "" if magic_number is None else f"--magic {magic_number}"
 
-    if isinstance(L, int):
-        L = (L, L)
-    elif L is None:
-        L = (16, 8)
-
-    U.check_confidence(
+    U.check_compatibility(
         device,
         dtype,
-        hilbert2,
-        func,
-        L,
+        medfilt,
+        [],
+        f"nrand -l {N * L} | sopr -ROUND",
+        f"medfilt -l {L} -K {K} -w {w} {opt}",
+        [],
+        dx=L,
+        dy=None if across_features else L,
     )
 
-    U.check_differentiability(device, dtype, [lambda x: x.real, hilbert2], L)
+    U.check_differentiability(device, dtype, medfilt, [N])
+
+
+def test_various_shape(K=3, N=10):
+    medfilt = diffsptk.MedianFilter(K)
+    U.check_various_shape(medfilt, [(N,), (N, 1), (1, N, 1)])

@@ -62,7 +62,6 @@ from .gnorm import GeneralizedCepstrumGainNormalization
 from .griffin import GriffinLim
 from .grpdelay import GroupDelay
 from .hilbert import HilbertTransform
-from .hilbert2 import TwoDimensionalHilbertTransform
 from .histogram import Histogram
 from .ialaw import ALawExpansion
 from .ica import IndependentComponentAnalysis
@@ -117,6 +116,7 @@ from .mdct import ModifiedDiscreteCosineTransform
 from .mdct import ModifiedDiscreteCosineTransform as MDCT
 from .mdst import ModifiedDiscreteSineTransform
 from .mdst import ModifiedDiscreteSineTransform as MDST
+from .medfilt import MedianFilter
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis
 from .mfcc import MelFrequencyCepstralCoefficientsAnalysis as MFCC
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum

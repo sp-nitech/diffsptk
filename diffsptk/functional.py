@@ -1138,33 +1138,6 @@ def hilbert(x: Tensor, fft_length: int | None = None, dim: int = -1) -> Tensor:
     return nn.HilbertTransform._func(x, fft_length=fft_length, dim=dim)
 
 
-def hilbert2(
-    x: Tensor,
-    fft_length: ArrayLike[int] | int | None = None,
-    dim: ArrayLike[int] = (-2, -1),
-) -> Tensor:
-    """Compute the analytic signal using the Hilbert transform.
-
-    Parameters
-    ----------
-    x : Tensor [shape=(..., T1, T2, ...)]
-        The input signal.
-
-    fft_length : int, list[int], or None
-        The number of FFT bins. If None, set to (:math:`T1`, :math:`T2`).
-
-    dim : list[int]
-        The dimensions along which to take the Hilbert transform.
-
-    Returns
-    -------
-    out : Tensor [shape=(..., T1, T2, ...)]
-        The analytic signal.
-
-    """
-    return nn.TwoDimensionalHilbertTransform._func(x, fft_length=fft_length, dim=dim)
-
-
 def histogram(
     x: Tensor,
     n_bin: int = 10,
@@ -2088,6 +2061,42 @@ def mdst(x: Tensor, frame_length: int = 400, window: str = "sine") -> Tensor:
     """
     return nn.ModifiedDiscreteSineTransform._func(
         x, frame_length=frame_length, window=window
+    )
+
+
+def medfilt(
+    x: Tensor,
+    filter_length: int = 3,
+    across_features: bool = False,
+    magic_number: float | None = None,
+) -> Tensor:
+    """Apply median filtering to the input sequence.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        The input sequence.
+
+    filter_length : int > 0
+         The length of the median filter, :math:`L`.
+
+    across_features : bool
+        If True, apply the filter across the feature dimension.
+
+    magic_number : float or None
+        The magic number representing unvoiced frames.
+
+    Returns
+    -------
+    out : Tensor [shape=(B, N, D) or (B, N) or (N, D) or (N,)]
+        The filtered sequence.
+
+    """
+    return nn.MedianFilter._func(
+        x,
+        filter_length=filter_length,
+        across_features=across_features,
+        magic_number=magic_number,
     )
 
 

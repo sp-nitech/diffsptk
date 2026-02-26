@@ -85,8 +85,8 @@ tool-clean:
 
 update: tool
 	. .venv/bin/activate && python -m pip install --upgrade pip
-	@for package in $$(./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev); do \
-		. .venv/bin/activate && python -m pip install --upgrade $$package; \
+	@./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev | while read -r package; do \
+		. .venv/bin/activate && python -m pip install --upgrade "$$package"; \
 	done
 
 clean: dist-clean doc-clean test-clean tool-clean
