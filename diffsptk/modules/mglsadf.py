@@ -701,17 +701,13 @@ class MultiStageIIRFilter(nn.Module):
         else:
             raise ValueError("pade_order must be in [3, 14].")
 
-        if per_stage_pade_coefficients:
+        if learnable and per_stage_pade_coefficients:
             a2 = a1
             a1 = np.ones(pade_order + 1)
             a1 = to(a1, device=device, dtype=dtype)
             a2 = to(a2, device=device, dtype=dtype)
-            if learnable:
-                self.a1 = nn.Parameter(a1)
-                self.a2 = nn.Parameter(a2)
-            else:
-                self.register_buffer("a1", a1)
-                self.register_buffer("a2", a2)
+            self.a1 = nn.Parameter(a1)
+            self.a2 = nn.Parameter(a2)
         else:
             a1 = to(a1, device=device, dtype=dtype)
             if learnable:

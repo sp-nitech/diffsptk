@@ -264,7 +264,14 @@ def test_pade_approx(
     )
 
 
-@pytest.mark.parametrize("mode", ["multi-stage", "pade-approx"])
-def test_learnable(mode, M=24, P=80, T=160):
-    mglsadf = diffsptk.MLSA(M, P, mode=mode, learnable=True)
+@pytest.mark.parametrize(
+    ("mode", "params"),
+    [
+        ("multi-stage", {}),
+        ("pade-approx", {"per_stage_pade_coefficients": False}),
+        ("pade-approx", {"per_stage_pade_coefficients": True, "pade_order": 3}),
+    ],
+)
+def test_learnable(mode, params, M=24, P=80, T=160):
+    mglsadf = diffsptk.MLSA(M, P, mode=mode, learnable=True, **params)
     U.check_learnable(mglsadf, [(T,), (T // P, M + 1)])
