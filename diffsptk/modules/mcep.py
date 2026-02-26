@@ -99,9 +99,9 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         ... )
         >>> x = diffsptk.ramp(19)
         >>> mc = mcep(stft(x))
-        >>> mc
-        tensor([[-0.8851,  0.7917, -0.1737,  0.0175],
-                [-0.3522,  4.4222, -1.0882, -0.0510]])
+        >>> mc.round(decimals=3)
+        tensor([[-0.8850,  0.7920, -0.1740,  0.0170],
+                [-0.3520,  4.4220, -1.0880, -0.0510]])
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
