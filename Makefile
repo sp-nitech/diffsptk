@@ -71,7 +71,7 @@ test: tool
 test-example: tool
 	[ -n "$(MODULE)" ] && module=modules/$(MODULE).py || module=; \
 	. .venv/bin/activate && export NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
-	python -m pytest --doctest-modules --no-cov --ignore=diffsptk/third_party diffsptk/$$module
+	python -m pytest --doctest-modules --no-cov --ignore=$(PROJECT)/third_party $(PROJECT)/$$module
 
 test-clean:
 	rm -rf tests/__pycache__
