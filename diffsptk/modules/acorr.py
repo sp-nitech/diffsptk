@@ -101,10 +101,9 @@ class Autocorrelation(BaseFunctionalModule):
         elif out_format in (2, "biased"):
             formatter = lambda x: x / frame_length
         elif out_format in (3, "unbiased"):
-            formatter = lambda x: x / (
-                torch.arange(
-                    frame_length, frame_length - acr_order - 1, -1, device=x.device
-                )
+            n = frame_length - acr_order - 1
+            formatter = lambda x: (
+                x / (torch.arange(frame_length, n, -1, device=x.device))
             )
         else:
             raise ValueError(f"out_format {out_format} is not supported.")

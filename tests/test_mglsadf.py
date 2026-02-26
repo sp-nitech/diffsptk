@@ -25,7 +25,9 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("mode", ["multi-stage", "single-stage", "freq-domain"])
+@pytest.mark.parametrize(
+    "mode", ["multi-stage", "single-stage", "freq-domain", "pade-approx"]
+)
 @pytest.mark.parametrize("c", [0, 2])
 def test_compatibility(
     device,
@@ -50,6 +52,8 @@ def test_compatibility(
             "fft_length": fft_length,
             "window": "hamming",
         }
+    elif mode == "pade-approx":
+        params = {"pade_order": 5, "cep_order": 100}
 
     mglsadf = diffsptk.MLSA(
         M,
@@ -218,3 +222,56 @@ def test_mixed_phase(
     U.check_differentiability(device, dtype, mglsadf1, [(B, S), (B, S // P, 2 * M + 1)])
     U.check_differentiability(device, dtype, mglsadf2, [(B, S), (B, S // P, 2 * M + 1)])
     U.check_differentiability(device, dtype, mglsadf3, [(B, S), (B, S // P, 2 * M + 1)])
+
+
+@pytest.mark.parametrize("pade_order", [4, 5, 6, 7, 8])
+@pytest.mark.parametrize("chunk_length", [None, 1000])
+def test_pade_approx(
+    device, dtype, pade_order, chunk_length, alpha=0.42, M=24, P=80, L1=400, L2=512
+):
+    params = {"pade_order": pade_order, "cep_order": 100, "chunk_length": chunk_length}
+
+    mglsadf = diffsptk.MLSA(
+        M,
+        P,
+        alpha=alpha,
+        mode="pade-approx",
+        device=device,
+        dtype=dtype,
+        **params,
+    )
+
+    tmp1 = "mglsadf.tmp1"
+    tmp2 = "mglsadf.tmp2"
+    T = os.path.getsize("tools/SPTK/asset/data.short") // 2
+    cmd1 = f"nrand -l {T} > {tmp1}"
+    cmd2 = (
+        f"x2x +sd tools/SPTK/asset/data.short | "
+        f"frame -p {P} -l {L1} | "
+        f"window -w 1 -n 1 -l {L1} -L {L2} | "
+        f"mgcep -a {alpha} -m {M} -l {L2} -E -60 > {tmp2}"
+    )
+    U.check_compatibility(
+        device,
+        dtype,
+        mglsadf,
+        [cmd1, cmd2],
+        [f"cat {tmp1}", f"cat {tmp2}"],
+        f"mglsadf {tmp2} < {tmp1} -m {M} -p {P} -P {min(pade_order, 7)} -a {alpha}",
+        [f"rm {tmp1} {tmp2}"],
+        dx=[None, M + 1],
+        eq=lambda a, b: np.corrcoef(a, b)[0, 1] > 0.98,
+    )
+
+
+@pytest.mark.parametrize(
+    ("mode", "params"),
+    [
+        ("multi-stage", {}),
+        ("pade-approx", {"per_stage_pade_coefficients": False}),
+        ("pade-approx", {"per_stage_pade_coefficients": True, "pade_order": 3}),
+    ],
+)
+def test_learnable(mode, params, M=24, P=80, T=160):
+    mglsadf = diffsptk.MLSA(M, P, mode=mode, learnable=True, **params)
+    U.check_learnable(mglsadf, [(T,), (T // P, M + 1)])

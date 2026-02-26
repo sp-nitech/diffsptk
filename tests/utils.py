@@ -279,18 +279,23 @@ def check_various_shape(module, shapes, *, preprocess=None):
             assert torch.allclose(y, target)
 
 
-def check_learnable(module, shape, complex_input=False):
+def check_learnable(module, shapes, complex_input=False):
     dtype = None
     if complex_input:
         dtype = dtype_to_complex_dtype(dtype)
+
+    x = []
+    if not is_array(shapes[0]):
+        shapes = [shapes]
+    for shape in shapes:
+        x.append(torch.randn(*shape, dtype=dtype))
 
     params_before = []
     for p in module.parameters():
         params_before.append(p.clone())
 
     optimizer = torch.optim.SGD(module.parameters(), lr=0.01)
-    x = torch.randn(*shape, dtype=dtype)
-    y = module(x)
+    y = module(*x)
     optimizer.zero_grad()
     loss = y.mean()
     loss.backward()
