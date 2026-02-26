@@ -83,8 +83,9 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         derived from the impulse response converted from the input mel-cepstral
         coefficients using FFT. 'freq-domain' performs filtering in the frequency domain
         rather than the time domain. 'pade-approx' implements the MLSA filter by
-        cascading all-zero and all-pole filters based on the factorization. This is slow,
-        but can be used to optimize the Pade approximation coefficients.
+        cascading all-zero and all-pole filters derived from the factorization. While
+        this approach is not computationally efficient, it allows for the optimization
+        of the Pade approximation coefficients.
 
     n_fft : int >= 1
         The number of FFT bins used for conversion. Higher values result in increased
@@ -740,9 +741,9 @@ class MultiStageIIRFilter(nn.Module):
         T = x.size(-1)
         B, _, M = c_a.size()
 
-        a1 = torch.clip(self.a1, min=1e-1, max=1e+1)
+        a1 = torch.clip(self.a1, min=1e-1, max=1e1)
         a1[0] = 1.0
-        a2 = torch.clip(self.a2, min=1e-1, max=1e+1)
+        a2 = torch.clip(self.a2, min=1e-1, max=1e1)
         a2[0] = 1.0
 
         c_b2, c_b1 = torch.split(c_b, [c_b.size(-1) - 1, 1], dim=-1)
