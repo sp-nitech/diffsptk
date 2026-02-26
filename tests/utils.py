@@ -280,15 +280,15 @@ def check_various_shape(module, shapes, *, preprocess=None):
 
 
 def check_learnable(module, shapes, complex_input=False):
+    dtype = None
+    if complex_input:
+        dtype = dtype_to_complex_dtype(dtype)
+
     x = []
     if not is_array(shapes[0]):
         shapes = [shapes]
     for shape in shapes:
-        x.append(torch.randn(*shape))
-
-    dtype = None
-    if complex_input:
-        dtype = dtype_to_complex_dtype(dtype)
+        x.append(torch.randn(*shape, dtype=dtype))
 
     params_before = []
     for p in module.parameters():
