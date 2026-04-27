@@ -1,3 +1,5 @@
 formatter:
   type: basic
   retain_line_breaks_single: true
+  force_array_style: block
+  force_quote_style: double

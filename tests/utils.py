@@ -172,7 +172,7 @@ def check_compatibility(
 
     if eq is None:
         assert allclose(y_hat, y, dtype=dtype, **kwargs), (
-            f"Output: {y_hat}\nTarget: {y}"
+            f"Output: {y_hat}\nTarget: {y}\nError: {np.abs(y_hat - y).max()}"
         )
     else:
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
