@@ -389,6 +389,7 @@ class SingleStageFIRFilter(nn.Module):
     ) -> None:
         super().__init__()
 
+        self.frame_period = frame_period
         self.ignore_gain = ignore_gain
         self.phase = phase
         self.n_fft = n_fft
@@ -458,7 +459,8 @@ class SingleStageFIRFilter(nn.Module):
         else:
             raise ValueError(f"phase {phase} is not supported.")
 
-        self.linear_intpl = LinearInterpolation(frame_period)
+        ramp = torch.arange(frame_period, device=device) / frame_period
+        self.register_buffer("ramp", to(ramp.view(1, 1, -1), dtype=dtype))
 
     def forward(
         self,
@@ -468,8 +470,12 @@ class SingleStageFIRFilter(nn.Module):
         if self.phase == "minimum":
             h = self.mgc2ir(mc)
             h = h.flip(-1)
+            if self.ignore_gain:
+                h = h / h[..., -1:]
         elif self.phase == "maximum":
             h = self.mgc2ir(mc)
+            if self.ignore_gain:
+                h = h / h[..., :1]
         elif self.phase == "zero":
             c = self.mgc2c(mc)
             c[..., 1:] *= 0.5
@@ -493,17 +499,27 @@ class SingleStageFIRFilter(nn.Module):
         else:
             raise RuntimeError
 
-        h = self.linear_intpl(h)
+        # Use weighted sum of two convolutions instead of naive sample-wise time-varying
+        # convolution for computational efficiency.
+        x_org_shape = x.shape
+        x = x.view(-1, x.size(-1))
+        h = h.view(-1, h.size(-2), h.size(-1))
+        B, N, L = h.size()
+        BN = B * N
 
-        if self.ignore_gain:
-            if self.phase == "minimum":
-                h = h / h[..., -1:]
-            elif self.phase == "maximum":
-                h = h / h[..., :1]
+        h1 = h
+        h2 = F.pad(h1[:, 1:], (0, 0, 0, 1), mode="replicate")
+        weight1 = h1.reshape(BN, 1, L)
+        weight2 = h2.reshape(BN, 1, L)
 
         x = self.pad(x)
-        x = x.unfold(-1, h.size(-1), 1)
-        y = (x * h).sum(-1)
+        x = x.unfold(-1, L - 1 + self.frame_period, self.frame_period)
+        x = x.reshape(1, BN, -1)
+
+        y1 = F.conv1d(x, weight1, groups=BN)
+        y2 = F.conv1d(x, weight2, groups=BN)
+        y = torch.lerp(y1, y2, self.ramp)
+        y = y.view(*x_org_shape)
         return y
 
 
