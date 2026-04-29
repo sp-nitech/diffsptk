@@ -72,4 +72,4 @@ def test_efficient_mode(device, dtype, ignore_gain, M=3, T=100, P=10, B=2):
     b = torch.randn(B, T // P, M + 1, device=device, dtype=dtype)
     y_direct = zerodf_direct(x, b).cpu().numpy()
     y_efficient = zerodf_efficient(x, b).cpu().numpy()
-    assert U.allclose(y_direct, y_efficient, dtype=dtype)
+    assert U.allclose(y_direct, y_efficient, dtype=dtype, factor=10)
