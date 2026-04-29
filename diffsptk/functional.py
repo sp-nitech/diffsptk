@@ -3248,7 +3248,12 @@ def zcross(
 
 
 def zerodf(
-    x: Tensor, b: Tensor, frame_period: int = 80, ignore_gain: bool = False
+    x: Tensor,
+    b: Tensor,
+    frame_period: int = 80,
+    ignore_gain: bool = False,
+    zeroth_index: int = 0,
+    mode: str = "direct",
 ) -> Tensor:
     """Apply an all-zero digital filter.
 
@@ -3266,6 +3271,12 @@ def zerodf(
     ignore_gain : bool
         If True, perform filtering without the gain.
 
+    zeroth_index : int >= 0
+        The index of the zeroth coefficient in the filter coefficients.
+
+    mode : ['direct', 'efficient']
+        The implementation mode for time-varying convolution.
+
     Returns
     -------
     out : Tensor [shape=(..., T)]
@@ -3273,5 +3284,10 @@ def zerodf(
 
     """
     return nn.AllZeroDigitalFilter._func(
-        x, b, frame_period=frame_period, ignore_gain=ignore_gain
+        x,
+        b,
+        frame_period=frame_period,
+        ignore_gain=ignore_gain,
+        zeroth_index=zeroth_index,
+        mode=mode,
     )

@@ -35,6 +35,7 @@ from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .root_pol import PolynomialToRoots
 from .stft import ShortTimeFourierTransform
+from .zerodf import AllZeroDigitalFilter
 
 
 def is_array_like(x: Any) -> bool:
@@ -277,18 +278,18 @@ class MultiStageFIRFilter(nn.Module):
         if alpha == 0 and gamma == 0:
             cep_order = filter_order
 
-        # Prepare padding module.
         if self.phase == "minimum":
-            padding = (cep_order, 0)
+            cep_orders = (cep_order, 0)
         elif self.phase == "maximum":
-            padding = (0, cep_order)
+            cep_orders = (0, cep_order)
         elif self.phase == "zero":
-            padding = (cep_order, cep_order)
+            cep_orders = (cep_order, cep_order)
         elif self.phase == "mixed":
-            padding = cep_order if is_array_like(cep_order) else (cep_order, cep_order)
+            cep_orders = (
+                cep_order if is_array_like(cep_order) else (cep_order, cep_order)
+            )
         else:
             raise ValueError(f"phase {phase} is not supported.")
-        self.pad = nn.ConstantPad1d(padding, 0)
 
         # Prepare frequency transformation module.
         if self.phase == "mixed":
@@ -297,7 +298,7 @@ class MultiStageFIRFilter(nn.Module):
                 self.mgc2c.append(
                     MelGeneralizedCepstrumToMelGeneralizedCepstrum(
                         filter_order[i],
-                        padding[i],
+                        cep_orders[i],
                         in_alpha=alpha,
                         in_gamma=gamma,
                         n_fft=n_fft,
@@ -317,6 +318,16 @@ class MultiStageFIRFilter(nn.Module):
             )
 
         self.linear_intpl = LinearInterpolation(frame_period)
+
+        self.zerodf = AllZeroDigitalFilter(
+            sum(cep_orders),
+            frame_period,
+            ignore_gain=False,
+            zeroth_index=cep_orders[1],
+            mode="efficient",
+            device=device,
+            dtype=dtype,
+        )
 
         cp = mp.taylor(mp.exp, 0, taylor_order)
         cp = np.array([float(x) for x in cp])
@@ -341,29 +352,25 @@ class MultiStageFIRFilter(nn.Module):
             c_min = self.mgc2c[0](mc_min)
             c_max = self.mgc2c[1](mc_max)
             c0 = c_min[..., :1] + c_max[..., :1]
-            c1_min = c_min[..., 1:].flip(-1)
+            c1_min = c_min[..., 1:]
             c0_dummy = torch.zeros_like(c0)
-            c1_max = c_max[..., 1:]
-            c = torch.cat([c1_min, c0_dummy, c1_max], dim=-1)
+            c1_max = c_max[..., 1:].flip(-1)
+            c = torch.cat([c1_max, c0_dummy, c1_min], dim=-1)
         else:
             c = self.mgc2c(mc)
             c0, c = remove_gain(c, value=0, return_gain=True)
             if self.phase == "minimum":
-                c = c.flip(-1)
-            elif self.phase == "maximum":
                 pass
+            elif self.phase == "maximum":
+                c = c.flip(-1)
             elif self.phase == "zero":
                 c = mirror(c, half=True)
             else:
                 raise RuntimeError
 
-        c = self.linear_intpl(c)
-
         y = x * self.a[0]
         for i in range(1, len(self.a)):
-            x = self.pad(x)
-            x = x.unfold(-1, c.size(-1), 1)
-            x = (x * c).sum(-1) * self.weights[i]
+            x = self.zerodf(x, c) * self.weights[i]
             y += x * self.a[i]
 
         if not self.ignore_gain:
@@ -394,24 +401,21 @@ class SingleStageFIRFilter(nn.Module):
         self.phase = phase
         self.n_fft = n_fft
 
-        # Prepare padding module.
-        taps = ir_length - 1
         if self.phase == "minimum":
-            padding = (taps, 0)
+            ir_orders = (ir_length - 1, 0)
         elif self.phase == "maximum":
-            padding = (0, taps)
+            ir_orders = (0, ir_length - 1)
         elif self.phase == "zero":
-            padding = (taps, taps)
+            ir_orders = (ir_length - 1, ir_length - 1)
         elif self.phase == "mixed":
-            padding = (
+            ir_orders = (
                 (ir_length[0] - 1, ir_length[1] - 1)
                 if is_array_like(ir_length)
-                else (taps, taps)
+                else (ir_length - 1, ir_length - 1)
             )
         else:
             raise ValueError(f"phase {phase} is not supported.")
-        self.pad = nn.ConstantPad1d(padding, 0)
-        self.padding = padding
+        self.ir_orders = ir_orders
 
         if self.phase in ("minimum", "maximum"):
             self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
@@ -445,7 +449,7 @@ class SingleStageFIRFilter(nn.Module):
                 self.mgc2c.append(
                     MelGeneralizedCepstrumToMelGeneralizedCepstrum(
                         filter_order[i],
-                        padding[i],
+                        ir_orders[i],
                         in_alpha=alpha,
                         in_gamma=gamma,
                         n_fft=n_fft,
@@ -459,8 +463,15 @@ class SingleStageFIRFilter(nn.Module):
         else:
             raise ValueError(f"phase {phase} is not supported.")
 
-        ramp = torch.arange(frame_period, device=device) / frame_period
-        self.register_buffer("ramp", to(ramp.view(1, 1, -1), dtype=dtype))
+        self.zerodf = AllZeroDigitalFilter(
+            sum(ir_orders),
+            frame_period,
+            ignore_gain=False,
+            zeroth_index=ir_orders[1],
+            mode="efficient",
+            device=device,
+            dtype=dtype,
+        )
 
     def forward(
         self,
@@ -469,13 +480,13 @@ class SingleStageFIRFilter(nn.Module):
     ) -> torch.Tensor:
         if self.phase == "minimum":
             h = self.mgc2ir(mc)
-            h = h.flip(-1)
             if self.ignore_gain:
-                h = h / h[..., -1:]
+                h = h / h[..., :1]
         elif self.phase == "maximum":
             h = self.mgc2ir(mc)
             if self.ignore_gain:
                 h = h / h[..., :1]
+            h = h.flip(-1)
         elif self.phase == "zero":
             c = self.mgc2c(mc)
             c[..., 1:] *= 0.5
@@ -491,35 +502,16 @@ class SingleStageFIRFilter(nn.Module):
                 c0 = torch.zeros_like(c_min[..., :1])
             else:
                 c0 = c_min[..., :1] + c_max[..., :1]
-            c = torch.cat([c_min[..., 1:].flip(-1), c0, c_max[..., 1:]], dim=-1)
+            c = torch.cat([c_max[..., 1:].flip(-1), c0, c_min[..., 1:]], dim=-1)
             c = F.pad(c, (0, self.n_fft - c.size(-1)))
-            c = torch.roll(c, -self.padding[0], dims=-1)
+            shift = self.ir_orders[1]
+            c = torch.roll(c, -shift, dims=-1)
             h = self.c2ir(c)
-            h = torch.roll(h, self.padding[0], dims=-1)[..., : sum(self.padding) + 1]
+            h = torch.roll(h, shift, dims=-1)[..., : sum(self.ir_orders) + 1]
         else:
             raise RuntimeError
 
-        # Use weighted sum of two convolutions instead of naive sample-wise time-varying
-        # convolution for computational efficiency.
-        x_org_shape = x.shape
-        x = x.view(-1, x.size(-1))
-        h = h.view(-1, h.size(-2), h.size(-1))
-        B, N, L = h.size()
-        BN = B * N
-
-        h1 = h
-        h2 = F.pad(h1[:, 1:], (0, 0, 0, 1), mode="replicate")
-        weight1 = h1.reshape(BN, 1, L)
-        weight2 = h2.reshape(BN, 1, L)
-
-        x = self.pad(x)
-        x = x.unfold(-1, L - 1 + self.frame_period, self.frame_period)
-        x = x.reshape(1, BN, -1)
-
-        y1 = F.conv1d(x, weight1, groups=BN)
-        y2 = F.conv1d(x, weight2, groups=BN)
-        y = torch.lerp(y1, y2, self.ramp)
-        y = y.view(*x_org_shape)
+        y = self.zerodf(x, h)
         return y
 
 
