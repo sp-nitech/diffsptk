@@ -172,7 +172,7 @@ def check_compatibility(
 
     if eq is None:
         assert allclose(y_hat, y, dtype=dtype, **kwargs), (
-            f"Output: {y_hat}\nTarget: {y}"
+            f"Output: {y_hat}\nTarget: {y}\nError: {np.abs(y_hat - y).max()}"
         )
     else:
         assert eq(y_hat, y, **kwargs), f"Output: {y_hat}\nTarget: {y}"
@@ -237,12 +237,17 @@ def check_differentiability(
 
     for i in range(load):
         if i == 1:
+            if device == "cuda":
+                torch.cuda.synchronize()
             s = time.process_time()
         y = module(*xs, **opt)
         optimizer.zero_grad()
         loss = y.mean()
         loss.backward()
         optimizer.step()
+
+    if device == "cuda":
+        torch.cuda.synchronize()
 
     if 1 < load:
         e = time.process_time()

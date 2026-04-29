@@ -56,7 +56,7 @@ dev = [
 
 [project.urls]
 Homepage = "https://sp-tk.sourceforge.net/"
-Documentation = "https://sp-nitech.github.io/diffsptk/latest/"
+Documentation = "https://sp-nitech.github.io/diffsptk/stable/"
 Source = "https://github.com/sp-nitech/diffsptk"
 
 [tool.hatch.build.targets.sdist]

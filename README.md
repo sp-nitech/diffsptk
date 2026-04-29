@@ -4,7 +4,7 @@
 It provides various speech signal processing modules as PyTorch layers,
 allowing users to integrate classic signal processing algorithms directly into neural network architectures and optimize them through backpropagation.
 
-[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/3.4.0/)
+[![Manual](https://img.shields.io/badge/docs-stable-blue.svg)](https://sp-nitech.github.io/diffsptk/stable/)
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![ClickPy](https://img.shields.io/badge/downloads-clickpy-yellow.svg)](https://clickpy.clickhouse.com/dashboard/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
@@ -22,7 +22,7 @@ allowing users to integrate classic signal processing algorithms directly into n
 
 ## Documentation
 
-- [**Reference Manual**](https://sp-nitech.github.io/diffsptk/3.4.0/) - Detailed API documentation and module specifications.
+- [**Reference Manual**](https://sp-nitech.github.io/diffsptk/stable/) - Detailed API documentation and module specifications.
 - [**Interactive Tutorial**](https://colab.research.google.com/drive/1xAoUKqXadvJXJ7RzN0OceB6y7q5i7Sn6?usp=drive_link) (Google Colab) - Hands-on examples to get started with `diffsptk` in your browser.
 - [**Conference Paper**](https://www.isca-archive.org/ssw_2023/yoshimura23_ssw.html) - Technical background and implementation details available on the ISCA Archive.
 
