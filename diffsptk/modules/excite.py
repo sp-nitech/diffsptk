@@ -19,11 +19,113 @@ import math
 import torch
 import torch.nn.functional as F
 
-from ..signals import mseq
+from ..signals import mseq_like
 from ..typing import Precomputed
 from ..utils.private import TAU, UNVOICED_SYMBOL, filter_values
 from .base import BaseFunctionalModule
 from .linear_intpl import LinearInterpolation
+
+
+def generate_pulse(
+    pitch: torch.Tensor,
+    phase: torch.Tensor,
+    shift: float | torch.Tensor,
+    bipolar: bool,
+) -> torch.Tensor:
+    def get_pulse_pos(p):
+        return torch.ge(torch.diff(torch.ceil(p)), 1)
+
+    e = torch.zeros_like(pitch)
+
+    padded_phase = F.pad(phase, (1, 0))
+    padded_phase += shift
+
+    pulse_pos = get_pulse_pos(padded_phase)
+    e[pulse_pos] = torch.sqrt(pitch[pulse_pos])
+
+    if bipolar:
+        pulse_pos_double = get_pulse_pos(0.5 * padded_phase)
+        e[pulse_pos & ~pulse_pos_double] *= -1
+
+    return e
+
+
+def generate_sinusoidal(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
+    if bipolar:
+        e = torch.sin(TAU * phase)
+    else:
+        e = 0.5 * (1 - torch.cos(TAU * phase))
+    return e
+
+
+def generate_sawtooth(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
+    e = torch.fmod(phase, 1)
+    if bipolar:
+        e = 2 * e - 1
+    return e
+
+
+def generate_inverted_sawtooth(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
+    e = 1 - torch.fmod(phase, 1)
+    if bipolar:
+        e = 2 * e - 1
+    return e
+
+
+def generate_triangle(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
+    if bipolar:
+        e = 2 * torch.abs(2 * torch.fmod(phase + 0.75, 1) - 1) - 1
+    else:
+        e = torch.abs(2 * torch.fmod(phase + 0.5, 1) - 1)
+    return e
+
+
+def generate_square(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
+    e = torch.le(torch.fmod(phase, 1), 0.5).to(phase.dtype)
+    if bipolar:
+        e = 2 * e - 1
+    return e
+
+
+def generate_harmonic_pulse(
+    pitch: torch.Tensor,
+    phase: torch.Tensor,
+    power_factor: float = 0.1,
+    bipolar: bool = True,
+) -> torch.Tensor:
+    if not bipolar:
+        raise ValueError("Harmonic pulse is only defined for bipolar polarity.")
+
+    # number of harmonics = floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
+    n_harmonics = torch.floor(0.5 * pitch)
+
+    # The summation of sinusoids can be computed efficiently using the closed-form
+    # expression of the Dirichlet kernel.
+    theta = TAU * phase
+    numer = torch.cos(0.5 * theta) - torch.cos((n_harmonics + 0.5) * theta)
+    denom = 2 * torch.sin(0.5 * theta)
+
+    # Handle singularities at theta = 0, where the limit is the number of harmonics.
+    eps = 1e-6
+    is_off_peak = denom.abs() > eps
+    safe_denom = torch.where(is_off_peak, denom, torch.ones_like(denom))
+    e = numer / safe_denom
+    e = torch.where(is_off_peak, e, n_harmonics)
+
+    norm_factor = power_factor * torch.sqrt(2 / n_harmonics.clip(min=1))
+    return norm_factor * e
+
+
+def generate_gauss(source: torch.Tensor) -> torch.Tensor:
+    return torch.randn_like(source)
+
+
+def generate_mseq(source: torch.Tensor) -> torch.Tensor:
+    return mseq_like(source)
+
+
+def generate_uniform(source: torch.Tensor) -> torch.Tensor:
+    return math.sqrt(12) * torch.rand_like(source)
 
 
 class ExcitationGeneration(BaseFunctionalModule):
@@ -36,7 +138,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         The frame period in samples, :math:`P`.
 
     voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
-                     'triangle', 'square']
+                     'triangle', 'square', 'harmonic-pulse']
         The type of voiced region.
 
     unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
@@ -156,74 +258,42 @@ class ExcitationGeneration(BaseFunctionalModule):
             shift = torch.rand_like(p[..., :1])
         else:
             raise ValueError(f"init_phase {init_phase} is not supported.")
-        if isinstance(shift, torch.Tensor) or shift != 0.0:
-            phase += shift
 
-        # Generate excitation signal using phase.
         if polarity == "auto":
-            unipolar = voiced_region == "pulse"
+            bipolar = voiced_region != "pulse"
         elif polarity in ("unipolar", "bipolar"):
-            unipolar = polarity == "unipolar"
+            bipolar = polarity == "bipolar"
         else:
             raise ValueError(f"polarity {polarity} is not supported.")
-        e = torch.zeros_like(p)
+
         if voiced_region == "pulse":
-
-            def get_pulse_pos(p):
-                r = torch.ceil(p)
-                return torch.ge(torch.diff(r), 1)
-
-            if isinstance(shift, float):
-                padded_phase = F.pad(phase, (1, 0), value=shift)
-            else:
-                padded_phase = torch.cat([shift, phase], dim=-1)
-
-            if unipolar:
-                pulse_pos = get_pulse_pos(padded_phase)
-                e[pulse_pos] = torch.sqrt(p[pulse_pos])
-            else:
-                pulse_pos1 = get_pulse_pos(padded_phase)
-                pulse_pos2 = get_pulse_pos(0.5 * padded_phase)
-                e[pulse_pos1] = torch.sqrt(p[pulse_pos1])
-                e[pulse_pos1 & ~pulse_pos2] *= -1
-        elif voiced_region == "sinusoidal":
-            if unipolar:
-                e[mask] = 0.5 * (1 - torch.cos(TAU * phase[mask]))
-            else:
-                e[mask] = torch.sin(TAU * phase[mask])
-        elif voiced_region == "sawtooth":
-            if unipolar:
-                e[mask] = torch.fmod(phase[mask], 1)
-            else:
-                e[mask] = 2 * torch.fmod(phase[mask], 1) - 1
-        elif voiced_region == "inverted-sawtooth":
-            if unipolar:
-                e[mask] = 1 - torch.fmod(phase[mask], 1)
-            else:
-                e[mask] = 1 - 2 * torch.fmod(phase[mask], 1)
-        elif voiced_region == "triangle":
-            if unipolar:
-                e[mask] = torch.abs(2 * torch.fmod(phase[mask] + 0.5, 1) - 1)
-            else:
-                e[mask] = 2 * torch.abs(2 * torch.fmod(phase[mask] + 0.75, 1) - 1) - 1
-        elif voiced_region == "square":
-            if unipolar:
-                e[mask] = torch.le(torch.fmod(phase[mask], 1), 0.5).to(e.dtype)
-            else:
-                e[mask] = 2 * torch.le(torch.fmod(phase[mask], 1), 0.5).to(e.dtype) - 1
+            e = generate_pulse(p, phase, shift, bipolar)
+        elif voiced_region == "harmonic-pulse":
+            e = generate_harmonic_pulse(p, phase + shift)
         else:
-            raise ValueError(f"voiced_region {voiced_region} is not supported.")
+            generaters = {
+                "sinusoidal": generate_sinusoidal,
+                "sawtooth": generate_sawtooth,
+                "inverted-sawtooth": generate_inverted_sawtooth,
+                "triangle": generate_triangle,
+                "square": generate_square,
+            }
+            if voiced_region not in generaters:
+                raise ValueError(f"voiced_region {voiced_region} is not supported.")
+            phase += shift
+            e = torch.zeros_like(p)
+            e[mask] = generaters[voiced_region](phase[mask], bipolar)
 
         if unvoiced_region == "zeros":
             pass
-        elif unvoiced_region == "gauss":
-            e[~mask] = torch.randn(torch.sum(~mask), device=e.device, dtype=e.dtype)
-        elif unvoiced_region == "m-sequence":
-            e[~mask] = mseq(torch.sum(~mask) - 1, device=e.device, dtype=e.dtype)
-        elif unvoiced_region == "uniform":
-            e[~mask] = math.sqrt(12) * (
-                torch.rand(torch.sum(~mask), device=e.device, dtype=e.dtype) - 0.5
-            )
         else:
-            raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
+            generaters = {
+                "gauss": generate_gauss,
+                "m-sequence": generate_mseq,
+                "uniform": generate_uniform,
+            }
+            if unvoiced_region not in generaters:
+                raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
+            e[~mask] = generaters[unvoiced_region](e[~mask])
+
         return e

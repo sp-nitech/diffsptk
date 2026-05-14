@@ -92,11 +92,22 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
 
 @pytest.mark.parametrize(
     "voiced_region",
-    ["pulse", "sinusoidal", "sawtooth", "inverted-sawtooth", "triangle", "square"],
+    [
+        "pulse",
+        "sinusoidal",
+        "sawtooth",
+        "inverted-sawtooth",
+        "triangle",
+        "square",
+        "harmonic-pulse",
+    ],
 )
 @pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
 @pytest.mark.parametrize("init_phase", ["zeros", "random", np.round(np.pi / 2, 2)])
-def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=False):
+def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=True):
+    if voiced_region == "harmonic-pulse" and polarity == "unipolar":
+        pytest.skip("Harmonic pulse cannot be unipolar.")
+
     excite = diffsptk.ExcitationGeneration(
         P,
         voiced_region=voiced_region,
