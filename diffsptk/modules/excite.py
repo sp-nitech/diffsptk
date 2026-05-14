@@ -268,37 +268,37 @@ class ExcitationGeneration(BaseFunctionalModule):
             raise ValueError(f"polarity {polarity} is not supported.")
 
         if "pulse" in voiced_region:
-            generaters = {
+            generators = {
                 "pulse": generate_pulse,
                 "harmonic-pulse": generate_harmonic_pulse,
             }
-            if voiced_region not in generaters:
+            if voiced_region not in generators:
                 raise ValueError(f"voiced_region {voiced_region} is not supported.")
-            e = generaters[voiced_region](p, phase, shift, bipolar)
+            e = generators[voiced_region](p, phase, shift, bipolar)
         else:
-            generaters = {
+            generators = {
                 "sinusoidal": generate_sinusoidal,
                 "sawtooth": generate_sawtooth,
                 "inverted-sawtooth": generate_inverted_sawtooth,
                 "triangle": generate_triangle,
                 "square": generate_square,
             }
-            if voiced_region not in generaters:
+            if voiced_region not in generators:
                 raise ValueError(f"voiced_region {voiced_region} is not supported.")
             phase += shift
             e = torch.zeros_like(p)
-            e[mask] = generaters[voiced_region](phase[mask], bipolar)
+            e[mask] = generators[voiced_region](phase[mask], bipolar)
 
         if unvoiced_region == "zeros":
             pass
         else:
-            generaters = {
+            generators = {
                 "gauss": generate_gauss,
                 "m-sequence": generate_mseq,
                 "uniform": generate_uniform,
             }
-            if unvoiced_region not in generaters:
+            if unvoiced_region not in generators:
                 raise ValueError(f"unvoiced_region {unvoiced_region} is not supported.")
-            e[~mask] = generaters[unvoiced_region](e[~mask])
+            e[~mask] = generators[unvoiced_region](e[~mask])
 
         return e
