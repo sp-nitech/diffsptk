@@ -50,6 +50,36 @@ def generate_pulse(
     return e
 
 
+def generate_harmonic_pulse(
+    pitch: torch.Tensor,
+    phase: torch.Tensor,
+    shift: float | torch.Tensor,
+    bipolar: bool,
+    power_factor: float = 0.1,
+) -> torch.Tensor:
+    if not bipolar:
+        raise ValueError("Harmonic pulse is only defined for bipolar polarity.")
+
+    # number of harmonics = floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
+    n_harmonics = torch.floor(0.5 * pitch)
+
+    # The summation of sinusoids can be computed efficiently using the closed-form
+    # expression of the Dirichlet kernel.
+    theta = TAU * (phase + shift)
+    numer = torch.cos(0.5 * theta) - torch.cos((n_harmonics + 0.5) * theta)
+    denom = 2 * torch.sin(0.5 * theta)
+
+    # Handle singularities at theta = 0, where the limit is the number of harmonics.
+    eps = 1e-6
+    is_off_peak = denom.abs() > eps
+    safe_denom = torch.where(is_off_peak, denom, torch.ones_like(denom))
+    e = numer / safe_denom
+    e = torch.where(is_off_peak, e, n_harmonics)
+
+    norm_factor = power_factor * torch.sqrt(2 / n_harmonics.clip(min=1))
+    return norm_factor * e
+
+
 def generate_sinusoidal(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
     if bipolar:
         e = torch.sin(TAU * phase)
@@ -85,35 +115,6 @@ def generate_square(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
     if bipolar:
         e = 2 * e - 1
     return e
-
-
-def generate_harmonic_pulse(
-    pitch: torch.Tensor,
-    phase: torch.Tensor,
-    power_factor: float = 0.1,
-    bipolar: bool = True,
-) -> torch.Tensor:
-    if not bipolar:
-        raise ValueError("Harmonic pulse is only defined for bipolar polarity.")
-
-    # number of harmonics = floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
-    n_harmonics = torch.floor(0.5 * pitch)
-
-    # The summation of sinusoids can be computed efficiently using the closed-form
-    # expression of the Dirichlet kernel.
-    theta = TAU * phase
-    numer = torch.cos(0.5 * theta) - torch.cos((n_harmonics + 0.5) * theta)
-    denom = 2 * torch.sin(0.5 * theta)
-
-    # Handle singularities at theta = 0, where the limit is the number of harmonics.
-    eps = 1e-6
-    is_off_peak = denom.abs() > eps
-    safe_denom = torch.where(is_off_peak, denom, torch.ones_like(denom))
-    e = numer / safe_denom
-    e = torch.where(is_off_peak, e, n_harmonics)
-
-    norm_factor = power_factor * torch.sqrt(2 / n_harmonics.clip(min=1))
-    return norm_factor * e
 
 
 def generate_gauss(source: torch.Tensor) -> torch.Tensor:
@@ -266,10 +267,14 @@ class ExcitationGeneration(BaseFunctionalModule):
         else:
             raise ValueError(f"polarity {polarity} is not supported.")
 
-        if voiced_region == "pulse":
-            e = generate_pulse(p, phase, shift, bipolar)
-        elif voiced_region == "harmonic-pulse":
-            e = generate_harmonic_pulse(p, phase + shift)
+        if "pulse" in voiced_region:
+            generaters = {
+                "pulse": generate_pulse,
+                "harmonic-pulse": generate_harmonic_pulse,
+            }
+            if voiced_region not in generaters:
+                raise ValueError(f"voiced_region {voiced_region} is not supported.")
+            e = generaters[voiced_region](p, phase, shift, bipolar)
         else:
             generaters = {
                 "sinusoidal": generate_sinusoidal,
