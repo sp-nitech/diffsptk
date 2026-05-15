@@ -29,22 +29,17 @@ from .linear_intpl import LinearInterpolation
 def generate_pulse(
     pitch: torch.Tensor,
     phase: torch.Tensor,
-    shift: float | torch.Tensor,
     bipolar: bool,
 ) -> torch.Tensor:
     def get_pulse_pos(p):
         return torch.ge(torch.diff(torch.ceil(p)), 1)
 
     e = torch.zeros_like(pitch)
-
-    padded_phase = F.pad(phase, (1, 0))
-    padded_phase += shift
-
-    pulse_pos = get_pulse_pos(padded_phase)
+    pulse_pos = get_pulse_pos(phase)
     e[pulse_pos] = torch.sqrt(pitch[pulse_pos])
 
     if bipolar:
-        pulse_pos_double = get_pulse_pos(0.5 * padded_phase)
+        pulse_pos_double = get_pulse_pos(0.5 * phase)
         e[pulse_pos & ~pulse_pos_double] *= -1
 
     return e
@@ -53,30 +48,33 @@ def generate_pulse(
 def generate_harmonic_pulse(
     pitch: torch.Tensor,
     phase: torch.Tensor,
-    shift: float | torch.Tensor,
     bipolar: bool,
-    power_factor: float = 0.1,
 ) -> torch.Tensor:
-    if not bipolar:
-        raise ValueError("Harmonic pulse is only defined for bipolar polarity.")
-
-    # number of harmonics = floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
+    # The number of harmonics is floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
     n_harmonics = torch.floor(0.5 * pitch)
 
     # The summation of sinusoids can be computed efficiently using the closed-form
     # expression of the Dirichlet kernel.
-    theta = TAU * (phase + shift)
-    numer = torch.cos(0.5 * theta) - torch.cos((n_harmonics + 0.5) * theta)
-    denom = 2 * torch.sin(0.5 * theta)
+    theta = TAU * phase[..., :-1]
+    half_theta = 0.5 * theta
+    if bipolar:
+        numer = torch.cos(half_theta) - torch.cos((n_harmonics + 0.5) * theta)
+    else:
+        numer = -torch.sin(half_theta) + torch.sin((n_harmonics + 0.5) * theta)
+    denom = 2 * torch.sin(half_theta)
 
-    # Handle singularities at theta = 0, where the limit is the number of harmonics.
+    # Handle singularities at phase is zero (i.e., harmonics).
     eps = 1e-6
-    is_off_peak = denom.abs() > eps
-    safe_denom = torch.where(is_off_peak, denom, torch.ones_like(denom))
+    is_on_peak = denom.abs() < eps
+    safe_denom = torch.where(is_on_peak, torch.ones_like(denom), denom)
     e = numer / safe_denom
-    e = torch.where(is_off_peak, e, n_harmonics)
+    if bipolar:
+        e[is_on_peak] = 0
+    else:
+        e[is_on_peak] = n_harmonics[is_on_peak]
 
-    norm_factor = power_factor * torch.sqrt(2 / n_harmonics.clip(min=1))
+    # Normalize as the same energy as the pulse excitation.
+    norm_factor = torch.sqrt(2 / n_harmonics.clip(min=1))
     return norm_factor * e
 
 
@@ -244,13 +242,7 @@ class ExcitationGeneration(BaseFunctionalModule):
             p = p.transpose(-2, -1)
         p *= mask
 
-        # Compute phase.
-        voiced_pos = torch.gt(p, 0)
-        q = torch.zeros_like(p)
-        q[voiced_pos] = torch.reciprocal(p[voiced_pos])
-        s = torch.cumsum(q.double(), dim=-1)
-        bias, _ = torch.cummax(s * ~mask, dim=-1)
-        phase = (s - bias).to(p.dtype)
+        # Compute initial phase.
         if not isinstance(init_phase, str):
             shift = init_phase / TAU
         elif init_phase == "zeros":
@@ -259,6 +251,14 @@ class ExcitationGeneration(BaseFunctionalModule):
             shift = torch.rand_like(p[..., :1])
         else:
             raise ValueError(f"init_phase {init_phase} is not supported.")
+
+        # Compute phase.
+        voiced_pos = torch.gt(p, 0)
+        q = torch.zeros_like(p)
+        q[voiced_pos] = torch.reciprocal(p[voiced_pos])
+        s = torch.cumsum(q.double(), dim=-1)
+        bias, _ = torch.cummax(s * ~mask, dim=-1)
+        phase = (s - bias).to(p.dtype)
 
         if polarity == "auto":
             bipolar = voiced_region != "pulse"
@@ -274,7 +274,9 @@ class ExcitationGeneration(BaseFunctionalModule):
             }
             if voiced_region not in generators:
                 raise ValueError(f"voiced_region {voiced_region} is not supported.")
-            e = generators[voiced_region](p, phase, shift, bipolar)
+            phase = F.pad(phase, (1, 0))
+            phase += shift
+            e = generators[voiced_region](p, phase, bipolar)
         else:
             generators = {
                 "sinusoidal": generate_sinusoidal,
