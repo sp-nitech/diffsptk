@@ -14,14 +14,21 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+PINACT_VERSION  := 3.10.1
 TAPLO_VERSION   := 0.10.0
 YAMLFMT_VERSION := 0.21.0
 
-all: SPTK taplo yamlfmt
+all: SPTK pinact taplo yamlfmt
 
 SPTK:
 	git clone https://github.com/sp-nitech/SPTK.git
 	cd SPTK && make
+
+pinact:
+	mkdir -p pinact
+	wget https://github.com/suzuki-shunsuke/pinact/releases/download/v$(PINACT_VERSION)/pinact_linux_amd64.tar.gz -O pinact.tar.gz
+	tar xzf pinact.tar.gz -C pinact
+	rm -f pinact.tar.gz
 
 taplo:
 	mkdir -p taplo
@@ -37,6 +44,6 @@ yamlfmt:
 	rm -f yamlfmt.tar.gz
 
 clean:
-	rm -rf SPTK taplo yamlfmt
+	rm -rf SPTK pinact taplo yamlfmt
 
 .PHONY: all clean
