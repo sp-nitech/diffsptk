@@ -65,13 +65,13 @@ def generate_harmonic_pulse(
 
     # Handle singularities at phase is zero (i.e., harmonics).
     eps = 1e-6
-    is_on_peak = denom.abs() < eps
-    safe_denom = torch.where(is_on_peak, torch.ones_like(denom), denom)
+    is_singular = denom.abs() < eps
+    safe_denom = torch.where(is_singular, torch.ones_like(denom), denom)
     e = numer / safe_denom
     if bipolar:
-        e[is_on_peak] = 0
+        e[is_singular] = 0
     else:
-        e[is_on_peak] = n_harmonics[is_on_peak]
+        e[is_singular] = n_harmonics[is_singular]
 
     # Normalize as the same energy as the pulse excitation.
     norm_factor = torch.sqrt(2 / n_harmonics.clip(min=1))
