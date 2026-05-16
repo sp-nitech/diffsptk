@@ -69,7 +69,7 @@ test: tool
 	python -m pytest $$module $(OPT)
 
 test-example: tool
-	[ -n "$(MODULE)" ] && module=modules/$(MODULE).py || module=modules; \
+	[ -n "$(MODULE)" ] && module=modules/$(MODULE).py || module=; \
 	. .venv/bin/activate && export NUMBA_CUDA_LOW_OCCUPANCY_WARNINGS=0 && \
 	python -m pytest --doctest-modules --no-cov --ignore=$(PROJECT)/third_party $(PROJECT)/$$module
 

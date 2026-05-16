@@ -301,6 +301,36 @@ def mseq(*order: int, **kwargs) -> torch.Tensor:
     return out.reshape(order)
 
 
+def mseq_like(tensor: torch.Tensor, **kwargs) -> torch.Tensor:
+    """Generate M-sequence with the same shape as the input tensor.
+
+    Parameters
+    ----------
+    tensor : Tensor
+        The input tensor. The shape of the output is the same as this tensor.
+
+    **kwargs : additional keyword arguments
+        See `torch.ones <https://pytorch.org/docs/stable/generated/torch.ones.html>`_.
+
+    Returns
+    -------
+    out : Tensor
+        The random value sequence.
+
+    Examples
+    --------
+    >>> import diffsptk
+    >>> x = torch.empty(4)
+    >>> y = diffsptk.mseq_like(x)
+    >>> y
+    tensor([-1.,  1., -1.,  1.])
+
+    """
+    shape = list(tensor.shape)
+    shape[-1] -= 1
+    return mseq(*shape, device=tensor.device, dtype=tensor.dtype, **kwargs)
+
+
 def nrand(
     *order: int, mean: float = 0, stdv: float = 1, var: float | None = None, **kwargs
 ) -> torch.Tensor:

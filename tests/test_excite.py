@@ -92,7 +92,15 @@ def test_compatibility(device, dtype, module, voiced_region, unvoiced_region, P=
 
 @pytest.mark.parametrize(
     "voiced_region",
-    ["pulse", "sinusoidal", "sawtooth", "inverted-sawtooth", "triangle", "square"],
+    [
+        "pulse",
+        "sinusoidal",
+        "sawtooth",
+        "inverted-sawtooth",
+        "triangle",
+        "square",
+        "harmonic-pulse",
+    ],
 )
 @pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
 @pytest.mark.parametrize("init_phase", ["zeros", "random", np.round(np.pi / 2, 2)])
@@ -108,7 +116,7 @@ def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=False):
         U.call(f"x2x +sd tools/SPTK/asset/data.short | pitch -s 16 -p {P} -o 0 -a 2")
     )
     e = excite(pitch)
-    if voiced_region == "pulse":
+    if "pulse" in voiced_region:
         e = e / e.abs().max()
     if verbose:
         sf.write(f"excite_{voiced_region}_{polarity}_{init_phase}.wav", e, 16000)
