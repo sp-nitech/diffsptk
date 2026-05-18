@@ -15,7 +15,6 @@
 # ------------------------------------------------------------------------ #
 
 import pytest
-import torch
 
 import diffsptk
 import tests.utils as U
@@ -23,12 +22,20 @@ import tests.utils as U
 
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-def test_compatibility(device, dtype, module, ignore_gain, M=3, T=100, P=10):
+@pytest.mark.parametrize("mode", ["efficient", "direct"])
+def test_compatibility(device, dtype, module, ignore_gain, mode, M=3, T=100, P=10, B=2):
     zerodf = U.choice(
         module,
         diffsptk.AllZeroDigitalFilter,
         diffsptk.functional.zerodf,
-        {"filter_order": M, "frame_period": P, "ignore_gain": ignore_gain},
+        {
+            "filter_order": M,
+            "frame_period": P,
+            "ignore_gain": ignore_gain,
+            "mode": mode,
+            "device": device,
+            "dtype": dtype,
+        },
     )
 
     tmp1 = "zerodf.tmp1"
@@ -43,33 +50,7 @@ def test_compatibility(device, dtype, module, ignore_gain, M=3, T=100, P=10):
         f"zerodf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
+        factor=10 if mode == "efficient" else 1,
     )
 
-    U.check_differentiability(device, dtype, zerodf, [(T,), (T // P, M + 1)])
-
-
-@pytest.mark.parametrize("ignore_gain", [False, True])
-def test_efficient_mode(device, dtype, ignore_gain, M=3, T=100, P=10, B=2):
-    zerodf_direct = diffsptk.AllZeroDigitalFilter(
-        filter_order=M,
-        frame_period=P,
-        ignore_gain=ignore_gain,
-        mode="direct",
-        device=device,
-        dtype=dtype,
-    )
-
-    zerodf_efficient = diffsptk.AllZeroDigitalFilter(
-        filter_order=M,
-        frame_period=P,
-        ignore_gain=ignore_gain,
-        mode="efficient",
-        device=device,
-        dtype=dtype,
-    )
-
-    x = torch.randn(B, T, device=device, dtype=dtype)
-    b = torch.randn(B, T // P, M + 1, device=device, dtype=dtype)
-    y_direct = zerodf_direct(x, b).cpu().numpy()
-    y_efficient = zerodf_efficient(x, b).cpu().numpy()
-    assert U.allclose(y_direct, y_efficient, dtype=dtype, factor=10)
+    U.check_differentiability(device, dtype, zerodf, [(B, T), (B, T // P, M + 1)])
