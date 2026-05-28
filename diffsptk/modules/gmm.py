@@ -14,10 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..typing import ArrayLike
@@ -138,19 +139,20 @@ class GaussianMixtureModeling(BaseLearnerModule):
         L = self.order + 1
         if block_size is None:
             block_size = [L]
-        if sum(block_size) != L:
+        block_size_list = cast(list[int], list(block_size))
+        if sum(block_size_list) != L:
             raise ValueError("The sum of block_size must be equal to order + 1.")
-        if not all(0 < b for b in block_size):
+        if not all(0 < b for b in block_size_list):
             raise ValueError("All elements of block_size must be positive.")
 
-        self.is_diag = var_type == "diag" and len(block_size) == 1
+        self.is_diag = var_type == "diag" and len(block_size_list) == 1
 
         # Make mask for covariance matrix.
         mask = torch.zeros((L, L), device=device, dtype=dtype)
-        cumsum = np.cumsum(np.insert(block_size, 0, 0))
-        for b1, s1, e1 in zip(block_size, cumsum[:-1], cumsum[1:]):
+        cumsum = np.cumsum(np.insert(block_size_list, 0, 0))
+        for b1, s1, e1 in zip(block_size_list, cumsum[:-1], cumsum[1:]):
             if var_type == "diag":
-                for b2, s2, e2 in zip(block_size, cumsum[:-1], cumsum[1:]):
+                for b2, s2, e2 in zip(block_size_list, cumsum[:-1], cumsum[1:]):
                     if b1 == b2:
                         mask[s1:e1, s2:e2] = torch.eye(b1)
             elif var_type == "full":
@@ -194,9 +196,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
         if sigma is not None:
             self.sigma[:] = sigma
 
-    def warmup(
-        self, x: torch.Tensor | torch.utils.data.DataLoader, **lbg_params
-    ) -> None:
+    def warmup(self, x: torch.Tensor | DataLoader, **lbg_params) -> None:
         """Initialize the model parameters by K-means clustering.
 
         Parameters
@@ -210,15 +210,16 @@ class GaussianMixtureModeling(BaseLearnerModule):
         """
         x = to_dataloader(x, batch_size=self.batch_size)
         device = self.w.device
+        dtype = self.w.dtype
 
         from .lbg import LindeBuzoGrayAlgorithm
 
-        lbg = LindeBuzoGrayAlgorithm(self.order, self.n_mixture, **lbg_params).to(
-            device
+        lbg = LindeBuzoGrayAlgorithm(
+            self.order, self.n_mixture, device=device, **lbg_params
         )
         codebook, indices, _ = lbg(x, return_indices=True)
 
-        count = torch.bincount(indices, minlength=self.n_mixture).to(self.w.dtype)
+        count = torch.bincount(indices, minlength=self.n_mixture).to(dtype)
         w = count / len(indices)
         mu = codebook
 
@@ -240,7 +241,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
     @torch.inference_mode()
     def forward(
         self,
-        x: torch.Tensor | torch.utils.data.DataLoader,
+        x: torch.Tensor | DataLoader,
         return_posterior: bool = False,
     ) -> tuple[Params, torch.Tensor] | tuple[Params, torch.Tensor, torch.Tensor]:
         """Train Gaussian mixture models.
@@ -432,7 +433,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
 
     def _e_step(
         self,
-        x: torch.Tensor | torch.utils.data.DataLoader,
+        x: torch.Tensor | DataLoader,
         reduction: str = "sum",
         in_order: int | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:

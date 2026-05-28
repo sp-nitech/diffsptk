@@ -54,7 +54,7 @@ class CepstralAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstral analysis.
@@ -86,7 +86,9 @@ class CepstralAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = CepstralAnalysis._precompute(2 * x.size(-1) - 2, *args, **kwargs)
+        values = CepstralAnalysis._precompute(
+            2 * x.size(-1) - 2, *args, **kwargs
+        ).values
         return CepstralAnalysis._forward(x, *values)
 
     @staticmethod
@@ -111,7 +113,7 @@ class CepstralAnalysis(BaseFunctionalModule):
         fft_length: int, cep_order: int, accel: float, n_iter: int
     ) -> Precomputed:
         CepstralAnalysis._check(fft_length, cep_order, accel, n_iter)
-        return (cep_order, accel, n_iter)
+        return Precomputed(values=(cep_order, accel, n_iter))
 
     @staticmethod
     def _forward(

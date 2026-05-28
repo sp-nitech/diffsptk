@@ -48,7 +48,7 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
         super().__init__()
 
         self.in_dim = cep_order + 1
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum gain normalization.
@@ -80,7 +80,7 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = GeneralizedCepstrumGainNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return GeneralizedCepstrumGainNormalization._forward(x, *values)
 
     @staticmethod
@@ -99,7 +99,7 @@ class GeneralizedCepstrumGainNormalization(BaseFunctionalModule):
     @staticmethod
     def _precompute(cep_order: int, gamma: float, c: int | None = None) -> Precomputed:
         GeneralizedCepstrumGainNormalization._check(cep_order, gamma, c)
-        return (get_gamma(gamma, c),)
+        return Precomputed(values=(get_gamma(gamma, c),))
 
     @staticmethod
     def _forward(x: torch.Tensor, gamma: float) -> torch.Tensor:

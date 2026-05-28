@@ -41,7 +41,7 @@ class Flux(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(lag, norm, reduction)
+        self.values = self._precompute(lag, norm, reduction).values
 
     def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         """Calculate the flux, which is the distance between adjacent frames.
@@ -77,7 +77,7 @@ class Flux(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, y: torch.Tensor | None, *args, **kwargs) -> torch.Tensor:
-        values = Flux._precompute(*args, **kwargs)
+        values = Flux._precompute(*args, **kwargs).values
         return Flux._forward(x, y, *values)
 
     @staticmethod
@@ -91,7 +91,7 @@ class Flux(BaseFunctionalModule):
     @staticmethod
     def _precompute(lag: int, norm: int | float, reduction: str) -> Precomputed:
         Flux._check()
-        return (lag, norm, reduction)
+        return Precomputed(values=(lag, norm, reduction))
 
     @staticmethod
     def _forward(

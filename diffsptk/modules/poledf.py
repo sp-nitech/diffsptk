@@ -52,7 +52,7 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         """Apply an all-pole digital filter.
@@ -86,7 +86,9 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = AllPoleDigitalFilter._precompute(a.size(-1) - 1, *args, **kwargs)
+        values = AllPoleDigitalFilter._precompute(
+            a.size(-1) - 1, *args, **kwargs
+        ).values
         return AllPoleDigitalFilter._forward(x, a, *values)
 
     @staticmethod
@@ -107,7 +109,7 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
         AllPoleDigitalFilter._check(filter_order, frame_period)
         from torchlpc import sample_wise_lpc
 
-        return (frame_period, ignore_gain, sample_wise_lpc)
+        return Precomputed(values=(frame_period, ignore_gain, sample_wise_lpc))
 
     @staticmethod
     def _forward(

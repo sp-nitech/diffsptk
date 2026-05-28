@@ -268,13 +268,13 @@ def mseq(*order: int, **kwargs) -> torch.Tensor:
     tensor([-1.,  1., -1.,  1., -1.])
 
     """
-    if any(isinstance(item, (list, tuple)) for item in order):
-        order = list(*order)
+    if len(order) == 1 and isinstance(order[0], (list, tuple)):
+        _order = list(order[0])
     else:
-        order = list(order)
-    order[-1] += 1
+        _order = list(order)
+    _order[-1] += 1
 
-    out_length = math.prod(order)
+    out_length = math.prod(_order)
     out = torch.ones(out_length, **kwargs)
 
     init = 0x55555555  # int("01010101010101010101010101010101", 2)
@@ -298,7 +298,7 @@ def mseq(*order: int, **kwargs) -> torch.Tensor:
         if x0 != 1:
             out[i] = x0
 
-    return out.reshape(order)
+    return out.reshape(_order)
 
 
 def mseq_like(tensor: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -377,12 +377,12 @@ def nrand(
     if stdv < 0:
         raise ValueError("stdv must be non-negative.")
 
-    if any(isinstance(item, (list, tuple)) for item in order):
-        order = list(*order)
+    if len(order) == 1 and isinstance(order[0], (list, tuple)):
+        _order = list(order[0])
     else:
-        order = list(order)
-    order[-1] += 1
-    x = torch.randn(*order, **kwargs)
+        _order = list(order)
+    _order[-1] += 1
+    x = torch.randn(*_order, **kwargs)
     x = x * stdv + mean
     return x
 
@@ -426,11 +426,11 @@ def rand(*order: int, a: float = 0, b: float = 1, **kwargs) -> torch.Tensor:
     if b <= a:
         raise ValueError("Lower bound must be less than upper bound.")
 
-    if any(isinstance(item, (list, tuple)) for item in order):
-        order = list(*order)
+    if len(order) == 1 and isinstance(order[0], (list, tuple)):
+        _order = list(order[0])
     else:
-        order = list(order)
-    order[-1] += 1
-    x = torch.rand(*order, **kwargs)
+        _order = list(order)
+    _order[-1] += 1
+    x = torch.rand(*_order, **kwargs)
     x = (b - a) * x + a
     return x

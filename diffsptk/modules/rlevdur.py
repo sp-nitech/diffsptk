@@ -53,7 +53,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("phase_factors", tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
@@ -85,13 +85,13 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")
-        return self._forward(a, **self._buffers)
+        return self._forward(a, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = ReverseLevinsonDurbin._precompute(
+        tensors = ReverseLevinsonDurbin._precompute(
             a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
-        )
+        ).tensors
         return ReverseLevinsonDurbin._forward(a, *tensors)
 
     @staticmethod
@@ -116,7 +116,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         omega = torch.linspace(0, np.pi, n_fft, device=device, dtype=torch.double)
         m = torch.arange(lpc_order + 1, device=device, dtype=torch.double)
         phase_factors = torch.exp(-1j * omega * m.unsqueeze(-1))
-        return None, None, (to(phase_factors, dtype=dtype),)
+        return Precomputed(tensors=(to(phase_factors, dtype=dtype),))
 
     @staticmethod
     def _forward(a: torch.Tensor, phase_factors: torch.Tensor) -> torch.Tensor:

@@ -194,5 +194,5 @@ def write(
     >>> os.remove("out.wav")
 
     """
-    x = x.detach().cpu().numpy() if torch.is_tensor(x) else x
+    x = x.detach().cpu().numpy() if isinstance(x, torch.Tensor) else x
     sf.write(filename, x.T if channel_first else x, sample_rate, **kwargs)

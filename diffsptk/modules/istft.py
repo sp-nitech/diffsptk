@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -83,8 +84,8 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        layers = self._precompute(**filter_values(locals())).layers
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse short-time Fourier transform.
@@ -118,13 +119,13 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = InverseShortTimeFourierTransform._precompute(
+        layers = InverseShortTimeFourierTransform._precompute(
             *args,
             **kwargs,
             learnable=False,
             device=y.device,
             dtype=complex_dtype_to_dtype(y.dtype),
-        )
+        ).layers
         return InverseShortTimeFourierTransform._forward(y, out_length, *layers)
 
     @staticmethod
@@ -152,9 +153,11 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
         module = inspect.stack()[1].function != "_func"
 
         if learnable is True:
-            learnable = LEARNABLES
+            _learnable = LEARNABLES
         elif learnable is False:
-            learnable = ()
+            _learnable = ()
+        else:
+            _learnable = learnable
 
         ifftr = get_layer(
             module,
@@ -162,7 +165,7 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
             dict(
                 fft_length=fft_length,
                 out_length=frame_length,
-                learnable="basis" in learnable,
+                learnable="basis" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
@@ -177,12 +180,12 @@ class InverseShortTimeFourierTransform(BaseFunctionalModule):
                 window=window,
                 norm=norm,
                 symmetric=symmetric,
-                learnable="window" in learnable,
+                learnable="window" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
         )
-        return None, (ifftr, unframe), None
+        return Precomputed(layers=(ifftr, unframe))
 
     @staticmethod
     def _forward(

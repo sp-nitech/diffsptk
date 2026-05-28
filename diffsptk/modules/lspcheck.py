@@ -50,7 +50,7 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = lsp_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Check the stability of the input LSP coefficients.
@@ -85,7 +85,7 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LineSpectralPairsStabilityCheck._precompute(
             w.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return LineSpectralPairsStabilityCheck._forward(w, *values)
 
     @staticmethod
@@ -106,10 +106,12 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
         lsp_order: int, rate: float, n_iter: int, warn_type: str
     ) -> Precomputed:
         LineSpectralPairsStabilityCheck._check(lsp_order, rate, n_iter)
-        return (
-            rate * torch.pi / (lsp_order + 1),
-            n_iter,
-            warn_type,
+        return Precomputed(
+            values=(
+                rate * torch.pi / (lsp_order + 1),
+                n_iter,
+                warn_type,
+            )
         )
 
     @staticmethod

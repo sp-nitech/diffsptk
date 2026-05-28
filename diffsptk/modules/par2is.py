@@ -36,7 +36,7 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, k: torch.Tensor) -> torch.Tensor:
         """Convert PARCOR to IS.
@@ -69,7 +69,7 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = ParcorCoefficientsToInverseSine._precompute(
             x.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return ParcorCoefficientsToInverseSine._forward(x, *values)
 
     @staticmethod
@@ -84,7 +84,7 @@ class ParcorCoefficientsToInverseSine(BaseFunctionalModule):
     @staticmethod
     def _precompute(par_order: int) -> Precomputed:
         ParcorCoefficientsToInverseSine._check(par_order)
-        return (2 / torch.pi,)
+        return Precomputed(values=(2 / torch.pi,))
 
     @staticmethod
     def _forward(k: torch.Tensor, c: float) -> torch.Tensor:

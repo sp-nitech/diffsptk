@@ -37,7 +37,7 @@ class Entropy(BaseFunctionalModule):
     def __init__(self, out_format: str | int = "nat") -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Compute entropy from probability sequence.
@@ -68,7 +68,7 @@ class Entropy(BaseFunctionalModule):
 
     @staticmethod
     def _func(p: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Entropy._precompute(*args, **kwargs)
+        values = Entropy._precompute(*args, **kwargs).values
         return Entropy._forward(p, *values)
 
     @staticmethod
@@ -90,7 +90,7 @@ class Entropy(BaseFunctionalModule):
             c = math.log10(math.e)
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
-        return (c,)
+        return Precomputed(values=(c,))
 
     @staticmethod
     def _forward(p: torch.Tensor, c: float) -> torch.Tensor:

@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -60,8 +61,8 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        layers = self._precompute(**filter_values(locals())).layers
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform LPC analysis.
@@ -90,9 +91,9 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = LinearPredictiveCodingAnalysis._precompute(
+        layers = LinearPredictiveCodingAnalysis._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).layers
         return LinearPredictiveCodingAnalysis._forward(x, *layers)
 
     @staticmethod
@@ -132,7 +133,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return None, (acorr, levdur), None
+        return Precomputed(layers=(acorr, levdur))
 
     @staticmethod
     def _forward(x: torch.Tensor, acorr: Callable, levdur: Callable) -> torch.Tensor:

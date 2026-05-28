@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import numpy as np
 import torch
@@ -123,10 +124,11 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, tensors = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
-        self.register_buffer("equal_loudness_curve", tensors[0])
-        self.register_buffer("liftering_vector", tensors[1])
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self.register_buffer("equal_loudness_curve", _p.tensors[0])
+        self.register_buffer("liftering_vector", _p.tensors[1])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the PLP from the power spectrum.
@@ -161,22 +163,20 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 [ 0.4468, -0.5820,  0.0104, -0.0505]])
 
         """
-        return self._forward(x, *self.values, *self.layers, **self._buffers)
+        return self._forward(x, *self.values, *self.layers, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, layers, tensors = (
-            PerceptualLinearPredictiveCoefficientsAnalysis._precompute(
-                2 * x.size(-1) - 2,
-                *args,
-                **kwargs,
-                learnable=False,
-                device=x.device,
-                dtype=x.dtype,
-            )
+        _p = PerceptualLinearPredictiveCoefficientsAnalysis._precompute(
+            2 * x.size(-1) - 2,
+            *args,
+            **kwargs,
+            learnable=False,
+            device=x.device,
+            dtype=x.dtype,
         )
         return PerceptualLinearPredictiveCoefficientsAnalysis._forward(
-            x, *values, *layers, *tensors
+            x, *_p.values, *_p.layers, *_p.tensors
         )
 
     @staticmethod
@@ -285,8 +285,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         if f_max is None:
             f_max = sample_rate / 2
 
-        mel_min = hz_to_auditory(f_min, scale)
-        mel_max = hz_to_auditory(f_max, scale)
+        mel_min = hz_to_auditory(np.asarray(f_min), scale)
+        mel_max = hz_to_auditory(np.asarray(f_max), scale)
         seed = np.arange(1, n_channel + 2)
         center_frequencies = (mel_max - mel_min) / (n_channel + 1) * seed + mel_min
         f = auditory_to_hz(center_frequencies, scale)[:-1] ** 2
@@ -296,10 +296,10 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         liftering_vector = 1 + (lifter / 2) * torch.sin((torch.pi / lifter) * ramp)
         liftering_vector[0] = 2
 
-        return (
-            (compression_factor, formatter),
-            (fbank, levdur, lpc2c),
-            (
+        return Precomputed(
+            values=(compression_factor, formatter),
+            layers=(fbank, levdur, lpc2c),
+            tensors=(
                 to(equal_loudness_curve, device=device, dtype=dtype),
                 to(liftering_vector, dtype=dtype),
             ),

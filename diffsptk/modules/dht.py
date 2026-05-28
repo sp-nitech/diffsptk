@@ -51,7 +51,7 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
         self.in_dim = dht_length
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("W", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -78,13 +78,13 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers)
+        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = DiscreteHartleyTransform._precompute(
+        tensors = DiscreteHartleyTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return DiscreteHartleyTransform._forward(x, *tensors)
 
     @staticmethod
@@ -117,7 +117,7 @@ class DiscreteHartleyTransform(BaseFunctionalModule):
         n *= 2 * torch.pi / L
         z = L**-0.5
         W = z * cas(k.unsqueeze(0) * n.unsqueeze(1))
-        return None, None, (to(W, dtype=dtype),)
+        return Precomputed(tensors=(to(W, dtype=dtype),))
 
     @staticmethod
     def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:

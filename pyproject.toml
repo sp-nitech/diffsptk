@@ -47,6 +47,7 @@ dev = [
   "numpydoc",
   "pkginfo",
   "pydata-sphinx-theme",
+  "pyright[nodejs] < 1.1.409",
   "pytest",
   "pytest-cov",
   "ruff",
@@ -72,6 +73,12 @@ path = "diffsptk/version.py"
 extend-select = ["E", "I"]
 extend-ignore = ["E731"]   # Do not assign a `lambda` expression, use a `def`
 exclude = ["__init__.py"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+exclude = ["**/__pycache__", "**/librosa"]
+reportPossiblyUnboundVariable = "none"
 
 [tool.codespell]
 skip = "./docs/build,./tools"

@@ -15,8 +15,10 @@
 # ------------------------------------------------------------------------ #
 
 import math
+from typing import Any
 
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.private import get_generator, get_logger, to_dataloader
@@ -83,7 +85,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
         n_iter: int = 100,
         eps: float = 1e-5,
         perturb_factor: float = 1e-5,
-        init: str = "mean",
+        init: str | torch.Tensor = "mean",
         metric: str = "none",
         batch_size: int | None = None,
         seed: int | None = None,
@@ -121,7 +123,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
 
         self.vq = VectorQuantization(order, codebook_size).to(device=device).eval()
 
-        if torch.is_tensor(init):
+        if isinstance(init, torch.Tensor):
             given_codebook_size = init.size(0)
             c = codebook_size
             while c % 2 == 0 and c != given_codebook_size:
@@ -144,7 +146,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
     @torch.inference_mode()
     def forward(
         self,
-        x: torch.Tensor | torch.utils.data.DataLoader,
+        x: torch.Tensor | DataLoader,
         return_indices: bool = False,
     ) -> list[torch.Tensor]:
         """Design a codebook using the Linde-Buzo-Gray algorithm.
@@ -211,7 +213,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
 
         def e_step(x):
             indices = []
-            distance = 0
+            distance: Any = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 batch_xp = batch_x.to(device)
                 batch_xq, batch_indices, _ = self.vq(batch_xp)
@@ -221,7 +223,7 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
             distance /= len(indices)
             return indices, distance
 
-        distance = torch.inf
+        distance: Any = torch.inf
         while True:
             next_codebook_size = self.curr_codebook_size * 2
             if next_codebook_size <= self.codebook_size:
@@ -285,7 +287,9 @@ class LindeBuzoGrayAlgorithm(BaseLearnerModule):
                 if torch.any(~mask):
                     # Get index of largest cluster.
                     m = torch.argmax(n_data, 0)
-                    copied_centroids = centroids[m : m + 1].expand((~mask).sum(), -1)
+                    copied_centroids = centroids[m : m + 1].expand(
+                        int((~mask).sum()), -1
+                    )
                     r = (
                         torch.randn(
                             copied_centroids.size(),

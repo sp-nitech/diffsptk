@@ -62,7 +62,9 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("kernel_p", tensors[0])
         self.register_buffer("kernel_q", tensors[1])
 
@@ -90,17 +92,15 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")
-        return self._forward(w, *self.values, **self._buffers)
+        return self._forward(w, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = (
-            LineSpectralPairsToLinearPredictiveCoefficients._precompute(
-                w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
-            )
+        _p = LineSpectralPairsToLinearPredictiveCoefficients._precompute(
+            w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
         )
         return LineSpectralPairsToLinearPredictiveCoefficients._forward(
-            w, *values, *tensors
+            w, *_p.values, *_p.tensors
         )
 
     @staticmethod
@@ -136,8 +136,16 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         elif in_format in (1, "cycle"):
             formatter = lambda x: x * TAU
         elif in_format in (2, "khz"):
+            if sample_rate is None:
+                raise ValueError(
+                    "sample_rate must be specified when in_format is 'khz'."
+                )
             formatter = lambda x: x * (TAU / sample_rate * 1000)
         elif in_format in (3, "hz"):
+            if sample_rate is None:
+                raise ValueError(
+                    "sample_rate must be specified when in_format is 'hz'."
+                )
             formatter = lambda x: x * (TAU / sample_rate)
         else:
             raise ValueError(f"in_format {in_format} is not supported.")
@@ -152,7 +160,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         kernel_p = kernel_p.view(1, 1, -1)
         kernel_q = kernel_q.view(1, 1, -1)
 
-        return (log_gain, formatter), None, (kernel_p, kernel_q)
+        return Precomputed(values=(log_gain, formatter), tensors=(kernel_p, kernel_q))
 
     @staticmethod
     def _forward(

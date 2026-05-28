@@ -61,7 +61,7 @@ class FrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -94,13 +94,13 @@ class FrequencyTransform(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, **self._buffers)
+        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = FrequencyTransform._precompute(
+        tensors = FrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-        )
+        ).tensors
         return FrequencyTransform._forward(c, *tensors)
 
     @staticmethod
@@ -140,7 +140,7 @@ class FrequencyTransform(BaseFunctionalModule):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        return None, None, (to(A.T, dtype=dtype),)
+        return Precomputed(tensors=(to(A.T, dtype=dtype),))
 
     @staticmethod
     def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:

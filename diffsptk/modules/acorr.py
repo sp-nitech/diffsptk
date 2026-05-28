@@ -45,7 +45,7 @@ class Autocorrelation(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Estimate the autocorrelation of the input waveform.
@@ -75,7 +75,7 @@ class Autocorrelation(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Autocorrelation._precompute(x.size(-1), *args, **kwargs)
+        values = Autocorrelation._precompute(x.size(-1), *args, **kwargs).values
         return Autocorrelation._forward(x, *values)
 
     @staticmethod
@@ -107,7 +107,7 @@ class Autocorrelation(BaseFunctionalModule):
             )
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
-        return (acr_order, formatter)
+        return Precomputed(values=(acr_order, formatter))
 
     @staticmethod
     def _forward(x: torch.Tensor, acr_order: int, formatter: Callable) -> torch.Tensor:

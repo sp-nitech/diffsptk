@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import TypeAlias, cast
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -30,6 +32,8 @@ from ..utils.private import TAU, iir, next_power_of_two, to
 from .base import BaseNonFunctionalModule
 from .frame import Frame
 from .spec import Spectrum
+
+_BA: TypeAlias = tuple[np.ndarray, np.ndarray]
 
 
 class PitchAdaptiveSpectralAnalysis(BaseNonFunctionalModule):
@@ -342,9 +346,9 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         from scipy import signal
 
-        b1, a1 = signal.butter(6, 70 / sample_rate * 2, btype="highpass")
-        b2, a2 = signal.butter(6, 300 / sample_rate * 2, btype="highpass")
-        b3, a3 = signal.butter(6, 3000 / sample_rate * 2, btype="highpass")
+        b1, a1 = cast(_BA, signal.butter(6, 70 / sample_rate * 2, btype="highpass"))
+        b2, a2 = cast(_BA, signal.butter(6, 300 / sample_rate * 2, btype="highpass"))
+        b3, a3 = cast(_BA, signal.butter(6, 3000 / sample_rate * 2, btype="highpass"))
         self.register_buffer(
             "b", to(np.stack([b1, b2, b3]), device=device, dtype=dtype)
         )
@@ -487,7 +491,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         tmppw = interp1(
             pwx, pw[..., :f0pm], pwxq, method="linear", batching=(False, True)
         )
-        tmppw = F.pad(tmppw, (0, one_sided_length - f0p2m))
+        tmppw = F.pad(tmppw, (0, one_sided_length - int(f0p2m)))
         mask = self.ramp[:one_sided_length] < f0p2
         pw = torch.where(mask, tmppw, pw)
 

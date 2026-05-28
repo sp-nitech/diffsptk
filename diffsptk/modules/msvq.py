@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 
 from .base import BaseNonFunctionalModule
@@ -72,7 +74,7 @@ class MultiStageVectorQuantization(BaseNonFunctionalModule):
 
     @property
     def codebooks(self) -> torch.Tensor:
-        return self.vq.codebooks
+        return cast(torch.Tensor, self.vq.codebooks)
 
     def forward(
         self, x: torch.Tensor, codebooks: torch.Tensor | None = None, **kwargs

@@ -75,7 +75,7 @@ class Yingram(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("lags", tensors[0])
         self.register_buffer("lags_ceil", tensors[1])
         self.register_buffer("lags_floor", tensors[2])
@@ -106,7 +106,7 @@ class Yingram(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "frame length")
-        return self._forward(x, **self._buffers)
+        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -125,9 +125,9 @@ class Yingram(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = Yingram._precompute(
+        tensors = Yingram._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return Yingram._forward(x, *tensors)
 
     @staticmethod
@@ -161,7 +161,7 @@ class Yingram(BaseFunctionalModule):
         lags_ceil = lags.ceil().long()
         lags_floor = lags.floor().long()
         ramp = torch.arange(1, lag_max, device=device)
-        return None, None, (to(lags, dtype=dtype), lags_ceil, lags_floor, ramp)
+        return Precomputed(tensors=(to(lags, dtype=dtype), lags_ceil, lags_floor, ramp))
 
     @staticmethod
     def _forward(

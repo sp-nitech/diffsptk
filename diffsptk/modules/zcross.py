@@ -44,7 +44,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute zero-crossing rate.
@@ -74,7 +74,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ZeroCrossingAnalysis._precompute(*args, **kwargs)
+        values = ZeroCrossingAnalysis._precompute(*args, **kwargs).values
         return ZeroCrossingAnalysis._forward(x, *values)
 
     @staticmethod
@@ -91,7 +91,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     @staticmethod
     def _precompute(frame_length: int, norm: bool, softness: float) -> Precomputed:
         ZeroCrossingAnalysis._check(frame_length, softness)
-        return (frame_length, norm, softness)
+        return Precomputed(values=(frame_length, norm, softness))
 
     @staticmethod
     def _forward(

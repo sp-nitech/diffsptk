@@ -14,7 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any
+
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.private import get_generator, get_logger, to_dataloader
@@ -116,7 +119,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         self.register_buffer("W", W)  # (K, K)
 
     @torch.inference_mode()
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward(self, x: torch.Tensor | DataLoader) -> torch.Tensor:
         """Perform independent component analysis.
 
         Parameters
@@ -187,7 +190,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
                 break
 
         # Scale separating matrix as we cannot determine the scale.
-        s2 = 0
+        s2: Any = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             xp = batch_x.to(device)
             s = self.transform(xp)

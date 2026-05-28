@@ -53,7 +53,7 @@ class LevinsonDurbin(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("eye", tensors[0])
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
@@ -81,13 +81,13 @@ class LevinsonDurbin(BaseFunctionalModule):
 
         """
         check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")
-        return self._forward(r, **self._buffers)
+        return self._forward(r, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(r: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = LevinsonDurbin._precompute(
+        tensors = LevinsonDurbin._precompute(
             r.size(-1) - 1, *args, **kwargs, device=r.device, dtype=r.dtype
-        )
+        ).tensors
         return LevinsonDurbin._forward(r, *tensors)
 
     @staticmethod
@@ -112,7 +112,7 @@ class LevinsonDurbin(BaseFunctionalModule):
         if eps is None:
             eps = 1e-5 if (dtype or torch.get_default_dtype()) == torch.float else 0
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
-        return None, None, (eye,)
+        return Precomputed(tensors=(eye,))
 
     @staticmethod
     def _forward(r: torch.Tensor, eye: torch.Tensor) -> torch.Tensor:

@@ -90,8 +90,9 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
-        self.register_buffer("alpha_vector", tensors[0])
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.register_buffer("alpha_vector", _p.tensors[0])
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Check the stability of the MLSA digital filter.
@@ -120,14 +121,14 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
         """
         check_size(mc.size(-1), self.in_dim, "dimension of mel-cepstrum")
-        return self._forward(mc, *self.values, **self._buffers)
+        return self._forward(mc, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = MLSADigitalFilterStabilityCheck._precompute(
+        _p = MLSADigitalFilterStabilityCheck._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
-        return MLSADigitalFilterStabilityCheck._forward(mc, *values, *tensors)
+        return MLSADigitalFilterStabilityCheck._forward(mc, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -170,10 +171,9 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
             cep_order + 1, device=device, dtype=torch.double
         )
 
-        return (
-            (threshold, fast, n_fft, warn_type, mod_type),
-            None,
-            (to(alpha_vector, dtype=dtype),),
+        return Precomputed(
+            values=(threshold, fast, n_fft, warn_type, mod_type),
+            tensors=(to(alpha_vector, dtype=dtype),),
         )
 
     @staticmethod
@@ -189,6 +189,8 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         gain = (mc * alpha_vector).sum(-1, keepdim=True)
 
         if fast:
+            if mod_type == "clip":
+                raise ValueError("clip is not supported in fast mode.")
             max_amplitude = mc.sum(-1, keepdim=True) - gain
         else:
             c1 = torch.cat((mc[..., :1] - gain, mc[..., 1:]), dim=-1)
@@ -205,7 +207,7 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
             elif warn_type == "exit":
                 raise RuntimeError("Detected unstable MLSA filter.")
             else:
-                raise RuntimeError
+                raise ValueError(f"warn_type {warn_type} is not supported.")
 
         if mod_type == "clip":
             scale = threshold / C1_amplitude
@@ -213,7 +215,7 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
             scale = threshold / max_amplitude
         else:
             raise ValueError(f"mod_type {mod_type} is not supported.")
-        scale = torch.clip(scale, max=1)
+        scale = torch.clip(scale, max=1)  # type: ignore[assignment]
 
         if fast:
             c0, c1 = torch.split(mc, [1, mc.size(-1) - 1], dim=-1)

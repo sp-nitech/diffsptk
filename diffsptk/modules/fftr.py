@@ -57,7 +57,9 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         if learnable is True:
             self.W = nn.Parameter(tensors[0])
         elif learnable == "debug":
@@ -86,13 +88,13 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         tensor([ 6.0000,  2.4142, -2.0000, -0.4142,  2.0000])
 
         """
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, _ = RealValuedFastFourierTransform._precompute(
+        values = RealValuedFastFourierTransform._precompute(
             *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
-        )
+        ).values
         return RealValuedFastFourierTransform._forward(x, *values)
 
     @staticmethod
@@ -128,13 +130,15 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
             raise ValueError(f"out_format {out_format} is not supported.")
 
         if learnable:
+            if fft_length is None:
+                raise ValueError("fft_length must be specified when learnable is True.")
             W = torch.fft.fft(torch.eye(fft_length, device=device, dtype=torch.double))
             W = W[..., : fft_length // 2 + 1]
             W = torch.cat([W.real, W.imag], dim=-1)
             tensors = (to(W, dtype=dtype),)
         else:
-            tensors = None
-        return (fft_length, formatter), None, tensors
+            tensors = ()
+        return Precomputed(values=(fft_length, formatter), tensors=tensors)
 
     @staticmethod
     def _forward(

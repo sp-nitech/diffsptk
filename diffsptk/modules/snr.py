@@ -50,7 +50,7 @@ class SignalToNoiseRatio(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, s: torch.Tensor, sn: torch.Tensor) -> torch.Tensor:
         """Calculate SNR.
@@ -84,7 +84,7 @@ class SignalToNoiseRatio(BaseFunctionalModule):
 
     @staticmethod
     def _func(s: torch.Tensor, sn: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = SignalToNoiseRatio._precompute(*args, **kwargs)
+        values = SignalToNoiseRatio._precompute(*args, **kwargs).values
         return SignalToNoiseRatio._forward(s, sn, *values)
 
     @staticmethod
@@ -104,7 +104,7 @@ class SignalToNoiseRatio(BaseFunctionalModule):
     ) -> Precomputed:
         SignalToNoiseRatio._check(frame_length, eps)
         const = 10 if full else 1
-        return (frame_length, reduction, eps, const)
+        return Precomputed(values=(frame_length, reduction, eps, const))
 
     @staticmethod
     def _forward(

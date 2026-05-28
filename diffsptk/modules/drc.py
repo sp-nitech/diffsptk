@@ -82,9 +82,9 @@ class DynamicRangeCompression(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        )
+        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
+        self.values = _p.values
+        tensors = _p.tensors
         if learnable:
             self.params = nn.Parameter(tensors[0])
         else:
@@ -117,14 +117,14 @@ class DynamicRangeCompression(BaseFunctionalModule):
         tensor(0.5651)
 
         """
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = DynamicRangeCompression._precompute(
+        _p = DynamicRangeCompression._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return DynamicRangeCompression._forward(x, *values, *tensors)
+        return DynamicRangeCompression._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -170,21 +170,18 @@ class DynamicRangeCompression(BaseFunctionalModule):
             ratio, attack_time, release_time, sample_rate, makeup_gain, abs_max
         )
         c = round(np.log(9), 1)
-        if not torch.is_tensor(threshold):
-            threshold = to(torch.tensor(threshold, device=device), dtype=dtype)
-        if not torch.is_tensor(ratio):
-            ratio = to(torch.tensor(ratio, device=device), dtype=dtype)
-        if not torch.is_tensor(attack_time):
-            attack_time = to(torch.tensor(attack_time, device=device), dtype=dtype)
-        attack_time = torchcomp.ms2coef(attack_time * c, sample_rate)
-        if not torch.is_tensor(release_time):
-            release_time = to(torch.tensor(release_time, device=device), dtype=dtype)
-        release_time = torchcomp.ms2coef(release_time * c, sample_rate)
-        if not torch.is_tensor(makeup_gain):
-            makeup_gain = to(torch.tensor(makeup_gain, device=device), dtype=dtype)
-        makeup_gain = 10 ** (makeup_gain / 20)
-        params = torch.stack([threshold, ratio, attack_time, release_time, makeup_gain])
-        return (abs_max, torchcomp.compexp_gain), None, (params,)
+        _threshold = to(torch.tensor(threshold, device=device), dtype=dtype)
+        _ratio = to(torch.tensor(ratio, device=device), dtype=dtype)
+        _attack_time = to(torch.tensor(attack_time, device=device), dtype=dtype)
+        _attack_time = torchcomp.ms2coef(_attack_time * c, sample_rate)
+        _release_time = to(torch.tensor(release_time, device=device), dtype=dtype)
+        _release_time = torchcomp.ms2coef(_release_time * c, sample_rate)
+        _makeup_gain = to(torch.tensor(makeup_gain, device=device), dtype=dtype)
+        _makeup_gain = 10 ** (_makeup_gain / 20)
+        params = torch.stack(
+            [_threshold, _ratio, _attack_time, _release_time, _makeup_gain]
+        )
+        return Precomputed(values=(abs_max, torchcomp.compexp_gain), tensors=(params,))
 
     @staticmethod
     def _forward(

@@ -44,7 +44,7 @@ class InverseUniformQuantization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Dequantize the input waveform.
@@ -76,7 +76,7 @@ class InverseUniformQuantization(BaseFunctionalModule):
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = InverseUniformQuantization._precompute(*args, **kwargs)
+        values = InverseUniformQuantization._precompute(*args, **kwargs).values
         return InverseUniformQuantization._forward(y, *values)
 
     @staticmethod
@@ -92,17 +92,21 @@ class InverseUniformQuantization(BaseFunctionalModule):
         InverseUniformQuantization._check(abs_max, n_bit)
         if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
-            return (
-                abs_max,
-                level,
-                lambda y: y - (level // 2 - 0.5),
+            return Precomputed(
+                values=(
+                    abs_max,
+                    level,
+                    lambda y: y - (level // 2 - 0.5),
+                )
             )
         elif quantizer in (1, "mid-tread"):
             level = (1 << n_bit) - 1
-            return (
-                abs_max,
-                level,
-                lambda y: y - (level // 2),
+            return Precomputed(
+                values=(
+                    abs_max,
+                    level,
+                    lambda y: y - (level // 2),
+                )
             )
         raise ValueError(f"quantizer {quantizer} is not supported.")
 

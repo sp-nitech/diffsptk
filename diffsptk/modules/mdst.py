@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 from torch import nn
 
@@ -57,8 +59,9 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute modified discrete sine transform.

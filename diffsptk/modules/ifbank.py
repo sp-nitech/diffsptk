@@ -88,9 +88,9 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = n_channel
 
-        self.values, _, tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        )
+        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
+        self.values = _p.values
+        tensors = _p.tensors
         if learnable:
             self.H = nn.Parameter(tensors[0])
         else:
@@ -129,14 +129,14 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of mel spectrogram")
-        return self._forward(y, *self.values, **self._buffers, **self._parameters)
+        return self._forward(y, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = InverseMelFilterBankAnalysis._precompute(
+        _p = InverseMelFilterBankAnalysis._precompute(
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
-        return InverseMelFilterBankAnalysis._forward(y, *values, *tensors)
+        return InverseMelFilterBankAnalysis._forward(y, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -162,7 +162,7 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
     ) -> Precomputed:
         InverseMelFilterBankAnalysis._check()
 
-        _, _, tensors = MelFilterBankAnalysis._precompute(
+        tensors = MelFilterBankAnalysis._precompute(
             fft_length,
             n_channel,
             sample_rate,
@@ -176,10 +176,12 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             0,
             device=device,
             dtype=torch.double,
-        )
+        ).tensors
         weights = tensors[0].pinverse()
 
-        return (gamma, use_power), None, (to(weights, dtype=dtype),)
+        return Precomputed(
+            values=(gamma, use_power), tensors=(to(weights, dtype=dtype),)
+        )
 
     @staticmethod
     def _forward(

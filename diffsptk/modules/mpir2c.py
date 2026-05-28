@@ -44,7 +44,7 @@ class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
 
         self.in_dim = ir_length
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, h: torch.Tensor) -> torch.Tensor:
         """Convert minimum-phase impulse response to cepstrum.
@@ -76,7 +76,7 @@ class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
     def _func(h: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = MinimumPhaseImpulseResponseToCepstrum._precompute(
             h.size(-1), *args, **kwargs
-        )
+        ).values
         return MinimumPhaseImpulseResponseToCepstrum._forward(h, *values)
 
     @staticmethod
@@ -95,7 +95,7 @@ class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
     @staticmethod
     def _precompute(ir_length: int, cep_order: int, n_fft: int) -> Precomputed:
         MinimumPhaseImpulseResponseToCepstrum._check(ir_length, cep_order, n_fft)
-        return (cep_order, n_fft)
+        return Precomputed(values=(cep_order, n_fft))
 
     @staticmethod
     def _forward(h: torch.Tensor, cep_order: int, n_fft: int) -> torch.Tensor:

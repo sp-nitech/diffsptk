@@ -17,6 +17,7 @@
 import torch
 import torch.nn.functional as F
 from torch import nn
+from torch.signal.windows import cosine
 
 from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
@@ -73,13 +74,12 @@ class Window(BaseFunctionalModule):
 
         self.in_dim = in_length
 
-        self.values, _, tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        )
+        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
+        self.values = _p.values
         if learnable:
-            self.window = nn.Parameter(tensors[0])
+            self.window = nn.Parameter(_p.tensors[0])
         else:
-            self.register_buffer("window", tensors[0])
+            self.register_buffer("window", _p.tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a window function to the given waveform.
@@ -105,14 +105,14 @@ class Window(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "input length")
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = Window._precompute(
+        _p = Window._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return Window._forward(x, *values, *tensors)
+        return Window._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -161,9 +161,9 @@ class Window(BaseFunctionalModule):
         elif window == "povey":
             w = torch.hann_window(L, periodic=periodic, **params).pow(0.85)
         elif window == "sine":
-            w = torch.signal.windows.cosine(L, sym=symmetric, **params)
+            w = cosine(L, sym=symmetric, **params)
         elif window == "vorbis":
-            seed = torch.signal.windows.cosine(L, sym=symmetric, **params)
+            seed = cosine(L, sym=symmetric, **params)
             w = torch.sin(torch.pi * 0.5 * seed**2)
         elif window == "kbd":
             if periodic:
@@ -184,7 +184,7 @@ class Window(BaseFunctionalModule):
         else:
             raise ValueError(f"norm {norm} is not supported.")
 
-        return (out_length,), None, (to(w, dtype=dtype),)
+        return Precomputed(values=(out_length,), tensors=(to(w, dtype=dtype),))
 
     @staticmethod
     def _forward(

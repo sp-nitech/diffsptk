@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -59,8 +60,9 @@ class Spectrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -98,8 +100,8 @@ class Spectrum(BaseFunctionalModule):
     def _func(
         b: torch.Tensor | None = None, a: torch.Tensor | None = None, *args, **kwargs
     ) -> torch.Tensor:
-        values, layers, _ = Spectrum._precompute(*args, **kwargs)
-        return Spectrum._forward(b, a, *values, *layers)
+        _p = Spectrum._precompute(*args, **kwargs)
+        return Spectrum._forward(b, a, *_p.values, *_p.layers)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -147,7 +149,7 @@ class Spectrum(BaseFunctionalModule):
                 learnable=learnable,
             ),
         )
-        return (eps, relative_floor, formatter), (fftr,), None
+        return Precomputed(values=(eps, relative_floor, formatter), layers=(fftr,))
 
     @staticmethod
     def _forward(
@@ -158,21 +160,16 @@ class Spectrum(BaseFunctionalModule):
         formatter: Callable,
         fftr: Callable,
     ) -> torch.Tensor:
-        if b is None and a is None:
-            raise ValueError("Either b or a must be specified.")
-
-        if b is not None:
-            B = fftr(b)
-        if a is not None:
+        if b is not None and a is not None:
             K, a = remove_gain(a, return_gain=True)
-            A = fftr(a)
-
-        if b is None:
-            X = K / A
-        elif a is None:
-            X = B
+            X = K * (fftr(b) / fftr(a))
+        elif b is not None:
+            X = fftr(b)
+        elif a is not None:
+            K, a = remove_gain(a, return_gain=True)
+            X = K / fftr(a)
         else:
-            X = K * (B / A)
+            raise ValueError("Either b or a must be specified.")
 
         s = torch.square(X) + eps
         if relative_floor is not None:

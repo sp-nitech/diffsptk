@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 import torch.nn.functional as F
 
@@ -44,7 +46,7 @@ class Delta(BaseFunctionalModule):
 
     def __init__(
         self,
-        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [
+        seed: ArrayLike[float] | ArrayLike[int] = [
             [-0.5, 0, 0.5],
             [1, -2, 1],
         ],
@@ -54,7 +56,7 @@ class Delta(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("window", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -92,9 +94,9 @@ class Delta(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = Delta._precompute(
+        tensors = Delta._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return Delta._forward(x, *tensors)
 
     @staticmethod
@@ -102,13 +104,13 @@ class Delta(BaseFunctionalModule):
         return False
 
     @staticmethod
-    def _check(seed: ArrayLike[ArrayLike[float]] | ArrayLike[int]) -> None:
+    def _check(seed: ArrayLike[float] | ArrayLike[int]) -> None:
         if not isinstance(seed, (tuple, list)):
             raise ValueError("seed must be tuple or list.")
 
     @staticmethod
     def _precompute(
-        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
+        seed: ArrayLike[float] | ArrayLike[int],
         static_out: bool,
         device: torch.device | None,
         dtype: torch.dtype | None,
@@ -116,16 +118,18 @@ class Delta(BaseFunctionalModule):
         Delta._check(seed)
 
         if isinstance(seed[0], (tuple, list)):
+            seed_2d = cast(list[list[float]], seed)
+
             # Make window from delta coefficients.
             if static_out:
-                seed = [[1]] + list(seed)
+                seed_2d = [[1.0]] + list(seed_2d)
 
-            max_len = max([len(coefficients) for coefficients in seed])
+            max_len = max([len(coefficients) for coefficients in seed_2d])
             if max_len % 2 == 0:
                 max_len += 1
 
             window = []
-            for coefficients in seed:
+            for coefficients in seed_2d:
                 diff = max_len - len(coefficients)
                 if diff % 2 == 0:
                     left_pad = diff // 2
@@ -140,12 +144,14 @@ class Delta(BaseFunctionalModule):
                 )
                 window.append(w)
         else:
+            seed_1d = cast(list[int], seed)
+
             # Make window from width of regression coefficients.
-            if min(seed) <= 0:
+            if min(seed_1d) <= 0:
                 raise ValueError(
                     "The width of regression coefficients must be positive."
                 )
-            max_len = max(seed) * 2 + 1
+            max_len = max(seed_1d) * 2 + 1
 
             window = []
             if static_out:
@@ -155,15 +161,15 @@ class Delta(BaseFunctionalModule):
 
             # Compute 1st order coefficients.
             if True:
-                n = seed[0]
+                n = seed_1d[0]
                 z = 1 / (n * (n + 1) * (2 * n + 1) / 3)
                 j = torch.arange(-n, n + 1, device=device, dtype=torch.double)
                 pad_width = (max_len - (n * 2 + 1)) // 2
                 window.append(F.pad(j * z, (pad_width, pad_width)))
 
             # Compute 2nd order coefficients.
-            if 2 <= len(seed):
-                n = seed[1]
+            if 2 <= len(seed_1d):
+                n = seed_1d[1]
                 a0 = 2 * n + 1
                 a1 = a0 * n * (n + 1) / 3
                 a2 = a1 * (3 * n * n + 3 * n - 1) / 5
@@ -172,11 +178,11 @@ class Delta(BaseFunctionalModule):
                 pad_width = (max_len - (n * 2 + 1)) // 2
                 window.append(F.pad((a0 * j * j - a1) * z, (pad_width, pad_width)))
 
-            if 3 <= len(seed):
+            if 3 <= len(seed_1d):
                 raise ValueError("3rd order regression is not supported.")
 
         window = torch.stack(window)  # (H, W)
-        return None, None, (to(window, dtype=dtype),)
+        return Precomputed(tensors=(to(window, dtype=dtype),))
 
     @staticmethod
     def _forward(x: torch.Tensor, window: torch.Tensor) -> torch.Tensor:

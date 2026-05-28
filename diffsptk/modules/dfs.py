@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -62,9 +64,9 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(
+        tensors = self._precompute(
             **filter_values(locals(), drop_keys=["learnable"])
-        )
+        ).tensors
         if learnable and b is not None:
             self.b = nn.Parameter(tensors[0])
         else:
@@ -97,13 +99,13 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 1.0300, 1.0600, 1.0900])
 
         """
-        return self._forward(x, **self._buffers, **self._parameters)
+        return self._forward(x, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = InfiniteImpulseResponseDigitalFilter._precompute(
+        tensors = InfiniteImpulseResponseDigitalFilter._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return InfiniteImpulseResponseDigitalFilter._forward(x, *tensors)
 
     @staticmethod
@@ -125,37 +127,41 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
     ) -> Precomputed:
         InfiniteImpulseResponseDigitalFilter._check(ir_length)
 
-        fir = a is None
+        b_ary: ArrayLike = [1] if b is None else b
+        a_ary: ArrayLike = [1] if a is None else a
+        b_coef = (
+            cast(torch.Tensor, b_ary)
+            if torch.is_tensor(b_ary)
+            else to(np.asarray(b_ary), device=device, dtype=dtype)
+        )
+        a_coef = (
+            cast(torch.Tensor, a_ary)
+            if torch.is_tensor(a_ary)
+            else to(np.asarray(a_ary), device=device, dtype=dtype)
+        )
 
-        if b is None:
-            b = [1]
         if a is None:
-            a = [1]
-        if not torch.is_tensor(b):
-            b = to(np.asarray(b), device=device, dtype=dtype)
-        if not torch.is_tensor(a):
-            a = to(np.asarray(a), device=device, dtype=dtype)
-
-        if fir:
-            b = b.view(1, 1, -1).flip(-1)
-            a = torch.empty(0)
+            b_coef = b_coef.view(1, 1, -1).flip(-1)
+            a_coef = torch.empty(0)
         elif ir_length is not None:
             # Pre-compute the truncated impulse response.
-            d = torch.zeros(max(len(b), len(a)), device=device, dtype=torch.double)
+            d = torch.zeros(
+                max(len(b_coef), len(a_coef)), device=device, dtype=torch.double
+            )
             h = torch.empty(ir_length, device=device, dtype=torch.double)
-            a0 = a[0]
-            a1 = a[1:]
+            a0 = a_coef[0]
+            a1 = a_coef[1:]
             for t in range(ir_length):
                 x = a0 if t == 0 else 0
                 y = x - torch.sum(d[: len(a1)] * a1)
                 d = torch.roll(d, 1)
                 d[0] = y
-                y = torch.sum(d[: len(b)] * b)
+                y = torch.sum(d[: len(b_coef)] * b_coef)
                 h[t] = y
             h = h.view(1, 1, -1).flip(-1)
-            b = to(h, dtype=dtype)
-            a = torch.empty(0)
-        return None, None, (b, a)
+            b_coef = to(h, dtype=dtype)
+            a_coef = torch.empty(0)
+        return Precomputed(tensors=(b_coef, a_coef))
 
     @staticmethod
     def _forward(x: torch.Tensor, b: torch.Tensor, a: torch.Tensor) -> torch.Tensor:

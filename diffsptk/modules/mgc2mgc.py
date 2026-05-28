@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 import torch.nn.functional as F
@@ -100,8 +101,12 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.seq = nn.Sequential(*layers[0])
+        self.seq = nn.Sequential(
+            *cast(
+                list[nn.Module],
+                list(self._precompute(**filter_values(locals())).layers),
+            )
+        )
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-generalized cepstrum to mel-generalized cepstrum.
@@ -130,12 +135,12 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
+        _p = MelGeneralizedCepstrumToMelGeneralizedCepstrum._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
 
         def seq(x):
-            for layer in layers[0]:
+            for layer in _p.layers:
                 x = layer(x)
             return x
 
@@ -290,7 +295,7 @@ class MelGeneralizedCepstrumToMelGeneralizedCepstrum(BaseFunctionalModule):
                 choice(module, ZerothGammaMultiplication, [out_order], [out_gamma])
             )
 
-        return None, (seq,), None
+        return Precomputed(layers=tuple(seq))
 
     @staticmethod
     def _forward(mc: torch.Tensor, seq: Callable) -> torch.Tensor:

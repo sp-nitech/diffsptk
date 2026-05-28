@@ -57,7 +57,9 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -84,15 +86,15 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, *self.values, **self._buffers)
+        return self._forward(c, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
+        _p = CepstrumToNegativeDerivativeOfPhaseSpectrum._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
         )
         return CepstrumToNegativeDerivativeOfPhaseSpectrum._forward(
-            c, *values, *tensors
+            c, *_p.values, *_p.tensors
         )
 
     @staticmethod
@@ -120,7 +122,7 @@ class CepstrumToNegativeDerivativeOfPhaseSpectrum(BaseFunctionalModule):
         ramp = torch.arange(cep_order + 1, device=device, dtype=torch.double) * 0.5
         if cep_order == half_fft_length:
             ramp[-1] *= 2
-        return (fft_length,), None, (to(ramp, dtype=dtype),)
+        return Precomputed(values=(fft_length,), tensors=(to(ramp, dtype=dtype),))
 
     @staticmethod
     def _forward(c: torch.Tensor, fft_length: int, ramp: torch.Tensor) -> torch.Tensor:

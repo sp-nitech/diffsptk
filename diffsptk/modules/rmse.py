@@ -35,7 +35,7 @@ class RootMeanSquareError(BaseFunctionalModule):
     def __init__(self, reduction: str = "mean") -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Calculate RMSE.
@@ -69,7 +69,7 @@ class RootMeanSquareError(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = RootMeanSquareError._precompute(*args, **kwargs)
+        values = RootMeanSquareError._precompute(*args, **kwargs).values
         return RootMeanSquareError._forward(x, y, *values)
 
     @staticmethod
@@ -83,7 +83,7 @@ class RootMeanSquareError(BaseFunctionalModule):
     @staticmethod
     def _precompute(reduction: str) -> Precomputed:
         RootMeanSquareError._check()
-        return (reduction,)
+        return Precomputed(values=(reduction,))
 
     @staticmethod
     def _forward(x: torch.Tensor, y: torch.Tensor, reduction: str) -> torch.Tensor:

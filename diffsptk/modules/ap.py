@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import math
+from typing import cast
 
 import numpy as np
 import torch
@@ -360,8 +361,8 @@ class AperiodicityExtractionByTANDEM(nn.Module):
             ap = torch.exp(y)
         return ap
 
-    def _qmf_high(self, dtype: np.dtype = np.float64) -> np.ndarray:
-        hHP = np.zeros(41, dtype=dtype)
+    def _qmf_high(self) -> np.ndarray:
+        hHP = np.zeros(41, dtype=np.float64)
         hHP[0] = +0.00041447996898231424
         hHP[1] = +0.00078125051417292477
         hHP[2] = -0.0010917236836275842
@@ -386,8 +387,8 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         hHP[21:] = hHP[19::-1]
         return hHP
 
-    def _qmf_low(self, dtype: np.dtype = np.float64) -> np.ndarray:
-        hLP = np.zeros(37, dtype=dtype)
+    def _qmf_low(self) -> np.ndarray:
+        hLP = np.zeros(37, dtype=np.float64)
         hLP[0] = -0.00065488170077483048
         hLP[1] = +0.00007561994958159384
         hLP[2] = +0.0020408456937895227
@@ -646,7 +647,6 @@ class AperiodicityExtractionByD4C(nn.Module):
         aperiodicity = 10 ** (y / 20)
 
         if 0 < self.threshold:
-            aperiodicity = torch.where(
-                aperiodicity0 <= self.threshold, 1 - eps, aperiodicity
-            )
+            condition = cast(torch.Tensor, aperiodicity0 <= self.threshold)
+            aperiodicity = torch.where(condition, 1 - eps, aperiodicity)
         return aperiodicity

@@ -15,8 +15,8 @@
 # ------------------------------------------------------------------------ #
 
 from abc import ABC, abstractmethod
+from typing import Any
 
-import torch
 from torch import nn
 
 from ..typing import Precomputed
@@ -29,7 +29,7 @@ class BaseNonFunctionalModule(ABC, nn.Module):
 class BaseFunctionalModule(ABC, nn.Module):
     @staticmethod
     @abstractmethod
-    def _func(*args, **kwargs) -> torch.Tensor:
+    def _func(*args, **kwargs) -> Any:
         raise NotImplementedError
 
     @staticmethod
@@ -49,11 +49,11 @@ class BaseFunctionalModule(ABC, nn.Module):
 
     @staticmethod
     @abstractmethod
-    def _forward(*args, **kwargs) -> torch.Tensor:
+    def _forward(*args, **kwargs) -> Any:
         raise NotImplementedError
 
 
 class BaseLearnerModule(ABC, nn.Module):
     @abstractmethod
-    def transform(self, *args, **kwargs) -> torch.Tensor:
+    def transform(self, *args, **kwargs) -> Any:
         raise NotImplementedError

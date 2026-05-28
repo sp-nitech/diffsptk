@@ -56,7 +56,7 @@ class Frame(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply framing to the given waveform.
@@ -89,7 +89,7 @@ class Frame(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Frame._precompute(*args, **kwargs)
+        values = Frame._precompute(*args, **kwargs).values
         return Frame._forward(x, *values)
 
     @staticmethod
@@ -112,12 +112,14 @@ class Frame(BaseFunctionalModule):
         mode: str = "constant",
     ) -> Precomputed:
         Frame._check(frame_length, frame_period)
-        return (
-            frame_length,
-            frame_period,
-            center,
-            zmean,
-            mode,
+        return Precomputed(
+            values=(
+                frame_length,
+                frame_period,
+                center,
+                zmean,
+                mode,
+            )
         )
 
     @staticmethod

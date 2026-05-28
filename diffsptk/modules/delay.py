@@ -42,7 +42,7 @@ class Delay(BaseFunctionalModule):
     def __init__(self, start: int, keeplen: bool = False, dim: int = -1) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Delay the input signal.
@@ -75,7 +75,7 @@ class Delay(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Delay._precompute(*args, **kwargs)
+        values = Delay._precompute(*args, **kwargs).values
         return Delay._forward(x, *values)
 
     @staticmethod
@@ -89,7 +89,7 @@ class Delay(BaseFunctionalModule):
     @staticmethod
     def _precompute(start: int, keeplen: bool, dim: int) -> Precomputed:
         Delay._check()
-        return start, keeplen, dim
+        return Precomputed(values=(start, keeplen, dim))
 
     @staticmethod
     def _forward(x: torch.Tensor, start: int, keeplen: bool, dim: int) -> torch.Tensor:

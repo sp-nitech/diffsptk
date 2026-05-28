@@ -45,7 +45,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
 
         self.values = LinearPredictiveCoefficientsToParcorCoefficients._precompute(
             **filter_values(locals())
-        )
+        ).values
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert LPC to PARCOR.
@@ -79,7 +79,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LinearPredictiveCoefficientsToParcorCoefficients._precompute(
             a.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return LinearPredictiveCoefficientsToParcorCoefficients._forward(a, *values)
 
     @staticmethod
@@ -100,7 +100,7 @@ class LinearPredictiveCoefficientsToParcorCoefficients(BaseFunctionalModule):
         lpc_order: int, gamma: float = 1, c: int | None = None
     ) -> Precomputed:
         LinearPredictiveCoefficientsToParcorCoefficients._check(lpc_order, gamma, c)
-        return (get_gamma(gamma, c),)
+        return Precomputed(values=(get_gamma(gamma, c),))
 
     @staticmethod
     def _forward(a: torch.Tensor, gamma: float) -> torch.Tensor:

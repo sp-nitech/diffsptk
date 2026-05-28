@@ -378,7 +378,7 @@ class PitchExtractionByFCNF0(PitchExtractionInterface):
     def calc_prob(self, x: torch.Tensor) -> torch.Tensor:
         return torch.softmax(self.forward(x), dim=-1)
 
-    def calc_embed(self, x: torch.Tensor) -> None:
+    def calc_embed(self, x: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError
 
     def calc_pitch(self, x: torch.Tensor) -> torch.Tensor:

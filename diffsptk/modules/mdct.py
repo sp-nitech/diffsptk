@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 import torch.nn.functional as F
@@ -63,8 +64,9 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute modified discrete cosine transform.
@@ -95,8 +97,8 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, layers, _ = ModifiedDiscreteCosineTransform._precompute(*args, **kwargs)
-        return ModifiedDiscreteCosineTransform._forward(x, *values, *layers)
+        _p = ModifiedDiscreteCosineTransform._precompute(*args, **kwargs)
+        return ModifiedDiscreteCosineTransform._forward(x, *_p.values, *_p.layers)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -124,9 +126,11 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
         frame_period = frame_length // 2
 
         if learnable is True:
-            learnable = LEARNABLES
+            _learnable = LEARNABLES
         elif learnable is False:
-            learnable = ()
+            _learnable = ()
+        else:
+            _learnable = learnable
 
         frame = get_layer(
             module,
@@ -145,7 +149,7 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 window=window,
                 norm="none",
                 symmetric=True,
-                learnable="window" in learnable,
+                learnable="window" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
@@ -157,12 +161,12 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 length=frame_length,
                 window=window,
                 transform=transform,
-                learnable="basis" in learnable,
+                learnable="basis" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
         )
-        return (frame_period,), (frame, window_, mdt), None
+        return Precomputed(values=(frame_period,), layers=(frame, window_, mdt))
 
     @staticmethod
     def _forward(
@@ -215,9 +219,9 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length
 
-        _, _, tensors = self._precompute(
+        tensors = self._precompute(
             **filter_values(locals(), drop_keys=["learnable"])
-        )
+        ).tensors
         if learnable:
             self.W = nn.Parameter(tensors[0])
         else:
@@ -238,13 +242,13 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers, **self._parameters)
+        return self._forward(x, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = ModifiedDiscreteTransform._precompute(
+        tensors = ModifiedDiscreteTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return ModifiedDiscreteTransform._forward(x, *tensors)
 
     @staticmethod
@@ -284,7 +288,7 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
             raise ValueError(
                 f"transform must be either 'cosine' or 'sine'. Got '{transform}'."
             )
-        return None, None, (to(W, dtype=dtype),)
+        return Precomputed(tensors=(to(W, dtype=dtype),))
 
     @staticmethod
     def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:

@@ -16,6 +16,7 @@
 
 import inspect
 import math
+from typing import cast
 
 import torch
 from torch import nn
@@ -83,8 +84,9 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-cepstrum to spectrum.
@@ -120,10 +122,10 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, layers, _ = MelGeneralizedCepstrumToSpectrum._precompute(
+        _p = MelGeneralizedCepstrumToSpectrum._precompute(
             mc.size(-1) - 1, *args, **kwargs, dtype=mc.dtype, device=mc.device
         )
-        return MelGeneralizedCepstrumToSpectrum._forward(mc, *values, *layers)
+        return MelGeneralizedCepstrumToSpectrum._forward(mc, *_p.values, *_p.layers)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -186,7 +188,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return (formatter,), (mgc2c,), None
+        return Precomputed(values=(formatter,), layers=(mgc2c,))
 
     @staticmethod
     def _forward(

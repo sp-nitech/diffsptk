@@ -79,7 +79,9 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         self.in_dim = lsp_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("cos_omega", tensors[0])
         self.register_buffer("p_bias", tensors[1])
         self.register_buffer("q_bias", tensors[2])
@@ -112,14 +114,14 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")
-        return self._forward(w, *self.values, **self._buffers)
+        return self._forward(w, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = LineSpectralPairsToSpectrum._precompute(
+        _p = LineSpectralPairsToSpectrum._precompute(
             w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
         )
-        return LineSpectralPairsToSpectrum._forward(w, *values, *tensors)
+        return LineSpectralPairsToSpectrum._forward(w, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -184,7 +186,9 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         p_bias = to(p, dtype=dtype)
         q_bias = to(q, dtype=dtype)
 
-        return (log_gain, formatter, c1, c2), None, (cos_omega, p_bias, q_bias)
+        return Precomputed(
+            values=(log_gain, formatter, c1, c2), tensors=(cos_omega, p_bias, q_bias)
+        )
 
     @staticmethod
     def _forward(

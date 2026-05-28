@@ -37,7 +37,7 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, g: torch.Tensor) -> torch.Tensor:
         """Convert LAR to PARCOR.
@@ -69,7 +69,7 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LogAreaRatioToParcorCoefficients._precompute(
             x.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return LogAreaRatioToParcorCoefficients._forward(x, *values)
 
     @staticmethod
@@ -84,7 +84,7 @@ class LogAreaRatioToParcorCoefficients(BaseFunctionalModule):
     @staticmethod
     def _precompute(par_order: int) -> Precomputed:
         LogAreaRatioToParcorCoefficients._check(par_order)
-        return (0.5,)
+        return Precomputed(values=(0.5,))
 
     @staticmethod
     def _forward(g: torch.Tensor, c: float) -> torch.Tensor:

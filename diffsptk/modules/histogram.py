@@ -70,7 +70,9 @@ class Histogram(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("centers", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -100,14 +102,12 @@ class Histogram(BaseFunctionalModule):
         tensor([3., 2., 2., 3.])
 
         """
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = Histogram._precompute(
-            *args, **kwargs, device=x.device, dtype=x.dtype
-        )
-        return Histogram._forward(x, *values, *tensors)
+        _p = Histogram._precompute(*args, **kwargs, device=x.device, dtype=x.dtype)
+        return Histogram._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -138,7 +138,7 @@ class Histogram(BaseFunctionalModule):
         width = (upper_bound - lower_bound) / n_bin
         bias = lower_bound + 0.5 * width
         centers = torch.arange(n_bin, device=device, dtype=torch.double) * width + bias
-        return (norm, softness), None, (to(centers, dtype=dtype),)
+        return Precomputed(values=(norm, softness), tensors=(to(centers, dtype=dtype),))
 
     @staticmethod
     def _forward(

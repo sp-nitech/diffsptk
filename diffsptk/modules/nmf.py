@@ -14,7 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any
+
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.private import get_generator, get_logger, to_dataloader
@@ -115,11 +118,13 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
         U = torch.rand(n_data, n_comp, device=device, dtype=dtype, generator=generator)
         if act_norm:
             U = U / U.sum(dim=1, keepdim=True)
+        self.U: torch.Tensor  # for type checker
         self.register_buffer("U", U)  # (T, K)
 
         H = torch.rand(
             n_comp, order + 1, device=device, dtype=dtype, generator=generator
         )
+        self.H: torch.Tensor  # for type checker
         self.register_buffer("H", H)  # (K, M+1)
 
         if beta < 1:
@@ -130,9 +135,7 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
             phi = 1
         self.phi = phi
 
-    def warmup(
-        self, x: torch.Tensor | torch.utils.data.DataLoader, **lbg_params
-    ) -> None:
+    def warmup(self, x: torch.Tensor | DataLoader, **lbg_params) -> None:
         """Initialize the dictionary matrix by K-means clustering.
 
         Parameters
@@ -156,7 +159,7 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
 
     @torch.inference_mode()
     def forward(
-        self, x: torch.Tensor | torch.utils.data.DataLoader
+        self, x: torch.Tensor | DataLoader
     ) -> tuple[tuple[torch.Tensor, torch.Tensor], torch.Tensor]:
         """Estimate the coefficient matrix and dictionary matrix.
 
@@ -233,7 +236,7 @@ class NonnegativeMatrixFactorization(BaseLearnerModule):
             self.H *= (H_numer / H_denom) ** self.phi
 
             # Calculate divergence.
-            divergence = 0
+            divergence: Any = 0
             t1 = 0
             for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
                 t2 = t1 + len(batch_x)

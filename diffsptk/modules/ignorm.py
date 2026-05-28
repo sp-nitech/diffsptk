@@ -50,7 +50,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum inverse gain normalization.
@@ -83,7 +83,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = GeneralizedCepstrumInverseGainNormalization._precompute(
             y.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return GeneralizedCepstrumInverseGainNormalization._forward(y, *values)
 
     @staticmethod

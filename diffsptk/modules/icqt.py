@@ -106,7 +106,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
         sample_rate: int,
         *,
         f_min: float = 32.7,
-        n_bin: float = 84,
+        n_bin: int = 84,
         n_bin_per_octave: int = 12,
         tuning: float = 0,
         filter_scale: float = 1,
@@ -155,7 +155,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
         self.register_buffer("cqt_scale", to(cqt_scale, device=device, dtype=dtype))
 
         fp = [frame_period]
-        sr = [sample_rate]
+        sr = [sample_rate * 1.0]
         for i in range(n_octave - 1):
             if fp[i] % 2 == 0:
                 fp.append(fp[i] // 2)
@@ -188,7 +188,9 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
                 alpha=alpha[sl],
             )
 
-            fft_basis = np.asarray(fft_basis.conj().todense())
+            fft_basis = np.asarray(
+                fft_basis.conj().todense()  # type: ignore[no-untyped-call]
+            )
             freq_power = np.reciprocal(np.sum(np.abs(fft_basis) ** 2, axis=1))
             freq_power *= fft_length / lengths[sl]
             fft_basis *= freq_power[:, None]
@@ -212,7 +214,7 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
             resamplers.append(
                 torchaudio.transforms.Resample(
                     orig_freq=1,
-                    new_freq=sample_rate // sr[i],  # must be integer
+                    new_freq=int(sample_rate // sr[i]),  # must be integer
                     dtype=torch.get_default_dtype() if dtype is None else dtype,
                     **kwargs,
                 ).to(device)

@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import torch
+from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from ..utils.private import outer, to_dataloader
@@ -107,7 +108,7 @@ class PrincipalComponentAnalysis(BaseLearnerModule):
         self.register_buffer("m", torch.zeros(order + 1, **params))
 
     def forward(
-        self, x: torch.Tensor | torch.utils.data.DataLoader
+        self, x: torch.Tensor | DataLoader
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """Perform principal component analysis.
 
