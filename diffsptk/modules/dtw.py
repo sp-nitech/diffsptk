@@ -39,7 +39,7 @@ def _soft_dtw_core(
 
     if return_indices:
         P = torch.full((B, T1, T2, 2), -1, device=D.device, dtype=torch.long)
-        P_ = P.clone() if has_two_step_transition else P.new_empty(0)
+        P_ = P.clone() if has_two_step_transition else torch.empty(0)
 
     # Forward computation.
     for i in range(T1):

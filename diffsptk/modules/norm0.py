@@ -71,7 +71,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         AllPoleToAllZeroDigitalFilterCoefficients._precompute(
             a.size(-1) - 1, *args, **kwargs
-        )  # just for validation
+        )
         return AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
 
     @staticmethod
