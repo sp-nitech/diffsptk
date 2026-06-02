@@ -24,6 +24,7 @@ import torch
 import torch.nn.functional as F
 import torchaudio
 from torch import nn
+from torch.utils.data import DataLoader, TensorDataset
 
 from ..modules.base import BaseFunctionalModule
 
@@ -42,7 +43,7 @@ class Lambda(nn.Module):
 
 
 def get_layer(
-    is_module: bool, module: BaseFunctionalModule, params: dict[str, Any]
+    is_module: bool, module: type[BaseFunctionalModule], params: dict[str, Any]
 ) -> Callable:
     if is_module:
         return module(**params)
@@ -59,7 +60,9 @@ def get_layer(
     return layer
 
 
-def filter_values(dictionary: dict[str, Any], drop_keys: list[str] = []) -> list[Any]:
+def filter_values(
+    dictionary: dict[str, Any], drop_keys: list[str] = []
+) -> dict[str, Any]:
     for key in drop_keys:
         if key in dictionary:
             dictionary.pop(key)
@@ -83,7 +86,7 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def get_generator(
-    seed: int | None = None, device: torch.device = "cpu"
+    seed: int | None = None, device: torch.device | None = None
 ) -> torch.Generator:
     generator = torch.Generator(device)
     if seed is not None:
@@ -133,7 +136,7 @@ def to(
     device: torch.device | None = None,
     dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
-    if (torch.is_tensor(x) and torch.is_complex(x)) or (
+    if (isinstance(x, torch.Tensor) and torch.is_complex(x)) or (
         isinstance(x, np.ndarray) and np.iscomplexobj(x)
     ):
         is_complex = True
@@ -162,18 +165,18 @@ def to_3d(x: torch.Tensor) -> torch.Tensor:
 
 
 def to_dataloader(
-    x: torch.Tensor, batch_size: int | None = None
-) -> torch.utils.data.DataLoader:
-    if torch.is_tensor(x):
-        dataset = torch.utils.data.TensorDataset(x)
-        data_loader = torch.utils.data.DataLoader(
+    x: torch.Tensor | DataLoader, batch_size: int | None = None
+) -> DataLoader:
+    if isinstance(x, torch.Tensor):
+        dataset = TensorDataset(x)
+        data_loader = DataLoader(
             dataset,
             batch_size=len(x) if batch_size is None else batch_size,
             shuffle=False,
             drop_last=False,
         )
         return data_loader
-    elif isinstance(x, torch.utils.data.DataLoader):
+    elif isinstance(x, DataLoader):
         return x
     raise ValueError(f"Unsupported input type: {type(x)}.")
 
@@ -340,7 +343,7 @@ def plateau(
     middle: float,
     last: float | None = None,
     device: torch.device | None = None,
-    dtype: torch.dtype = None,
+    dtype: torch.dtype | None = None,
 ) -> torch.Tensor:
     x = torch.full((length,), middle, device=device, dtype=dtype)
     x[0] = first

@@ -44,7 +44,7 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Convert cepstrum to autocorrelation.
@@ -75,7 +75,9 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = CepstrumToAutocorrelation._precompute(c.size(-1) - 1, *args, **kwargs)
+        values = CepstrumToAutocorrelation._precompute(
+            c.size(-1) - 1, *args, **kwargs
+        ).values
         return CepstrumToAutocorrelation._forward(c, *values)
 
     @staticmethod
@@ -94,7 +96,7 @@ class CepstrumToAutocorrelation(BaseFunctionalModule):
     @staticmethod
     def _precompute(cep_order: int, acr_order: int, n_fft: int) -> Precomputed:
         CepstrumToAutocorrelation._check(cep_order, acr_order, n_fft)
-        return (acr_order, n_fft)
+        return Precomputed(values=(acr_order, n_fft))
 
     @staticmethod
     def _forward(c: torch.Tensor, acr_order: int, n_fft: int) -> torch.Tensor:

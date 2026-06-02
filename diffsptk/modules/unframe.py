@@ -76,13 +76,12 @@ class Unframe(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        self.values, _, tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        )
+        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
+        self.values = _p.values
         if learnable:
-            self.window = nn.Parameter(tensors[0])
+            self.window = nn.Parameter(_p.tensors[0])
         else:
-            self.register_buffer("window", tensors[0])
+            self.register_buffer("window", _p.tensors[0])
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Revert the framed waveform to the unframed waveform.
@@ -120,15 +119,19 @@ class Unframe(BaseFunctionalModule):
         """
         check_size(y.size(-1), self.in_dim, "length of waveform")
         return self._forward(
-            y, out_length, *self.values, **self._buffers, **self._parameters
+            y,
+            out_length,
+            *self.values,
+            **self._buffers,
+            **self._parameters,  # type: ignore[arg-type]
         )
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = Unframe._precompute(
+        _p = Unframe._precompute(
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
-        return Unframe._forward(y, out_length, *values, *tensors)
+        return Unframe._forward(y, out_length, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -153,10 +156,16 @@ class Unframe(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         Unframe._check(frame_length, frame_period)
-        window_ = Window._precompute(
-            frame_length, None, window, norm, symmetric, device=device, dtype=dtype
-        )[-1][0].view(1, -1, 1)
-        return (frame_length, frame_period, center), None, (window_,)
+        window_ = (
+            Window._precompute(
+                frame_length, None, window, norm, symmetric, device=device, dtype=dtype
+            )
+            .tensors[0]
+            .view(1, -1, 1)
+        )
+        return Precomputed(
+            values=(frame_length, frame_period, center), tensors=(window_,)
+        )
 
     @staticmethod
     def _forward(

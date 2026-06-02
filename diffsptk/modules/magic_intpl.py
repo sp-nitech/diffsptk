@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 
 from ..typing import Precomputed
@@ -35,7 +37,7 @@ class MagicNumberInterpolation(BaseFunctionalModule):
     def __init__(self, magic_number: float = UNVOICED_SYMBOL) -> None:
         super().__init__()
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("magic_number", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -63,13 +65,13 @@ class MagicNumberInterpolation(BaseFunctionalModule):
         tensor([1., 1., 2., 3., 4., 4.])
 
         """
-        return self._forward(x, **self._buffers)
+        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = MagicNumberInterpolation._precompute(
+        tensors = MagicNumberInterpolation._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return MagicNumberInterpolation._forward(x, *tensors)
 
     @staticmethod
@@ -87,12 +89,12 @@ class MagicNumberInterpolation(BaseFunctionalModule):
         dtype: torch.dtype | None = None,
     ) -> Precomputed:
         MagicNumberInterpolation._check()
-        magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
-        return None, None, (magic_number,)
+        _magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
+        return Precomputed(tensors=(_magic_number,))
 
     @staticmethod
     def _forward(x: torch.Tensor, magic_number: torch.Tensor) -> torch.Tensor:
-        return MagicNumberInterpolationImpl.apply(x, magic_number)
+        return cast(torch.Tensor, MagicNumberInterpolationImpl.apply(x, magic_number))
 
 
 class MagicNumberInterpolationImpl(torch.autograd.Function):
@@ -171,6 +173,6 @@ class MagicNumberInterpolationImpl(torch.autograd.Function):
         return y
 
     @staticmethod
-    def backward(ctx, grad_output):
+    def backward(ctx, *grad):
         x, magic_number = ctx.saved_tensors
-        return grad_output * (x != magic_number), None
+        return grad[0] * (x != magic_number), None

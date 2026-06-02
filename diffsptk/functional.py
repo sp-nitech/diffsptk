@@ -333,7 +333,7 @@ def delay(x: Tensor, start: int = 0, keeplen: bool = False, dim: int = -1) -> Te
 
 def delta(
     x: Tensor,
-    seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [[-0.5, 0, 0.5]],
+    seed: ArrayLike[float] | ArrayLike[int] = [[-0.5, 0, 0.5]],
     static_out: bool = True,
 ) -> Tensor:
     """Compute the delta components.
@@ -2313,7 +2313,7 @@ def mgc2sp(
 
 def mlpg(
     u: Tensor,
-    seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [[-0.5, 0, 0.5], [1, -2, 1]],
+    seed: ArrayLike[float] | ArrayLike[int] = [[-0.5, 0, 0.5], [1, -2, 1]],
 ) -> Tensor:
     """Perform MLPG given the mean vectors with delta components.
 

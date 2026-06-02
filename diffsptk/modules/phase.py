@@ -38,7 +38,7 @@ class Phase(BaseFunctionalModule):
     def __init__(self, fft_length: int, unwrap: bool = False) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -71,8 +71,10 @@ class Phase(BaseFunctionalModule):
         return self._forward(b, a, *self.values)
 
     @staticmethod
-    def _func(b: torch.Tensor, a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Phase._precompute(*args, **kwargs)
+    def _func(
+        b: torch.Tensor | None, a: torch.Tensor | None, *args, **kwargs
+    ) -> torch.Tensor:
+        values = Phase._precompute(*args, **kwargs).values
         return Phase._forward(b, a, *values)
 
     @staticmethod
@@ -87,7 +89,7 @@ class Phase(BaseFunctionalModule):
     @staticmethod
     def _precompute(fft_length: int, unwrap: bool) -> Precomputed:
         Phase._check(fft_length)
-        return (fft_length, unwrap)
+        return Precomputed(values=(fft_length, unwrap))
 
     @staticmethod
     def _forward(

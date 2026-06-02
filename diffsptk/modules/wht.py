@@ -58,7 +58,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         self.in_dim = wht_length
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("W", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -88,13 +88,13 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers)
+        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = WalshHadamardTransform._precompute(
+        tensors = WalshHadamardTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).tensors
         return WalshHadamardTransform._forward(x, *tensors)
 
     @staticmethod
@@ -135,7 +135,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
             W = W[np.argsort(sign_changes)][permutation]
         else:
             raise ValueError(f"wht_type {wht_type} is not supported.")
-        return None, None, (to(W * z, device=device, dtype=dtype),)
+        return Precomputed(tensors=(to(W * z, device=device, dtype=dtype),))
 
     @staticmethod
     def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:

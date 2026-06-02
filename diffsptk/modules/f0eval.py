@@ -43,7 +43,7 @@ class F0Evaluation(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Calculate F0 metric.
@@ -76,7 +76,7 @@ class F0Evaluation(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = F0Evaluation._precompute(*args, **kwargs)
+        values = F0Evaluation._precompute(*args, **kwargs).values
         return F0Evaluation._forward(x, y, *values)
 
     @staticmethod
@@ -90,7 +90,7 @@ class F0Evaluation(BaseFunctionalModule):
     @staticmethod
     def _precompute(reduction: str, out_format: str) -> Precomputed:
         F0Evaluation._check()
-        return (reduction, out_format)
+        return Precomputed(values=(reduction, out_format))
 
     @staticmethod
     def _forward(

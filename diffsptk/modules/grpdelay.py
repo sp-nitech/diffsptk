@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 import torch.nn.functional as F
 
@@ -55,7 +57,9 @@ class GroupDelay(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("ramp", tensors[0])
 
     def forward(
@@ -86,17 +90,15 @@ class GroupDelay(BaseFunctionalModule):
         tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])
 
         """
-        return self._forward(b, a, *self.values, **self._buffers)
+        return self._forward(b, a, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(
         b: torch.Tensor | None, a: torch.Tensor | None, *args, **kwargs
     ) -> torch.Tensor:
-        x = a if b is None else b
-        values, _, tensors = GroupDelay._precompute(
-            *args, **kwargs, device=x.device, dtype=x.dtype
-        )
-        return GroupDelay._forward(b, a, *values, *tensors)
+        x = cast(torch.Tensor, a if b is None else b)
+        _p = GroupDelay._precompute(*args, **kwargs, device=x.device, dtype=x.dtype)
+        return GroupDelay._forward(b, a, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -121,7 +123,7 @@ class GroupDelay(BaseFunctionalModule):
     ) -> Precomputed:
         GroupDelay._check(fft_length, alpha, gamma)
         ramp = torch.arange(fft_length, device=device, dtype=dtype)
-        return (fft_length, alpha, gamma), None, (ramp,)
+        return Precomputed(values=(fft_length, alpha, gamma), tensors=(ramp,))
 
     @staticmethod
     def _forward(
@@ -138,11 +140,11 @@ class GroupDelay(BaseFunctionalModule):
         if a is None:
             order = 0
         else:
-            a = remove_gain(a)
+            a = cast(torch.Tensor, remove_gain(a))
             order = a.size(-1) - 1
 
         if b is None:
-            c = a.flip(-1)
+            c = cast(torch.Tensor, a).flip(-1)
         elif a is None:
             c = b
         else:

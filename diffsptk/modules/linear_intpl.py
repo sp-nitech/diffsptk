@@ -38,7 +38,7 @@ class LinearInterpolation(BaseFunctionalModule):
     def __init__(self, upsampling_factor: int) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate filter coefficients.
@@ -69,7 +69,7 @@ class LinearInterpolation(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = LinearInterpolation._precompute(*args, **kwargs)
+        values = LinearInterpolation._precompute(*args, **kwargs).values
         return LinearInterpolation._forward(x, *values)
 
     @staticmethod
@@ -84,7 +84,7 @@ class LinearInterpolation(BaseFunctionalModule):
     @staticmethod
     def _precompute(upsampling_factor: int) -> Precomputed:
         LinearInterpolation._check(upsampling_factor)
-        return (upsampling_factor,)
+        return Precomputed(values=(upsampling_factor,))
 
     @staticmethod
     def _forward(x: torch.Tensor, upsampling_factor: int) -> torch.Tensor:

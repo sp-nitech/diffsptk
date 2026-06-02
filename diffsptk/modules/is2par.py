@@ -36,7 +36,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """Convert IS to PARCOR.
@@ -68,7 +68,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = InverseSineToParcorCoefficients._precompute(
             x.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return InverseSineToParcorCoefficients._forward(x, *values)
 
     @staticmethod
@@ -83,7 +83,7 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
     @staticmethod
     def _precompute(par_order: int) -> Precomputed:
         InverseSineToParcorCoefficients._check(par_order)
-        return (torch.pi / 2,)
+        return Precomputed(values=(torch.pi / 2,))
 
     @staticmethod
     def _forward(s: torch.Tensor, c: float) -> torch.Tensor:

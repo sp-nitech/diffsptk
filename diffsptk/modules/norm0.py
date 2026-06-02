@@ -37,7 +37,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert all-pole to all-zero filter coefficients vice versa.
@@ -86,7 +86,7 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
     @staticmethod
     def _precompute(filter_order: int) -> Precomputed:
         AllPoleToAllZeroDigitalFilterCoefficients._check(filter_order)
-        return (None,)
+        return Precomputed()
 
     @staticmethod
     def _forward(a: torch.Tensor) -> torch.Tensor:

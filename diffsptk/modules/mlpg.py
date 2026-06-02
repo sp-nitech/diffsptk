@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 
 from ..typing import ArrayLike, Precomputed
@@ -45,7 +47,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
     def __init__(
         self,
         size: int,
-        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int] = [
+        seed: ArrayLike[float] | ArrayLike[int] = [
             [-0.5, 0, 0.5],
             [1, -2, 1],
         ],
@@ -56,7 +58,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         self.in_length = size
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("M", tensors[0])
 
     def forward(self, u: torch.Tensor) -> torch.Tensor:
@@ -98,13 +100,13 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         """
         check_size(u.size(-2), self.in_length, "length of input")
-        return self._forward(u, **self._buffers)
+        return self._forward(u, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(u: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = MaximumLikelihoodParameterGeneration._precompute(
+        tensors = MaximumLikelihoodParameterGeneration._precompute(
             u.size(-2), *args, **kwargs, device=u.device, dtype=u.dtype
-        )
+        ).tensors
         return MaximumLikelihoodParameterGeneration._forward(u, *tensors)
 
     @staticmethod
@@ -118,18 +120,21 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
     @staticmethod
     def _precompute(
         size: int,
-        seed: ArrayLike[ArrayLike[float]] | ArrayLike[int],
+        seed: ArrayLike[float] | ArrayLike[int],
         device: torch.device | None,
         dtype: torch.dtype | None,
     ) -> Precomputed:
         MaximumLikelihoodParameterGeneration._check()
 
         # Make window.
-        window = Delta._precompute(seed, True, device=device, dtype=torch.double)[-1][0]
+        window = Delta._precompute(
+            seed, True, device=device, dtype=torch.double
+        ).tensors[0]
 
         # Compute threshold.
         if isinstance(seed[0], (tuple, list)):
-            th = [0] + [len(coefficients) // 2 for coefficients in seed]
+            seed_2d = cast(list[list[float]], seed)
+            th = [0] + [len(coefficients) // 2 for coefficients in seed_2d]
         else:
             th = [0] + list(seed)
         th = torch.tensor(th, device=device, dtype=torch.double).unsqueeze(1)
@@ -158,7 +163,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         WSW = torch.matmul(WS, W)
         WSW = torch.linalg.inv(WSW)
         M = torch.matmul(WSW, WS)  # (T, TxH)
-        return None, None, (to(M, dtype=dtype),)
+        return Precomputed(tensors=(to(M, dtype=dtype),))
 
     @staticmethod
     def _forward(mean: torch.Tensor, M: torch.Tensor) -> torch.Tensor:

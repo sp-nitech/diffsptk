@@ -53,7 +53,7 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
 
         self.in_dim = acr_order + 1
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("ramp", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -85,15 +85,13 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of autocorrelation")
-        return self._forward(c, **self._buffers)
+        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = (
-            CompositeSinusoidalModelCoefficientsToAutocorrelation._precompute(
-                c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-            )
-        )
+        tensors = CompositeSinusoidalModelCoefficientsToAutocorrelation._precompute(
+            c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
+        ).tensors
         return CompositeSinusoidalModelCoefficientsToAutocorrelation._forward(
             c, *tensors
         )
@@ -115,7 +113,7 @@ class CompositeSinusoidalModelCoefficientsToAutocorrelation(BaseFunctionalModule
     ) -> Precomputed:
         CompositeSinusoidalModelCoefficientsToAutocorrelation._check(acr_order)
         ramp = torch.arange(acr_order + 1, device=device)
-        return None, None, (to(ramp, dtype=dtype),)
+        return Precomputed(tensors=(to(ramp, dtype=dtype),))
 
     @staticmethod
     def _forward(c: torch.Tensor, ramp: torch.Tensor) -> torch.Tensor:

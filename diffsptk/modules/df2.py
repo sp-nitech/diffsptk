@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import math
+from typing import cast
 
 import torch
 from torch import nn
@@ -71,8 +72,8 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        layers = self._precompute(**filter_values(locals())).layers
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a second order digital filter to the input waveform.
@@ -149,7 +150,7 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         dfs = InfiniteImpulseResponseDigitalFilter(
             a=a, b=b, ir_length=ir_length, device=device, dtype=dtype
         )
-        return None, (dfs,), None
+        return Precomputed(layers=(dfs,))
 
     @staticmethod
     def _forward(x: torch.Tensor, dfs: Callable) -> torch.Tensor:

@@ -164,7 +164,7 @@ def interp1(
 
 
 def interp1Q(
-    x: torch.Tensor, shift: float, y: torch.Tensor, xi: torch.Tensor
+    x: float | torch.Tensor, shift: float, y: torch.Tensor, xi: torch.Tensor
 ) -> torch.Tensor:
     z = (xi - x) / shift
     xi_base = torch.clip(z.long(), min=0)
@@ -184,7 +184,7 @@ def linear_smoothing(
     one_sided_length = fft_length // 2 + 1
     rate = sample_rate / fft_length
     boundary = (width / rate).long() + 1
-    max_boundary = torch.amax(boundary)
+    max_boundary = int(torch.amax(boundary))
     mirroring_spectrum = F.pad(
         power_spectrum, (max_boundary, max_boundary), mode="reflect"
     )

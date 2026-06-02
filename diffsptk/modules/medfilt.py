@@ -47,7 +47,7 @@ class MedianFilter(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply median filtering to the input sequence.
@@ -77,7 +77,7 @@ class MedianFilter(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = MedianFilter._precompute(*args, **kwargs)
+        values = MedianFilter._precompute(*args, **kwargs).values
         return MedianFilter._forward(x, *values)
 
     @staticmethod
@@ -99,7 +99,9 @@ class MedianFilter(BaseFunctionalModule):
         else:
             padding = (filter_length // 2, (filter_length - 2) // 2)
         padding = (0, 0) + padding  # No padding for feature dimension
-        return (filter_length, padding, across_features, magic_number)
+        return Precomputed(
+            values=(filter_length, padding, across_features, magic_number)
+        )
 
     @staticmethod
     def _forward(

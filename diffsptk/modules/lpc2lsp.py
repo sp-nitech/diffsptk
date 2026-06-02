@@ -68,7 +68,9 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("kernel_p", tensors[0])
         self.register_buffer("kernel_q", tensors[1])
 
@@ -98,17 +100,15 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC")
-        return self._forward(a, *self.values, **self._buffers)
+        return self._forward(a, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = (
-            LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
-                a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
-            )
+        _p = LinearPredictiveCoefficientsToLineSpectralPairs._precompute(
+            a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
         )
         return LinearPredictiveCoefficientsToLineSpectralPairs._forward(
-            a, *values, *tensors
+            a, *_p.values, *_p.tensors
         )
 
     @staticmethod
@@ -158,7 +158,7 @@ class LinearPredictiveCoefficientsToLineSpectralPairs(BaseFunctionalModule):
             kernel_p = torch.tensor([1.0, 0.0, -1.0], **params)
             kernel_q = torch.tensor([1.0], **params)
 
-        return (log_gain, formatter), None, (kernel_p, kernel_q)
+        return Precomputed(values=(log_gain, formatter), tensors=(kernel_p, kernel_q))
 
     @staticmethod
     def _forward(

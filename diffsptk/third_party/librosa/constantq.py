@@ -14,7 +14,7 @@
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.           #
 # ------------------------------------------------------------------------ #
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 from numpy.typing import DTypeLike
@@ -73,7 +73,7 @@ def vqt_filter_fft(
     window: _WindowSpec = "hann",
     gamma: float = 0,
     dtype: DTypeLike = np.complex64,
-    alpha: Optional[float] = None,
+    alpha: Optional[Union[float, np.ndarray]] = None,
 ) -> Tuple[np.ndarray, int, np.ndarray]:
     basis, lengths = wavelet(
         freqs=freqs,

@@ -116,9 +116,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        )
+        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
+        self.values = _p.values
+        tensors = _p.tensors
         if learnable:
             self.H = nn.Parameter(tensors[0])
         else:
@@ -157,16 +157,16 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)
+        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(
         x: torch.Tensor, *args, **kwargs
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        values, _, tensors = MelFilterBankAnalysis._precompute(
+        _p = MelFilterBankAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return MelFilterBankAnalysis._forward(x, *values, *tensors)
+        return MelFilterBankAnalysis._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -242,8 +242,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         weights = np.zeros((fft_length // 2 + 1, n_channel))
 
         if erb_factor is None:
-            mel_min = hz_to_auditory(f_min, scale)
-            mel_max = hz_to_auditory(f_max, scale)
+            mel_min = hz_to_auditory(np.asarray(f_min), scale)
+            mel_max = hz_to_auditory(np.asarray(f_max), scale)
 
             lower_bin_index = max(1, int(f_min / sample_rate * fft_length + 1.5))
             upper_bin_index = min(
@@ -298,10 +298,9 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         weights = torch.from_numpy(weights)
 
-        return (
-            (floor, gamma, use_power, formatter),
-            None,
-            (to(weights, device=device, dtype=dtype),),
+        return Precomputed(
+            values=(floor, gamma, use_power, formatter),
+            tensors=(to(weights, device=device, dtype=dtype),),
         )
 
     @staticmethod

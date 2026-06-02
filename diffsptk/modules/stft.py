@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -106,8 +107,12 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        self.layers = nn.ModuleList(
+            cast(
+                list[nn.Module],
+                list(self._precompute(**filter_values(locals())).layers),
+            )
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute short-time Fourier transform.
@@ -140,9 +145,9 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = ShortTimeFourierTransform._precompute(
+        layers = ShortTimeFourierTransform._precompute(
             *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
-        )
+        ).layers
         return ShortTimeFourierTransform._forward(x, *layers)
 
     @staticmethod
@@ -179,9 +184,11 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         module = inspect.stack()[1].function != "_func"
 
         if learnable is True:
-            learnable = LEARNABLES
+            _learnable = LEARNABLES
         elif learnable is False:
-            learnable = ()
+            _learnable = ()
+        else:
+            _learnable = learnable
 
         frame = get_layer(
             module,
@@ -203,7 +210,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 window=window,
                 norm=norm,
                 symmetric=symmetric,
-                learnable="window" in learnable,
+                learnable="window" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
@@ -215,7 +222,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 dict(
                     fft_length=fft_length,
                     out_format="complex",
-                    learnable="basis" in learnable,
+                    learnable="basis" in _learnable,
                     device=device,
                     dtype=dtype,
                 ),
@@ -229,10 +236,10 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                     eps=eps,
                     relative_floor=relative_floor,
                     out_format=out_format,
-                    learnable="basis" in learnable,
+                    learnable="basis" in _learnable,
                 ),
             )
-        return None, (frame, window_, spec), None
+        return Precomputed(layers=(frame, window_, spec))
 
     @staticmethod
     def _forward(

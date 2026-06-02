@@ -162,7 +162,7 @@ class ExcitationGeneration(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Generate a simple excitation signal.
@@ -191,7 +191,7 @@ class ExcitationGeneration(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ExcitationGeneration._precompute(*args, **kwargs)
+        values = ExcitationGeneration._precompute(*args, **kwargs).values
         return ExcitationGeneration._forward(x, *values)
 
     @staticmethod
@@ -212,7 +212,9 @@ class ExcitationGeneration(BaseFunctionalModule):
         init_phase: str | float,
     ) -> Precomputed:
         ExcitationGeneration._check(frame_period)
-        return (frame_period, voiced_region, unvoiced_region, polarity, init_phase)
+        return Precomputed(
+            values=(frame_period, voiced_region, unvoiced_region, polarity, init_phase)
+        )
 
     @staticmethod
     @torch.inference_mode()

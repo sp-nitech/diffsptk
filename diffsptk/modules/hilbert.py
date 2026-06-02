@@ -49,7 +49,9 @@ class HilbertTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("h", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -78,17 +80,17 @@ class HilbertTransform(BaseFunctionalModule):
         tensor([ 1., -1., -1.,  1.])
 
         """
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, fft_length: int | None, dim: int) -> torch.Tensor:
-        values, _, tensors = HilbertTransform._precompute(
+        _p = HilbertTransform._precompute(
             x.size(dim) if fft_length is None else fft_length,
             dim,
             device=x.device,
             dtype=x.dtype,
         )
-        return HilbertTransform._forward(x, *values, *tensors)
+        return HilbertTransform._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -113,7 +115,7 @@ class HilbertTransform(BaseFunctionalModule):
         h[1:center] = 2
         if fft_length % 2 == 0:
             h[center] = 1
-        return (dim,), None, (to(h, dtype=dtype),)
+        return Precomputed(values=(dim,), tensors=(to(h, dtype=dtype),))
 
     @staticmethod
     def _forward(x: torch.Tensor, dim: int, h: torch.Tensor) -> torch.Tensor:

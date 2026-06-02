@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -59,8 +60,12 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        self.layers = nn.ModuleList(
+            cast(
+                list[nn.Module],
+                list(self._precompute(**filter_values(locals())).layers),
+            )
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum power normalization.
@@ -89,9 +94,9 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, _ = MelCepstrumPowerNormalization._precompute(
+        layers = MelCepstrumPowerNormalization._precompute(
             x.size(-1) - 1, *args, **kwargs, device=x.device, dtype=x.dtype
-        )
+        ).layers
         return MelCepstrumPowerNormalization._forward(x, *layers)
 
     @staticmethod
@@ -133,7 +138,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
                 n_fft=ir_length,
             ),
         )
-        return None, (freqt, c2acr), None
+        return Precomputed(layers=(freqt, c2acr))
 
     @staticmethod
     def _forward(x: torch.Tensor, freqt: Callable, c2acr: Callable) -> torch.Tensor:

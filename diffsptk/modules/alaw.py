@@ -40,7 +40,7 @@ class ALawCompression(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compress the input waveform using the A-law algorithm.
@@ -69,7 +69,7 @@ class ALawCompression(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ALawCompression._precompute(*args, **kwargs)
+        values = ALawCompression._precompute(*args, **kwargs).values
         return ALawCompression._forward(x, *values)
 
     @staticmethod
@@ -86,10 +86,12 @@ class ALawCompression(BaseFunctionalModule):
     @staticmethod
     def _precompute(abs_max: float, a: float) -> Precomputed:
         ALawCompression._check(abs_max, a)
-        return (
-            abs_max,
-            a,
-            abs_max / (1 + math.log(a)),
+        return Precomputed(
+            values=(
+                abs_max,
+                a,
+                abs_max / (1 + math.log(a)),
+            )
         )
 
     @staticmethod

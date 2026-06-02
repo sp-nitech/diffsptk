@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -108,9 +109,10 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, tensors = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
-        self.register_buffer("liftering_vector", tensors[0])
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self.register_buffer("liftering_vector", _p.tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the MFCC from the power spectrum.
@@ -145,11 +147,11 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
                 [ 4.5530, -3.2100,  1.3190, -0.9300]])
 
         """
-        return self._forward(x, *self.values, *self.layers, **self._buffers)
+        return self._forward(x, *self.values, *self.layers, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, layers, tensors = MelFrequencyCepstralCoefficientsAnalysis._precompute(
+        _p = MelFrequencyCepstralCoefficientsAnalysis._precompute(
             2 * x.size(-1) - 2,
             *args,
             **kwargs,
@@ -158,7 +160,7 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
             dtype=x.dtype,
         )
         return MelFrequencyCepstralCoefficientsAnalysis._forward(
-            x, *values, *layers, *tensors
+            x, *_p.values, *_p.layers, *_p.tensors
         )
 
     @staticmethod
@@ -241,7 +243,11 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
         liftering_vector = 1 + (lifter / 2) * torch.sin((torch.pi / lifter) * ramp)
         liftering_vector[0] = 2**0.5
 
-        return (formatter,), (fbank, dct), (to(liftering_vector, dtype=dtype),)
+        return Precomputed(
+            values=(formatter,),
+            layers=(fbank, dct),
+            tensors=(to(liftering_vector, dtype=dtype),),
+        )
 
     @staticmethod
     def _forward(

@@ -37,7 +37,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
 
         self.in_dim = cep_order + 2
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum inverse power normalization.
@@ -85,7 +85,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
     @staticmethod
     def _precompute(cep_order: int) -> Precomputed:
         MelCepstrumInversePowerNormalization._check(cep_order)
-        return (None,)
+        return Precomputed(values=(None,))
 
     @staticmethod
     def _forward(y: torch.Tensor) -> torch.Tensor:

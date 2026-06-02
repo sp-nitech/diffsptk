@@ -54,7 +54,7 @@ class RootsToPolynomial(BaseFunctionalModule):
 
         self.in_dim = order
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert roots to polynomial coefficients.
@@ -85,7 +85,7 @@ class RootsToPolynomial(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs)
+        values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs).values
         return RootsToPolynomial._forward(x, *values)
 
     @staticmethod
@@ -117,7 +117,7 @@ class RootsToPolynomial(BaseFunctionalModule):
         else:
             raise ValueError(f"in_format {in_format} is not supported.")
 
-        return (eps, formatter)
+        return Precomputed(values=(eps, formatter))
 
     @staticmethod
     def _forward(x: torch.Tensor, eps: float, formatter: Callable) -> torch.Tensor:

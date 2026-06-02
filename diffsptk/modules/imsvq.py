@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import cast
+
 import torch
 
 from .base import BaseNonFunctionalModule
@@ -62,11 +64,9 @@ class InverseMultiStageVectorQuantization(BaseNonFunctionalModule):
         """
         target_shape = list(indices.shape[:-1])
         target_shape.append(codebooks.size(-1))
-        xq = 0
-        for i in range(indices.size(-1)):
-            code_vector = torch.index_select(
-                codebooks[i], 0, indices[..., i].view(-1).long()
-            )
-            xq = xq + code_vector
-        xq = xq.view(target_shape)
+        code_vectors = [
+            torch.index_select(codebooks[i], 0, indices[..., i].view(-1).long())
+            for i in range(indices.size(-1))
+        ]
+        xq = cast(torch.Tensor, sum(code_vectors)).view(target_shape)
         return xq

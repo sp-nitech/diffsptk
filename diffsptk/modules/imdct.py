@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -61,8 +62,10 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        layers = _p.layers
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse modified discrete cosine transform.
@@ -96,11 +99,9 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        values, layers, _ = InverseModifiedDiscreteCosineTransform._precompute(
-            *args, **kwargs
-        )
+        _p = InverseModifiedDiscreteCosineTransform._precompute(*args, **kwargs)
         return InverseModifiedDiscreteCosineTransform._forward(
-            y, out_length, *values, *layers
+            y, out_length, *_p.values, *_p.layers
         )
 
     @staticmethod
@@ -125,9 +126,11 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         frame_period = frame_length // 2
 
         if learnable is True:
-            learnable = LEARNABLES
+            _learnable = LEARNABLES
         elif learnable is False:
-            learnable = ()
+            _learnable = ()
+        else:
+            _learnable = learnable
 
         imdt = get_layer(
             module,
@@ -136,7 +139,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 length=frame_length,
                 window=window,
                 transform=transform,
-                learnable="basis" in learnable,
+                learnable="basis" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
@@ -150,7 +153,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 window=window,
                 norm="none",
                 symmetric=True,
-                learnable="window" in learnable,
+                learnable="window" in _learnable,
                 device=device,
                 dtype=dtype,
             ),
@@ -165,7 +168,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return (frame_period,), (imdt, window_, unframe), None
+        return Precomputed(values=(frame_period,), layers=(imdt, window_, unframe))
 
     @staticmethod
     def _forward(
@@ -220,9 +223,9 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length // 2
 
-        _, _, tensors = self._precompute(
+        tensors = self._precompute(
             **filter_values(locals(), drop_keys=["learnable"])
-        )
+        ).tensors
         if learnable:
             self.W = nn.Parameter(tensors[0])
         else:
@@ -243,17 +246,17 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of input")
-        return self._forward(y, **self._buffers, **self._parameters)
+        return self._forward(y, **self._buffers, **self._parameters)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = InverseModifiedDiscreteTransform._precompute(
+        tensors = InverseModifiedDiscreteTransform._precompute(
             2 * y.size(-1),
             *args,
             **kwargs,
             device=y.device,
             dtype=y.dtype,
-        )
+        ).tensors
         return InverseModifiedDiscreteTransform._forward(y, *tensors)
 
     @staticmethod
@@ -266,8 +269,8 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
     @staticmethod
     def _precompute(*args, **kwargs) -> Precomputed:
-        _, _, tensors = ModifiedDiscreteTransform._precompute(*args, **kwargs)
-        return None, None, (tensors[0].T,)
+        tensors = ModifiedDiscreteTransform._precompute(*args, **kwargs).tensors
+        return Precomputed(tensors=(tensors[0].T,))
 
     @staticmethod
     def _forward(y: torch.Tensor, W: torch.Tensor) -> torch.Tensor:

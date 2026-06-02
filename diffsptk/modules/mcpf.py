@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import inspect
+from typing import cast
 
 import torch
 from torch import nn
@@ -75,9 +76,9 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _, layers, tensors = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
-        self.register_buffer("weight", tensors[0])
+        _p = self._precompute(**filter_values(locals()))
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self.register_buffer("weight", _p.tensors[0])
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Perform mel-cesptrum postfiltering.
@@ -109,14 +110,14 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
         tensor([-0.5097,  0.5941,  0.1869, -0.2556])
 
         """
-        return self._forward(mc, *self.layers, **self._buffers)
+        return self._forward(mc, *self.layers, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, layers, tensors = MelCepstrumPostfiltering._precompute(
+        _p = MelCepstrumPostfiltering._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
-        return MelCepstrumPostfiltering._forward(mc, *layers, *tensors)
+        return MelCepstrumPostfiltering._forward(mc, *_p.layers, *_p.tensors)  # type: ignore[arg-type]
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -183,7 +184,7 @@ class MelCepstrumPostfiltering(BaseFunctionalModule):
 
         weight = torch.full((cep_order + 1,), 1 + beta, device=device, dtype=dtype)
         weight[:onset] = 1
-        return None, (freqt, c2acr, mc2b, b2mc), (weight,)
+        return Precomputed(layers=(freqt, c2acr, mc2b, b2mc), tensors=(weight,))
 
     @staticmethod
     def _forward(

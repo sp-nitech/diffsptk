@@ -206,7 +206,7 @@ def wavelet(
     norm: Optional[float] = 1,
     dtype: DTypeLike = np.complex64,
     gamma: float = 0,
-    alpha: Optional[float] = None,
+    alpha: Optional[Union[float, np.ndarray]] = None,
     **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
     # Pass-through parameters to get the filter lengths

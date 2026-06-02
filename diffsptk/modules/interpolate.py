@@ -42,7 +42,7 @@ class Interpolation(BaseFunctionalModule):
     def __init__(self, period: int, start: int = 0, dim: int = -1) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate the input signal.
@@ -71,7 +71,7 @@ class Interpolation(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Interpolation._precompute(*args, **kwargs)
+        values = Interpolation._precompute(*args, **kwargs).values
         return Interpolation._forward(x, *values)
 
     @staticmethod

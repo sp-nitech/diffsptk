@@ -76,9 +76,10 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
-        if len(tensors) > 0:
-            self.register_buffer("ramp", tensors[0])
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        if len(_p.tensors) > 0:
+            self.register_buffer("ramp", _p.tensors[0])
 
     def forward(self, x: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
         """Apply an all-zero digital filter.
@@ -108,7 +109,7 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         """
         check_size(b.size(-1), self.in_dim, "dimension of impulse response")
-        return self._forward(x, b, *self.values, **self._buffers)
+        return self._forward(x, b, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -116,10 +117,10 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, b: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = AllZeroDigitalFilter._precompute(
+        _p = AllZeroDigitalFilter._precompute(
             b.size(-1) - 1, *args, **kwargs, device=b.device, dtype=b.dtype
         )
-        return AllZeroDigitalFilter._forward(x, b, *values, *tensors)
+        return AllZeroDigitalFilter._forward(x, b, *_p.values, *_p.tensors)
 
     @staticmethod
     def _check(
@@ -166,7 +167,9 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         else:
             raise ValueError("mode must be 'direct' or 'efficient'.")
 
-        return (frame_period, ignore_gain, padding, impl), None, tensors
+        return Precomputed(
+            values=(frame_period, ignore_gain, padding, impl), tensors=tensors
+        )
 
     @staticmethod
     def _forward(

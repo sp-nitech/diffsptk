@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+from typing import Any
+
 import torch
 
 from ..typing import Callable, Precomputed
@@ -25,28 +27,28 @@ def _soft_dtw_core(
     D: torch.Tensor,
     lengths: torch.Tensor,
     return_indices: bool,
-    steps: list[tuple[int]],
+    steps: list[tuple[int, int]],
     has_two_step_transition: bool,
     gamma: float,
 ) -> tuple[torch.Tensor, list[torch.Tensor]]:
     B, T1, T2 = D.shape
 
     R = torch.full_like(D, float("inf"))
-    R_ = R.clone() if has_two_step_transition else None
+    R_ = R.clone() if has_two_step_transition else torch.empty(0)
     R[:, 0, 0] = D[:, 0, 0]
 
     if return_indices:
         P = torch.full((B, T1, T2, 2), -1, device=D.device, dtype=torch.long)
-        P_ = P.clone() if has_two_step_transition else None
+        P_ = P.clone() if has_two_step_transition else torch.empty(0)
 
     # Forward computation.
     for i in range(T1):
         for j in range(T2):
-            rs = []
-            rs_ = []
+            rs: Any = []
+            rs_: Any = []
             if return_indices:
-                ps = []
-                ps_ = []
+                ps: Any = []
+                ps_: Any = []
 
             d = D[:, i, j]
             for k in range(len(steps)):
@@ -154,7 +156,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(
         self,
@@ -214,8 +216,8 @@ class DynamicTimeWarping(BaseFunctionalModule):
         return_indices: bool,
         *args,
         **kwargs,
-    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        values = DynamicTimeWarping._precompute(*args, **kwargs)
+    ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
+        values = DynamicTimeWarping._precompute(*args, **kwargs).values
         return DynamicTimeWarping._forward(x, y, lengths, return_indices, *values)
 
     @staticmethod
@@ -287,7 +289,9 @@ class DynamicTimeWarping(BaseFunctionalModule):
         steps = local_path_constraints[p]["steps"]
         has_two_step_transition = local_path_constraints[p]["has_two_step_transition"]
 
-        return (steps, has_two_step_transition, softness, dist_func, dtw_func)
+        return Precomputed(
+            values=(steps, has_two_step_transition, softness, dist_func, dtw_func)
+        )
 
     @staticmethod
     def _forward(
@@ -295,7 +299,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
         y: torch.Tensor,
         lengths: torch.Tensor | None,
         return_indices: bool,
-        steps: list[tuple[int]],
+        steps: list[tuple[int, int]],
         has_two_step_transition: bool,
         softness: float,
         dist_func: Callable,

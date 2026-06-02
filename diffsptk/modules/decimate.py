@@ -41,7 +41,7 @@ class Decimation(BaseFunctionalModule):
     def __init__(self, period: int, start: int = 0, dim: int = -1) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Decimate the input signal.
@@ -70,7 +70,7 @@ class Decimation(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Decimation._precompute(*args, **kwargs)
+        values = Decimation._precompute(*args, **kwargs).values
         return Decimation._forward(x, *values)
 
     @staticmethod
@@ -87,7 +87,7 @@ class Decimation(BaseFunctionalModule):
     @staticmethod
     def _precompute(period: int, start: int, dim: int) -> Precomputed:
         Decimation._check(period, start, dim)
-        return period, start, dim
+        return Precomputed(values=(period, start, dim))
 
     @staticmethod
     def _forward(x: torch.Tensor, period: int, start: int, dim: int) -> torch.Tensor:

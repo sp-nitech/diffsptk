@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import Any
+from typing import cast
 
 import mpmath as mp
 import numpy as np
@@ -36,10 +36,6 @@ from .mgc2sp import MelGeneralizedCepstrumToSpectrum
 from .root_pol import PolynomialToRoots
 from .stft import ShortTimeFourierTransform
 from .zerodf import AllZeroDigitalFilter
-
-
-def is_array_like(x: Any) -> bool:
-    return isinstance(x, (tuple, list, np.ndarray))
 
 
 def mirror(x: torch.Tensor, half: bool = False) -> torch.Tensor:
@@ -129,7 +125,7 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
 
     def __init__(
         self,
-        filter_order: tuple[int, int] | int,
+        filter_order: int | tuple[int, int],
         frame_period: int,
         *,
         alpha: float = 0,
@@ -145,19 +141,22 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         self.frame_period = frame_period
 
         # Format parameters.
-        if phase == "mixed" and not is_array_like(filter_order):
-            filter_order = (filter_order, filter_order)
-        gamma = get_gamma(gamma, c)
-
         if phase == "mixed":
+            if isinstance(filter_order, int):
+                filter_order = (filter_order, filter_order)
             self.split_sections = (filter_order[0], filter_order[1] + 1)
         else:
+            if not isinstance(filter_order, int):
+                raise ValueError(
+                    "filter_order must be an integer when phase is not 'mixed'."
+                )
             self.split_sections = (filter_order + 1,)
+        gamma = get_gamma(gamma, c)
 
         def flip(x):
-            if is_array_like(x):
-                return x[1], x[0]
-            return x
+            if isinstance(x, int):
+                return x
+            return x[1], x[0]
 
         flip_keys = ("cep_order", "ir_length")
         modified_kwargs = kwargs.copy()
@@ -243,17 +242,19 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         check_size(mc.size(-1), sum(self.split_sections), "dimension of mel-cepstrum")
         check_size(x.size(-1), mc.size(-2) * self.frame_period, "sequence length")
         if len(self.split_sections) != 1:
-            mc_max, mc_min = torch.split(mc, self.split_sections, dim=-1)
+            mc_max, mc_min = torch.split(mc, list(self.split_sections), dim=-1)
             mc_max = F.pad(mc_max.flip(-1), (1, 0))
-            mc = (mc_min, mc_max)  # (c0, c1, ..., cM), (0, c-1, ..., c-N)
-        y = self.mglsadf(x, mc)
+            mc_inner = (mc_min, mc_max)
+        else:
+            mc_inner = mc
+        y = self.mglsadf(x, mc_inner)
         return y
 
 
 class MultiStageFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order: tuple[int, int] | int,
+        filter_order: int | tuple[int, int],
         frame_period: int,
         *,
         alpha: float = 0,
@@ -261,7 +262,7 @@ class MultiStageFIRFilter(nn.Module):
         ignore_gain: bool = False,
         phase: str = "minimum",
         taylor_order: int = 20,
-        cep_order: tuple[int, int] | int = 199,
+        cep_order: int | tuple[int, int] = 199,
         n_fft: int = 512,
         learnable: bool = False,
         device: torch.device | None = None,
@@ -286,10 +287,13 @@ class MultiStageFIRFilter(nn.Module):
             cep_orders = (cep_order, cep_order)
         elif self.phase == "mixed":
             cep_orders = (
-                cep_order if is_array_like(cep_order) else (cep_order, cep_order)
+                (cep_order, cep_order) if isinstance(cep_order, int) else cep_order
             )
         else:
             raise ValueError(f"phase {phase} is not supported.")
+
+        _filter_order = cast(tuple[int, int], filter_order)
+        _cep_orders = cast(tuple[int, int], cep_orders)
 
         # Prepare frequency transformation module.
         if self.phase == "mixed":
@@ -297,8 +301,8 @@ class MultiStageFIRFilter(nn.Module):
             for i in range(2):
                 self.mgc2c.append(
                     MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                        filter_order[i],
-                        cep_orders[i],
+                        _filter_order[i],
+                        _cep_orders[i],
                         in_alpha=alpha,
                         in_gamma=gamma,
                         n_fft=n_fft,
@@ -308,8 +312,8 @@ class MultiStageFIRFilter(nn.Module):
                 )
         else:
             self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                filter_order,
-                cep_order,
+                cast(int, filter_order),
+                cast(int, cep_order),
                 in_alpha=alpha,
                 in_gamma=gamma,
                 n_fft=n_fft,
@@ -320,10 +324,10 @@ class MultiStageFIRFilter(nn.Module):
         self.linear_intpl = LinearInterpolation(frame_period)
 
         self.zerodf = AllZeroDigitalFilter(
-            sum(cep_orders),
+            sum(_cep_orders),
             frame_period,
             ignore_gain=False,
-            zeroth_index=cep_orders[1],
+            zeroth_index=_cep_orders[1],
             mode="efficient",
             device=device,
             dtype=dtype,
@@ -349,8 +353,9 @@ class MultiStageFIRFilter(nn.Module):
     ) -> torch.Tensor:
         if self.phase == "mixed":
             mc_min, mc_max = mc
-            c_min = self.mgc2c[0](mc_min)
-            c_max = self.mgc2c[1](mc_max)
+            _mgc2c = cast(nn.ModuleList, self.mgc2c)
+            c_min = _mgc2c[0](mc_min)
+            c_max = _mgc2c[1](mc_max)
             c0 = c_min[..., :1] + c_max[..., :1]
             c1_min = c_min[..., 1:]
             c0_dummy = torch.zeros_like(c0)
@@ -382,14 +387,14 @@ class MultiStageFIRFilter(nn.Module):
 class SingleStageFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order: tuple[int, int] | int,
+        filter_order: int | tuple[int, int],
         frame_period: int,
         *,
         alpha: float = 0,
         gamma: float = 0,
         ignore_gain: bool = False,
         phase: str = "minimum",
-        ir_length: tuple[int, int] | int = 2000,
+        ir_length: int | tuple[int, int] = 2000,
         n_fft: int = 4096,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
@@ -401,26 +406,29 @@ class SingleStageFIRFilter(nn.Module):
         self.phase = phase
         self.n_fft = n_fft
 
+        _ir_length = cast(int, ir_length)
         if self.phase == "minimum":
-            ir_orders = (ir_length - 1, 0)
+            ir_orders = (_ir_length - 1, 0)
         elif self.phase == "maximum":
-            ir_orders = (0, ir_length - 1)
+            ir_orders = (0, _ir_length - 1)
         elif self.phase == "zero":
-            ir_orders = (ir_length - 1, ir_length - 1)
+            ir_orders = (_ir_length - 1, _ir_length - 1)
         elif self.phase == "mixed":
             ir_orders = (
-                (ir_length[0] - 1, ir_length[1] - 1)
-                if is_array_like(ir_length)
-                else (ir_length - 1, ir_length - 1)
+                (_ir_length - 1, _ir_length - 1)
+                if isinstance(ir_length, int)
+                else (ir_length[0] - 1, ir_length[1] - 1)
             )
         else:
             raise ValueError(f"phase {phase} is not supported.")
         self.ir_orders = ir_orders
 
+        _filter_order = cast(tuple[int, int], filter_order)
+
         if self.phase in ("minimum", "maximum"):
             self.mgc2ir = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                filter_order,
-                ir_length - 1,
+                cast(int, filter_order),
+                _ir_length - 1,
                 in_alpha=alpha,
                 in_gamma=gamma,
                 out_gamma=1,
@@ -431,8 +439,8 @@ class SingleStageFIRFilter(nn.Module):
             )
         elif self.phase == "zero":
             self.mgc2c = MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                filter_order,
-                ir_length - 1,
+                cast(int, filter_order),
+                _ir_length - 1,
                 in_alpha=alpha,
                 in_gamma=gamma,
                 n_fft=n_fft,
@@ -448,7 +456,7 @@ class SingleStageFIRFilter(nn.Module):
             for i in range(2):
                 self.mgc2c.append(
                     MelGeneralizedCepstrumToMelGeneralizedCepstrum(
-                        filter_order[i],
+                        _filter_order[i],
                         ir_orders[i],
                         in_alpha=alpha,
                         in_gamma=gamma,
@@ -496,8 +504,9 @@ class SingleStageFIRFilter(nn.Module):
             h = mirror(h)
         elif self.phase == "mixed":
             mc_min, mc_max = mc
-            c_min = self.mgc2c[0](mc_min)
-            c_max = self.mgc2c[1](mc_max)
+            _mgc2c = cast(nn.ModuleList, self.mgc2c)
+            c_min = _mgc2c[0](mc_min)
+            c_max = _mgc2c[1](mc_max)
             if self.ignore_gain:
                 c0 = torch.zeros_like(c_min[..., :1])
             else:
@@ -518,7 +527,7 @@ class SingleStageFIRFilter(nn.Module):
 class FrequencyDomainFIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order: tuple[int, int] | int,
+        filter_order: int | tuple[int, int],
         frame_period: int,
         *,
         alpha: float = 0,
@@ -546,7 +555,7 @@ class FrequencyDomainFIRFilter(nn.Module):
             self.b2mc = nn.ModuleList()
         self.mgc2sp = nn.ModuleList()
 
-        if not is_array_like(filter_order):
+        if isinstance(filter_order, int):
             filter_order = (filter_order, filter_order)
 
         n = 2 if phase == "mixed" else 1
@@ -600,15 +609,15 @@ class FrequencyDomainFIRFilter(nn.Module):
         )
 
     def forward(
-        self,
-        x: torch.Tensor,
-        mc: tuple[torch.Tensor, torch.Tensor] | torch.Tensor,
+        self, x: torch.Tensor, mc: torch.Tensor | tuple[torch.Tensor, torch.Tensor]
     ) -> torch.Tensor:
-        if torch.is_tensor(mc):
-            mc = [mc]
+        if isinstance(mc, torch.Tensor):
+            mc_seq = [mc]
+        else:
+            mc_seq = list(mc)
 
         Hs = []
-        for i, c in enumerate(mc):
+        for i, c in enumerate(mc_seq):
             if self.ignore_gain:
                 b = self.mc2b[i](c)
                 b = self.gnorm[i](b)
@@ -636,7 +645,7 @@ class FrequencyDomainFIRFilter(nn.Module):
 class MultiStageIIRFilter(nn.Module):
     def __init__(
         self,
-        filter_order: tuple[int, int] | int,
+        filter_order: int | tuple[int, int],
         frame_period: int,
         *,
         alpha: float = 0,
@@ -644,7 +653,7 @@ class MultiStageIIRFilter(nn.Module):
         ignore_gain: bool = False,
         phase: str = "minimum",
         pade_order: int = 5,
-        cep_order: tuple[int, int] | int = 199,
+        cep_order: int | tuple[int, int] = 199,
         n_fft: int = 512,
         chunk_length: int | None = None,
         warmup_length: int | None = None,
@@ -655,7 +664,11 @@ class MultiStageIIRFilter(nn.Module):
     ) -> None:
         super().__init__()
 
-        if phase != "minimum" or is_array_like(filter_order):
+        if (
+            phase != "minimum"
+            or not isinstance(filter_order, int)
+            or not isinstance(cep_order, int)
+        ):
             raise ValueError("Only minimum-phase filter is supported.")
 
         self.ignore_gain = ignore_gain
@@ -726,7 +739,7 @@ class MultiStageIIRFilter(nn.Module):
 
     def forward(
         self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = False
-    ) -> torch.Tensor:
+    ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
         if x.dim() == 1:
             x = x.unsqueeze(0)
             mc = mc.unsqueeze(0)

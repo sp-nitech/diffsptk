@@ -27,8 +27,8 @@ class Floor(torch.autograd.Function):
         return x.floor()
 
     @staticmethod
-    def backward(ctx, grad):
-        return grad
+    def backward(ctx, *grad):
+        return grad[0]
 
 
 class Round(torch.autograd.Function):
@@ -37,8 +37,8 @@ class Round(torch.autograd.Function):
         return (x + 0.5 * torch.sign(x)).trunc()
 
     @staticmethod
-    def backward(ctx, grad):
-        return grad
+    def backward(ctx, *grad):
+        return grad[0]
 
 
 class UniformQuantization(BaseFunctionalModule):
@@ -63,7 +63,7 @@ class UniformQuantization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Quantize the input waveform.
@@ -92,7 +92,7 @@ class UniformQuantization(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = UniformQuantization._precompute(*args, **kwargs)
+        values = UniformQuantization._precompute(*args, **kwargs).values
         return UniformQuantization._forward(x, *values)
 
     @staticmethod
@@ -111,17 +111,21 @@ class UniformQuantization(BaseFunctionalModule):
         UniformQuantization._check(abs_max, n_bit)
         if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
-            return (
-                abs_max,
-                level,
-                lambda x: Floor.apply(x + level // 2),
+            return Precomputed(
+                values=(
+                    abs_max,
+                    level,
+                    lambda x: Floor.apply(x + level // 2),
+                )
             )
         elif quantizer in (1, "mid-tread"):
             level = (1 << n_bit) - 1
-            return (
-                abs_max,
-                level,
-                lambda x: Round.apply(x + (level - 1) // 2),
+            return Precomputed(
+                values=(
+                    abs_max,
+                    level,
+                    lambda x: Round.apply(x + (level - 1) // 2),
+                )
             )
         raise ValueError(f"quantizer {quantizer} is not supported.")
 

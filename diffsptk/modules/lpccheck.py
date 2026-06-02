@@ -49,7 +49,7 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        self.values = self._precompute(**filter_values(locals()))
+        self.values = self._precompute(**filter_values(locals())).values
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Check the stability of the input LPC coefficients.
@@ -84,7 +84,7 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         values = LinearPredictiveCoefficientsStabilityCheck._precompute(
             a.size(-1) - 1, *args, **kwargs
-        )
+        ).values
         return LinearPredictiveCoefficientsStabilityCheck._forward(a, *values)
 
     @staticmethod
@@ -101,7 +101,7 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
     @staticmethod
     def _precompute(lpc_order: int, margin: float, warn_type: str) -> Precomputed:
         LinearPredictiveCoefficientsStabilityCheck._check(lpc_order, margin)
-        return (1 - margin, warn_type)
+        return Precomputed(values=(1 - margin, warn_type))
 
     @staticmethod
     def _forward(a: torch.Tensor, bound: float, warn_type: str) -> torch.Tensor:

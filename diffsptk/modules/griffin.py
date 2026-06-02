@@ -16,6 +16,7 @@
 
 import inspect
 import logging
+from typing import cast
 
 import torch
 from torch import nn
@@ -107,8 +108,10 @@ class GriffinLim(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values, layers, _ = self._precompute(**filter_values(locals()))
-        self.layers = nn.ModuleList(layers)
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        layers = _p.layers
+        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Reconstruct a waveform from the spectrum using the Griffin-Lim algorithm.
@@ -144,10 +147,8 @@ class GriffinLim(BaseFunctionalModule):
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        values, layers, _ = GriffinLim._precompute(
-            *args, **kwargs, device=y.device, dtype=y.dtype
-        )
-        return GriffinLim._forward(y, out_length, *values, *layers)
+        _p = GriffinLim._precompute(*args, **kwargs, device=y.device, dtype=y.dtype)
+        return GriffinLim._forward(y, out_length, *_p.values, *_p.layers)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -238,10 +239,9 @@ class GriffinLim(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return (
-            (n_iter, alpha, beta, gamma, phase_generator, logger),
-            (stft, istft),
-            None,
+        return Precomputed(
+            values=(n_iter, alpha, beta, gamma, phase_generator, logger),
+            layers=(stft, istft),
         )
 
     @staticmethod

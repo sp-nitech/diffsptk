@@ -67,7 +67,9 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        tensors = _p.tensors
         self.register_buffer("H", tensors[0])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -101,14 +103,14 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers)
+        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = ChromaFilterBankAnalysis._precompute(
+        _p = ChromaFilterBankAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return ChromaFilterBankAnalysis._forward(x, *values, *tensors)
+        return ChromaFilterBankAnalysis._forward(x, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -141,7 +143,9 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
             base_c=True,
             dtype=np.float64,
         ).T
-        return (norm, use_power), None, (to(H, device=device, dtype=dtype),)
+        return Precomputed(
+            values=(norm, use_power), tensors=(to(H, device=device, dtype=dtype),)
+        )
 
     @staticmethod
     def _forward(

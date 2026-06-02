@@ -52,7 +52,7 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
 
         self.in_dim = dst_length
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("W", tensors[0])
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
@@ -80,13 +80,13 @@ class InverseDiscreteSineTransform(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of input")
-        return self._forward(y, **self._buffers)
+        return self._forward(y, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = InverseDiscreteSineTransform._precompute(
+        tensors = InverseDiscreteSineTransform._precompute(
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
-        )
+        ).tensors
         return InverseDiscreteSineTransform._forward(y, *tensors)
 
     @staticmethod

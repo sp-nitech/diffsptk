@@ -57,6 +57,9 @@ check: tool
 	./tools/pinact/pinact run --check .github/workflows/*.yml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
 
+type-check: tool
+	. .venv/bin/activate && python -m pyright $(PROJECT)
+
 format: tool
 	. .venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
 	. .venv/bin/activate && python -m ruff format $(PROJECT) tests docs/source

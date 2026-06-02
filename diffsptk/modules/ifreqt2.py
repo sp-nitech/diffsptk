@@ -70,7 +70,7 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        _, _, tensors = self._precompute(**filter_values(locals()))
+        tensors = self._precompute(**filter_values(locals())).tensors
         self.register_buffer("A", tensors[0])
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
@@ -103,13 +103,13 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, **self._buffers)
+        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _, _, tensors = SecondOrderAllPassInverseFrequencyTransform._precompute(
+        tensors = SecondOrderAllPassInverseFrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-        )
+        ).tensors
         return SecondOrderAllPassInverseFrequencyTransform._forward(c, *tensors)
 
     @staticmethod
@@ -150,7 +150,7 @@ class SecondOrderAllPassInverseFrequencyTransform(BaseFunctionalModule):
         A = A[:L, (M - 1) :]
         A[1:, 0] *= 2
         A[0, 1:] /= 2
-        return None, None, (to(A.T, dtype=dtype),)
+        return Precomputed(tensors=(to(A.T, dtype=dtype),))
 
     @staticmethod
     def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:

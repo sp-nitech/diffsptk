@@ -58,8 +58,9 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         self.in_dim = order + 1
 
-        self.values, _, tensors = self._precompute(**filter_values(locals()))
-        self.register_buffer("eye", tensors[0])
+        _p = self._precompute(**filter_values(locals()))
+        self.values = _p.values
+        self.register_buffer("eye", _p.tensors[0])
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Find the roots of the input polynomial.
@@ -85,14 +86,14 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "order of polynomial")
-        return self._forward(a, *self.values, **self._buffers)
+        return self._forward(a, *self.values, **self._buffers)  # type: ignore[arg-type]
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values, _, tensors = PolynomialToRoots._precompute(
+        _p = PolynomialToRoots._precompute(
             a.size(-1) - 1, *args, **kwargs, dtype=a.dtype, device=a.device
         )
-        return PolynomialToRoots._forward(a, *values, *tensors)
+        return PolynomialToRoots._forward(a, *_p.values, *_p.tensors)
 
     @staticmethod
     def _takes_input_size() -> bool:
@@ -125,7 +126,7 @@ class PolynomialToRoots(BaseFunctionalModule):
             raise ValueError(f"out_format {out_format} is not supported.")
 
         eye = torch.eye(order - 1, order, device=device, dtype=dtype)
-        return (eps, formatter), None, (eye,)
+        return Precomputed(values=(eps, formatter), tensors=(eye,))
 
     @staticmethod
     def _forward(
