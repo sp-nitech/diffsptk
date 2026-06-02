@@ -51,12 +51,14 @@ doc-clean:
 check: tool
 	. .venv/bin/activate && python -m ruff check $(PROJECT) tests
 	. .venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs/source
-	. .venv/bin/activate && python -m pyright $(PROJECT)
 	. .venv/bin/activate && python -m mdformat --check *.md
 	.venv/bin/codespell
 	./tools/taplo/taplo fmt --check *.toml
 	./tools/pinact/pinact run --check .github/workflows/*.yml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
+
+type-check: tool
+	. .venv/bin/activate && python -m pyright $(PROJECT)
 
 format: tool
 	. .venv/bin/activate && python -m ruff check --fix $(PROJECT) tests
