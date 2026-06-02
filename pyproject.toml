@@ -75,6 +75,7 @@ extend-ignore = ["E731"]   # Do not assign a `lambda` expression, use a `def`
 exclude = ["__init__.py"]
 
 [tool.pyright]
+pythonVersion = "3.10"
 venvPath = "."
 venv = ".venv"
 exclude = ["**/__pycache__", "**/librosa"]
