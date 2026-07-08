@@ -181,6 +181,8 @@ class Unframe(BaseFunctionalModule):
             raise ValueError("Input must be at least 2D tensor.")
 
         N = y.size(-2)
+        if out_length is None and center:
+            out_length = N * frame_period
 
         if 4 <= d:
             batch_dims = y.size()[:-2]
