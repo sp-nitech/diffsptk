@@ -14,7 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-PINACT_VERSION  := 3.10.1
+PINACT_VERSION  := 4.1.0
 TAPLO_VERSION   := 0.10.0
 YAMLFMT_VERSION := 0.21.0
 
