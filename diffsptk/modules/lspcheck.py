@@ -18,9 +18,8 @@ import warnings
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
@@ -43,6 +42,8 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self, lsp_order: int, rate: float = 0, n_iter: int = 1, warn_type: str = "warn"
     ) -> None:
@@ -50,7 +51,7 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = lsp_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Check the stability of the input LSP coefficients.
@@ -79,18 +80,14 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")
-        return self._forward(w, *self.values)
+        return self._call_forward(w)
 
     @staticmethod
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = LineSpectralPairsStabilityCheck._precompute(
+        _p = LineSpectralPairsStabilityCheck._precompute(
             w.size(-1) - 1, *args, **kwargs
-        ).values
-        return LineSpectralPairsStabilityCheck._forward(w, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return LineSpectralPairsStabilityCheck._apply_precomputed(_p, w=w)
 
     @staticmethod
     def _check(lsp_order: int, rate: float, n_iter: int) -> None:
@@ -107,16 +104,16 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
     ) -> Precomputed:
         LineSpectralPairsStabilityCheck._check(lsp_order, rate, n_iter)
         return Precomputed(
-            values=(
-                rate * torch.pi / (lsp_order + 1),
-                n_iter,
-                warn_type,
-            )
+            values={
+                "min_distance": rate * torch.pi / (lsp_order + 1),
+                "n_iter": n_iter,
+                "warn_type": warn_type,
+            }
         )
 
     @staticmethod
     def _forward(
-        w: torch.Tensor, min_distance: float, n_iter: int, warn_type: str
+        w: torch.Tensor, *, min_distance: float, n_iter: int, warn_type: str
     ) -> torch.Tensor:
         K, w1 = torch.split(w, [1, w.size(-1) - 1], dim=-1)
 

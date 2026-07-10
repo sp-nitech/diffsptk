@@ -18,9 +18,8 @@ import warnings
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
@@ -71,6 +70,8 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         cep_order: int,
@@ -90,9 +91,7 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.register_buffer("alpha_vector", _p.tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Check the stability of the MLSA digital filter.
@@ -121,18 +120,14 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
 
         """
         check_size(mc.size(-1), self.in_dim, "dimension of mel-cepstrum")
-        return self._forward(mc, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(mc)
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = MLSADigitalFilterStabilityCheck._precompute(
             mc.size(-1) - 1, *args, **kwargs, device=mc.device, dtype=mc.dtype
         )
-        return MLSADigitalFilterStabilityCheck._forward(mc, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return MLSADigitalFilterStabilityCheck._apply_precomputed(_p, mc=mc)
 
     @staticmethod
     def _check(cep_order: int) -> None:
@@ -172,13 +167,20 @@ class MLSADigitalFilterStabilityCheck(BaseFunctionalModule):
         )
 
         return Precomputed(
-            values=(threshold, fast, n_fft, warn_type, mod_type),
-            tensors=(to(alpha_vector, dtype=dtype),),
+            values={
+                "threshold": threshold,
+                "fast": fast,
+                "n_fft": n_fft,
+                "warn_type": warn_type,
+                "mod_type": mod_type,
+            },
+            tensors={"alpha_vector": to(alpha_vector, dtype=dtype)},
         )
 
     @staticmethod
     def _forward(
         mc: torch.Tensor,
+        *,
         threshold: float,
         fast: bool,
         n_fft: int,

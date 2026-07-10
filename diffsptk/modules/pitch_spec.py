@@ -249,7 +249,9 @@ class SpectrumExtractionByCheapTrick(nn.Module):
         )
 
         self.register_buffer(
-            "ramp", torch.arange(fft_length, device=device, dtype=dtype)
+            "ramp",
+            torch.arange(fft_length, device=device, dtype=dtype),
+            persistent=False,
         )
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
@@ -350,10 +352,14 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         b2, a2 = cast(_BA, signal.butter(6, 300 / sample_rate * 2, btype="highpass"))
         b3, a3 = cast(_BA, signal.butter(6, 3000 / sample_rate * 2, btype="highpass"))
         self.register_buffer(
-            "b", to(np.stack([b1, b2, b3]), device=device, dtype=dtype)
+            "b",
+            to(np.stack([b1, b2, b3]), device=device, dtype=dtype),
+            persistent=False,
         )
         self.register_buffer(
-            "a", to(np.stack([a1, a2, a3]), device=device, dtype=dtype)
+            "a",
+            to(np.stack([a1, a2, a3]), device=device, dtype=dtype),
+            persistent=False,
         )
 
         frame_length_in_msec = 80
@@ -365,10 +371,11 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         self.register_buffer(
             "ramp",
             torch.arange(max(frame_length * 2, fft_length), device=device, dtype=dtype),
+            persistent=False,
         )
 
         tt = (self.ramp[:frame_length] + (1 - frame_length / 2)) / sample_rate
-        self.register_buffer("tt", tt)
+        self.register_buffer("tt", tt, persistent=False)
 
         self.fNominal = 40
         eta = 1
@@ -381,8 +388,8 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         maxValue, maxLocation = torch.max(wPSGSeed, dim=-1)
         wPSGSeed = wPSGSeed / maxValue
         tNominal = (self.ramp[: 2 * frame_length] - maxLocation) / sample_rate
-        self.register_buffer("wPSGSeed", wPSGSeed)
-        self.register_buffer("tNominal", tNominal)
+        self.register_buffer("wPSGSeed", wPSGSeed, persistent=False)
+        self.register_buffer("tNominal", tNominal, persistent=False)
 
         one_sided_length = fft_length // 2 + 1
         remaining_length = fft_length - one_sided_length
@@ -396,17 +403,19 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             / sample_rate
         )
         ttm[0] = 1e-5 / sample_rate
-        self.register_buffer("ttm", ttm)
+        self.register_buffer("ttm", ttm, persistent=False)
 
         lft = torch.sigmoid(
             ((self.ramp[:fft_length] - fft_length // 2).abs() - fft_length / 30) / 2
         )
-        self.register_buffer("lft", lft)
+        self.register_buffer("lft", lft, persistent=False)
 
         from pylstraight.core.sp import optimumsmoothing as optimum_smoothing
 
         ovc = optimum_smoothing(eta, self.pc)
-        self.register_buffer("ovc", to(ovc, device=device, dtype=dtype))
+        self.register_buffer(
+            "ovc", to(ovc, device=device, dtype=dtype), persistent=False
+        )
 
         ncw = round(2 * sample_rate / 1000)
         h3 = signal.convolve(
@@ -414,13 +423,13 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
             np.exp(-1400 / sample_rate * np.arange(2 * ncw + 1)),
             mode="full",
         )
-        self.register_buffer("h3", to(h3, device=device, dtype=dtype))
+        self.register_buffer("h3", to(h3, device=device, dtype=dtype), persistent=False)
 
         ipwm = 7
         ipl = round(ipwm / (frame_period / sample_rate * 1000))
         ww = np.hanning(ipl * 2 + 3)[1:-1]
         ww /= np.sum(ww)
-        self.register_buffer("ww", to(ww, device=device, dtype=dtype))
+        self.register_buffer("ww", to(ww, device=device, dtype=dtype), persistent=False)
 
         hh = np.array(
             [
@@ -434,7 +443,9 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
         cc = np.array([1, 4, 9, 16])
         tt = np.arange(one_sided_length) / sample_rate
         pb2 = (np.pi / eta**2 + np.pi**2 / 3 * np.sum(bb * cc)) * tt**2
-        self.register_buffer("pb2", to(pb2, device=device, dtype=dtype))
+        self.register_buffer(
+            "pb2", to(pb2, device=device, dtype=dtype), persistent=False
+        )
 
     @staticmethod
     def fftfilt(b: torch.Tensor, x: torch.Tensor) -> torch.Tensor:

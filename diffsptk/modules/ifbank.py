@@ -15,11 +15,9 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .fbank import MelFilterBankAnalysis
 
 
@@ -68,6 +66,8 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         *,
@@ -88,13 +88,10 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = n_channel
 
-        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
-        self.values = _p.values
-        tensors = _p.tensors
-        if learnable:
-            self.H = nn.Parameter(tensors[0])
-        else:
-            self.register_buffer("H", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Reconstruct the power spectrum from the mel filter bank output.
@@ -129,18 +126,14 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of mel spectrogram")
-        return self._forward(y, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = InverseMelFilterBankAnalysis._precompute(
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
-        return InverseMelFilterBankAnalysis._forward(y, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return InverseMelFilterBankAnalysis._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check() -> None:
@@ -177,15 +170,17 @@ class InverseMelFilterBankAnalysis(BaseFunctionalModule):
             device=device,
             dtype=torch.double,
         ).tensors
-        weights = tensors[0].pinverse()
+        weights = tensors["H"].pinverse()
 
         return Precomputed(
-            values=(gamma, use_power), tensors=(to(weights, dtype=dtype),)
+            values={"gamma": gamma, "use_power": use_power},
+            tensors={"H": to(weights, dtype=dtype)},
         )
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
+        *,
         gamma: float,
         use_power: bool,
         H: torch.Tensor,

@@ -14,14 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import numpy as np
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import (
     auditory_to_hz,
     filter_values,
@@ -30,7 +27,7 @@ from ..utils.private import (
     replicate1,
     to,
 )
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .fbank import MelFilterBankAnalysis
 from .levdur import LevinsonDurbin
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
@@ -101,6 +98,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         *,
@@ -124,11 +123,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
-        self.register_buffer("equal_loudness_curve", _p.tensors[0])
-        self.register_buffer("liftering_vector", _p.tensors[1])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the PLP from the power spectrum.
@@ -163,7 +158,7 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
                 [ 0.4468, -0.5820,  0.0104, -0.0505]])
 
         """
-        return self._forward(x, *self.values, *self.layers, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
@@ -174,14 +169,11 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
             learnable=False,
             device=x.device,
             dtype=x.dtype,
+            module=False,
         )
-        return PerceptualLinearPredictiveCoefficientsAnalysis._forward(
-            x, *_p.values, *_p.layers, *_p.tensors
+        return PerceptualLinearPredictiveCoefficientsAnalysis._apply_precomputed(
+            _p, x=x
         )
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
 
     @staticmethod
     def _check(
@@ -215,11 +207,11 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         learnable: bool,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         PerceptualLinearPredictiveCoefficientsAnalysis._check(
             plp_order, n_channel, compression_factor, lifter
         )
-        module = inspect.stack()[1].function != "_func"
 
         if out_format in (0, "y"):
             formatter = lambda y, c, E: y
@@ -297,17 +289,20 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
         liftering_vector[0] = 2
 
         return Precomputed(
-            values=(compression_factor, formatter),
-            layers=(fbank, levdur, lpc2c),
-            tensors=(
-                to(equal_loudness_curve, device=device, dtype=dtype),
-                to(liftering_vector, dtype=dtype),
-            ),
+            values={"compression_factor": compression_factor, "formatter": formatter},
+            layers={"fbank": fbank, "levdur": levdur, "lpc2c": lpc2c},
+            tensors={
+                "equal_loudness_curve": to(
+                    equal_loudness_curve, device=device, dtype=dtype
+                ),
+                "liftering_vector": to(liftering_vector, dtype=dtype),
+            },
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         compression_factor: float,
         formatter: Callable,
         fbank: Callable,

@@ -19,9 +19,8 @@ import torch
 import torch.nn.functional as F
 
 from ..third_party.librosa import chroma
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class ChromaFilterBankAnalysis(BaseFunctionalModule):
@@ -52,6 +51,8 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         *,
@@ -67,10 +68,7 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("H", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply chroma filter banks to the STFT.
@@ -103,18 +101,14 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = ChromaFilterBankAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return ChromaFilterBankAnalysis._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return ChromaFilterBankAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(fft_length: int, n_channel: int, sample_rate: int) -> None:
@@ -144,12 +138,13 @@ class ChromaFilterBankAnalysis(BaseFunctionalModule):
             dtype=np.float64,
         ).T
         return Precomputed(
-            values=(norm, use_power), tensors=(to(H, device=device, dtype=dtype),)
+            values={"norm": norm, "use_power": use_power},
+            tensors={"H": to(H, device=device, dtype=dtype)},
         )
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, norm: float, use_power: bool, H: torch.Tensor
+        x: torch.Tensor, *, norm: float, use_power: bool, H: torch.Tensor
     ) -> torch.Tensor:
         y = x if use_power else torch.sqrt(x)
         y = torch.matmul(y, H)

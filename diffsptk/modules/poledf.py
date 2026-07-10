@@ -16,9 +16,9 @@
 
 import torch
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .linear_intpl import LinearInterpolation
 
 
@@ -45,6 +45,8 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self, filter_order: int, frame_period: int, ignore_gain: bool = False
     ) -> None:
@@ -52,7 +54,7 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         """Apply an all-pole digital filter.
@@ -82,18 +84,12 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")
-        return self._forward(x, a, *self.values)
+        return self._call_forward(x, a)
 
     @staticmethod
     def _func(x: torch.Tensor, a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = AllPoleDigitalFilter._precompute(
-            a.size(-1) - 1, *args, **kwargs
-        ).values
-        return AllPoleDigitalFilter._forward(x, a, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        _p = AllPoleDigitalFilter._precompute(a.size(-1) - 1, *args, **kwargs)
+        return AllPoleDigitalFilter._apply_precomputed(_p, x=x, a=a)
 
     @staticmethod
     def _check(filter_order: int, frame_period: int) -> None:
@@ -109,12 +105,19 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
         AllPoleDigitalFilter._check(filter_order, frame_period)
         from torchlpc import sample_wise_lpc
 
-        return Precomputed(values=(frame_period, ignore_gain, sample_wise_lpc))
+        return Precomputed(
+            values={
+                "frame_period": frame_period,
+                "ignore_gain": ignore_gain,
+                "sample_wise_lpc": sample_wise_lpc,
+            }
+        )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
         a: torch.Tensor,
+        *,
         frame_period: int,
         ignore_gain: bool,
         sample_wise_lpc: Callable,

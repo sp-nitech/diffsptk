@@ -14,15 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, get_layer
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .c2acr import CepstrumToAutocorrelation
 from .freqt import FrequencyTransform
 
@@ -50,6 +47,8 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         cep_order: int,
@@ -60,12 +59,7 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.layers = nn.ModuleList(
-            cast(
-                list[nn.Module],
-                list(self._precompute(**filter_values(locals())).layers),
-            )
-        )
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum power normalization.
@@ -90,18 +84,19 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         tensor([16.5884, -7.2942,  2.0000,  3.0000,  4.0000])
 
         """
-        return self._forward(x, *self.layers)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        layers = MelCepstrumPowerNormalization._precompute(
-            x.size(-1) - 1, *args, **kwargs, device=x.device, dtype=x.dtype
-        ).layers
-        return MelCepstrumPowerNormalization._forward(x, *layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        _p = MelCepstrumPowerNormalization._precompute(
+            x.size(-1) - 1,
+            *args,
+            **kwargs,
+            device=x.device,
+            dtype=x.dtype,
+            module=False,
+        )
+        return MelCepstrumPowerNormalization._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check() -> None:
@@ -114,9 +109,9 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
         ir_length: int,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         MelCepstrumPowerNormalization._check()
-        module = inspect.stack()[1].function != "_func"
 
         freqt = get_layer(
             module,
@@ -138,10 +133,10 @@ class MelCepstrumPowerNormalization(BaseFunctionalModule):
                 n_fft=ir_length,
             ),
         )
-        return Precomputed(layers=(freqt, c2acr))
+        return Precomputed(layers={"freqt": freqt, "c2acr": c2acr})
 
     @staticmethod
-    def _forward(x: torch.Tensor, freqt: Callable, c2acr: Callable) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, freqt: Callable, c2acr: Callable) -> torch.Tensor:
         x0, x1 = torch.split(x, [1, x.size(-1) - 1], dim=-1)
         P = torch.log(c2acr(freqt(x)))
         y = torch.cat((P, x0 - 0.5 * P, x1), dim=-1)

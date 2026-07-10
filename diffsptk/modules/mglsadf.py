@@ -337,14 +337,16 @@ class MultiStageFIRFilter(nn.Module):
         cp = np.array([float(x) for x in cp])
         weights = cp[1:] / cp[:-1]
         weights = np.insert(weights, 0, 1)
-        self.register_buffer("weights", to(weights, device=device, dtype=dtype))
+        self.register_buffer(
+            "weights", to(weights, device=device, dtype=dtype), persistent=False
+        )
 
         a = np.ones(taylor_order + 1)
         a = to(a, device=device, dtype=dtype)
         if learnable:
             self.a = nn.Parameter(a)
         else:
-            self.register_buffer("a", a)
+            self.register_buffer("a", a, persistent=False)
 
     def forward(
         self,
@@ -711,7 +713,9 @@ class MultiStageIIRFilter(nn.Module):
         cp = np.array([float(x) for x in cp])
         weights = cp[1:] / cp[:-1]
         weights = np.insert(weights, 0, 1)
-        self.register_buffer("weights", to(weights, device=device, dtype=dtype))
+        self.register_buffer(
+            "weights", to(weights, device=device, dtype=dtype), persistent=False
+        )
 
         if pade_order == 3:
             a1 = np.linspace(1.0, 0.4, pade_order + 1)
@@ -734,7 +738,7 @@ class MultiStageIIRFilter(nn.Module):
             if learnable:
                 self.a1 = nn.Parameter(a1)
             else:
-                self.register_buffer("a1", a1)
+                self.register_buffer("a1", a1, persistent=False)
             self.a2 = self.a1
 
     def forward(

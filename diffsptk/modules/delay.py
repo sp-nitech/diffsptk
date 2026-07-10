@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Delay(BaseFunctionalModule):
@@ -42,7 +41,7 @@ class Delay(BaseFunctionalModule):
     def __init__(self, start: int, keeplen: bool = False, dim: int = -1) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Delay the input signal.
@@ -71,16 +70,12 @@ class Delay(BaseFunctionalModule):
         tensor([3.])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Delay._precompute(*args, **kwargs).values
-        return Delay._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Delay._precompute(*args, **kwargs)
+        return Delay._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check() -> None:
@@ -89,10 +84,12 @@ class Delay(BaseFunctionalModule):
     @staticmethod
     def _precompute(start: int, keeplen: bool, dim: int) -> Precomputed:
         Delay._check()
-        return Precomputed(values=(start, keeplen, dim))
+        return Precomputed(values={"start": start, "keeplen": keeplen, "dim": dim})
 
     @staticmethod
-    def _forward(x: torch.Tensor, start: int, keeplen: bool, dim: int) -> torch.Tensor:
+    def _forward(
+        x: torch.Tensor, *, start: int, keeplen: bool, dim: int
+    ) -> torch.Tensor:
         if not -x.ndim <= dim < x.ndim:
             raise ValueError(f"Dimension {dim} out of range.")
 

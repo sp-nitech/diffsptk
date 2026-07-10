@@ -15,11 +15,9 @@
 # ------------------------------------------------------------------------ #
 
 import torch
-from torch import nn
 
-from ..typing import Precomputed
 from ..utils.private import check_size, complex_dtype_to_dtype, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
@@ -46,6 +44,8 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         fft_length: int,
@@ -58,13 +58,9 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        if learnable is True:
-            self.W = nn.Parameter(tensors[0])
-        elif learnable == "debug":
-            self.register_buffer("W", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals())), learnable=learnable is True
+        )
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Compute inverse FFT of a complex spectrum.
@@ -91,23 +87,19 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "length of spectrum")
-        return self._forward(y, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = RealValuedInverseFastFourierTransform._precompute(
+        _p = RealValuedInverseFastFourierTransform._precompute(
             2 * y.size(-1) - 2,
             *args,
             **kwargs,
             learnable=False,
             device=y.device,
             dtype=complex_dtype_to_dtype(y.dtype),
-        ).values
-        return RealValuedInverseFastFourierTransform._forward(y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return RealValuedInverseFastFourierTransform._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check(fft_length: int, out_length: int | None) -> None:
@@ -130,14 +122,15 @@ class RealValuedInverseFastFourierTransform(BaseFunctionalModule):
             W = W[: fft_length // 2 + 1, :out_length]
             W[1:-1] *= 2
             W = torch.cat([W.real, -W.imag], dim=0)
-            tensors = (to(W, dtype=dtype),)
+            tensors = {"W": to(W, dtype=dtype)}
         else:
-            tensors = None
-        return Precomputed(values=(out_length,), tensors=tensors or ())
+            tensors = {}
+        return Precomputed(values={"out_length": out_length}, tensors=tensors)
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
+        *,
         out_length: int | None,
         W: torch.Tensor | None = None,
     ) -> torch.Tensor:

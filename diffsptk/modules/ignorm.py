@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .gnorm import GeneralizedCepstrumGainNormalization
 
 
@@ -45,12 +44,14 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, cep_order: int, gamma: float = 0, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform cepstrum inverse gain normalization.
@@ -77,18 +78,14 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(y, *self.values)
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = GeneralizedCepstrumInverseGainNormalization._precompute(
+        _p = GeneralizedCepstrumInverseGainNormalization._precompute(
             y.size(-1) - 1, *args, **kwargs
-        ).values
-        return GeneralizedCepstrumInverseGainNormalization._forward(y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return GeneralizedCepstrumInverseGainNormalization._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -99,7 +96,7 @@ class GeneralizedCepstrumInverseGainNormalization(BaseFunctionalModule):
         return GeneralizedCepstrumGainNormalization._precompute(*args, **kwargs)
 
     @staticmethod
-    def _forward(y: torch.Tensor, gamma: float) -> torch.Tensor:
+    def _forward(y: torch.Tensor, *, gamma: float) -> torch.Tensor:
         K, y = torch.split(y, [1, y.size(-1) - 1], dim=-1)
         if gamma == 0:
             x0 = torch.log(K)

@@ -14,15 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, get_layer
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .fftr import RealValuedFastFourierTransform
 from .frame import Frame
 from .spec import Spectrum
@@ -107,12 +104,7 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.layers = nn.ModuleList(
-            cast(
-                list[nn.Module],
-                list(self._precompute(**filter_values(locals())).layers),
-            )
-        )
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute short-time Fourier transform.
@@ -141,18 +133,19 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                 [9.0000, 9.0000, 9.0000, 9.0000, 9.0000]])
 
         """
-        return self._forward(x, *self.layers)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        layers = ShortTimeFourierTransform._precompute(
-            *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
-        ).layers
-        return ShortTimeFourierTransform._forward(x, *layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ShortTimeFourierTransform._precompute(
+            *args,
+            **kwargs,
+            learnable=False,
+            device=x.device,
+            dtype=x.dtype,
+            module=False,
+        )
+        return ShortTimeFourierTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(learnable: bool | list[str]) -> None:
@@ -179,9 +172,9 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
         learnable: bool | list[str],
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         ShortTimeFourierTransform._check(learnable)
-        module = inspect.stack()[1].function != "_func"
 
         if learnable is True:
             _learnable = LEARNABLES
@@ -239,10 +232,10 @@ class ShortTimeFourierTransform(BaseFunctionalModule):
                     learnable="basis" in _learnable,
                 ),
             )
-        return Precomputed(layers=(frame, window_, spec))
+        return Precomputed(layers={"frame": frame, "window": window_, "spec": spec})
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, frame: Callable, window: Callable, spec: Callable
+        x: torch.Tensor, *, frame: Callable, window: Callable, spec: Callable
     ) -> torch.Tensor:
         return spec(window(frame(x)))

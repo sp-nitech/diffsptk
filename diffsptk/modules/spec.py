@@ -14,15 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, get_layer, remove_gain
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .fftr import RealValuedFastFourierTransform
 
 
@@ -60,9 +57,7 @@ class Spectrum(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -94,18 +89,14 @@ class Spectrum(BaseFunctionalModule):
         tensor([36.0000, 25.3137,  8.0000,  2.6863,  4.0000])
 
         """
-        return self._forward(b, a, *self.values, *self.layers)
+        return self._call_forward(b, a)
 
     @staticmethod
     def _func(
         b: torch.Tensor | None = None, a: torch.Tensor | None = None, *args, **kwargs
     ) -> torch.Tensor:
-        _p = Spectrum._precompute(*args, **kwargs)
-        return Spectrum._forward(b, a, *_p.values, *_p.layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Spectrum._precompute(*args, **kwargs, module=False)
+        return Spectrum._apply_precomputed(_p, b=b, a=a)
 
     @staticmethod
     def _check(fft_length: int, eps: float, relative_floor: float | None) -> None:
@@ -123,9 +114,9 @@ class Spectrum(BaseFunctionalModule):
         relative_floor: float | None,
         out_format: str | int,
         learnable: bool = False,
+        module: bool = True,
     ) -> Precomputed:
         Spectrum._check(fft_length, eps, relative_floor)
-        module = inspect.stack()[1].function != "_func"
 
         if relative_floor is not None:
             relative_floor = 10 ** (relative_floor / 10)
@@ -149,12 +140,20 @@ class Spectrum(BaseFunctionalModule):
                 learnable=learnable,
             ),
         )
-        return Precomputed(values=(eps, relative_floor, formatter), layers=(fftr,))
+        return Precomputed(
+            values={
+                "eps": eps,
+                "relative_floor": relative_floor,
+                "formatter": formatter,
+            },
+            layers={"fftr": fftr},
+        )
 
     @staticmethod
     def _forward(
         b: torch.Tensor | None,
         a: torch.Tensor | None,
+        *,
         eps: float,
         relative_floor: float | None,
         formatter: Callable,

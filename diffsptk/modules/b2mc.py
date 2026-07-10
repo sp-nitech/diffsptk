@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
@@ -48,6 +47,8 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         cep_order: int,
@@ -59,8 +60,7 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("A", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, b: torch.Tensor) -> torch.Tensor:
         """Convert MLSA filter coefficients to mel-cepstrum.
@@ -87,16 +87,12 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
 
         """
         check_size(b.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(b, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(b)
 
     @staticmethod
     def _func(b: torch.Tensor, alpha: float) -> torch.Tensor:
         MLSADigitalFilterCoefficientsToMelCepstrum._check(b.size(-1) - 1, alpha)
         return b + F.pad(alpha * b[..., 1:], (0, 1))
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
 
     @staticmethod
     def _check(cep_order: int, alpha: float) -> None:
@@ -115,8 +111,8 @@ class MLSADigitalFilterCoefficientsToMelCepstrum(BaseFunctionalModule):
         MLSADigitalFilterCoefficientsToMelCepstrum._check(cep_order, alpha)
         A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
         A[:, 1:].fill_diagonal_(alpha)
-        return Precomputed(tensors=(to(A.T, dtype=dtype),))
+        return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
 
     @staticmethod
-    def _forward(b: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
+    def _forward(b: torch.Tensor, *, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(b, A)

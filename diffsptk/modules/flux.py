@@ -16,8 +16,7 @@
 
 import torch
 
-from ..typing import Precomputed
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Flux(BaseFunctionalModule):
@@ -41,7 +40,7 @@ class Flux(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(lag, norm, reduction).values
+        self._register_precomputed(self._precompute(lag, norm, reduction))
 
     def forward(self, x: torch.Tensor, y: torch.Tensor | None = None) -> torch.Tensor:
         """Calculate the flux, which is the distance between adjacent frames.
@@ -73,16 +72,12 @@ class Flux(BaseFunctionalModule):
         tensor([4., 4.])
 
         """
-        return self._forward(x, y, *self.values)
+        return self._call_forward(x, y)
 
     @staticmethod
     def _func(x: torch.Tensor, y: torch.Tensor | None, *args, **kwargs) -> torch.Tensor:
-        values = Flux._precompute(*args, **kwargs).values
-        return Flux._forward(x, y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Flux._precompute(*args, **kwargs)
+        return Flux._apply_precomputed(_p, x=x, y=y)
 
     @staticmethod
     def _check() -> None:
@@ -91,12 +86,13 @@ class Flux(BaseFunctionalModule):
     @staticmethod
     def _precompute(lag: int, norm: int | float, reduction: str) -> Precomputed:
         Flux._check()
-        return Precomputed(values=(lag, norm, reduction))
+        return Precomputed(values={"lag": lag, "norm": norm, "reduction": reduction})
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
         y: torch.Tensor | None,
+        *,
         lag: int,
         norm: int | float,
         reduction: str,

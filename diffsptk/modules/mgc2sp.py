@@ -14,16 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
 import math
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values, get_layer
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .mgc2mgc import MelGeneralizedCepstrumToMelGeneralizedCepstrum
 
 
@@ -66,6 +63,8 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         cep_order: int,
@@ -84,9 +83,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
         self.in_dim = cep_order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, mc: torch.Tensor) -> torch.Tensor:
         """Convert mel-cepstrum to spectrum.
@@ -118,18 +115,19 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
 
         """
         check_size(mc.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(mc, *self.values, *self.layers)
+        return self._call_forward(mc)
 
     @staticmethod
     def _func(mc: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = MelGeneralizedCepstrumToSpectrum._precompute(
-            mc.size(-1) - 1, *args, **kwargs, dtype=mc.dtype, device=mc.device
+            mc.size(-1) - 1,
+            *args,
+            **kwargs,
+            dtype=mc.dtype,
+            device=mc.device,
+            module=False,
         )
-        return MelGeneralizedCepstrumToSpectrum._forward(mc, *_p.values, *_p.layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return MelGeneralizedCepstrumToSpectrum._apply_precomputed(_p, mc=mc)
 
     @staticmethod
     def _check() -> None:
@@ -147,6 +145,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
         out_format: str | int,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         MelGeneralizedCepstrumToSpectrum._check()
 
@@ -170,7 +169,7 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
             raise ValueError(f"out_format {out_format} is not supported.")
 
         mgc2c = get_layer(
-            inspect.stack()[1].function != "_func",
+            module,
             MelGeneralizedCepstrumToMelGeneralizedCepstrum,
             dict(
                 in_order=cep_order,
@@ -188,11 +187,12 @@ class MelGeneralizedCepstrumToSpectrum(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return Precomputed(values=(formatter,), layers=(mgc2c,))
+        return Precomputed(values={"formatter": formatter}, layers={"mgc2c": mgc2c})
 
     @staticmethod
     def _forward(
         mc: torch.Tensor,
+        *,
         formatter: Callable,
         mgc2c: Callable,
     ) -> torch.Tensor:

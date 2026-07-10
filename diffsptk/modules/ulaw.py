@@ -18,9 +18,8 @@ import math
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MuLawCompression(BaseFunctionalModule):
@@ -40,7 +39,7 @@ class MuLawCompression(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, mu: int = 255) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compress the input waveform using the :math:`\\mu`-law algorithm.
@@ -65,16 +64,12 @@ class MuLawCompression(BaseFunctionalModule):
         tensor([0.0000, 3.0084, 3.5028, 3.7934, 4.0000])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = MuLawCompression._precompute(*args, **kwargs).values
-        return MuLawCompression._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = MuLawCompression._precompute(*args, **kwargs)
+        return MuLawCompression._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(abs_max: float, mu: int) -> None:
@@ -87,15 +82,11 @@ class MuLawCompression(BaseFunctionalModule):
     def _precompute(abs_max: float, mu: int) -> Precomputed:
         MuLawCompression._check(abs_max, mu)
         return Precomputed(
-            values=(
-                abs_max,
-                mu,
-                abs_max / math.log1p(mu),
-            )
+            values={"abs_max": abs_max, "mu": mu, "c": abs_max / math.log1p(mu)}
         )
 
     @staticmethod
-    def _forward(x: torch.Tensor, abs_max: float, mu: int, c: float) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, abs_max: float, mu: int, c: float) -> torch.Tensor:
         x_abs = x.abs() / abs_max
         y = c * torch.sign(x) * torch.log1p(mu * x_abs)
         return y

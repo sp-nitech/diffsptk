@@ -20,9 +20,8 @@ import torch
 import torch.nn.functional as F
 
 from ..signals import mseq_like
-from ..typing import Precomputed
 from ..utils.private import TAU, UNVOICED_SYMBOL, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .linear_intpl import LinearInterpolation
 
 
@@ -162,7 +161,7 @@ class ExcitationGeneration(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         """Generate a simple excitation signal.
@@ -187,16 +186,12 @@ class ExcitationGeneration(BaseFunctionalModule):
         tensor([1.4142, 0.0000, 1.6330, 0.0000, 0.0000, 1.7321])
 
         """
-        return self._forward(p, *self.values)
+        return self._call_forward(p)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ExcitationGeneration._precompute(*args, **kwargs).values
-        return ExcitationGeneration._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ExcitationGeneration._precompute(*args, **kwargs)
+        return ExcitationGeneration._apply_precomputed(_p, p=x)
 
     @staticmethod
     def _check(frame_period: int) -> None:
@@ -213,13 +208,20 @@ class ExcitationGeneration(BaseFunctionalModule):
     ) -> Precomputed:
         ExcitationGeneration._check(frame_period)
         return Precomputed(
-            values=(frame_period, voiced_region, unvoiced_region, polarity, init_phase)
+            values={
+                "frame_period": frame_period,
+                "voiced_region": voiced_region,
+                "unvoiced_region": unvoiced_region,
+                "polarity": polarity,
+                "init_phase": init_phase,
+            }
         )
 
     @staticmethod
     @torch.inference_mode()
     def _forward(
         p: torch.Tensor,
+        *,
         frame_period: int,
         voiced_region: str,
         unvoiced_region: str,

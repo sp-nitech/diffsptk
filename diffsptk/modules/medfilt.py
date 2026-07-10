@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MedianFilter(BaseFunctionalModule):
@@ -47,7 +46,7 @@ class MedianFilter(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply median filtering to the input sequence.
@@ -73,16 +72,12 @@ class MedianFilter(BaseFunctionalModule):
         tensor([1., 0., 2., 4., 7., 6.])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = MedianFilter._precompute(*args, **kwargs).values
-        return MedianFilter._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = MedianFilter._precompute(*args, **kwargs)
+        return MedianFilter._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(filter_length: int) -> None:
@@ -100,12 +95,18 @@ class MedianFilter(BaseFunctionalModule):
             padding = (filter_length // 2, (filter_length - 2) // 2)
         padding = (0, 0) + padding  # No padding for feature dimension
         return Precomputed(
-            values=(filter_length, padding, across_features, magic_number)
+            values={
+                "filter_length": filter_length,
+                "padding": padding,
+                "across_features": across_features,
+                "magic_number": magic_number,
+            }
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         filter_length: int,
         padding: tuple[int, int],
         across_features: bool,

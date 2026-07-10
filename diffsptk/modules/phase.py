@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values, remove_gain
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Phase(BaseFunctionalModule):
@@ -38,7 +37,7 @@ class Phase(BaseFunctionalModule):
     def __init__(self, fft_length: int, unwrap: bool = False) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -68,18 +67,14 @@ class Phase(BaseFunctionalModule):
         tensor([ 0.0000, -0.5907,  0.7500, -0.1687,  1.0000])
 
         """
-        return self._forward(b, a, *self.values)
+        return self._call_forward(b, a)
 
     @staticmethod
     def _func(
         b: torch.Tensor | None, a: torch.Tensor | None, *args, **kwargs
     ) -> torch.Tensor:
-        values = Phase._precompute(*args, **kwargs).values
-        return Phase._forward(b, a, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Phase._precompute(*args, **kwargs)
+        return Phase._apply_precomputed(_p, b=b, a=a)
 
     @staticmethod
     def _check(fft_length: int) -> None:
@@ -89,12 +84,13 @@ class Phase(BaseFunctionalModule):
     @staticmethod
     def _precompute(fft_length: int, unwrap: bool) -> Precomputed:
         Phase._check(fft_length)
-        return Precomputed(values=(fft_length, unwrap))
+        return Precomputed(values={"fft_length": fft_length, "unwrap": unwrap})
 
     @staticmethod
     def _forward(
         b: torch.Tensor | None,
         a: torch.Tensor | None,
+        *,
         fft_length: int,
         unwrap: bool,
     ) -> torch.Tensor:

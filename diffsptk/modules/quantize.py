@@ -16,9 +16,9 @@
 
 import torch
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Floor(torch.autograd.Function):
@@ -63,7 +63,7 @@ class UniformQuantization(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Quantize the input waveform.
@@ -88,16 +88,12 @@ class UniformQuantization(BaseFunctionalModule):
         tensor([0, 0, 1, 1, 2, 2, 3, 3, 3], dtype=torch.int32)
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = UniformQuantization._precompute(*args, **kwargs).values
-        return UniformQuantization._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = UniformQuantization._precompute(*args, **kwargs)
+        return UniformQuantization._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(abs_max: float, n_bit: int) -> None:
@@ -112,26 +108,26 @@ class UniformQuantization(BaseFunctionalModule):
         if quantizer in (0, "mid-rise"):
             level = 1 << n_bit
             return Precomputed(
-                values=(
-                    abs_max,
-                    level,
-                    lambda x: Floor.apply(x + level // 2),
-                )
+                values={
+                    "abs_max": abs_max,
+                    "level": level,
+                    "func": lambda x: Floor.apply(x + level // 2),
+                }
             )
         elif quantizer in (1, "mid-tread"):
             level = (1 << n_bit) - 1
             return Precomputed(
-                values=(
-                    abs_max,
-                    level,
-                    lambda x: Round.apply(x + (level - 1) // 2),
-                )
+                values={
+                    "abs_max": abs_max,
+                    "level": level,
+                    "func": lambda x: Round.apply(x + (level - 1) // 2),
+                }
             )
         raise ValueError(f"quantizer {quantizer} is not supported.")
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, abs_max: float, level: int, func: Callable
+        x: torch.Tensor, *, abs_max: float, level: int, func: Callable
     ) -> torch.Tensor:
         y = func(x * (level / (2 * abs_max)))
         y = torch.clip(y, min=0, max=level - 1)

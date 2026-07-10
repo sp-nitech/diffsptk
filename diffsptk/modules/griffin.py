@@ -14,16 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
 import logging
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import TAU, filter_values, get_layer, get_logger
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .istft import InverseShortTimeFourierTransform
 from .stft import ShortTimeFourierTransform
 
@@ -108,10 +105,7 @@ class GriffinLim(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        layers = _p.layers
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Reconstruct a waveform from the spectrum using the Griffin-Lim algorithm.
@@ -143,16 +137,14 @@ class GriffinLim(BaseFunctionalModule):
         tensor([-1., -2., -3.])
 
         """
-        return self._forward(y, out_length, *self.values, *self.layers)
+        return self._call_forward(y, out_length)
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        _p = GriffinLim._precompute(*args, **kwargs, device=y.device, dtype=y.dtype)
-        return GriffinLim._forward(y, out_length, *_p.values, *_p.layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = GriffinLim._precompute(
+            *args, **kwargs, device=y.device, dtype=y.dtype, module=False
+        )
+        return GriffinLim._apply_precomputed(_p, y=y, out_length=out_length)
 
     @staticmethod
     def _check(
@@ -188,9 +180,9 @@ class GriffinLim(BaseFunctionalModule):
         verbose: bool,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         GriffinLim._check(n_iter, alpha, beta, gamma)
-        module = inspect.stack()[1].function != "_func"
 
         if init_phase == "zeros":
             phase_generator = lambda x: torch.zeros_like(x)
@@ -240,14 +232,22 @@ class GriffinLim(BaseFunctionalModule):
             ),
         )
         return Precomputed(
-            values=(n_iter, alpha, beta, gamma, phase_generator, logger),
-            layers=(stft, istft),
+            values={
+                "n_iter": n_iter,
+                "alpha": alpha,
+                "beta": beta,
+                "gamma": gamma,
+                "phase_generator": phase_generator,
+                "logger": logger,
+            },
+            layers={"stft": stft, "istft": istft},
         )
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
         out_length: int | None,
+        *,
         n_iter: int,
         alpha: float,
         beta: float,

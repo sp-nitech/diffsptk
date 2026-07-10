@@ -159,7 +159,7 @@ class GaussianMixtureModeling(BaseLearnerModule):
                 mask[s1:e1, s1:e1] = 1
             else:
                 raise ValueError(f"var_type {var_type} is not supported.")
-        self.register_buffer("mask", mask)
+        self.register_buffer("mask", mask, persistent=False)
 
         # Initialize model parameters.
         params = {"device": device, "dtype": dtype}

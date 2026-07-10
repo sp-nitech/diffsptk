@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class HilbertTransform(BaseFunctionalModule):
@@ -40,6 +39,8 @@ class HilbertTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         fft_length: int,
@@ -49,10 +50,7 @@ class HilbertTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("h", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the analytic signal using the Hilbert transform.
@@ -80,7 +78,7 @@ class HilbertTransform(BaseFunctionalModule):
         tensor([ 1., -1., -1.,  1.])
 
         """
-        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, fft_length: int | None, dim: int) -> torch.Tensor:
@@ -90,11 +88,7 @@ class HilbertTransform(BaseFunctionalModule):
             device=x.device,
             dtype=x.dtype,
         )
-        return HilbertTransform._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return HilbertTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(fft_length: int) -> None:
@@ -115,10 +109,10 @@ class HilbertTransform(BaseFunctionalModule):
         h[1:center] = 2
         if fft_length % 2 == 0:
             h[center] = 1
-        return Precomputed(values=(dim,), tensors=(to(h, dtype=dtype),))
+        return Precomputed(values={"dim": dim}, tensors={"h": to(h, dtype=dtype)})
 
     @staticmethod
-    def _forward(x: torch.Tensor, dim: int, h: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, dim: int, h: torch.Tensor) -> torch.Tensor:
         L = len(h)
         target_shape = [1] * x.dim()
         target_shape[dim] = L

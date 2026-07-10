@@ -16,9 +16,8 @@
 
 import numpy as np
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import (
     auditory_to_hz,
     check_size,
@@ -26,7 +25,7 @@ from ..utils.private import (
     hz_to_auditory,
     to,
 )
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MelFilterBankAnalysis(BaseFunctionalModule):
@@ -94,6 +93,8 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         *,
@@ -116,13 +117,10 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
-        self.values = _p.values
-        tensors = _p.tensors
-        if learnable:
-            self.H = nn.Parameter(tensors[0])
-        else:
-            self.register_buffer("H", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(
         self, x: torch.Tensor
@@ -157,7 +155,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(
@@ -166,11 +164,7 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         _p = MelFilterBankAnalysis._precompute(
             2 * x.size(-1) - 2, *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return MelFilterBankAnalysis._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return MelFilterBankAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(
@@ -299,13 +293,19 @@ class MelFilterBankAnalysis(BaseFunctionalModule):
         weights = torch.from_numpy(weights)
 
         return Precomputed(
-            values=(floor, gamma, use_power, formatter),
-            tensors=(to(weights, device=device, dtype=dtype),),
+            values={
+                "floor": floor,
+                "gamma": gamma,
+                "use_power": use_power,
+                "formatter": formatter,
+            },
+            tensors={"H": to(weights, device=device, dtype=dtype)},
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         floor: float,
         gamma: float,
         use_power: bool,

@@ -21,9 +21,9 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from ..typing import ArrayLike, Precomputed
+from ..typing import ArrayLike
 from ..utils.private import filter_values, iir, to, to_3d
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
@@ -68,13 +68,13 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
             **filter_values(locals(), drop_keys=["learnable"])
         ).tensors
         if learnable and b is not None:
-            self.b = nn.Parameter(tensors[0])
+            self.b = nn.Parameter(tensors["b"])
         else:
-            self.register_buffer("b", tensors[0])
+            self.register_buffer("b", tensors["b"], persistent=False)
         if learnable and a is not None:
-            self.a = nn.Parameter(tensors[1])
+            self.a = nn.Parameter(tensors["a"])
         else:
-            self.register_buffer("a", tensors[1])
+            self.register_buffer("a", tensors["a"], persistent=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply an IIR digital filter to the input waveform.
@@ -99,18 +99,14 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 1.0300, 1.0600, 1.0900])
 
         """
-        return self._forward(x, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = InfiniteImpulseResponseDigitalFilter._precompute(
+        _p = InfiniteImpulseResponseDigitalFilter._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return InfiniteImpulseResponseDigitalFilter._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        )
+        return InfiniteImpulseResponseDigitalFilter._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(ir_length: int | None) -> None:
@@ -161,10 +157,10 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
             h = h.view(1, 1, -1).flip(-1)
             b_coef = to(h, dtype=dtype)
             a_coef = torch.empty(0)
-        return Precomputed(tensors=(b_coef, a_coef))
+        return Precomputed(tensors={"b": b_coef, "a": a_coef})
 
     @staticmethod
-    def _forward(x: torch.Tensor, b: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, b: torch.Tensor, a: torch.Tensor) -> torch.Tensor:
         if len(a) == 0:
             y = to_3d(x)
             y = F.pad(y, (b.size(-1) - 1, 0))

@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
@@ -55,6 +54,8 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         in_order: int,
@@ -69,8 +70,7 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("A", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Perform second-order all-pass frequency transform.
@@ -99,18 +99,14 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(c)
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = SecondOrderAllPassFrequencyTransform._precompute(
+        _p = SecondOrderAllPassFrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-        ).tensors
-        return SecondOrderAllPassFrequencyTransform._forward(c, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return SecondOrderAllPassFrequencyTransform._apply_precomputed(_p, c=c)
 
     @staticmethod
     def _check(in_order: int, out_order: int, alpha: float, theta: float) -> None:
@@ -152,10 +148,10 @@ class SecondOrderAllPassFrequencyTransform(BaseFunctionalModule):
         A = A[:L]
         A[1:, 0] /= 2
         A[0, 1:] *= 2
-        return Precomputed(tensors=(to(A, dtype=dtype),))
+        return Precomputed(tensors={"A": to(A, dtype=dtype)})
 
     @staticmethod
-    def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
+    def _forward(c: torch.Tensor, *, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(c, A)
 
     @staticmethod

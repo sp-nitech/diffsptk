@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class InverseSineToParcorCoefficients(BaseFunctionalModule):
@@ -31,12 +30,14 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, par_order: int) -> None:
         super().__init__()
 
         self.in_dim = par_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, s: torch.Tensor) -> torch.Tensor:
         """Convert IS to PARCOR.
@@ -62,18 +63,14 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
 
         """
         check_size(s.size(-1), self.in_dim, "dimension of parcor")
-        return self._forward(s, *self.values)
+        return self._call_forward(s)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = InverseSineToParcorCoefficients._precompute(
+        _p = InverseSineToParcorCoefficients._precompute(
             x.size(-1) - 1, *args, **kwargs
-        ).values
-        return InverseSineToParcorCoefficients._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return InverseSineToParcorCoefficients._apply_precomputed(_p, s=x)
 
     @staticmethod
     def _check(par_order: int) -> None:
@@ -83,10 +80,10 @@ class InverseSineToParcorCoefficients(BaseFunctionalModule):
     @staticmethod
     def _precompute(par_order: int) -> Precomputed:
         InverseSineToParcorCoefficients._check(par_order)
-        return Precomputed(values=(torch.pi / 2,))
+        return Precomputed(values={"c": torch.pi / 2})
 
     @staticmethod
-    def _forward(s: torch.Tensor, c: float) -> torch.Tensor:
+    def _forward(s: torch.Tensor, *, c: float) -> torch.Tensor:
         K, s = torch.split(s, [1, s.size(-1) - 1], dim=-1)
         k = torch.cat((K, torch.sin(c * s)), dim=-1)
         return k

@@ -16,11 +16,9 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .window import Window
 
 
@@ -59,6 +57,8 @@ class Unframe(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         frame_length: int,
@@ -76,12 +76,10 @@ class Unframe(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
-        self.values = _p.values
-        if learnable:
-            self.window = nn.Parameter(_p.tensors[0])
-        else:
-            self.register_buffer("window", _p.tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Revert the framed waveform to the unframed waveform.
@@ -118,24 +116,14 @@ class Unframe(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "length of waveform")
-        return self._forward(
-            y,
-            out_length,
-            *self.values,
-            **self._buffers,
-            **self._parameters,  # type: ignore[arg-type]
-        )
+        return self._call_forward(y, out_length)
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
         _p = Unframe._precompute(
             y.size(-1), *args, **kwargs, device=y.device, dtype=y.dtype
         )
-        return Unframe._forward(y, out_length, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return Unframe._apply_precomputed(_p, y=y, out_length=out_length)
 
     @staticmethod
     def _check(frame_length: int, frame_period: int) -> None:
@@ -160,17 +148,23 @@ class Unframe(BaseFunctionalModule):
             Window._precompute(
                 frame_length, None, window, norm, symmetric, device=device, dtype=dtype
             )
-            .tensors[0]
+            .tensors["window"]
             .view(1, -1, 1)
         )
         return Precomputed(
-            values=(frame_length, frame_period, center), tensors=(window_,)
+            values={
+                "frame_length": frame_length,
+                "frame_period": frame_period,
+                "center": center,
+            },
+            tensors={"window": window_},
         )
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
         out_length: int | None,
+        *,
         frame_length: int,
         frame_period: int,
         center: bool,

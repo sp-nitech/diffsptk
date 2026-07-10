@@ -14,14 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .mdct import ModifiedDiscreteCosineTransform as MDCT
 
 
@@ -59,9 +56,7 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute modified discrete sine transform.
@@ -88,15 +83,11 @@ class ModifiedDiscreteSineTransform(BaseFunctionalModule):
                 [ 4.6213, -1.9142]])
 
         """
-        return self._forward(x, *self.values, *self.layers)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(*args, **kwargs) -> torch.Tensor:
         return MDCT._func(*args, **kwargs, transform="sine")
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
 
     @staticmethod
     def _check(*args, **kwargs) -> None:

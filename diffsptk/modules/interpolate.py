@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .decimate import Decimation
 
 
@@ -42,7 +41,7 @@ class Interpolation(BaseFunctionalModule):
     def __init__(self, period: int, start: int = 0, dim: int = -1) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate the input signal.
@@ -67,16 +66,12 @@ class Interpolation(BaseFunctionalModule):
         tensor([0., 1., 0., 0., 2., 0., 0., 3., 0., 0.])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Interpolation._precompute(*args, **kwargs).values
-        return Interpolation._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Interpolation._precompute(*args, **kwargs)
+        return Interpolation._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -87,7 +82,7 @@ class Interpolation(BaseFunctionalModule):
         return Decimation._precompute(*args, **kwargs)
 
     @staticmethod
-    def _forward(x: torch.Tensor, period: int, start: int, dim: int) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, period: int, start: int, dim: int) -> torch.Tensor:
         if not -x.ndim <= dim < x.ndim:
             raise ValueError(f"Dimension {dim} out of range.")
 

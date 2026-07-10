@@ -17,9 +17,9 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class RootsToPolynomial(BaseFunctionalModule):
@@ -42,6 +42,8 @@ class RootsToPolynomial(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         order: int,
@@ -54,7 +56,7 @@ class RootsToPolynomial(BaseFunctionalModule):
 
         self.in_dim = order
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Convert roots to polynomial coefficients.
@@ -81,16 +83,12 @@ class RootsToPolynomial(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "number of roots")
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs).values
-        return RootsToPolynomial._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        _p = RootsToPolynomial._precompute(x.size(-1), *args, **kwargs)
+        return RootsToPolynomial._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(order: int, eps: float | None) -> None:
@@ -117,10 +115,10 @@ class RootsToPolynomial(BaseFunctionalModule):
         else:
             raise ValueError(f"in_format {in_format} is not supported.")
 
-        return Precomputed(values=(eps, formatter))
+        return Precomputed(values={"eps": eps, "formatter": formatter})
 
     @staticmethod
-    def _forward(x: torch.Tensor, eps: float, formatter: Callable) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, eps: float, formatter: Callable) -> torch.Tensor:
         x = formatter(x)
         M = x.size(-1)
         a = F.pad(torch.zeros_like(x), (1, 0), value=1)

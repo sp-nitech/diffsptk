@@ -15,14 +15,12 @@
 # ------------------------------------------------------------------------ #
 
 import math
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values
-from .base import BaseNonFunctionalModule
+from .base import BaseNonFunctionalModule, Precomputed
 from .dfs import InfiniteImpulseResponseDigitalFilter
 
 
@@ -72,8 +70,7 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
     ) -> None:
         super().__init__()
 
-        layers = self._precompute(**filter_values(locals())).layers
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
+        self.dfs = self._precompute(**filter_values(locals())).layers["dfs"]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a second order digital filter to the input waveform.
@@ -98,7 +95,7 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         tensor([1.0000, 1.7766, 2.2319, 2.3227, 2.0633])
 
         """
-        return self._forward(x, *self.layers)
+        return self._forward(x, dfs=self.dfs)
 
     @staticmethod
     def _check(
@@ -150,8 +147,8 @@ class SecondOrderDigitalFilter(BaseNonFunctionalModule):
         dfs = InfiniteImpulseResponseDigitalFilter(
             a=a, b=b, ir_length=ir_length, device=device, dtype=dtype
         )
-        return Precomputed(layers=(dfs,))
+        return Precomputed(layers={"dfs": dfs})
 
     @staticmethod
-    def _forward(x: torch.Tensor, dfs: Callable) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, dfs: Callable) -> torch.Tensor:
         return dfs(x)

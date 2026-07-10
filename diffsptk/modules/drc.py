@@ -16,11 +16,10 @@
 
 import numpy as np
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, to, to_2d
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class DynamicRangeCompression(BaseFunctionalModule):
@@ -82,13 +81,10 @@ class DynamicRangeCompression(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
-        self.values = _p.values
-        tensors = _p.tensors
-        if learnable:
-            self.params = nn.Parameter(tensors[0])
-        else:
-            self.register_buffer("params", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform dynamic range compression.
@@ -117,18 +113,14 @@ class DynamicRangeCompression(BaseFunctionalModule):
         tensor(0.5651)
 
         """
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = DynamicRangeCompression._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return DynamicRangeCompression._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        return DynamicRangeCompression._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(
@@ -181,11 +173,15 @@ class DynamicRangeCompression(BaseFunctionalModule):
         params = torch.stack(
             [_threshold, _ratio, _attack_time, _release_time, _makeup_gain]
         )
-        return Precomputed(values=(abs_max, torchcomp.compexp_gain), tensors=(params,))
+        return Precomputed(
+            values={"abs_max": abs_max, "compexp_gain": torchcomp.compexp_gain},
+            tensors={"params": params},
+        )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         abs_max: float,
         compexp_gain: Callable,
         params: torch.Tensor,

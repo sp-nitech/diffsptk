@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class FrequencyTransform(BaseFunctionalModule):
@@ -49,6 +48,8 @@ class FrequencyTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         in_order: int,
@@ -61,8 +62,7 @@ class FrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("A", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Perform frequency transform.
@@ -94,18 +94,14 @@ class FrequencyTransform(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(c)
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = FrequencyTransform._precompute(
+        _p = FrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-        ).tensors
-        return FrequencyTransform._forward(c, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return FrequencyTransform._apply_precomputed(_p, c=c)
 
     @staticmethod
     def _check(in_order: int, out_order: int, alpha: float) -> None:
@@ -140,8 +136,8 @@ class FrequencyTransform(BaseFunctionalModule):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        return Precomputed(tensors=(to(A.T, dtype=dtype),))
+        return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
 
     @staticmethod
-    def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
+    def _forward(c: torch.Tensor, *, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(c, A)

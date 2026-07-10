@@ -276,7 +276,7 @@ class CoefficientsFrequencyTransform(nn.Module):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        self.register_buffer("A", to(A.T, dtype=dtype))
+        self.register_buffer("A", to(A.T, dtype=dtype), persistent=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         y = torch.matmul(x, self.A)
@@ -301,7 +301,7 @@ class PTransform(nn.Module):
         A[0, 1] += alpha
         A[-1, -1] += alpha
 
-        self.register_buffer("A", to(A.T, dtype=dtype))
+        self.register_buffer("A", to(A.T, dtype=dtype), persistent=False)
 
     def forward(self, p: torch.Tensor) -> torch.Tensor:
         p = torch.matmul(p, self.A)
@@ -325,7 +325,7 @@ class QTransform(nn.Module):
         A[1, 0] = 0
         A[1, 1] += alpha
 
-        self.register_buffer("A", to(A.T, dtype=dtype))
+        self.register_buffer("A", to(A.T, dtype=dtype), persistent=False)
 
     def forward(self, q: torch.Tensor) -> torch.Tensor:
         q = torch.matmul(q, self.A)

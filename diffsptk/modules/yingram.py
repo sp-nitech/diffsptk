@@ -18,10 +18,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
 from .acorr import Autocorrelation
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Yingram(BaseFunctionalModule):
@@ -61,6 +60,8 @@ class Yingram(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         frame_length: int,
@@ -75,11 +76,7 @@ class Yingram(BaseFunctionalModule):
 
         self.in_dim = frame_length
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("lags", tensors[0])
-        self.register_buffer("lags_ceil", tensors[1])
-        self.register_buffer("lags_floor", tensors[2])
-        self.register_buffer("ramp", tensors[3])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the YIN derivatives from the waveform.
@@ -106,11 +103,7 @@ class Yingram(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "frame length")
-        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return self._call_forward(x)
 
     @staticmethod
     def _check(
@@ -125,10 +118,10 @@ class Yingram(BaseFunctionalModule):
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = Yingram._precompute(
+        _p = Yingram._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return Yingram._forward(x, *tensors)
+        )
+        return Yingram._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _precompute(
@@ -161,11 +154,19 @@ class Yingram(BaseFunctionalModule):
         lags_ceil = lags.ceil().long()
         lags_floor = lags.floor().long()
         ramp = torch.arange(1, lag_max, device=device)
-        return Precomputed(tensors=(to(lags, dtype=dtype), lags_ceil, lags_floor, ramp))
+        return Precomputed(
+            tensors={
+                "lags": to(lags, dtype=dtype),
+                "lags_ceil": lags_ceil,
+                "lags_floor": lags_floor,
+                "ramp": ramp,
+            }
+        )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         lags: torch.Tensor,
         lags_ceil: torch.Tensor,
         lags_floor: torch.Tensor,

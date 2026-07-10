@@ -17,9 +17,9 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import TAU, check_size, filter_values, to_3d
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .pol_root import RootsToPolynomial
 
 
@@ -49,6 +49,8 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         lpc_order: int,
@@ -62,11 +64,7 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("kernel_p", tensors[0])
-        self.register_buffer("kernel_q", tensors[1])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Convert LSP to LPC.
@@ -92,20 +90,16 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")
-        return self._forward(w, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(w)
 
     @staticmethod
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = LineSpectralPairsToLinearPredictiveCoefficients._precompute(
             w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
         )
-        return LineSpectralPairsToLinearPredictiveCoefficients._forward(
-            w, *_p.values, *_p.tensors
+        return LineSpectralPairsToLinearPredictiveCoefficients._apply_precomputed(
+            _p, w=w
         )
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
 
     @staticmethod
     def _check(
@@ -160,11 +154,15 @@ class LineSpectralPairsToLinearPredictiveCoefficients(BaseFunctionalModule):
         kernel_p = kernel_p.view(1, 1, -1)
         kernel_q = kernel_q.view(1, 1, -1)
 
-        return Precomputed(values=(log_gain, formatter), tensors=(kernel_p, kernel_q))
+        return Precomputed(
+            values={"log_gain": log_gain, "formatter": formatter},
+            tensors={"kernel_p": kernel_p, "kernel_q": kernel_q},
+        )
 
     @staticmethod
     def _forward(
         w: torch.Tensor,
+        *,
         log_gain: bool,
         formatter: Callable,
         kernel_p: torch.Tensor,

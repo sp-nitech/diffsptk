@@ -19,9 +19,9 @@ from typing import cast
 import torch
 import torch.nn.functional as F
 
-from ..typing import ArrayLike, Precomputed
+from ..typing import ArrayLike
 from ..utils.private import filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Delta(BaseFunctionalModule):
@@ -56,8 +56,7 @@ class Delta(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("window", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute the delta components.
@@ -90,18 +89,12 @@ class Delta(BaseFunctionalModule):
                  [ 7.0000,  8.0000, -2.5000, -3.0000,  3.5000,  4.0000]]])
 
         """
-        return self._forward(x, self.window)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = Delta._precompute(
-            *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return Delta._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Delta._precompute(*args, **kwargs, device=x.device, dtype=x.dtype)
+        return Delta._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(seed: ArrayLike[float] | ArrayLike[int]) -> None:
@@ -182,10 +175,10 @@ class Delta(BaseFunctionalModule):
                 raise ValueError("3rd order regression is not supported.")
 
         window = torch.stack(window)  # (H, W)
-        return Precomputed(tensors=(to(window, dtype=dtype),))
+        return Precomputed(tensors={"window": to(window, dtype=dtype)})
 
     @staticmethod
-    def _forward(x: torch.Tensor, window: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, window: torch.Tensor) -> torch.Tensor:
         d = x.dim()
         if d == 2:
             x = x.unsqueeze(0)

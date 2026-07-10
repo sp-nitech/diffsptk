@@ -88,7 +88,7 @@ class PseudoQuadratureMirrorFilterBankSynthesis(BaseNonFunctionalModule):
         if learnable:
             self.filters = nn.Parameter(filters)
         else:
-            self.register_buffer("filters", filters)
+            self.register_buffer("filters", filters, persistent=False)
 
         # Make padding module.
         if filter_order % 2 == 0:

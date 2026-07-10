@@ -14,14 +14,11 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .imdct import InverseModifiedDiscreteCosineTransform as IMDCT
 
 
@@ -59,10 +56,7 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
     ):
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        layers = _p.layers
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse modified discrete sine transform.
@@ -92,15 +86,11 @@ class InverseModifiedDiscreteSineTransform(BaseFunctionalModule):
         tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, out_length, *self.values, *self.layers)
+        return self._call_forward(y, out_length)
 
     @staticmethod
     def _func(*args, **kwargs) -> torch.Tensor:
         return IMDCT._func(*args, **kwargs, transform="sine")
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
 
     @staticmethod
     def _check(*args, **kwargs) -> None:

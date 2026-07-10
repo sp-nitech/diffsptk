@@ -17,9 +17,9 @@
 import numpy as np
 import torch
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 LOG_ZERO = -1.0e10
 
@@ -64,6 +64,8 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         lsp_order: int,
@@ -79,12 +81,7 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         self.in_dim = lsp_order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("cos_omega", tensors[0])
-        self.register_buffer("p_bias", tensors[1])
-        self.register_buffer("q_bias", tensors[2])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, w: torch.Tensor) -> torch.Tensor:
         """Convert line spectral pairs to spectrum.
@@ -114,18 +111,14 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
 
         """
         check_size(w.size(-1), self.in_dim, "dimension of LSP")
-        return self._forward(w, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(w)
 
     @staticmethod
     def _func(w: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = LineSpectralPairsToSpectrum._precompute(
             w.size(-1) - 1, *args, **kwargs, device=w.device, dtype=w.dtype
         )
-        return LineSpectralPairsToSpectrum._forward(w, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return LineSpectralPairsToSpectrum._apply_precomputed(_p, w=w)
 
     @staticmethod
     def _check(lsp_order: int, fft_length: int, alpha: float, gamma: float) -> None:
@@ -187,12 +180,14 @@ class LineSpectralPairsToSpectrum(BaseFunctionalModule):
         q_bias = to(q, dtype=dtype)
 
         return Precomputed(
-            values=(log_gain, formatter, c1, c2), tensors=(cos_omega, p_bias, q_bias)
+            values={"log_gain": log_gain, "formatter": formatter, "c1": c1, "c2": c2},
+            tensors={"cos_omega": cos_omega, "p_bias": p_bias, "q_bias": q_bias},
         )
 
     @staticmethod
     def _forward(
         w: torch.Tensor,
+        *,
         log_gain: bool,
         formatter: Callable,
         c1: float,

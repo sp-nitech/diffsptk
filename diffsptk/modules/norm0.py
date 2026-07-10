@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
@@ -32,12 +31,14 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, filter_order: int) -> None:
         super().__init__()
 
         self.in_dim = filter_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Convert all-pole to all-zero filter coefficients vice versa.
@@ -73,10 +74,6 @@ class AllPoleToAllZeroDigitalFilterCoefficients(BaseFunctionalModule):
             a.size(-1) - 1, *args, **kwargs
         )
         return AllPoleToAllZeroDigitalFilterCoefficients._forward(a)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
 
     @staticmethod
     def _check(filter_order: int) -> None:

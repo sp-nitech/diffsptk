@@ -17,9 +17,8 @@
 import numpy as np
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, is_power_of_two, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class WalshHadamardTransform(BaseFunctionalModule):
@@ -47,6 +46,8 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         wht_length: int,
@@ -58,8 +59,7 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         self.in_dim = wht_length
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("W", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply WHT to the input.
@@ -88,18 +88,14 @@ class WalshHadamardTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = WalshHadamardTransform._precompute(
+        _p = WalshHadamardTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return WalshHadamardTransform._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return WalshHadamardTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(wht_length: int) -> None:
@@ -135,8 +131,8 @@ class WalshHadamardTransform(BaseFunctionalModule):
             W = W[np.argsort(sign_changes)][permutation]
         else:
             raise ValueError(f"wht_type {wht_type} is not supported.")
-        return Precomputed(tensors=(to(W * z, device=device, dtype=dtype),))
+        return Precomputed(tensors={"W": to(W * z, device=device, dtype=dtype)})
 
     @staticmethod
-    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

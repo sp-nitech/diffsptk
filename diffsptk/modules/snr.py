@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class SignalToNoiseRatio(BaseFunctionalModule):
@@ -50,7 +49,7 @@ class SignalToNoiseRatio(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, s: torch.Tensor, sn: torch.Tensor) -> torch.Tensor:
         """Calculate SNR.
@@ -80,16 +79,12 @@ class SignalToNoiseRatio(BaseFunctionalModule):
         tensor(20.0000)
 
         """
-        return self._forward(s, sn, *self.values)
+        return self._call_forward(s, sn)
 
     @staticmethod
     def _func(s: torch.Tensor, sn: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = SignalToNoiseRatio._precompute(*args, **kwargs).values
-        return SignalToNoiseRatio._forward(s, sn, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = SignalToNoiseRatio._precompute(*args, **kwargs)
+        return SignalToNoiseRatio._apply_precomputed(_p, s=s, sn=sn)
 
     @staticmethod
     def _check(frame_length: int | None, eps: float) -> None:
@@ -104,12 +99,20 @@ class SignalToNoiseRatio(BaseFunctionalModule):
     ) -> Precomputed:
         SignalToNoiseRatio._check(frame_length, eps)
         const = 10 if full else 1
-        return Precomputed(values=(frame_length, reduction, eps, const))
+        return Precomputed(
+            values={
+                "frame_length": frame_length,
+                "reduction": reduction,
+                "eps": eps,
+                "const": const,
+            }
+        )
 
     @staticmethod
     def _forward(
         s: torch.Tensor,
         sn: torch.Tensor,
+        *,
         frame_length: int | None,
         reduction: str,
         eps: float,

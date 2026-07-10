@@ -42,7 +42,7 @@ def choice(is_module, module, func, params={}):
 
     exclude_keys = ("learnable", "device", "dtype")
     filtered_params = {k: v for k, v in params.items() if k not in exclude_keys}
-    if module._takes_input_size():
+    if module._takes_input_size:
         filtered_params = dict(islice(filtered_params.items(), 1, None))
 
     def f(*args, **kwargs):

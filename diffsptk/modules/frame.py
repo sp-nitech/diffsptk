@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Frame(BaseFunctionalModule):
@@ -56,7 +55,7 @@ class Frame(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply framing to the given waveform.
@@ -85,16 +84,12 @@ class Frame(BaseFunctionalModule):
                 [7., 8., 9., 0., 0.]])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = Frame._precompute(*args, **kwargs).values
-        return Frame._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = Frame._precompute(*args, **kwargs)
+        return Frame._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(frame_length: int, frame_period: int) -> None:
@@ -113,18 +108,19 @@ class Frame(BaseFunctionalModule):
     ) -> Precomputed:
         Frame._check(frame_length, frame_period)
         return Precomputed(
-            values=(
-                frame_length,
-                frame_period,
-                center,
-                zmean,
-                mode,
-            )
+            values={
+                "frame_length": frame_length,
+                "frame_period": frame_period,
+                "center": center,
+                "zmean": zmean,
+                "mode": mode,
+            }
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         frame_length: int,
         frame_period: int,
         center: bool,
