@@ -48,7 +48,7 @@ def get_layer(
     if is_module:
         return module(**params)
 
-    if module._takes_input_size():
+    if module._takes_input_size:
         params = dict(islice(params.items(), 1, None))
     for key in ("learnable", "device", "dtype"):
         if key in params:
