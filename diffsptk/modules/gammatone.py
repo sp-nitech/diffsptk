@@ -143,8 +143,12 @@ class GammatoneFilterBankAnalysis(BaseNonFunctionalModule):
             b[:, 0] = 1
 
         # These coefficients should not be complex64 due to numerical errors.
-        self.register_buffer("a", to(a, device=device, dtype=torch.complex128))
-        self.register_buffer("b", to(b, device=device, dtype=torch.complex128))
+        self.register_buffer(
+            "a", to(a, device=device, dtype=torch.complex128), persistent=False
+        )
+        self.register_buffer(
+            "b", to(b, device=device, dtype=torch.complex128), persistent=False
+        )
 
         # Compute normalization factors to have 0 dB at center frequencies.
         if self.exact:

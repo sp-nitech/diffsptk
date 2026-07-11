@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 
 
@@ -39,14 +38,14 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, lpc_order: int, gamma: float = 1, c: int | None = None) -> None:
         super().__init__()
 
         self.in_dim = lpc_order + 1
 
-        self.values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
-            **filter_values(locals())
-        ).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, k: torch.Tensor) -> torch.Tensor:
         """Convert PARCOR to LPC.
@@ -77,18 +76,16 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
 
         """
         check_size(k.size(-1), self.in_dim, "dimension of PARCOR")
-        return self._forward(k, *self.values)
+        return self._call_forward(k)
 
     @staticmethod
     def _func(k: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
+        _p = ParcorCoefficientsToLinearPredictiveCoefficients._precompute(
             k.size(-1) - 1, *args, **kwargs
-        ).values
-        return ParcorCoefficientsToLinearPredictiveCoefficients._forward(k, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return ParcorCoefficientsToLinearPredictiveCoefficients._apply_precomputed(
+            _p, k=k
+        )
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -101,7 +98,7 @@ class ParcorCoefficientsToLinearPredictiveCoefficients(BaseFunctionalModule):
         )
 
     @staticmethod
-    def _forward(k: torch.Tensor, gamma: float) -> torch.Tensor:
+    def _forward(k: torch.Tensor, *, gamma: float) -> torch.Tensor:
         a = k / gamma
         for m in range(2, k.size(-1)):
             km = k[..., m : m + 1]

@@ -16,11 +16,10 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class RealValuedFastFourierTransform(BaseFunctionalModule):
@@ -57,13 +56,9 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        if learnable is True:
-            self.W = nn.Parameter(tensors[0])
-        elif learnable == "debug":
-            self.register_buffer("W", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals())), learnable=learnable is True
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute FFT of a real signal.
@@ -88,18 +83,14 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
         tensor([ 6.0000,  2.4142, -2.0000, -0.4142,  2.0000])
 
         """
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = RealValuedFastFourierTransform._precompute(
+        _p = RealValuedFastFourierTransform._precompute(
             *args, **kwargs, learnable=False, device=x.device, dtype=x.dtype
-        ).values
-        return RealValuedFastFourierTransform._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        )
+        return RealValuedFastFourierTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(fft_length: int | None) -> None:
@@ -135,14 +126,17 @@ class RealValuedFastFourierTransform(BaseFunctionalModule):
             W = torch.fft.fft(torch.eye(fft_length, device=device, dtype=torch.double))
             W = W[..., : fft_length // 2 + 1]
             W = torch.cat([W.real, W.imag], dim=-1)
-            tensors = (to(W, dtype=dtype),)
+            tensors = {"W": to(W, dtype=dtype)}
         else:
-            tensors = ()
-        return Precomputed(values=(fft_length, formatter), tensors=tensors)
+            tensors = {}
+        return Precomputed(
+            values={"fft_length": fft_length, "formatter": formatter}, tensors=tensors
+        )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         fft_length: int | None,
         formatter: Callable,
         W: torch.Tensor | None = None,

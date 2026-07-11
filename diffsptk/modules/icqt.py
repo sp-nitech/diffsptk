@@ -152,7 +152,9 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
             cqt_scale = np.sqrt(lengths)
         else:
             cqt_scale = np.ones(K)
-        self.register_buffer("cqt_scale", to(cqt_scale, device=device, dtype=dtype))
+        self.register_buffer(
+            "cqt_scale", to(cqt_scale, device=device, dtype=dtype), persistent=False
+        )
 
         fp = [frame_period]
         sr = [sample_rate * 1.0]
@@ -195,7 +197,9 @@ class InverseConstantQTransform(BaseNonFunctionalModule):
             freq_power *= fft_length / lengths[sl]
             fft_basis *= freq_power[:, None]
             self.register_buffer(
-                f"fft_basis_{i}", to(fft_basis, device=device, dtype=dtype)
+                f"fft_basis_{i}",
+                to(fft_basis, device=device, dtype=dtype),
+                persistent=False,
             )
 
             transforms.append(

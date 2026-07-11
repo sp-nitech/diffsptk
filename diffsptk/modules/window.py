@@ -16,12 +16,10 @@
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 from torch.signal.windows import cosine
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Window(BaseFunctionalModule):
@@ -58,6 +56,8 @@ class Window(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         in_length: int,
@@ -74,12 +74,10 @@ class Window(BaseFunctionalModule):
 
         self.in_dim = in_length
 
-        _p = self._precompute(**filter_values(locals(), drop_keys=["learnable"]))
-        self.values = _p.values
-        if learnable:
-            self.window = nn.Parameter(_p.tensors[0])
-        else:
-            self.register_buffer("window", _p.tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply a window function to the given waveform.
@@ -105,18 +103,14 @@ class Window(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "input length")
-        return self._forward(x, *self.values, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = Window._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
         )
-        return Window._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return Window._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(in_length: int, out_length: int | None) -> None:
@@ -184,11 +178,13 @@ class Window(BaseFunctionalModule):
         else:
             raise ValueError(f"norm {norm} is not supported.")
 
-        return Precomputed(values=(out_length,), tensors=(to(w, dtype=dtype),))
+        return Precomputed(
+            values={"out_length": out_length}, tensors={"window": to(w, dtype=dtype)}
+        )
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, out_length: int | None, window: torch.Tensor
+        x: torch.Tensor, *, out_length: int | None, window: torch.Tensor
     ) -> torch.Tensor:
         y = x * window
         if out_length is not None:

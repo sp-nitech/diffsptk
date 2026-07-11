@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import UNVOICED_SYMBOL, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .rmse import RootMeanSquareError
 
 
@@ -43,7 +42,7 @@ class F0Evaluation(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
         """Calculate F0 metric.
@@ -72,16 +71,12 @@ class F0Evaluation(BaseFunctionalModule):
         tensor(144.1353)
 
         """
-        return self._forward(x, y, *self.values)
+        return self._call_forward(x, y)
 
     @staticmethod
     def _func(x: torch.Tensor, y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = F0Evaluation._precompute(*args, **kwargs).values
-        return F0Evaluation._forward(x, y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = F0Evaluation._precompute(*args, **kwargs)
+        return F0Evaluation._apply_precomputed(_p, x=x, y=y)
 
     @staticmethod
     def _check() -> None:
@@ -90,11 +85,11 @@ class F0Evaluation(BaseFunctionalModule):
     @staticmethod
     def _precompute(reduction: str, out_format: str) -> Precomputed:
         F0Evaluation._check()
-        return Precomputed(values=(reduction, out_format))
+        return Precomputed(values={"reduction": reduction, "out_format": out_format})
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, y: torch.Tensor, reduction: str, out_format: str
+        x: torch.Tensor, y: torch.Tensor, *, reduction: str, out_format: str
     ) -> torch.Tensor:
         if out_format.startswith("f0-rmse"):
             voiced = (x != UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL)

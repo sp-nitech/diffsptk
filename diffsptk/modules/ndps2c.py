@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
@@ -46,6 +45,8 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         fft_length: int,
@@ -57,9 +58,7 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.register_buffer("ramp", _p.tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, n: torch.Tensor) -> torch.Tensor:
         """Convert NPDS to cepstrum.
@@ -85,20 +84,14 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
 
         """
         check_size(n.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(n, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(n)
 
     @staticmethod
     def _func(n: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = NegativeDerivativeOfPhaseSpectrumToCepstrum._precompute(
             2 * n.size(-1) - 2, *args, **kwargs, device=n.device, dtype=n.dtype
         )
-        return NegativeDerivativeOfPhaseSpectrumToCepstrum._forward(
-            n, *_p.values, *_p.tensors
-        )
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return NegativeDerivativeOfPhaseSpectrumToCepstrum._apply_precomputed(_p, n=n)
 
     @staticmethod
     def _check(fft_length: int, cep_order: int) -> None:
@@ -123,10 +116,14 @@ class NegativeDerivativeOfPhaseSpectrumToCepstrum(BaseFunctionalModule):
         if cep_order == half_fft_length:
             ramp[-1] *= 2
         ramp[1:] = 1 / ramp[1:]
-        return Precomputed(values=(cep_order,), tensors=(to(ramp, dtype=dtype),))
+        return Precomputed(
+            values={"cep_order": cep_order}, tensors={"ramp": to(ramp, dtype=dtype)}
+        )
 
     @staticmethod
-    def _forward(n: torch.Tensor, cep_order: int, ramp: torch.Tensor) -> torch.Tensor:
+    def _forward(
+        n: torch.Tensor, *, cep_order: int, ramp: torch.Tensor
+    ) -> torch.Tensor:
         c = torch.fft.hfft(n)[..., : cep_order + 1]
         c *= ramp
         return c

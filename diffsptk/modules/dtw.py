@@ -18,9 +18,9 @@ from typing import Any
 
 import torch
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 def _soft_dtw_core(
@@ -156,7 +156,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(
         self,
@@ -206,7 +206,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
                 [3, 3]])
 
         """
-        return self._forward(x, y, lengths, return_indices, *self.values)
+        return self._call_forward(x, y, lengths, return_indices)
 
     @staticmethod
     def _func(
@@ -217,12 +217,10 @@ class DynamicTimeWarping(BaseFunctionalModule):
         *args,
         **kwargs,
     ) -> torch.Tensor | tuple[torch.Tensor, list[torch.Tensor]]:
-        values = DynamicTimeWarping._precompute(*args, **kwargs).values
-        return DynamicTimeWarping._forward(x, y, lengths, return_indices, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = DynamicTimeWarping._precompute(*args, **kwargs)
+        return DynamicTimeWarping._apply_precomputed(
+            _p, x=x, y=y, lengths=lengths, return_indices=return_indices
+        )
 
     @staticmethod
     def _check(softness: float) -> None:
@@ -290,7 +288,13 @@ class DynamicTimeWarping(BaseFunctionalModule):
         has_two_step_transition = local_path_constraints[p]["has_two_step_transition"]
 
         return Precomputed(
-            values=(steps, has_two_step_transition, softness, dist_func, dtw_func)
+            values={
+                "steps": steps,
+                "has_two_step_transition": has_two_step_transition,
+                "softness": softness,
+                "dist_func": dist_func,
+                "dtw_func": dtw_func,
+            }
         )
 
     @staticmethod
@@ -299,6 +303,7 @@ class DynamicTimeWarping(BaseFunctionalModule):
         y: torch.Tensor,
         lengths: torch.Tensor | None,
         return_indices: bool,
+        *,
         steps: list[tuple[int, int]],
         has_two_step_transition: bool,
         softness: float,

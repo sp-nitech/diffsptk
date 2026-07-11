@@ -105,7 +105,9 @@ class WorldSynthesis(BaseNonFunctionalModule):
         self.fft_length = fft_length
         self.default_f0 = default_f0
 
-        self.register_buffer("ramp", torch.arange(fft_length, device=device))
+        self.register_buffer(
+            "ramp", torch.arange(fft_length, device=device), persistent=False
+        )
 
         # GetDCRemover()
         ramp = self.ramp[1 : fft_length // 2 + 1].double()
@@ -113,7 +115,9 @@ class WorldSynthesis(BaseNonFunctionalModule):
         dc_component = 2 * torch.sum(dc_remover)
         dc_remover /= dc_component
         dc_remover = torch.cat([dc_remover, dc_remover.flip(-1)], dim=-1)
-        self.register_buffer("dc_remover", to(dc_remover, dtype=dtype))
+        self.register_buffer(
+            "dc_remover", to(dc_remover, dtype=dtype), persistent=False
+        )
 
     def forward(
         self,

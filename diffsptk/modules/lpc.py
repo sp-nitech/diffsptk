@@ -14,16 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import filter_values, get_layer
 from .acorr import Autocorrelation
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .levdur import LevinsonDurbin
 
 
@@ -51,6 +48,8 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         frame_length: int,
@@ -61,8 +60,7 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        layers = self._precompute(**filter_values(locals())).layers
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform LPC analysis.
@@ -87,18 +85,19 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         tensor([ 0.5054, -0.8140,  0.1193])
 
         """
-        return self._forward(x, *self.layers)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        layers = LinearPredictiveCodingAnalysis._precompute(
-            x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        ).layers
-        return LinearPredictiveCodingAnalysis._forward(x, *layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        _p = LinearPredictiveCodingAnalysis._precompute(
+            x.size(-1),
+            *args,
+            **kwargs,
+            device=x.device,
+            dtype=x.dtype,
+            module=False,
+        )
+        return LinearPredictiveCodingAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check() -> None:
@@ -111,9 +110,9 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
         eps: float | None,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ) -> Precomputed:
         LinearPredictiveCodingAnalysis._check()
-        module = inspect.stack()[1].function != "_func"
 
         acorr = get_layer(
             module,
@@ -133,8 +132,8 @@ class LinearPredictiveCodingAnalysis(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return Precomputed(layers=(acorr, levdur))
+        return Precomputed(layers={"acorr": acorr, "levdur": levdur})
 
     @staticmethod
-    def _forward(x: torch.Tensor, acorr: Callable, levdur: Callable) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, acorr: Callable, levdur: Callable) -> torch.Tensor:
         return levdur(acorr(x))

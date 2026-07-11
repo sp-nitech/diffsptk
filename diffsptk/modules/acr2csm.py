@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, hankel, to, vander
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .root_pol import PolynomialToRoots
 
 
@@ -45,6 +44,8 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         acr_order: int,
@@ -55,8 +56,7 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
         self.in_dim = acr_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("C", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
         """Convert autocorrelation to CSM coefficients.
@@ -83,20 +83,16 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
 
         """
         check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")
-        return self._forward(r, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(r)
 
     @staticmethod
     def _func(r: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = AutocorrelationToCompositeSinusoidalModelCoefficients._precompute(
+        _p = AutocorrelationToCompositeSinusoidalModelCoefficients._precompute(
             r.size(-1) - 1, *args, **kwargs, device=r.device, dtype=r.dtype
-        ).tensors
-        return AutocorrelationToCompositeSinusoidalModelCoefficients._forward(
-            r, *tensors
         )
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return AutocorrelationToCompositeSinusoidalModelCoefficients._apply_precomputed(
+            _p, r=r
+        )
 
     @staticmethod
     def _check(acr_order: int) -> None:
@@ -130,10 +126,10 @@ class AutocorrelationToCompositeSinusoidalModelCoefficients(BaseFunctionalModule
                 bias + center : bias + center + length, k
             ]
         C[1:] *= 2
-        return Precomputed(tensors=(to(C, dtype=dtype),))
+        return Precomputed(tensors={"C": to(C, dtype=dtype)})
 
     @staticmethod
-    def _forward(r: torch.Tensor, C: torch.Tensor) -> torch.Tensor:
+    def _forward(r: torch.Tensor, *, C: torch.Tensor) -> torch.Tensor:
         u = torch.matmul(r, C)
         u1, u2 = torch.tensor_split(u, 2, dim=-1)
 

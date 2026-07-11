@@ -17,9 +17,8 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class CepstralAnalysis(BaseFunctionalModule):
@@ -47,6 +46,8 @@ class CepstralAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self, *, fft_length: int, cep_order: int, accel: float = 0, n_iter: int = 0
     ) -> None:
@@ -54,7 +55,7 @@ class CepstralAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Perform cepstral analysis.
@@ -82,18 +83,12 @@ class CepstralAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = CepstralAnalysis._precompute(
-            2 * x.size(-1) - 2, *args, **kwargs
-        ).values
-        return CepstralAnalysis._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        _p = CepstralAnalysis._precompute(2 * x.size(-1) - 2, *args, **kwargs)
+        return CepstralAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(fft_length: int, cep_order: int, accel: float, n_iter: int) -> None:
@@ -113,11 +108,13 @@ class CepstralAnalysis(BaseFunctionalModule):
         fft_length: int, cep_order: int, accel: float, n_iter: int
     ) -> Precomputed:
         CepstralAnalysis._check(fft_length, cep_order, accel, n_iter)
-        return Precomputed(values=(cep_order, accel, n_iter))
+        return Precomputed(
+            values={"cep_order": cep_order, "accel": accel, "n_iter": n_iter}
+        )
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, cep_order: int, accel: float, n_iter: int
+        x: torch.Tensor, *, cep_order: int, accel: float, n_iter: int
     ) -> torch.Tensor:
         N = cep_order + 1
         H = x.size(-1)

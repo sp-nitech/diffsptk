@@ -247,14 +247,18 @@ class AperiodicityExtractionByTANDEM(nn.Module):
             idx = np.clip(idx, 0, len(coarse_axis) - 2)
             idx = idx.reshape(1, 1, -1)
             self.register_buffer(
-                "interp_indices", to(idx, device=device, dtype=torch.long)
+                "interp_indices",
+                to(idx, device=device, dtype=torch.long),
+                persistent=False,
             )
 
             x0 = coarse_axis[:-1]
             dx = coarse_axis[1:] - x0
             weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
             self.register_buffer(
-                "interp_weights", to(weights, device=device, dtype=dtype)
+                "interp_weights",
+                to(weights, device=device, dtype=dtype),
+                persistent=False,
             )
 
         self.segment_length = [
@@ -263,21 +267,29 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         ramp = torch.arange(-1, self.segment_length[0] + 1, device=device).view(
             1, 1, -1
         )
-        self.register_buffer("ramp", ramp)
-        self.register_buffer("eye", torch.eye(6, device=device, dtype=dtype) * eps)
+        self.register_buffer("ramp", ramp, persistent=False)
+        self.register_buffer(
+            "eye", torch.eye(6, device=device, dtype=dtype) * eps, persistent=False
+        )
 
         hHP = self._qmf_high()
         hLP = self._qmf_low()
-        self.register_buffer("hHP", to(hHP, device=device, dtype=dtype).view(1, 1, -1))
-        self.register_buffer("hLP", to(hLP, device=device, dtype=dtype).view(1, 1, -1))
+        self.register_buffer(
+            "hHP", to(hHP, device=device, dtype=dtype).view(1, 1, -1), persistent=False
+        )
+        self.register_buffer(
+            "hLP", to(hLP, device=device, dtype=dtype).view(1, 1, -1), persistent=False
+        )
         self.hHP_pad = nn.ReflectionPad1d(self.hHP.size(-1) // 2)
         self.hLP_pad = nn.ReflectionPad1d(self.hLP.size(-1) // 2)
 
         window = np.zeros((self.n_band, self.segment_length[0]))
         for i, s in enumerate(self.segment_length):
             window[i, :s] = np.hanning(s + 2)[1:-1]
-        self.register_buffer("window", to(window, device=device, dtype=dtype))
-        self.register_buffer("window_sqrt", self.window.sqrt())
+        self.register_buffer(
+            "window", to(window, device=device, dtype=dtype), persistent=False
+        )
+        self.register_buffer("window_sqrt", self.window.sqrt(), persistent=False)
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = torch.where(f0 <= 32, self.default_f0, f0).detach()
@@ -502,7 +514,7 @@ class AperiodicityExtractionByD4C(nn.Module):
             left = center - half_window_length
             right = center + half_window_length + 1
             windows.append(F.pad(window, (left, padded_window_length - right)))
-        self.register_buffer("windows", torch.stack(windows))
+        self.register_buffer("windows", torch.stack(windows), persistent=False)
         self.window_length = window_length
 
         if fft_length is not None:
@@ -513,20 +525,26 @@ class AperiodicityExtractionByD4C(nn.Module):
             idx = np.clip(idx, 0, len(coarse_axis) - 2)
             idx = idx.reshape(1, 1, -1)
             self.register_buffer(
-                "interp_indices", to(idx, device=device, dtype=torch.long)
+                "interp_indices",
+                to(idx, device=device, dtype=torch.long),
+                persistent=False,
             )
 
             x0 = coarse_axis[:-1]
             dx = coarse_axis[1:] - x0
             weights = (freq_axis - np.take(x0, idx)) / np.take(dx, idx)
             self.register_buffer(
-                "interp_weights", to(weights, device=device, dtype=dtype)
+                "interp_weights",
+                to(weights, device=device, dtype=dtype),
+                persistent=False,
             )
 
         self.spec_love = Spectrum(self.fft_length_love)
         self.spec_d4c = Spectrum(self.fft_length_d4c)
 
-        self.register_buffer("ramp", torch.arange(self.fft_length_d4c, device=device))
+        self.register_buffer(
+            "ramp", torch.arange(self.fft_length_d4c, device=device), persistent=False
+        )
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
         f0 = (

@@ -129,8 +129,12 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
         phase_factors = 1j / slopes
         delay_samples = self.delay - max_indices
 
-        self.register_buffer("phase_factors", phase_factors.unsqueeze(-1))  # (K, 1)
-        self.register_buffer("delay_samples", delay_samples.unsqueeze(-1))  # (K, 1)
+        self.register_buffer(
+            "phase_factors", phase_factors.unsqueeze(-1), persistent=False
+        )  # (K, 1)
+        self.register_buffer(
+            "delay_samples", delay_samples.unsqueeze(-1), persistent=False
+        )  # (K, 1)
 
         # Compute gains.
         center_frequencies_in_hz = to(
@@ -154,7 +158,9 @@ class GammatoneFilterBankSynthesis(BaseNonFunctionalModule):
             if diff < eps:
                 break
 
-        self.register_buffer("gains", gains.real.unsqueeze(-1))  # (K, 1)
+        self.register_buffer(
+            "gains", gains.real.unsqueeze(-1), persistent=False
+        )  # (K, 1)
 
     def forward(
         self, y: torch.Tensor, keepdim: bool = True, compensate_delay: bool = True

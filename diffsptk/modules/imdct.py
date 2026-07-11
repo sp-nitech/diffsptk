@@ -14,15 +14,12 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values, get_layer
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .mdct import LEARNABLES, ModifiedDiscreteCosineTransform, ModifiedDiscreteTransform
 from .unframe import Unframe
 from .window import Window
@@ -62,10 +59,7 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        layers = _p.layers
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor, out_length: int | None = None) -> torch.Tensor:
         """Compute inverse modified discrete cosine transform.
@@ -95,18 +89,16 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         tensor([1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, out_length, *self.values, *self.layers)
+        return self._call_forward(y, out_length)
 
     @staticmethod
     def _func(y: torch.Tensor, out_length: int | None, *args, **kwargs) -> torch.Tensor:
-        _p = InverseModifiedDiscreteCosineTransform._precompute(*args, **kwargs)
-        return InverseModifiedDiscreteCosineTransform._forward(
-            y, out_length, *_p.values, *_p.layers
+        _p = InverseModifiedDiscreteCosineTransform._precompute(
+            *args, **kwargs, module=False
         )
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        return InverseModifiedDiscreteCosineTransform._apply_precomputed(
+            _p, y=y, out_length=out_length
+        )
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -120,9 +112,9 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
         transform: str = "cosine",
+        module: bool = True,
     ) -> Precomputed:
         InverseModifiedDiscreteCosineTransform._check(learnable)
-        module = inspect.stack()[1].function != "_func"
         frame_period = frame_length // 2
 
         if learnable is True:
@@ -168,12 +160,16 @@ class InverseModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return Precomputed(values=(frame_period,), layers=(imdt, window_, unframe))
+        return Precomputed(
+            values={"frame_period": frame_period},
+            layers={"imdt": imdt, "window": window_, "unframe": unframe},
+        )
 
     @staticmethod
     def _forward(
         y: torch.Tensor,
         out_length: int | None,
+        *,
         frame_period: int,
         imdt: Callable,
         window: Callable,
@@ -210,6 +206,8 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         length: int,
@@ -223,13 +221,10 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length // 2
 
-        tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        ).tensors
-        if learnable:
-            self.W = nn.Parameter(tensors[0])
-        else:
-            self.register_buffer("W", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Apply inverse MDCT/MDST to the input.
@@ -246,22 +241,18 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
 
         """
         check_size(y.size(-1), self.in_dim, "dimension of input")
-        return self._forward(y, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = InverseModifiedDiscreteTransform._precompute(
+        _p = InverseModifiedDiscreteTransform._precompute(
             2 * y.size(-1),
             *args,
             **kwargs,
             device=y.device,
             dtype=y.dtype,
-        ).tensors
-        return InverseModifiedDiscreteTransform._forward(y, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return InverseModifiedDiscreteTransform._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -270,8 +261,8 @@ class InverseModifiedDiscreteTransform(BaseFunctionalModule):
     @staticmethod
     def _precompute(*args, **kwargs) -> Precomputed:
         tensors = ModifiedDiscreteTransform._precompute(*args, **kwargs).tensors
-        return Precomputed(tensors=(tensors[0].T,))
+        return Precomputed(tensors={"W": tensors["W"].T})
 
     @staticmethod
-    def _forward(y: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+    def _forward(y: torch.Tensor, *, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(y, W)

@@ -16,9 +16,9 @@
 
 import torch
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class PolynomialToRoots(BaseFunctionalModule):
@@ -45,6 +45,8 @@ class PolynomialToRoots(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         order: int,
@@ -58,9 +60,7 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         self.in_dim = order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.register_buffer("eye", _p.tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Find the roots of the input polynomial.
@@ -86,18 +86,14 @@ class PolynomialToRoots(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "order of polynomial")
-        return self._forward(a, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(a)
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = PolynomialToRoots._precompute(
             a.size(-1) - 1, *args, **kwargs, dtype=a.dtype, device=a.device
         )
-        return PolynomialToRoots._forward(a, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return PolynomialToRoots._apply_precomputed(_p, a=a)
 
     @staticmethod
     def _check(order: int, eps: float | None) -> None:
@@ -126,11 +122,13 @@ class PolynomialToRoots(BaseFunctionalModule):
             raise ValueError(f"out_format {out_format} is not supported.")
 
         eye = torch.eye(order - 1, order, device=device, dtype=dtype)
-        return Precomputed(values=(eps, formatter), tensors=(eye,))
+        return Precomputed(
+            values={"eps": eps, "formatter": formatter}, tensors={"eye": eye}
+        )
 
     @staticmethod
     def _forward(
-        a: torch.Tensor, eps: float, formatter: Callable, eye: torch.Tensor
+        a: torch.Tensor, *, eps: float, formatter: Callable, eye: torch.Tensor
     ) -> torch.Tensor:
         if torch.any(a[..., 0] == 0):
             raise ValueError("Leading coefficient must be non-zero.")

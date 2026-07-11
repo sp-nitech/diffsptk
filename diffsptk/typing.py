@@ -14,11 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-from typing import Any, NamedTuple, TypeAlias, TypeVar
+from typing import Any, TypeAlias, TypeVar
 from typing import Callable as _Callable
 
 import numpy as np
-import torch
 
 Callable: TypeAlias = _Callable[..., Any]
 
@@ -26,9 +25,3 @@ T = TypeVar("T", int, float)
 ArrayLike: TypeAlias = (
     list[T] | tuple[T, ...] | list[list[T]] | tuple[tuple[T, ...], ...] | np.ndarray
 )
-
-
-class Precomputed(NamedTuple):
-    values: tuple[Any, ...] = ()
-    layers: tuple[Callable, ...] = ()
-    tensors: tuple[torch.Tensor, ...] = ()

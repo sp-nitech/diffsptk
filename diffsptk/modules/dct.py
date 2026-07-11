@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, plateau, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class DiscreteCosineTransform(BaseFunctionalModule):
@@ -41,6 +40,8 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         dct_length: int,
@@ -52,8 +53,7 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
         self.in_dim = dct_length
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("W", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply DCT to the input.
@@ -79,18 +79,14 @@ class DiscreteCosineTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = DiscreteCosineTransform._precompute(
+        _p = DiscreteCosineTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return DiscreteCosineTransform._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return DiscreteCosineTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(dct_length: int, dct_type: int) -> None:
@@ -134,8 +130,8 @@ class DiscreteCosineTransform(BaseFunctionalModule):
             raise ValueError(f"dct_type {dct_type} is not supported.")
 
         W = z * torch.cos(k.unsqueeze(0) * n.unsqueeze(1))
-        return Precomputed(tensors=(to(W, dtype=dtype),))
+        return Precomputed(tensors={"W": to(W, dtype=dtype)})
 
     @staticmethod
-    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
@@ -32,12 +31,14 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, cep_order: int) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 2
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Perform mel-cepstrum inverse power normalization.
@@ -74,10 +75,6 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
         return MelCepstrumInversePowerNormalization._forward(y)
 
     @staticmethod
-    def _takes_input_size() -> bool:
-        return True
-
-    @staticmethod
     def _check(cep_order: int) -> None:
         if cep_order < 0:
             raise ValueError("cep_order must be non-negative.")
@@ -85,7 +82,7 @@ class MelCepstrumInversePowerNormalization(BaseFunctionalModule):
     @staticmethod
     def _precompute(cep_order: int) -> Precomputed:
         MelCepstrumInversePowerNormalization._check(cep_order)
-        return Precomputed(values=(None,))
+        return Precomputed()
 
     @staticmethod
     def _forward(y: torch.Tensor) -> torch.Tensor:

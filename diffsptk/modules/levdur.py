@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, symmetric_toeplitz
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class LevinsonDurbin(BaseFunctionalModule):
@@ -42,6 +41,8 @@ class LevinsonDurbin(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         lpc_order: int,
@@ -53,8 +54,7 @@ class LevinsonDurbin(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("eye", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, r: torch.Tensor) -> torch.Tensor:
         """Solve a Yule-Walker linear system.
@@ -81,18 +81,14 @@ class LevinsonDurbin(BaseFunctionalModule):
 
         """
         check_size(r.size(-1), self.in_dim, "dimension of autocorrelation")
-        return self._forward(r, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(r)
 
     @staticmethod
     def _func(r: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = LevinsonDurbin._precompute(
+        _p = LevinsonDurbin._precompute(
             r.size(-1) - 1, *args, **kwargs, device=r.device, dtype=r.dtype
-        ).tensors
-        return LevinsonDurbin._forward(r, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return LevinsonDurbin._apply_precomputed(_p, r=r)
 
     @staticmethod
     def _check(lpc_order: int, eps: float | None) -> None:
@@ -112,10 +108,10 @@ class LevinsonDurbin(BaseFunctionalModule):
         if eps is None:
             eps = 1e-5 if (dtype or torch.get_default_dtype()) == torch.float else 0
         eye = torch.eye(lpc_order, device=device, dtype=dtype) * eps
-        return Precomputed(tensors=(eye,))
+        return Precomputed(tensors={"eye": eye})
 
     @staticmethod
-    def _forward(r: torch.Tensor, eye: torch.Tensor) -> torch.Tensor:
+    def _forward(r: torch.Tensor, *, eye: torch.Tensor) -> torch.Tensor:
         r0, r1 = torch.split(r, [1, r.size(-1) - 1], dim=-1)
 
         # Make Toeplitz matrix.

@@ -18,9 +18,8 @@ from typing import cast
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import UNVOICED_SYMBOL, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class MagicNumberInterpolation(BaseFunctionalModule):
@@ -37,8 +36,7 @@ class MagicNumberInterpolation(BaseFunctionalModule):
     def __init__(self, magic_number: float = UNVOICED_SYMBOL) -> None:
         super().__init__()
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("magic_number", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Interpolate magic number.
@@ -65,18 +63,14 @@ class MagicNumberInterpolation(BaseFunctionalModule):
         tensor([1., 1., 2., 3., 4., 4.])
 
         """
-        return self._forward(x, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = MagicNumberInterpolation._precompute(
+        _p = MagicNumberInterpolation._precompute(
             *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return MagicNumberInterpolation._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        )
+        return MagicNumberInterpolation._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check() -> None:
@@ -90,10 +84,10 @@ class MagicNumberInterpolation(BaseFunctionalModule):
     ) -> Precomputed:
         MagicNumberInterpolation._check()
         _magic_number = torch.tensor(magic_number, device=device, dtype=dtype)
-        return Precomputed(tensors=(_magic_number,))
+        return Precomputed(tensors={"magic_number": _magic_number})
 
     @staticmethod
-    def _forward(x: torch.Tensor, magic_number: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, magic_number: torch.Tensor) -> torch.Tensor:
         return cast(torch.Tensor, MagicNumberInterpolationImpl.apply(x, magic_number))
 
 

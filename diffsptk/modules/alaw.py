@@ -18,9 +18,8 @@ import math
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class ALawCompression(BaseFunctionalModule):
@@ -40,7 +39,7 @@ class ALawCompression(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compress the input waveform using the A-law algorithm.
@@ -65,16 +64,12 @@ class ALawCompression(BaseFunctionalModule):
         tensor([0.0000, 2.9868, 3.4934, 3.7897, 4.0000])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ALawCompression._precompute(*args, **kwargs).values
-        return ALawCompression._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ALawCompression._precompute(*args, **kwargs)
+        return ALawCompression._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(abs_max: float, a: float) -> None:
@@ -87,15 +82,13 @@ class ALawCompression(BaseFunctionalModule):
     def _precompute(abs_max: float, a: float) -> Precomputed:
         ALawCompression._check(abs_max, a)
         return Precomputed(
-            values=(
-                abs_max,
-                a,
-                abs_max / (1 + math.log(a)),
-            )
+            values={"abs_max": abs_max, "a": a, "c": abs_max / (1 + math.log(a))}
         )
 
     @staticmethod
-    def _forward(x: torch.Tensor, abs_max: float, a: float, c: float) -> torch.Tensor:
+    def _forward(
+        x: torch.Tensor, *, abs_max: float, a: float, c: float
+    ) -> torch.Tensor:
         x_abs = x.abs() / abs_max
         x1 = a * x_abs
         x2 = 1 + torch.log(x1)

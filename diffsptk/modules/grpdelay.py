@@ -19,9 +19,8 @@ from typing import cast
 import torch
 import torch.nn.functional as F
 
-from ..typing import Precomputed
 from ..utils.private import filter_values, remove_gain
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class GroupDelay(BaseFunctionalModule):
@@ -57,10 +56,7 @@ class GroupDelay(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("ramp", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(
         self, b: torch.Tensor | None = None, a: torch.Tensor | None = None
@@ -90,7 +86,7 @@ class GroupDelay(BaseFunctionalModule):
         tensor([2.3333, 2.4278, 3.0000, 3.9252, 3.0000])
 
         """
-        return self._forward(b, a, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(b, a)
 
     @staticmethod
     def _func(
@@ -98,11 +94,7 @@ class GroupDelay(BaseFunctionalModule):
     ) -> torch.Tensor:
         x = cast(torch.Tensor, a if b is None else b)
         _p = GroupDelay._precompute(*args, **kwargs, device=x.device, dtype=x.dtype)
-        return GroupDelay._forward(b, a, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        return GroupDelay._apply_precomputed(_p, b=b, a=a)
 
     @staticmethod
     def _check(fft_length: int, alpha: float, gamma: float) -> None:
@@ -123,12 +115,16 @@ class GroupDelay(BaseFunctionalModule):
     ) -> Precomputed:
         GroupDelay._check(fft_length, alpha, gamma)
         ramp = torch.arange(fft_length, device=device, dtype=dtype)
-        return Precomputed(values=(fft_length, alpha, gamma), tensors=(ramp,))
+        return Precomputed(
+            values={"fft_length": fft_length, "alpha": alpha, "gamma": gamma},
+            tensors={"ramp": ramp},
+        )
 
     @staticmethod
     def _forward(
         b: torch.Tensor | None,
         a: torch.Tensor | None,
+        *,
         fft_length: int,
         alpha: float,
         gamma: float,

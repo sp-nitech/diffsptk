@@ -264,7 +264,9 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         ).to(device)
 
         weights = self.torchcrepe.loudness.perceptual_weights().squeeze(-1)
-        self.register_buffer("weights", to(weights, device=device, dtype=dtype))
+        self.register_buffer(
+            "weights", to(weights, device=device, dtype=dtype), persistent=False
+        )
 
     def forward(self, x: torch.Tensor, embed: bool = True) -> torch.Tensor:
         x = self.resample(x)

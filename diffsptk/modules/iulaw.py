@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .ulaw import MuLawCompression
 
 
@@ -39,7 +38,7 @@ class MuLawExpansion(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, mu: int = 255) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Expand the waveform using the :math:`\\mu`-law algorithm.
@@ -65,16 +64,12 @@ class MuLawExpansion(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, *self.values)
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = MuLawExpansion._precompute(*args, **kwargs).values
-        return MuLawExpansion._forward(y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = MuLawExpansion._precompute(*args, **kwargs)
+        return MuLawExpansion._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -83,16 +78,10 @@ class MuLawExpansion(BaseFunctionalModule):
     @staticmethod
     def _precompute(abs_max: float, mu: int) -> Precomputed:
         MuLawExpansion._check(abs_max, mu)
-        return Precomputed(
-            values=(
-                abs_max,
-                mu,
-                abs_max / mu,
-            )
-        )
+        return Precomputed(values={"abs_max": abs_max, "mu": mu, "c": abs_max / mu})
 
     @staticmethod
-    def _forward(y: torch.Tensor, abs_max: float, mu: int, c: float) -> torch.Tensor:
+    def _forward(y: torch.Tensor, *, abs_max: float, mu: int, c: float) -> torch.Tensor:
         y_abs = y.abs() / abs_max
         x = c * torch.sign(y) * (torch.pow(1 + mu, y_abs) - 1)
         return x

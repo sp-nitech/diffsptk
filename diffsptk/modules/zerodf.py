@@ -17,9 +17,9 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .linear_intpl import LinearInterpolation
 
 
@@ -62,6 +62,8 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         filter_order: int,
@@ -76,10 +78,7 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         self.in_dim = filter_order + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        if len(_p.tensors) > 0:
-            self.register_buffer("ramp", _p.tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
         """Apply an all-zero digital filter.
@@ -109,18 +108,14 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         """
         check_size(b.size(-1), self.in_dim, "dimension of impulse response")
-        return self._forward(x, b, *self.values, **self._buffers)  # type: ignore[arg-type]
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return self._call_forward(x, b)
 
     @staticmethod
     def _func(x: torch.Tensor, b: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = AllZeroDigitalFilter._precompute(
             b.size(-1) - 1, *args, **kwargs, device=b.device, dtype=b.dtype
         )
-        return AllZeroDigitalFilter._forward(x, b, *_p.values, *_p.tensors)
+        return AllZeroDigitalFilter._apply_precomputed(_p, x=x, b=b)
 
     @staticmethod
     def _check(
@@ -158,32 +153,38 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
 
         if mode == "direct":
             impl = AllZeroDigitalFilter._forward_direct
-            tensors = ()
+            tensors = {}
         elif mode == "efficient":
             impl = AllZeroDigitalFilter._forward_efficient
             ramp = torch.arange(frame_period, device=device) / frame_period
             ramp = ramp.view(1, 1, -1)
-            tensors = (to(ramp, dtype=dtype),)
+            tensors = {"ramp": to(ramp, dtype=dtype)}
         else:
             raise ValueError("mode must be 'direct' or 'efficient'.")
 
         return Precomputed(
-            values=(frame_period, ignore_gain, padding, impl), tensors=tensors
+            values={
+                "frame_period": frame_period,
+                "ignore_gain": ignore_gain,
+                "padding": padding,
+                "impl": impl,
+            },
+            tensors=tensors,
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
         b: torch.Tensor,
+        *,
         frame_period: int,
         ignore_gain: bool,
         padding: tuple[int, int],
         impl: Callable,
-        *args,
         **kwargs,
     ) -> torch.Tensor:
         check_size(x.size(-1), b.size(-2) * frame_period, "sequence length")
-        return impl(x, b, frame_period, ignore_gain, padding, *args, **kwargs)
+        return impl(x, b, frame_period, ignore_gain, padding, **kwargs)
 
     @staticmethod
     def _forward_direct(

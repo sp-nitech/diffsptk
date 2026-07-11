@@ -18,10 +18,9 @@ import math
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values
 from .alaw import ALawCompression
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class ALawExpansion(BaseFunctionalModule):
@@ -41,7 +40,7 @@ class ALawExpansion(BaseFunctionalModule):
     def __init__(self, abs_max: float = 1, a: float = 87.6) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, y: torch.Tensor) -> torch.Tensor:
         """Expand the waveform using the A-law algorithm.
@@ -67,16 +66,12 @@ class ALawExpansion(BaseFunctionalModule):
         tensor([0.0000, 1.0000, 2.0000, 3.0000, 4.0000])
 
         """
-        return self._forward(y, *self.values)
+        return self._call_forward(y)
 
     @staticmethod
     def _func(y: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ALawExpansion._precompute(*args, **kwargs).values
-        return ALawExpansion._forward(y, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ALawExpansion._precompute(*args, **kwargs)
+        return ALawExpansion._apply_precomputed(_p, y=y)
 
     @staticmethod
     def _check(*args, **kwargs) -> None:
@@ -86,15 +81,13 @@ class ALawExpansion(BaseFunctionalModule):
     def _precompute(abs_max: float, a: float) -> Precomputed:
         ALawExpansion._check(abs_max, a)
         return Precomputed(
-            values=(
-                abs_max,
-                abs_max / a,
-                1 + math.log(a),
-            )
+            values={"abs_max": abs_max, "c": abs_max / a, "z": 1 + math.log(a)}
         )
 
     @staticmethod
-    def _forward(y: torch.Tensor, abs_max: float, c: float, z: float) -> torch.Tensor:
+    def _forward(
+        y: torch.Tensor, *, abs_max: float, c: float, z: float
+    ) -> torch.Tensor:
         y_abs = y.abs() / abs_max
         y1 = z * y_abs
         y2 = torch.exp(y1 - 1)

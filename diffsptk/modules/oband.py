@@ -140,7 +140,9 @@ class FractionalOctaveBandAnalysis(BaseNonFunctionalModule):
         h = np.fft.irfft(H)
         h = h * np.hanning(h.shape[1])
         h = np.expand_dims(h, 1)
-        self.register_buffer("filters", to(h, device=device, dtype=dtype))
+        self.register_buffer(
+            "filters", to(h, device=device, dtype=dtype), persistent=False
+        )
 
         # Make padding module.
         delay_left = (filter_order + 1) // 2

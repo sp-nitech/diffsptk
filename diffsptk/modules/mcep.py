@@ -14,13 +14,10 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import (
     check_size,
     filter_values,
@@ -29,7 +26,7 @@ from ..utils.private import (
     symmetric_toeplitz,
     to,
 )
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .freqt import FrequencyTransform
 
 
@@ -60,6 +57,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         *,
@@ -74,10 +73,7 @@ class MelCepstralAnalysis(BaseFunctionalModule):
 
         self.in_dim = fft_length // 2 + 1
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
-        self.register_buffer("alpha_vector", _p.tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor):
         """Perform mel-cepstral analysis.
@@ -107,18 +103,19 @@ class MelCepstralAnalysis(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of spectrum")
-        return self._forward(x, *self.values, *self.layers, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs):
         _p = MelCepstralAnalysis._precompute(
-            2 * x.size(-1) - 2, *args, **kwargs, dtype=x.dtype, device=x.device
+            2 * x.size(-1) - 2,
+            *args,
+            **kwargs,
+            dtype=x.dtype,
+            device=x.device,
+            module=False,
         )
-        return MelCepstralAnalysis._forward(x, *_p.values, *_p.layers, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        return MelCepstralAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(fft_length: int, cep_order: int, alpha: float, n_iter: int):
@@ -141,9 +138,9 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         n_iter: int,
         device: torch.device | None,
         dtype: torch.dtype | None,
+        module: bool = True,
     ):
         MelCepstralAnalysis._check(fft_length, cep_order, alpha, n_iter)
-        module = inspect.stack()[1].function != "_func"
 
         freqt = get_layer(
             module,
@@ -184,14 +181,15 @@ class MelCepstralAnalysis(BaseFunctionalModule):
         )
 
         return Precomputed(
-            values=(fft_length, n_iter),
-            layers=(freqt, ifreqt, rfreqt),
-            tensors=(alpha_vector,),
+            values={"fft_length": fft_length, "n_iter": n_iter},
+            layers={"freqt": freqt, "ifreqt": ifreqt, "rfreqt": rfreqt},
+            tensors={"alpha_vector": alpha_vector},
         )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         fft_length: int,
         n_iter: int,
         freqt: Callable,
@@ -227,6 +225,8 @@ class MelCepstralAnalysis(BaseFunctionalModule):
 
 
 class CoefficientsFrequencyTransform(BaseFunctionalModule):
+    _takes_input_size = True
+
     def __init__(
         self,
         in_order: int,
@@ -239,23 +239,18 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
 
         self.in_dim = in_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("A", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(c)
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = CoefficientsFrequencyTransform._precompute(
+        _p = CoefficientsFrequencyTransform._precompute(
             c.size(-1) - 1, *args, **kwargs, device=c.device, dtype=c.dtype
-        ).tensors
-        return CoefficientsFrequencyTransform._forward(c, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return CoefficientsFrequencyTransform._apply_precomputed(_p, c=c)
 
     @staticmethod
     def _check(in_order: int, out_order: int, alpha: float):
@@ -286,8 +281,8 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
                 j1 = j - 1
                 A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
 
-        return Precomputed(tensors=(to(A.T, dtype=dtype),))
+        return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
 
     @staticmethod
-    def _forward(c: torch.Tensor, A: torch.Tensor) -> torch.Tensor:
+    def _forward(c: torch.Tensor, *, A: torch.Tensor) -> torch.Tensor:
         return torch.matmul(c, A)

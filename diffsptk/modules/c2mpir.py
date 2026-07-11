@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import cexp, check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
@@ -39,12 +38,14 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(self, cep_order: int, ir_length: int, n_fft: int = 512) -> None:
         super().__init__()
 
         self.in_dim = cep_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, c: torch.Tensor) -> torch.Tensor:
         """Convert cepstrum to minimum-phase impulse response.
@@ -70,18 +71,14 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
 
         """
         check_size(c.size(-1), self.in_dim, "dimension of cepstrum")
-        return self._forward(c, *self.values)
+        return self._call_forward(c)
 
     @staticmethod
     def _func(c: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = CepstrumToMinimumPhaseImpulseResponse._precompute(
+        _p = CepstrumToMinimumPhaseImpulseResponse._precompute(
             c.size(-1) - 1, *args, **kwargs
-        ).values
-        return CepstrumToMinimumPhaseImpulseResponse._forward(c, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return CepstrumToMinimumPhaseImpulseResponse._apply_precomputed(_p, c=c)
 
     @staticmethod
     def _check(cep_order: int, ir_length: int, n_fft: int) -> None:
@@ -95,10 +92,10 @@ class CepstrumToMinimumPhaseImpulseResponse(BaseFunctionalModule):
     @staticmethod
     def _precompute(cep_order: int, ir_length: int, n_fft: int) -> Precomputed:
         CepstrumToMinimumPhaseImpulseResponse._check(cep_order, ir_length, n_fft)
-        return Precomputed(values=(ir_length, n_fft))
+        return Precomputed(values={"ir_length": ir_length, "n_fft": n_fft})
 
     @staticmethod
-    def _forward(c: torch.Tensor, ir_length: int, n_fft: int) -> torch.Tensor:
+    def _forward(c: torch.Tensor, *, ir_length: int, n_fft: int) -> torch.Tensor:
         C = torch.fft.fft(c, n=n_fft)
         h = torch.fft.ifft(cexp(C)).real[..., :ir_length]
         return h

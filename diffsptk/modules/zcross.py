@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values, replicate1
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class ZeroCrossingAnalysis(BaseFunctionalModule):
@@ -44,7 +43,7 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute zero-crossing rate.
@@ -70,16 +69,12 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
         tensor([2., 1.])
 
         """
-        return self._forward(x, *self.values)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = ZeroCrossingAnalysis._precompute(*args, **kwargs).values
-        return ZeroCrossingAnalysis._forward(x, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ZeroCrossingAnalysis._precompute(*args, **kwargs)
+        return ZeroCrossingAnalysis._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(frame_length: int, softness: float) -> None:
@@ -91,11 +86,13 @@ class ZeroCrossingAnalysis(BaseFunctionalModule):
     @staticmethod
     def _precompute(frame_length: int, norm: bool, softness: float) -> Precomputed:
         ZeroCrossingAnalysis._check(frame_length, softness)
-        return Precomputed(values=(frame_length, norm, softness))
+        return Precomputed(
+            values={"frame_length": frame_length, "norm": norm, "softness": softness}
+        )
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, frame_length: int, norm: bool, softness: float
+        x: torch.Tensor, *, frame_length: int, norm: bool, softness: float
     ) -> torch.Tensor:
         x = torch.tanh(x / softness)
         x = replicate1(x, right=False)

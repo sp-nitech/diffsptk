@@ -18,9 +18,9 @@ from typing import cast
 
 import torch
 
-from ..typing import ArrayLike, Precomputed
+from ..typing import ArrayLike
 from ..utils.private import check_size, filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .delta import Delta
 
 
@@ -44,6 +44,8 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         size: int,
@@ -58,8 +60,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         self.in_length = size
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("M", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, u: torch.Tensor) -> torch.Tensor:
         """Perform MLPG given the mean vectors with delta components.
@@ -100,18 +101,14 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
 
         """
         check_size(u.size(-2), self.in_length, "length of input")
-        return self._forward(u, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(u)
 
     @staticmethod
     def _func(u: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = MaximumLikelihoodParameterGeneration._precompute(
+        _p = MaximumLikelihoodParameterGeneration._precompute(
             u.size(-2), *args, **kwargs, device=u.device, dtype=u.dtype
-        ).tensors
-        return MaximumLikelihoodParameterGeneration._forward(u, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return MaximumLikelihoodParameterGeneration._apply_precomputed(_p, mean=u)
 
     @staticmethod
     def _check() -> None:
@@ -129,7 +126,7 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         # Make window.
         window = Delta._precompute(
             seed, True, device=device, dtype=torch.double
-        ).tensors[0]
+        ).tensors["window"]
 
         # Compute threshold.
         if isinstance(seed[0], (tuple, list)):
@@ -163,10 +160,10 @@ class MaximumLikelihoodParameterGeneration(BaseFunctionalModule):
         WSW = torch.matmul(WS, W)
         WSW = torch.linalg.inv(WSW)
         M = torch.matmul(WSW, WS)  # (T, TxH)
-        return Precomputed(tensors=(to(M, dtype=dtype),))
+        return Precomputed(tensors={"M": to(M, dtype=dtype)})
 
     @staticmethod
-    def _forward(mean: torch.Tensor, M: torch.Tensor) -> torch.Tensor:
+    def _forward(mean: torch.Tensor, *, M: torch.Tensor) -> torch.Tensor:
         T = mean.size(-2)
         H = M.size(-1) // T
         u = mean.reshape(*mean.shape[:-2], T * H, -1)

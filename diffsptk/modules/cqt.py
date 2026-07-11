@@ -192,7 +192,9 @@ class ConstantQTransform(BaseNonFunctionalModule):
             cqt_scale = np.reciprocal(np.sqrt(lengths))
         else:
             cqt_scale = np.ones(K)
-        self.register_buffer("cqt_scale", to(cqt_scale, device=device, dtype=dtype))
+        self.register_buffer(
+            "cqt_scale", to(cqt_scale, device=device, dtype=dtype), persistent=False
+        )
 
         fp = [frame_period]
         sr = [sample_rate * 1.0]
@@ -222,7 +224,9 @@ class ConstantQTransform(BaseNonFunctionalModule):
 
             fft_basis *= np.sqrt(sample_rate / sr[i])
             self.register_buffer(
-                f"fft_basis_{i}", to(fft_basis.todense().T, device=device, dtype=dtype)
+                f"fft_basis_{i}",
+                to(fft_basis.todense().T, device=device, dtype=dtype),
+                persistent=False,
             )
 
             transforms.append(

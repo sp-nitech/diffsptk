@@ -14,16 +14,13 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
-import inspect
-from typing import cast
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
-from ..typing import Callable, Precomputed
+from ..typing import Callable
 from ..utils.private import check_size, filter_values, get_layer, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .frame import Frame
 from .window import Window
 
@@ -64,9 +61,7 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        self.layers = nn.ModuleList(cast(list[nn.Module], list(_p.layers)))
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute modified discrete cosine transform.
@@ -93,16 +88,12 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 [-1.0858,  2.6213]])
 
         """
-        return self._forward(x, *self.values, *self.layers)
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        _p = ModifiedDiscreteCosineTransform._precompute(*args, **kwargs)
-        return ModifiedDiscreteCosineTransform._forward(x, *_p.values, *_p.layers)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        _p = ModifiedDiscreteCosineTransform._precompute(*args, **kwargs, module=False)
+        return ModifiedDiscreteCosineTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(learnable: bool | list[str]) -> None:
@@ -120,9 +111,9 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
         transform: str = "cosine",
+        module: bool = True,
     ) -> Precomputed:
         ModifiedDiscreteCosineTransform._check(learnable)
-        module = inspect.stack()[1].function != "_func"
         frame_period = frame_length // 2
 
         if learnable is True:
@@ -166,11 +157,15 @@ class ModifiedDiscreteCosineTransform(BaseFunctionalModule):
                 dtype=dtype,
             ),
         )
-        return Precomputed(values=(frame_period,), layers=(frame, window_, mdt))
+        return Precomputed(
+            values={"frame_period": frame_period},
+            layers={"frame": frame, "window": window_, "mdt": mdt},
+        )
 
     @staticmethod
     def _forward(
         x: torch.Tensor,
+        *,
         frame_period: int,
         frame: Callable,
         window: Callable,
@@ -206,6 +201,8 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         length: int,
@@ -219,13 +216,10 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
         self.in_dim = length
 
-        tensors = self._precompute(
-            **filter_values(locals(), drop_keys=["learnable"])
-        ).tensors
-        if learnable:
-            self.W = nn.Parameter(tensors[0])
-        else:
-            self.register_buffer("W", tensors[0])
+        self._register_precomputed(
+            self._precompute(**filter_values(locals(), drop_keys=["learnable"])),
+            learnable=learnable,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply MDCT/MDST to the input.
@@ -242,18 +236,14 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
 
         """
         check_size(x.size(-1), self.in_dim, "dimension of input")
-        return self._forward(x, **self._buffers, **self._parameters)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = ModifiedDiscreteTransform._precompute(
+        _p = ModifiedDiscreteTransform._precompute(
             x.size(-1), *args, **kwargs, device=x.device, dtype=x.dtype
-        ).tensors
-        return ModifiedDiscreteTransform._forward(x, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return ModifiedDiscreteTransform._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(length: int) -> None:
@@ -288,8 +278,8 @@ class ModifiedDiscreteTransform(BaseFunctionalModule):
             raise ValueError(
                 f"transform must be either 'cosine' or 'sine'. Got '{transform}'."
             )
-        return Precomputed(tensors=(to(W, dtype=dtype),))
+        return Precomputed(tensors={"W": to(W, dtype=dtype)})
 
     @staticmethod
-    def _forward(x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+    def _forward(x: torch.Tensor, *, W: torch.Tensor) -> torch.Tensor:
         return torch.matmul(x, W)

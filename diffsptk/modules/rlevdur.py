@@ -17,9 +17,8 @@
 import numpy as np
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values, remove_gain, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class ReverseLevinsonDurbin(BaseFunctionalModule):
@@ -42,6 +41,8 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self,
         lpc_order: int,
@@ -53,8 +54,7 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        tensors = self._precompute(**filter_values(locals())).tensors
-        self.register_buffer("phase_factors", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Solve a Yule-Walker linear system given the LPC coefficients.
@@ -85,18 +85,14 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC coefficients")
-        return self._forward(a, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(a)
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        tensors = ReverseLevinsonDurbin._precompute(
+        _p = ReverseLevinsonDurbin._precompute(
             a.size(-1) - 1, *args, **kwargs, device=a.device, dtype=a.dtype
-        ).tensors
-        return ReverseLevinsonDurbin._forward(a, *tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return ReverseLevinsonDurbin._apply_precomputed(_p, a=a)
 
     @staticmethod
     def _check(lpc_order: int, n_fft: int) -> None:
@@ -116,10 +112,10 @@ class ReverseLevinsonDurbin(BaseFunctionalModule):
         omega = torch.linspace(0, np.pi, n_fft, device=device, dtype=torch.double)
         m = torch.arange(lpc_order + 1, device=device, dtype=torch.double)
         phase_factors = torch.exp(-1j * omega * m.unsqueeze(-1))
-        return Precomputed(tensors=(to(phase_factors, dtype=dtype),))
+        return Precomputed(tensors={"phase_factors": to(phase_factors, dtype=dtype)})
 
     @staticmethod
-    def _forward(a: torch.Tensor, phase_factors: torch.Tensor) -> torch.Tensor:
+    def _forward(a: torch.Tensor, *, phase_factors: torch.Tensor) -> torch.Tensor:
         M = a.size(-1) - 1
         K, a = remove_gain(a, return_gain=True)
         A = torch.sum(a.unsqueeze(-1) * phase_factors, dim=-2)

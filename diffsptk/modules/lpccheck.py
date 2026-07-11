@@ -18,9 +18,8 @@ import warnings
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import check_size, filter_values
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 from .lpc2par import LinearPredictiveCoefficientsToParcorCoefficients
 from .par2lpc import ParcorCoefficientsToLinearPredictiveCoefficients
 
@@ -42,6 +41,8 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
 
     """
 
+    _takes_input_size = True
+
     def __init__(
         self, lpc_order: int, margin: float = 1e-16, warn_type: str = "warn"
     ) -> None:
@@ -49,7 +50,7 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
 
         self.in_dim = lpc_order + 1
 
-        self.values = self._precompute(**filter_values(locals())).values
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, a: torch.Tensor) -> torch.Tensor:
         """Check the stability of the input LPC coefficients.
@@ -78,18 +79,14 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
 
         """
         check_size(a.size(-1), self.in_dim, "dimension of LPC")
-        return self._forward(a, *self.values)
+        return self._call_forward(a)
 
     @staticmethod
     def _func(a: torch.Tensor, *args, **kwargs) -> torch.Tensor:
-        values = LinearPredictiveCoefficientsStabilityCheck._precompute(
+        _p = LinearPredictiveCoefficientsStabilityCheck._precompute(
             a.size(-1) - 1, *args, **kwargs
-        ).values
-        return LinearPredictiveCoefficientsStabilityCheck._forward(a, *values)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return True
+        )
+        return LinearPredictiveCoefficientsStabilityCheck._apply_precomputed(_p, a=a)
 
     @staticmethod
     def _check(lpc_order: int, margin: float) -> None:
@@ -101,10 +98,10 @@ class LinearPredictiveCoefficientsStabilityCheck(BaseFunctionalModule):
     @staticmethod
     def _precompute(lpc_order: int, margin: float, warn_type: str) -> Precomputed:
         LinearPredictiveCoefficientsStabilityCheck._check(lpc_order, margin)
-        return Precomputed(values=(1 - margin, warn_type))
+        return Precomputed(values={"bound": 1 - margin, "warn_type": warn_type})
 
     @staticmethod
-    def _forward(a: torch.Tensor, bound: float, warn_type: str) -> torch.Tensor:
+    def _forward(a: torch.Tensor, *, bound: float, warn_type: str) -> torch.Tensor:
         k = LinearPredictiveCoefficientsToParcorCoefficients._func(a)
         K, k1 = torch.split(k, [1, k.size(-1) - 1], dim=-1)
 

@@ -16,9 +16,8 @@
 
 import torch
 
-from ..typing import Precomputed
 from ..utils.private import filter_values, to
-from .base import BaseFunctionalModule
+from .base import BaseFunctionalModule, Precomputed
 
 
 class Histogram(BaseFunctionalModule):
@@ -70,10 +69,7 @@ class Histogram(BaseFunctionalModule):
     ) -> None:
         super().__init__()
 
-        _p = self._precompute(**filter_values(locals()))
-        self.values = _p.values
-        tensors = _p.tensors
-        self.register_buffer("centers", tensors[0])
+        self._register_precomputed(self._precompute(**filter_values(locals())))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Compute histogram.
@@ -102,16 +98,12 @@ class Histogram(BaseFunctionalModule):
         tensor([3., 2., 2., 3.])
 
         """
-        return self._forward(x, *self.values, **self._buffers)  # type: ignore[arg-type]
+        return self._call_forward(x)
 
     @staticmethod
     def _func(x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         _p = Histogram._precompute(*args, **kwargs, device=x.device, dtype=x.dtype)
-        return Histogram._forward(x, *_p.values, *_p.tensors)
-
-    @staticmethod
-    def _takes_input_size() -> bool:
-        return False
+        return Histogram._apply_precomputed(_p, x=x)
 
     @staticmethod
     def _check(
@@ -138,11 +130,14 @@ class Histogram(BaseFunctionalModule):
         width = (upper_bound - lower_bound) / n_bin
         bias = lower_bound + 0.5 * width
         centers = torch.arange(n_bin, device=device, dtype=torch.double) * width + bias
-        return Precomputed(values=(norm, softness), tensors=(to(centers, dtype=dtype),))
+        return Precomputed(
+            values={"norm": norm, "softness": softness},
+            tensors={"centers": to(centers, dtype=dtype)},
+        )
 
     @staticmethod
     def _forward(
-        x: torch.Tensor, norm: bool, softness: float, centers: torch.Tensor
+        x: torch.Tensor, *, norm: bool, softness: float, centers: torch.Tensor
     ) -> torch.Tensor:
         y = x.unsqueeze(-2) - centers.unsqueeze(-1)  # (..., K, T)
         g = 0.5 * (centers[1] - centers[0])
