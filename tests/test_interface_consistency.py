@@ -78,7 +78,7 @@ def _method(cls: ast.ClassDef, name: str) -> ast.FunctionDef | None:
     for node in cls.body:
         if isinstance(node, ast.FunctionDef) and node.name == name:
             return node
-    return None
+    return None  # pragma: no cover
 
 
 def _precompute_dict_keys(cls: ast.ClassDef) -> set[str]:
@@ -86,7 +86,7 @@ def _precompute_dict_keys(cls: ast.ClassDef) -> set[str]:
     prec = _method(cls, "_precompute")
     keys: set[str] = set()
     if prec is None:
-        return keys
+        return keys  # pragma: no cover
     for node in ast.walk(prec):
         if (
             isinstance(node, ast.Call)
@@ -106,7 +106,7 @@ def _precompute_dict_keys(cls: ast.ClassDef) -> set[str]:
 def _doc_params(doc: str | None) -> set[str]:
     """Extract parameter names from a numpydoc-style Parameters section."""
     if not doc:
-        return set()
+        return set()  # pragma: no cover
     names: set[str] = set()
     in_params = False
     for line in doc.splitlines():
