@@ -46,7 +46,8 @@ class Aperiodicity(BaseNonFunctionalModule):
         (uninterpolated aperiodicity) is returned as the output.
 
     algorithm : ['tandem', 'd4c']
-        The algorithm to estimate aperiodicity.
+        The algorithm to estimate aperiodicity. Note that 'tandem' is a simplified
+        version of the SPTK's TANDEM-STRAIGHT.
 
     out_format : ['a', 'p', 'a/p', 'p/a']
         The output format.
@@ -54,7 +55,7 @@ class Aperiodicity(BaseNonFunctionalModule):
     lower_bound : float >= 0
         The lower bound of aperiodicity.
 
-    upper_bound : float <= 1
+    upper_bound : float <= 1 or None
         The upper bound of aperiodicity.
 
     device : torch.device or None
@@ -82,7 +83,7 @@ class Aperiodicity(BaseNonFunctionalModule):
         algorithm: str = "tandem",
         out_format: str | int = "a",
         lower_bound: float = 0.001,
-        upper_bound: float = 0.999,
+        upper_bound: float | None = None,
         **kwargs,
     ) -> None:
         super().__init__()
@@ -93,6 +94,8 @@ class Aperiodicity(BaseNonFunctionalModule):
             raise ValueError("sample_rate must be at least 8000 Hz.")
         if fft_length is not None and fft_length < 16:
             raise ValueError("fft_length must be at least 16.")
+        if upper_bound is None:
+            upper_bound = math.sqrt(1 - lower_bound**2)
         if not 0 <= lower_bound < upper_bound <= 1:
             raise ValueError("Invalid lower_bound and upper_bound.")
 
@@ -113,11 +116,11 @@ class Aperiodicity(BaseNonFunctionalModule):
         if out_format in (0, "a"):
             self.convert = lambda x: x
         elif out_format in (1, "p"):
-            self.convert = lambda x: 1 - x
+            self.convert = lambda x: torch.sqrt(1 - x * x)
         elif out_format in (2, "a/p"):
-            self.convert = lambda x: x / (1 - x)
+            self.convert = lambda x: x / torch.sqrt(1 - x * x)
         elif out_format in (3, "p/a"):
-            self.convert = lambda x: (1 - x) / x
+            self.convert = lambda x: torch.sqrt(1 - x * x) / x
         else:
             raise ValueError(f"out_format {out_format} is not supported.")
 
@@ -162,7 +165,9 @@ class Aperiodicity(BaseNonFunctionalModule):
         if f0.dim() != 2:
             raise ValueError("F0 must be 1D or 2D tensor.")
 
+        unvoiced = (f0 == 0).unsqueeze(-1)
         ap = self.extractor(x, f0)
+        ap = ap.masked_fill(unvoiced, 1)
         ap = torch.clip(ap, min=self.lower_bound, max=self.upper_bound)
         ap = self.convert(ap)
 
@@ -231,15 +236,18 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.sample_rate = sample_rate
         self.n_band = int(np.log2(sample_rate / 600))
 
-        self.default_f0 = 150
+        self.floor_f0 = 32
         self.n_trial = 10
 
         self.cutoff_list = [sample_rate / 2**i for i in range(2, self.n_band + 1)]
         self.cutoff_list.append(self.cutoff_list[-1])
 
         if fft_length is not None:
-            coarse_axis = [sample_rate / 2**i for i in range(self.n_band, 0, -1)]
+            coarse_axis = [
+                sample_rate / 2**i * math.sqrt(0.5) for i in range(self.n_band, 0, -1)
+            ]
             coarse_axis.insert(0, 0)
+            coarse_axis.append(sample_rate / 2)
             coarse_axis = np.asarray(coarse_axis)
             freq_axis = np.arange(fft_length // 2 + 1) * (sample_rate / fft_length)
 
@@ -292,7 +300,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
         self.register_buffer("window_sqrt", self.window.sqrt(), persistent=False)
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
-        f0 = torch.where(f0 <= 32, self.default_f0, f0).detach()
+        f0 = torch.clip(f0, min=self.floor_f0).detach()
 
         B, N = f0.shape
         time_axis = torch.arange(N, dtype=f0.dtype, device=f0.device) * (
@@ -364,7 +372,7 @@ class AperiodicityExtractionByTANDEM(nn.Module):
 
         # Interpolate band aperiodicity.
         if hasattr(self, "interp_indices"):
-            y = torch.log(ap)
+            y = torch.log(F.pad(ap, (0, 1), mode="replicate"))
             y0 = y[..., :-1]
             dy = y[..., 1:] - y0
             index = self.interp_indices.expand(B, N, -1)
@@ -469,7 +477,6 @@ class AperiodicityExtractionByD4C(nn.Module):
         fft_length: int | None = None,
         *,
         threshold: float = 0,
-        default_f0: float = 150,
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -479,24 +486,21 @@ class AperiodicityExtractionByD4C(nn.Module):
             raise ValueError("sample_rate must be at least 12000 Hz.")
         if threshold < 0:
             raise ValueError("threshold must be non-negative.")
-        if default_f0 <= 0:
-            raise ValueError("default_f0 must be positive.")
 
         self.frame_period = frame_period
         self.sample_rate = sample_rate
         self.threshold = threshold
-        self.default_f0 = default_f0
 
         freqency_interval = 3000
         upper_limit = 15000
-        floor_f0 = 47
         self.lowest_f0 = 40
+        self.floor_f0 = 47
 
         self.fft_length_love = 2 ** (
             1 + int(np.log(3 * sample_rate / self.lowest_f0 + 1) / np.log(2))
         )
         self.fft_length_d4c = 2 ** (
-            1 + int(np.log(4 * sample_rate / floor_f0 + 1) / np.log(2))
+            1 + int(np.log(4 * sample_rate / self.floor_f0 + 1) / np.log(2))
         )
 
         n_aperiodicity = int(
@@ -547,15 +551,13 @@ class AperiodicityExtractionByD4C(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
-        f0 = (
-            torch.where(f0 < self.lowest_f0, self.default_f0, f0).unsqueeze(-1).detach()
-        )
+        f0 = torch.clip(f0, min=self.lowest_f0).unsqueeze(-1).detach()
 
         # D4CLoveTrain()
         if 0 < self.threshold:
             waveform = get_windowed_waveform(
                 x,
-                f0,
+                torch.clip(f0, min=self.floor_f0),
                 3,
                 0,
                 self.frame_period,

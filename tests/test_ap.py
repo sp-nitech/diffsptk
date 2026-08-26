@@ -48,7 +48,7 @@ def test_compatibility(
             else:
                 raise ValueError
 
-        target_ap_error = 0.2
+        target_ap_error = 0.15
 
         def inner_eq(y_hat, y):
             y_hat = convert(y_hat, o)

@@ -25,16 +25,14 @@ def test_compatibility(
     device, dtype, ir_length, sr=16000, pf=2000, pb=200, zf=1000, zb=100, T=100
 ):
     df2 = diffsptk.SecondOrderDigitalFilter(
-        **{
-            "sample_rate": sr,
-            "pole_frequency": pf,
-            "pole_bandwidth": pb,
-            "zero_frequency": zf,
-            "zero_bandwidth": zb,
-            "ir_length": ir_length,
-            "device": device,
-            "dtype": dtype,
-        },
+        sample_rate=sr,
+        pole_frequency=pf,
+        pole_bandwidth=pb,
+        zero_frequency=zf,
+        zero_bandwidth=zb,
+        ir_length=ir_length,
+        device=device,
+        dtype=dtype,
     )
 
     U.check_compatibility(
