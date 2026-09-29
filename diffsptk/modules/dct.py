@@ -94,6 +94,8 @@ class DiscreteCosineTransform(BaseFunctionalModule):
             raise ValueError("dct_length must be positive.")
         if not 1 <= dct_type <= 4:
             raise ValueError("dct_type must be in [1, 4].")
+        if dct_type == 1 and dct_length < 2:
+            raise ValueError("dct_length must be at least 2 for DCT-I.")
 
     @staticmethod
     def _precompute(

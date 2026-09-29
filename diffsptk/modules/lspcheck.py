@@ -118,7 +118,7 @@ class LineSpectralPairsStabilityCheck(BaseFunctionalModule):
         K, w1 = torch.split(w, [1, w.size(-1) - 1], dim=-1)
 
         distance = torch.diff(w1, dim=-1)
-        if torch.any(distance <= 0) or torch.any(w <= 0) or torch.any(torch.pi <= w):
+        if torch.any(distance <= 0) or torch.any(w1 <= 0) or torch.any(torch.pi <= w1):
             if warn_type == "ignore":
                 pass
             elif warn_type == "warn":

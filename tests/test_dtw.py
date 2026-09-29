@@ -65,6 +65,23 @@ def test_compatibility(device, dtype, module, metric, p, M=2, T1=10, T2=10):
     U.check_differentiability(device, dtype, dtw, [(T1, M + 1), (T2, M + 1)])
 
 
+@pytest.mark.parametrize("p", [0, 1, 2, 3, 4, 5, 6])
+def test_batch(p, B=2, M=2, T1=10, T2=8):
+    dtw = diffsptk.DynamicTimeWarping(p=p)
+
+    x = torch.randn(B, T1, M + 1)
+    y = torch.randn(B, T2, M + 1)
+    lengths = torch.tensor([[T1, T2], [T1 - 2, T2 - 1]])
+
+    distance, indices = dtw(x, y, lengths=lengths, return_indices=True)
+
+    for b in range(B):
+        t1, t2 = lengths[b].tolist()
+        target_distance, target_indices = dtw(x[b, :t1], y[b, :t2], return_indices=True)
+        assert torch.allclose(distance[b], target_distance[0])
+        assert torch.equal(indices[b], target_indices[0])
+
+
 def test_various_shape(T=10):
     dtw = diffsptk.DynamicTimeWarping()
     U.check_various_shape(

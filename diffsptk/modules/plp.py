@@ -185,8 +185,8 @@ class PerceptualLinearPredictiveCoefficientsAnalysis(BaseFunctionalModule):
             raise ValueError("plp_order must be less than n_channel.")
         if compression_factor <= 0:
             raise ValueError("compression_factor must be positive.")
-        if lifter < 0:
-            raise ValueError("lifter must be non-negative.")
+        if lifter <= 0:
+            raise ValueError("lifter must be positive.")
 
     @staticmethod
     def _precompute(

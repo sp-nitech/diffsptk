@@ -162,6 +162,8 @@ class Window(BaseFunctionalModule):
         elif window == "kbd":
             if periodic:
                 raise ValueError("periodic is not supported for kbd window.")
+            if L % 2 == 1:
+                raise ValueError("in_length must be even for kbd window.")
             seed = torch.kaiser_window(L // 2 + 1, periodic=False, **params)
             cumsum = torch.cumsum(seed, dim=0)
             half = torch.sqrt(cumsum[:-1] / cumsum[-1])

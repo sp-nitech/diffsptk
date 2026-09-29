@@ -333,7 +333,7 @@ def delay(x: Tensor, start: int = 0, keeplen: bool = False, dim: int = -1) -> Te
 
 def delta(
     x: Tensor,
-    seed: ArrayLike[float] | ArrayLike[int] = [[-0.5, 0, 0.5]],
+    seed: ArrayLike[float] | ArrayLike[int] = [[-0.5, 0, 0.5], [1, -2, 1]],
     static_out: bool = True,
 ) -> Tensor:
     """Compute the delta components.

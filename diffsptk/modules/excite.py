@@ -123,7 +123,7 @@ def generate_mseq(source: torch.Tensor) -> torch.Tensor:
 
 
 def generate_uniform(source: torch.Tensor) -> torch.Tensor:
-    return math.sqrt(12) * torch.rand_like(source)
+    return math.sqrt(12) * (torch.rand_like(source) - 0.5)
 
 
 class ExcitationGeneration(BaseFunctionalModule):
@@ -236,6 +236,7 @@ class ExcitationGeneration(BaseFunctionalModule):
         # Extend right side for interpolation.
         tmp_mask = F.pad(base_mask, (1, 0))
         tmp_mask = torch.eq(torch.diff(tmp_mask), -1)
+        p = p.clone()
         p[tmp_mask] = torch.roll(p, 1, dims=-1)[tmp_mask]
 
         # Interpolate pitch.

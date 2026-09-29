@@ -135,21 +135,19 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         Examples
         --------
         >>> import diffsptk
+        >>> import torch
         >>> ica = diffsptk.IndependentComponentAnalysis(order=1, n_comp=2, n_iter=10)
-        >>> x = diffsptk.ramp(1, 6).view(-1, 2)
-        >>> x
-        tensor([[1., 2.],
-                [3., 4.],
-                [5., 6.]])
+        >>> x = torch.tensor([[1.0, 2.0], [3.0, 1.0], [2.0, 5.0], [6.0, 4.0]])
         >>> W = ica(x)
         >>> W
-        tensor([[ 0.9928,  0.0292],
-                [-0.0844,  2.8666]])
+        tensor([[ 0.8143,  0.5805],
+                [-0.5805,  0.8143]])
         >>> s = ica.transform(x)
         >>> s
-        tensor([[ 1.2169, -0.0138],
-                [ 0.0000,  0.0000],
-                [-1.2169,  0.0138]])
+        tensor([[ 0.8966, -0.6918],
+                [ 1.0956,  0.7138],
+                [-0.9212, -1.2381],
+                [-1.0710,  1.2161]])
 
         """
         x = to_dataloader(x, self.batch_size)
@@ -193,7 +191,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         s2: Any = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             xp = batch_x.to(device)
-            s = self.transform(xp)
+            s = self._separate(xp, W)
             s2 += s.square().sum(0)
         W /= torch.sqrt(s2 / T).unsqueeze(-1)
 
@@ -214,4 +212,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
             The estimated independent components.
 
         """
-        return torch.matmul(self.pca.whiten(self.pca.center(x)), self.W.T)
+        return self._separate(x, self.W)
+
+    def _separate(self, x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+        return torch.matmul(self.pca.whiten(self.pca.center(x)), W.T)

@@ -63,19 +63,19 @@ def _soft_dtw_core(
 
                 if has_two_step_transition:
                     if steps[k][0] == 0 or steps[k][1] == 0:
-                        if R_[:, i_k, j_k] != float("inf"):
+                        if R_[0, i_k, j_k] != float("inf"):
                             rs.append(d * w + R_[:, i_k, j_k])
                             if return_indices:
                                 ps.append(p)
                     else:
-                        if R[:, i_k, j_k] != float("inf"):
+                        if R[0, i_k, j_k] != float("inf"):
                             rs.append(d * w + R[:, i_k, j_k])
                             rs_.append(rs[-1])
                             if return_indices:
                                 ps.append(p)
                                 ps_.append(ps[-1])
                 else:
-                    if R[:, i_k, j_k] != float("inf"):
+                    if R[0, i_k, j_k] != float("inf"):
                         rs.append(d * w + R[:, i_k, j_k])
                         if return_indices:
                             ps.append(p)

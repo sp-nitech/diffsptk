@@ -22,7 +22,7 @@ import tests.utils as U
 
 
 @pytest.mark.parametrize("b", [(1,), (-0.42, 1)])
-@pytest.mark.parametrize("a", [(1,), (1, -0.42)])
+@pytest.mark.parametrize("a", [(1,), (1, -0.42), (2, -0.42)])
 @pytest.mark.parametrize("ir_length", [None, 30])
 def test_compatibility(device, dtype, b, a, ir_length, T=100):
     dfs = diffsptk.IIR(b, a, ir_length=ir_length, device=device, dtype=dtype)

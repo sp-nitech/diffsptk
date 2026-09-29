@@ -18,7 +18,6 @@ import torch
 
 from ..utils.private import UNVOICED_SYMBOL, filter_values
 from .base import BaseFunctionalModule, Precomputed
-from .rmse import RootMeanSquareError
 
 
 class F0Evaluation(BaseFunctionalModule):
@@ -94,16 +93,21 @@ class F0Evaluation(BaseFunctionalModule):
         if out_format.startswith("f0-rmse"):
             voiced = (x != UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL)
             if out_format == "f0-rmse-hz":
-                convert = lambda x: x
+                convert = lambda x: (
+                    x if x.is_floating_point() else x.to(torch.get_default_dtype())
+                )
             elif out_format == "f0-rmse-cent":
                 convert = lambda x: 1200 * torch.log2(x)
             elif out_format == "f0-rmse-semitone":
                 convert = lambda x: 12 * torch.log2(x)
             else:
                 raise ValueError(f"out_format {out_format} is not supported.")
-            out = RootMeanSquareError._func(
-                convert(x[voiced]), convert(y[voiced]), "none"
-            )
+            # Replace unvoiced frames with a dummy value to avoid log(0).
+            x = torch.where(voiced, x, 1)
+            y = torch.where(voiced, y, 1)
+            diff = convert(x) - convert(y)
+            n_voiced = voiced.sum(dim=-1).to(diff.dtype)
+            out = torch.linalg.vector_norm(diff, dim=-1) / torch.sqrt(n_voiced)
         else:
             TP = torch.sum((x != UNVOICED_SYMBOL) & (y != UNVOICED_SYMBOL), dim=-1)
             FP = torch.sum((x != UNVOICED_SYMBOL) & (y == UNVOICED_SYMBOL), dim=-1)
