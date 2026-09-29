@@ -77,9 +77,7 @@ def test_batch(p, B=2, M=2, T1=10, T2=8):
 
     for b in range(B):
         t1, t2 = lengths[b].tolist()
-        target_distance, target_indices = dtw(
-            x[b, :t1], y[b, :t2], return_indices=True
-        )
+        target_distance, target_indices = dtw(x[b, :t1], y[b, :t2], return_indices=True)
         assert torch.allclose(distance[b], target_distance[0])
         assert torch.equal(indices[b], target_indices[0])
 
