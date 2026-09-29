@@ -27,7 +27,7 @@ class Histogram(BaseFunctionalModule):
 
     Parameters
     ----------
-    n_bin : int >= 1
+    n_bin : int >= 2
         The number of bins, :math:`K`.
 
     lower_bound : float < U
@@ -109,8 +109,8 @@ class Histogram(BaseFunctionalModule):
     def _check(
         n_bin: int, lower_bound: float, upper_bound: float, softness: float
     ) -> None:
-        if n_bin <= 0:
-            raise ValueError("n_bin must be positive.")
+        if n_bin <= 1:
+            raise ValueError("n_bin must be greater than 1.")
         if upper_bound <= lower_bound:
             raise ValueError("upper_bound must be greater than lower_bound.")
         if softness <= 0:

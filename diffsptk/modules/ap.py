@@ -351,9 +351,9 @@ class AperiodicityExtractionByTANDEM(nn.Module):
                 m = 10**n
                 u, info = torch.linalg.cholesky_ex(R + self.eye * m)
                 if 0 == info.sum().item():
-                    if n == self.n_trial - 1:
-                        raise RuntimeError("Failed to compute Cholesky decomposition.")
                     break
+                if n == self.n_trial - 1:
+                    raise RuntimeError("Failed to compute Cholesky decomposition.")
 
             b = torch.matmul(Hw, X)  # (B, N, 6, 1)
             a = torch.cholesky_solve(b, u)
@@ -551,13 +551,11 @@ class AperiodicityExtractionByD4C(nn.Module):
         )
 
     def forward(self, x: torch.Tensor, f0: torch.Tensor) -> torch.Tensor:
-        f0 = torch.clip(f0, min=self.lowest_f0).unsqueeze(-1).detach()
-
         # D4CLoveTrain()
         if 0 < self.threshold:
             waveform = get_windowed_waveform(
                 x,
-                torch.clip(f0, min=self.floor_f0),
+                torch.clip(f0, min=self.lowest_f0).unsqueeze(-1).detach(),
                 3,
                 0,
                 self.frame_period,
@@ -602,6 +600,7 @@ class AperiodicityExtractionByD4C(nn.Module):
             return centroid
 
         # GetStaticCentroid()
+        f0 = torch.clip(f0, min=self.floor_f0).unsqueeze(-1).detach()
         centroid1 = get_centroid(x, f0, -0.25)
         centroid2 = get_centroid(x, f0, 0.25)
         static_centroid = centroid1 + centroid2
@@ -617,7 +616,7 @@ class AperiodicityExtractionByD4C(nn.Module):
             0,
             self.frame_period,
             self.sample_rate,
-            self.fft_length_love,
+            self.fft_length_d4c,
             "hanning",
             False,
             1e-6,

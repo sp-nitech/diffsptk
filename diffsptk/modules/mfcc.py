@@ -164,8 +164,8 @@ class MelFrequencyCepstralCoefficientsAnalysis(BaseFunctionalModule):
             raise ValueError("mfcc_order must be non-negative.")
         if n_channel <= mfcc_order:
             raise ValueError("mfcc_order must be less than n_channel.")
-        if lifter < 0:
-            raise ValueError("lifter must be non-negative.")
+        if lifter <= 0:
+            raise ValueError("lifter must be positive.")
 
     @staticmethod
     def _precompute(

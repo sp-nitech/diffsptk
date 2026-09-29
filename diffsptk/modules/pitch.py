@@ -312,7 +312,7 @@ class PitchExtractionByCREPE(PitchExtractionInterface):
         )
         torch.set_default_dtype(org_dtype)
 
-        loudness = self.stft(x) + self.weights
+        loudness = self.stft(self.resample(x)) + self.weights
         loudness = torch.clip(loudness, min=self.torchcrepe.loudness.MIN_DB)
         loudness = loudness.mean(-1)
         mask = torch.logical_or(
