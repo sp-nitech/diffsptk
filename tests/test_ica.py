@@ -77,6 +77,9 @@ def test_convergence(device, dtype, func, batch_size, T=1000, verbose=False):
     np.fill_diagonal(r, 0)
     assert np.all(np.max(np.abs(r), axis=1) > 0.98)
 
+    var = p.var(dim=0, unbiased=False)
+    assert torch.allclose(var, torch.ones_like(var), atol=1e-4)
+
     if verbose:
         tmp = "source.dat"
         s.T.cpu().numpy().astype(np.float64).tofile(tmp)

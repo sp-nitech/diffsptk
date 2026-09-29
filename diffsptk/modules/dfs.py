@@ -22,7 +22,7 @@ import torch.nn.functional as F
 from torch import nn
 
 from ..typing import ArrayLike
-from ..utils.private import filter_values, iir, to, to_3d
+from ..utils.private import filter_values, iir, remove_gain, to, to_3d
 from .base import BaseFunctionalModule, Precomputed
 
 
@@ -167,5 +167,6 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
             y = F.conv1d(y, b)
             y = y.view_as(x)
         else:
-            y = iir(x, b, a)
+            K, a = remove_gain(a, return_gain=True)
+            y = iir(x, K * b, a)
         return y

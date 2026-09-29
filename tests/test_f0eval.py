@@ -69,6 +69,18 @@ def test_compatibility(device, dtype, module, reduction, out_format, B=2, L=10):
         )
 
 
+@pytest.mark.parametrize(
+    "out_format", ["f0-rmse-hz", "f0-rmse-cent", "f0-rmse-semitone"]
+)
+def test_batch(out_format):
+    f0eval = diffsptk.F0Evaluation(reduction="none", out_format=out_format)
+    x = torch.tensor([[0, 100, 200, 210, 0], [300, 0, 200, 150, 120]])
+    y = torch.tensor([[0, 110, 190, 180, 180], [310, 200, 0, 140, 100]])
+    error = f0eval(x, y)
+    target = torch.stack([f0eval(x[b], y[b]) for b in range(len(x))])
+    assert U.allclose(error, target)
+
+
 def test_f1_score():
     f0eval = diffsptk.F0Evaluation(out_format="vuv-macro-f1-score")
     x = torch.tensor([0, 1, 1, 0, 0, 1, 0, 1, 0])

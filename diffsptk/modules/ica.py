@@ -193,7 +193,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
         s2: Any = 0
         for (batch_x,) in tqdm(x, disable=self.hide_progress_bar):
             xp = batch_x.to(device)
-            s = self.transform(xp)
+            s = self._separate(xp, W)
             s2 += s.square().sum(0)
         W /= torch.sqrt(s2 / T).unsqueeze(-1)
 
@@ -214,4 +214,7 @@ class IndependentComponentAnalysis(BaseLearnerModule):
             The estimated independent components.
 
         """
-        return torch.matmul(self.pca.whiten(self.pca.center(x)), self.W.T)
+        return self._separate(x, self.W)
+
+    def _separate(self, x: torch.Tensor, W: torch.Tensor) -> torch.Tensor:
+        return torch.matmul(self.pca.whiten(self.pca.center(x)), W.T)
