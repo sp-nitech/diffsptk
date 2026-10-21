@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling >= 1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -12,9 +12,9 @@ description = "Speech signal processing modules for machine learning"
 readme = "README.md"
 requires-python = ">=3.10"
 keywords = ["dsp", "pytorch", "signal processing", "sptk"]
-license = { text = "Apache 2.0" }
+license = "Apache-2.0 AND BSD-3-Clause AND ISC"
+license-files = ["LICENSE", "diffsptk/third_party/*/LICENSE"]
 classifiers = [
-  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
