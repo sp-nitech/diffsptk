@@ -10,4 +10,4 @@ poledf
 
 .. seealso::
 
-    :ref:`linear_intpl` :ref:`lpc`
+    :ref:`linear_intpl` :ref:`lpc` :ref:`ltcdf`
