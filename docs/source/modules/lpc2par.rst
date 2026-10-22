@@ -10,4 +10,4 @@ lpc2par
 
 .. seealso::
 
-    :ref:`lpc` :ref:`ltcdf` :ref:`par2lpc`
+    :ref:`par2lpc` :ref:`lpc` :ref:`ltcdf` :ref:`iltcdf`

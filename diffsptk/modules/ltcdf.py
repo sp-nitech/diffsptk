@@ -17,10 +17,10 @@
 import torch
 import torch.nn.functional as F
 
-from ..typing import Callable
 from ..utils.private import check_size, filter_values
 from .base import BaseFunctionalModule, Precomputed
 from .linear_intpl import LinearInterpolation
+from .poledf import AllPoleDigitalFilter
 
 
 class AllPoleLatticeDigitalFilter(BaseFunctionalModule):
@@ -104,14 +104,8 @@ class AllPoleLatticeDigitalFilter(BaseFunctionalModule):
         filter_order: int, frame_period: int, ignore_gain: bool = False
     ) -> Precomputed:
         AllPoleLatticeDigitalFilter._check(filter_order, frame_period)
-        from torchlpc import sample_wise_lpc
-
         return Precomputed(
-            values={
-                "frame_period": frame_period,
-                "ignore_gain": ignore_gain,
-                "sample_wise_lpc": sample_wise_lpc,
-            }
+            values={"frame_period": frame_period, "ignore_gain": ignore_gain}
         )
 
     @staticmethod
@@ -121,25 +115,24 @@ class AllPoleLatticeDigitalFilter(BaseFunctionalModule):
         *,
         frame_period: int,
         ignore_gain: bool,
-        sample_wise_lpc: Callable,
     ) -> torch.Tensor:
         check_size(x.size(-1), k.size(-2) * frame_period, "sequence length")
 
-        d = x.dim()
-        if d == 1:
-            k = k.unsqueeze(0)
-            x = x.unsqueeze(0)
-
         k = LinearInterpolation._func(k, frame_period)
         K, k = torch.split(k, [1, k.size(-1) - 1], dim=-1)
-        if not ignore_gain:
-            x = K[..., 0] * x
 
+        a = AllPoleLatticeDigitalFilter._lattice_to_direct_form(k)[..., 1:]
+        a = torch.cat([K, a], dim=-1)
+        y = AllPoleDigitalFilter._func(x, a, frame_period=1, ignore_gain=ignore_gain)
+        return y
+
+    @staticmethod
+    def _lattice_to_direct_form(k: torch.Tensor) -> torch.Tensor:
         # Convert the time-varying lattice filter into the equivalent time-varying
         # direct-form filter. The backward polynomial is delayed by one sample
         # because the lattice states are computed with the previous coefficients.
-        A = torch.ones_like(K)
-        B = torch.ones_like(K)
+        A = k.new_ones(*k.shape[:-1], 1)
+        B = k.new_ones(*k.shape[:-1], 1)
         for m in range(k.size(-1)):
             km = k[..., m : m + 1]
             A = F.pad(A, (0, 1))
@@ -147,9 +140,4 @@ class AllPoleLatticeDigitalFilter(BaseFunctionalModule):
             A_prev = A
             A = A + km * B
             B = B + km * A_prev
-        a = A[..., 1:]
-
-        y = sample_wise_lpc(x, a)
-        if d == 1:
-            y = y.squeeze(0)
-        return y
+        return A
