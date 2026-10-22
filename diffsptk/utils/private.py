@@ -377,3 +377,40 @@ def deconv1d(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     y = iir(impulse, b, a)
     y = y.view(x.size()[:-1] + y.size()[-1:])
     return y
+
+
+def fill_warping_matrix(A: torch.Tensor, alpha: float, start: int) -> torch.Tensor:
+    """Fill the frequency warping matrix by the recursion
+    A[i, j] = A[i-1, j-1] + alpha * (A[i, j-1] - A[i-1, j]) for i >= start, j >= 1.
+
+    Parameters
+    ----------
+    A : Tensor [shape=(L2, L1)]
+        The matrix whose first `start` rows and first column are given.
+
+    alpha : float in (-1, 1)
+        The frequency warping factor, :math:`\\alpha`.
+
+    start : int >= 1
+        The first row to be filled.
+
+    Returns
+    -------
+    out : Tensor [shape=(L2, L1)]
+        The filled matrix.
+
+    """
+    L2, L1 = A.shape
+    if L1 <= 1:
+        return A
+
+    # The recursion along each row is the first-order IIR filter 1 / (1 - alpha z^-1),
+    # which is represented by the lower triangular matrix of alpha^(j-l).
+    ramp = torch.arange(L1 - 1, device=A.device, dtype=A.dtype)
+    d = ramp.unsqueeze(-1) - ramp.unsqueeze(0)
+    L = torch.where(0 <= d, alpha ** d.clamp(min=0), torch.zeros_like(d))
+    for i in range(start, L2):
+        b = A[i - 1, :-1] - alpha * A[i - 1, 1:]
+        b[0] += alpha * A[i, 0]
+        A[i, 1:] = torch.matmul(L, b)
+    return A

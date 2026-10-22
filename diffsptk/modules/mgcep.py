@@ -17,7 +17,14 @@
 import torch
 from torch import nn
 
-from ..utils.private import check_size, get_gamma, hankel, symmetric_toeplitz, to
+from ..utils.private import (
+    check_size,
+    fill_warping_matrix,
+    get_gamma,
+    hankel,
+    symmetric_toeplitz,
+    to,
+)
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseNonFunctionalModule
 from .gnorm import GeneralizedCepstrumGainNormalization
@@ -270,11 +277,7 @@ class CoefficientsFrequencyTransform(nn.Module):
         A[0, 0] = 1
         if 1 < L2 and 1 < L1:
             A[1, 1:] = alpha ** torch.arange(L1 - 1, dtype=torch.double) * beta
-        for i in range(2, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+        A = fill_warping_matrix(A, alpha, 2)
 
         self.register_buffer("A", to(A.T, dtype=dtype), persistent=False)
 

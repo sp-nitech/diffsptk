@@ -16,7 +16,7 @@
 
 import torch
 
-from ..utils.private import check_size, filter_values, to
+from ..utils.private import check_size, fill_warping_matrix, filter_values, to
 from .base import BaseFunctionalModule, Precomputed
 
 
@@ -130,11 +130,7 @@ class FrequencyTransform(BaseFunctionalModule):
         A[0, :] = alpha**ramp
         if 1 < L2 and 1 < L1:
             A[1, 1:] = A[0, :-1] * beta * ramp[1:]
-        for i in range(2, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+        A = fill_warping_matrix(A, alpha, 2)
 
         return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
 
