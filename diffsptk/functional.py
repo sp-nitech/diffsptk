@@ -1407,6 +1407,36 @@ def ignorm(y: Tensor, gamma: float = 0, c: int | None = None) -> Tensor:
     return nn.GeneralizedCepstrumInverseGainNormalization._func(y, gamma=gamma, c=c)
 
 
+def iltcdf(
+    x: Tensor, k: Tensor, frame_period: int = 80, ignore_gain: bool = False
+) -> Tensor:
+    """Apply an all-zero lattice digital filter.
+
+    Parameters
+    ----------
+    x : Tensor [shape=(..., T)]
+        The input signal.
+
+    k : Tensor [shape=(..., T/P, M+1)]
+        The PARCOR coefficients.
+
+    frame_period : int >= 1
+        The frame period in samples, :math:`P`.
+
+    ignore_gain : bool
+        If True, perform filtering without the gain.
+
+    Returns
+    -------
+    out : Tensor [shape=(..., T)]
+        The residual signal.
+
+    """
+    return nn.AllZeroLatticeDigitalFilter._func(
+        x, k, frame_period=frame_period, ignore_gain=ignore_gain
+    )
+
+
 def imdct(
     y: Tensor,
     out_length: int | None = None,

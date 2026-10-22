@@ -10,4 +10,4 @@ ltcdf
 
 .. seealso::
 
-    :ref:`linear_intpl` :ref:`lpc2par` :ref:`poledf`
+    :ref:`iltcdf` :ref:`linear_intpl` :ref:`lpc2par` :ref:`poledf`

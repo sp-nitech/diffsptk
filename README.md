@@ -8,7 +8,7 @@ allowing users to integrate classic signal processing algorithms directly into n
 [![Downloads](https://static.pepy.tech/badge/diffsptk)](https://pepy.tech/project/diffsptk)
 [![ClickPy](https://img.shields.io/badge/downloads-clickpy-yellow.svg)](https://clickpy.clickhouse.com/dashboard/diffsptk)
 [![Python Version](https://img.shields.io/pypi/pyversions/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
-[![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.14.0-orange.svg)](https://pypi.python.org/pypi/diffsptk)
+[![PyTorch Version](https://img.shields.io/badge/pytorch-2.3.1%20%7C%202.14.1-orange.svg)](https://pypi.python.org/pypi/diffsptk)
 [![PyPI Version](https://img.shields.io/pypi/v/diffsptk.svg)](https://pypi.python.org/pypi/diffsptk)
 [![Codecov](https://codecov.io/gh/sp-nitech/diffsptk/branch/master/graph/badge.svg)](https://app.codecov.io/gh/sp-nitech/diffsptk)
 [![License](https://img.shields.io/github/license/sp-nitech/diffsptk.svg)](https://github.com/sp-nitech/diffsptk/blob/master/LICENSE)
@@ -208,6 +208,38 @@ b = norm0(a)
 zerodf = diffsptk.AllZeroDigitalFilter(filter_order=M, frame_period=fp)
 poledf = diffsptk.AllPoleDigitalFilter(filter_order=M, frame_period=fp)
 x_hat = poledf(zerodf(x, b), a)
+
+# Write reconstructed waveform.
+diffsptk.write("reconst.wav", x_hat, sr)
+
+# Compute error.
+error = (x_hat - x).abs().sum()
+print(error)
+```
+
+### PARCOR analysis and synthesis
+
+```python
+import diffsptk
+
+fl = 400  # Frame length.
+fp = 80   # Frame period.
+M = 24    # PARCOR dimensions.
+
+# Read waveform.
+x, sr = diffsptk.read("assets/data.wav")
+
+# Estimate PARCOR of x.
+frame = diffsptk.Frame(frame_length=fl, frame_period=fp)
+window = diffsptk.Window(in_length=fl)
+lpc = diffsptk.LPC(frame_length=fl, lpc_order=M, eps=1e-5)
+lpc2par = diffsptk.LinearPredictiveCoefficientsToParcorCoefficients(lpc_order=M)
+k = lpc2par(lpc(window(frame(x))))
+
+# Reconstruct x.
+iltcdf = diffsptk.AllZeroLatticeDigitalFilter(filter_order=M, frame_period=fp)
+ltcdf = diffsptk.AllPoleLatticeDigitalFilter(filter_order=M, frame_period=fp)
+x_hat = ltcdf(iltcdf(x, k), k)
 
 # Write reconstructed waveform.
 diffsptk.write("reconst.wav", x_hat, sr)
