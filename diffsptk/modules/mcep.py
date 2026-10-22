@@ -20,6 +20,7 @@ import torch
 from ..typing import Callable
 from ..utils.private import (
     check_size,
+    fill_warping_matrix,
     filter_values,
     get_layer,
     hankel,
@@ -275,11 +276,7 @@ class CoefficientsFrequencyTransform(BaseFunctionalModule):
 
         A = torch.zeros((L2, L1), device=device, dtype=torch.double)
         A[:, 0] = (-alpha) ** torch.arange(L2, device=device, dtype=torch.double)
-        for i in range(1, L2):
-            i1 = i - 1
-            for j in range(1, L1):
-                j1 = j - 1
-                A[i, j] = A[i1, j1] + alpha * (A[i, j1] - A[i1, j])
+        A = fill_warping_matrix(A, alpha, 1)
 
         return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
 

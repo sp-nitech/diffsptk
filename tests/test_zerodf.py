@@ -54,3 +54,16 @@ def test_compatibility(device, dtype, module, ignore_gain, mode, M=3, T=100, P=1
     )
 
     U.check_differentiability(device, dtype, zerodf, [(B, T), (B, T // P, M + 1)])
+
+
+def test_various_shape(M=4, P=5, N=3):
+    zerodf = diffsptk.AllZeroDigitalFilter(M, P)
+    U.check_various_shape(
+        zerodf,
+        [
+            [(N * P,), (N, M + 1)],
+            [(1, N * P), (1, N, M + 1)],
+            [(1, 1, N * P), (1, 1, N, M + 1)],
+        ],
+        preprocess=lambda x: 0.1 * x,
+    )

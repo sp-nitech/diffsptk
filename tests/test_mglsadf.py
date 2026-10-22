@@ -275,3 +275,26 @@ def test_pade_approx(
 def test_learnable(mode, params, M=24, P=80, T=160):
     mglsadf = diffsptk.MLSA(M, P, mode=mode, learnable=True, **params)
     U.check_learnable(mglsadf, [(T,), (T // P, M + 1)])
+
+
+@pytest.mark.parametrize(
+    ("mode", "params"),
+    [
+        ("multi-stage", {}),
+        ("single-stage", {}),
+        ("freq-domain", {}),
+        ("pade-approx", {}),
+        ("pade-approx", {"chunk_length": 20, "warmup_length": 10}),
+    ],
+)
+def test_various_shape(mode, params, M=4, P=10, N=3):
+    mglsadf = diffsptk.MLSA(M, P, alpha=0.1, mode=mode, **params)
+    U.check_various_shape(
+        mglsadf,
+        [
+            [(N * P,), (N, M + 1)],
+            [(1, N * P), (1, N, M + 1)],
+            [(1, 1, N * P), (1, 1, N, M + 1)],
+        ],
+        preprocess=lambda x: 0.1 * x,
+    )

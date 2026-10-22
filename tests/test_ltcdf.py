@@ -58,3 +58,16 @@ def test_compatibility(device, dtype, module, ignore_gain, M=24, P=80, L=400):
     )
 
     U.check_differentiability(device, dtype, ltcdf, [(P,), (1, M + 1)], scales=[1, 0.1])
+
+
+def test_various_shape(M=4, P=5, N=3):
+    ltcdf = diffsptk.AllPoleLatticeDigitalFilter(M, P)
+    U.check_various_shape(
+        ltcdf,
+        [
+            [(N * P,), (N, M + 1)],
+            [(1, N * P), (1, N, M + 1)],
+            [(1, 1, N * P), (1, 1, N, M + 1)],
+        ],
+        preprocess=lambda x: 0.1 * x,
+    )
