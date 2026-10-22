@@ -379,6 +379,17 @@ def deconv1d(x: torch.Tensor, weight: torch.Tensor) -> torch.Tensor:
     return y
 
 
+def geometric_toeplitz(
+    n: int,
+    alpha: float,
+    device: torch.device | None = None,
+    dtype: torch.dtype | None = None,
+) -> torch.Tensor:
+    ramp = torch.arange(n, device=device, dtype=dtype)
+    d = ramp.unsqueeze(-1) - ramp.unsqueeze(0)
+    return torch.where(0 <= d, alpha ** d.clamp(min=0), torch.zeros_like(d))
+
+
 def fill_warping_matrix(A: torch.Tensor, alpha: float, start: int) -> torch.Tensor:
     """Fill the frequency warping matrix by the recursion
     A[i, j] = A[i-1, j-1] + alpha * (A[i, j-1] - A[i-1, j]) for i >= start, j >= 1.
@@ -406,9 +417,7 @@ def fill_warping_matrix(A: torch.Tensor, alpha: float, start: int) -> torch.Tens
 
     # The recursion along each row is the first-order IIR filter 1 / (1 - alpha z^-1),
     # which is represented by the lower triangular matrix of alpha^(j-l).
-    ramp = torch.arange(L1 - 1, device=A.device, dtype=A.dtype)
-    d = ramp.unsqueeze(-1) - ramp.unsqueeze(0)
-    L = torch.where(0 <= d, alpha ** d.clamp(min=0), torch.zeros_like(d))
+    L = geometric_toeplitz(L1 - 1, alpha, device=A.device, dtype=A.dtype)
     for i in range(start, L2):
         b = A[i - 1, :-1] - alpha * A[i - 1, 1:]
         b[0] += alpha * A[i, 0]

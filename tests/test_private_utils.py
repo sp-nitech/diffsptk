@@ -19,7 +19,12 @@ import pytest
 import torch
 
 import tests.utils as U
-from diffsptk.utils.private import auditory_to_hz, fill_warping_matrix, hz_to_auditory
+from diffsptk.utils.private import (
+    auditory_to_hz,
+    fill_warping_matrix,
+    geometric_toeplitz,
+    hz_to_auditory,
+)
 
 
 @pytest.mark.parametrize("scale", ["htk", "mel", "inverted-mel", "bark", "linear"])
@@ -27,6 +32,18 @@ def test_hz_to_auditory(scale):
     f = np.linspace(0, 8000, 100)
     g = hz_to_auditory(auditory_to_hz(f, scale), scale)
     assert U.allclose(f, g)
+
+
+@pytest.mark.parametrize("alpha", [-0.5, 0, 0.42])
+@pytest.mark.parametrize("n", [1, 2, 5])
+def test_geometric_toeplitz(alpha, n):
+    target = torch.zeros((n, n), dtype=torch.double)
+    for i in range(n):
+        for j in range(i + 1):
+            target[i, j] = alpha ** (i - j)
+
+    output = geometric_toeplitz(n, alpha, dtype=torch.double)
+    assert U.allclose(target, output)
 
 
 @pytest.mark.parametrize("alpha", [-0.5, 0, 0.42, 0.77])

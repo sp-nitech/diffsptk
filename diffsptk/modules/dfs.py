@@ -141,19 +141,10 @@ class InfiniteImpulseResponseDigitalFilter(BaseFunctionalModule):
             a_coef = torch.empty(0)
         elif ir_length is not None:
             # Pre-compute the truncated impulse response.
-            d = torch.zeros(
-                max(len(b_coef), len(a_coef)), device=device, dtype=torch.double
-            )
-            h = torch.empty(ir_length, device=device, dtype=torch.double)
-            a0 = a_coef[0]
-            a1 = a_coef[1:]
-            for t in range(ir_length):
-                x = a0 if t == 0 else 0
-                y = x - torch.sum(d[: len(a1)] * a1)
-                d = torch.roll(d, 1)
-                d[0] = y
-                y = torch.sum(d[: len(b_coef)] * b_coef)
-                h[t] = y
+            impulse = torch.zeros(ir_length, device=device, dtype=torch.double)
+            impulse[0] = 1
+            K, a1 = remove_gain(to(a_coef, dtype=torch.double), return_gain=True)
+            h = iir(impulse, K * to(b_coef, dtype=torch.double), a1)
             h = h.view(1, 1, -1).flip(-1)
             b_coef = to(h, dtype=dtype)
             a_coef = torch.empty(0)

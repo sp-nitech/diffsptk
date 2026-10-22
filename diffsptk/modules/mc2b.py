@@ -16,7 +16,7 @@
 
 import torch
 
-from ..utils.private import check_size, filter_values, to
+from ..utils.private import check_size, filter_values, geometric_toeplitz, to
 from .b2mc import MLSADigitalFilterCoefficientsToMelCepstrum
 from .base import BaseFunctionalModule, Precomputed
 
@@ -110,12 +110,8 @@ class MelCepstrumToMLSADigitalFilterCoefficients(BaseFunctionalModule):
         dtype: torch.dtype | None,
     ) -> Precomputed:
         MelCepstrumToMLSADigitalFilterCoefficients._check(cep_order, alpha)
-        a = 1
-        A = torch.eye(cep_order + 1, device=device, dtype=torch.double)
-        for m in range(1, len(A)):
-            a *= -alpha
-            A[:, m:].fill_diagonal_(a)
-        return Precomputed(tensors={"A": to(A.T, dtype=dtype)})
+        A = geometric_toeplitz(cep_order + 1, -alpha, device=device, dtype=torch.double)
+        return Precomputed(tensors={"A": to(A, dtype=dtype)})
 
     @staticmethod
     def _forward(mc: torch.Tensor, *, A: torch.Tensor) -> torch.Tensor:
