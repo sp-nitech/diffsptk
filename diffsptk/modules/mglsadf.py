@@ -744,15 +744,9 @@ class MultiStageIIRFilter(nn.Module):
     def forward(
         self, x: torch.Tensor, mc: torch.Tensor, return_roots: bool = False
     ) -> torch.Tensor | tuple[torch.Tensor, torch.Tensor]:
-        if x.dim() == 1:
-            x = x.unsqueeze(0)
-            mc = mc.unsqueeze(0)
-            unsqueezed = True
-        else:
-            unsqueezed = False
-
-        if x.dim() != 2 or mc.dim() != 3:
-            raise ValueError("x and mc must be 2-D and 3-D tensors, respectively.")
+        org_shape = x.shape
+        x = x.reshape(-1, x.size(-1))
+        mc = mc.reshape(-1, *mc.shape[-2:])
 
         c = self.mgc2c(mc)
         c0, c1 = torch.split(c, [1, c.size(-1) - 1], dim=-1)
@@ -832,8 +826,7 @@ class MultiStageIIRFilter(nn.Module):
             K = torch.exp(self.linear_intpl(c0))
             y = y * K.squeeze(-1)
 
-        if unsqueezed:
-            y = y.squeeze(0)
+        y = y.reshape(org_shape)
 
         if return_roots:
             return y, roots

@@ -50,4 +50,4 @@ def test_compatibility(device, dtype, module, P, N=10):
 
 def test_various_shape(P=4, N=10):
     linear_intpl = diffsptk.LinearInterpolation(P)
-    U.check_various_shape(linear_intpl, [(N,), (N, 1), (1, N, 1)])
+    U.check_various_shape(linear_intpl, [(N,), (N, 1), (1, N, 1), (1, 1, N, 1)])

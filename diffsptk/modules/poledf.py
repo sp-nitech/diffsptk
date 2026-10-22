@@ -124,10 +124,9 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
     ) -> torch.Tensor:
         check_size(x.size(-1), a.size(-2) * frame_period, "sequence length")
 
-        d = x.dim()
-        if d == 1:
-            a = a.unsqueeze(0)
-            x = x.unsqueeze(0)
+        org_shape = x.shape
+        x = x.reshape(-1, x.size(-1))
+        a = a.reshape(-1, *a.shape[-2:])
 
         a = LinearInterpolation._func(a, frame_period)
         K, a = torch.split(a, [1, a.size(-1) - 1], dim=-1)
@@ -135,6 +134,5 @@ class AllPoleDigitalFilter(BaseFunctionalModule):
             x = K[..., 0] * x
 
         y = sample_wise_lpc(x, a)
-        if d == 1:
-            y = y.squeeze(0)
+        y = y.reshape(org_shape)
         return y

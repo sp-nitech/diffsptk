@@ -44,12 +44,12 @@ class LinearInterpolation(BaseFunctionalModule):
 
         Parameters
         ----------
-        x : Tensor [shape=(B, N, D) or (N, D) or (N,)]
+        x : Tensor [shape=(..., N, D) or (N,)]
             The filter coefficients.
 
         Returns
         -------
-        out : Tensor [shape=(B, NxP, D) or (NxP, D) or (NxP,)]
+        out : Tensor [shape=(..., NxP, D) or (NxP,)]
             The upsampled filter coefficients.
 
         Examples
@@ -86,13 +86,14 @@ class LinearInterpolation(BaseFunctionalModule):
         if upsampling_factor == 1:
             return x
 
+        org_shape = x.shape
         d = x.dim()
         if d == 1:
             x = x.view(1, -1, 1)
         elif d == 2:
             x = x.unsqueeze(0)
-        if x.dim() != 3:
-            raise ValueError("Input must be 1D, 2D, or 3D tensor.")
+        else:
+            x = x.reshape(-1, *org_shape[-2:])
 
         B, N, D = x.shape
         x = x.transpose(-2, -1)  # (B, D, N)
@@ -109,4 +110,6 @@ class LinearInterpolation(BaseFunctionalModule):
             y = y.view(-1)
         elif d == 2:
             y = y.squeeze(0)
+        else:
+            y = y.reshape(*org_shape[:-2], *y.shape[-2:])
         return y
