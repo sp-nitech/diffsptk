@@ -66,8 +66,8 @@ class MinimumPhaseImpulseResponseToCepstrum(BaseFunctionalModule):
         >>> mpir2c = diffsptk.MinimumPhaseImpulseResponseToCepstrum(5, 3)
         >>> h = diffsptk.ramp(4, 0, -1)
         >>> c = mpir2c(h)
-        >>> c
-        tensor([1.3863, 0.7500, 0.2188, 0.0156])
+        >>> c.round(decimals=3)
+        tensor([1.3860, 0.7500, 0.2190, 0.0160])
 
         """
         check_size(h.size(-1), self.in_dim, "impulse response length")

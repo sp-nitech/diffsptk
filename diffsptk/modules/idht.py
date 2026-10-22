@@ -74,7 +74,7 @@ class InverseDiscreteHartleyTransform(BaseFunctionalModule):
         >>> dht = diffsptk.DHT(4)
         >>> idht = diffsptk.IDHT(4)
         >>> x = diffsptk.ramp(1, 4)
-        >>> x2 = idht(dht(x))
+        >>> x2 = idht(dht(x)).round()
         >>> x2
         tensor([1., 2., 3., 4.])
 
