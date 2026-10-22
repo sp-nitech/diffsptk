@@ -104,6 +104,7 @@ disable_warnings = ["couldnt-parse"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report xml -s -x"
+doctest_optionflags = "NUMBER"
 markers = ["skip_float_check: Skip float dtype check"]
 filterwarnings = [
   "ignore:Casting complex values to real discards the imaginary part",

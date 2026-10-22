@@ -132,9 +132,9 @@ class GriffinLim(BaseFunctionalModule):
         >>> x = diffsptk.ramp(1, 3)
         >>> x
         tensor([1., 2., 3.])
-        >>> y = griffin(stft(x), out_length=3).round()
+        >>> y = griffin(stft(x), out_length=3)
         >>> y
-        tensor([-1., -2., -3.])
+        tensor([-1.0000, -2.0000, -3.0000])
 
         """
         return self._call_forward(y, out_length)
