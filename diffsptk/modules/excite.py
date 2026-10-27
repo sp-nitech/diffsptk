@@ -15,6 +15,7 @@
 # ------------------------------------------------------------------------ #
 
 import math
+from functools import partial
 
 import torch
 import torch.nn.functional as F
@@ -48,9 +49,17 @@ def generate_harmonic_pulse(
     pitch: torch.Tensor,
     phase: torch.Tensor,
     bipolar: bool,
+    smooth: bool = False,
 ) -> torch.Tensor:
     # The number of harmonics is floor(0.5 * fs / f0) = floor(0.5 * 1 / T)
     n_harmonics = torch.floor(0.5 * pitch)
+
+    # Make the number of harmonics continuous by weighting the highest harmonic
+    # with the fractional part.
+    if smooth:
+        top_harmonic = n_harmonics
+        weight = (0.5 * pitch - top_harmonic) * torch.ge(top_harmonic, 1)
+        n_harmonics = (top_harmonic - 1).clip(min=0)
 
     # The summation of sinusoids can be computed efficiently using the closed-form
     # expression of the Dirichlet kernel.
@@ -72,8 +81,17 @@ def generate_harmonic_pulse(
     else:
         e[is_singular] = n_harmonics[is_singular]
 
+    if smooth:
+        if bipolar:
+            e = e + weight * torch.sin(top_harmonic * theta)
+        else:
+            e = e + weight * torch.cos(top_harmonic * theta)
+        energy = n_harmonics + weight**2
+    else:
+        energy = n_harmonics
+
     # Normalize as the same energy as the pulse excitation.
-    norm_factor = torch.sqrt(2 / n_harmonics.clip(min=1))
+    norm_factor = torch.sqrt(2 / energy.clip(min=1))
     return norm_factor * e
 
 
@@ -135,8 +153,8 @@ class ExcitationGeneration(BaseFunctionalModule):
     frame_period : int >= 1
         The frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
-                     'triangle', 'square', 'harmonic-pulse']
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth',
+                     'triangle', 'square', 'harmonic-pulse', 'smooth-harmonic-pulse']
         The type of voiced region.
 
     unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
@@ -218,7 +236,6 @@ class ExcitationGeneration(BaseFunctionalModule):
         )
 
     @staticmethod
-    @torch.inference_mode()
     def _forward(
         p: torch.Tensor,
         *,
@@ -276,6 +293,7 @@ class ExcitationGeneration(BaseFunctionalModule):
             generators = {
                 "pulse": generate_pulse,
                 "harmonic-pulse": generate_harmonic_pulse,
+                "smooth-harmonic-pulse": partial(generate_harmonic_pulse, smooth=True),
             }
             if voiced_region not in generators:
                 raise ValueError(f"voiced_region {voiced_region} is not supported.")

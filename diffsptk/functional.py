@@ -635,7 +635,7 @@ def excite(
         The frame period in samples, :math:`P`.
 
     voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
-                     'triangle', 'square', 'harmonic-pulse']
+                     'triangle', 'square', 'harmonic-pulse', 'smooth-harmonic-pulse']
         The type of voiced region.
 
     unvoiced_region : ['zeros', 'gauss', 'm-sequence', 'uniform']
