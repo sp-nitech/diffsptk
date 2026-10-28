@@ -62,8 +62,10 @@ def generate_harmonic_pulse(
         n_harmonics = (top_harmonic - 1).clip(min=0)
 
     # The summation of sinusoids can be computed efficiently using the closed-form
-    # expression of the Dirichlet kernel.
-    theta = TAU * phase[..., :-1]
+    # expression of the Dirichlet kernel. The phase is centered around zero to avoid
+    # the precision loss near the singularities at the end of each period.
+    phase = phase[..., :-1]
+    theta = TAU * (phase - torch.round(phase))
     half_theta = 0.5 * theta
     if bipolar:
         numer = torch.cos(half_theta) - torch.cos((n_harmonics + 0.5) * theta)
@@ -276,11 +278,16 @@ class ExcitationGeneration(BaseFunctionalModule):
 
         # Compute phase.
         voiced_pos = torch.gt(p, 0)
-        q = torch.zeros_like(p)
-        q[voiced_pos] = torch.reciprocal(p[voiced_pos])
-        s = torch.cumsum(q.double(), dim=-1)
+        q = torch.zeros_like(p, dtype=torch.double)
+        q[voiced_pos] = torch.reciprocal(p[voiced_pos].double())
+        s = torch.cumsum(q, dim=-1)
         bias, _ = torch.cummax(s * ~mask, dim=-1)
-        phase = (s - bias).to(p.dtype)
+        phase = s - bias
+        if voiced_region != "pulse":
+            # Wrap phase to keep precision in single precision. Note that the pulse
+            # excitation requires the unwrapped phase to detect pulse positions.
+            phase = torch.frac(phase)
+        phase = phase.to(p.dtype)
 
         if polarity == "auto":
             bipolar = voiced_region != "pulse"

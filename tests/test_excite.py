@@ -116,6 +116,26 @@ def test_differentiability(device, dtype, voiced_region, polarity, P=80, N=10):
 
 @pytest.mark.parametrize(
     "voiced_region",
+    ["sinusoidal", "triangle", "harmonic-pulse", "smooth-harmonic-pulse"],
+)
+@pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
+def test_precision(voiced_region, polarity, P=80, N=4000):
+    excite = diffsptk.ExcitationGeneration(
+        P,
+        voiced_region=voiced_region,
+        unvoiced_region="zeros",
+        polarity=polarity,
+    )
+    # Long voiced region causes large phase. The pitch is non-integer and non-dyadic
+    # so that the phase is not exactly representable.
+    pitch = torch.full((N,), 79.3)
+    e1 = excite(pitch).double()
+    e2 = excite(pitch.double())
+    assert torch.allclose(e1, e2, atol=1e-2)
+
+
+@pytest.mark.parametrize(
+    "voiced_region",
     [
         "pulse",
         "sinusoidal",
