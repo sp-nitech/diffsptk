@@ -153,7 +153,7 @@ class ExcitationGeneration(BaseFunctionalModule):
     frame_period : int >= 1
         The frame period in samples, :math:`P`.
 
-    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth',
+    voiced_region : ['pulse', 'sinusoidal', 'sawtooth', 'inverted-sawtooth', \
                      'triangle', 'square', 'harmonic-pulse', 'smooth-harmonic-pulse']
         The type of voiced region.
 
