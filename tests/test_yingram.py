@@ -14,6 +14,8 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import urllib.request
+
 import pytest
 import torch
 
@@ -41,7 +43,7 @@ def test_compatibility(
     )
 
     url = "https://raw.githubusercontent.com/revsic/torch-nansy/main/nansy/yingram.py"
-    U.call(f"curl -s {url} > tmp.py", get=False)
+    urllib.request.urlretrieve(url, "tmp.py")
     from tmp import Yingram as Target
 
     target = Target(fp, fl, lag_min, fl - 1, n_bin, sr).to(device=device)

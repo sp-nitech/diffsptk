@@ -18,23 +18,17 @@ PROJECT := diffsptk
 MODULE  :=
 OPT     :=
 
-PYTHON_VERSION     := 3.11
+PYTHON_VERSION     := 3.12
 TORCH_VERSION      := 2.3.1
 TORCHAUDIO_VERSION := 2.3.1
-PLATFORM           := cu121
-
-PIP_TIME_LIMIT := --uploaded-prior-to=$(shell date -u -d '14 days ago' '+%Y-%m-%dT%H:%M:%SZ')
+EXTRA              := gpu
 
 venv:
-	test -d .venv || python$(PYTHON_VERSION) -m venv .venv
-	. .venv/bin/activate && python -m pip install --upgrade pip
-	. .venv/bin/activate && python -m pip install --upgrade wheel $(PIP_TIME_LIMIT)
-	. .venv/bin/activate && python -m pip install torch==$(TORCH_VERSION)+$(PLATFORM) torchaudio==$(TORCHAUDIO_VERSION)+$(PLATFORM) \
-		--index-url https://download.pytorch.org/whl/$(PLATFORM)
-	. .venv/bin/activate && python -m pip install -e .[dev] $(PIP_TIME_LIMIT)
+	test -d .venv || uv venv --python $(PYTHON_VERSION)
+	uv pip install -e .[dev,$(EXTRA)] torch==$(TORCH_VERSION) torchaudio==$(TORCHAUDIO_VERSION)
 
 dist:
-	. .venv/bin/activate && python -m build
+	uv build
 	. .venv/bin/activate && python -m twine check dist/*
 
 dist-clean:
@@ -52,7 +46,6 @@ check: tool
 	. .venv/bin/activate && python -m ruff check $(PROJECT) tests
 	. .venv/bin/activate && python -m ruff format --check $(PROJECT) tests docs/source
 	. .venv/bin/activate && python -m mdformat --check *.md
-	.venv/bin/codespell
 	./tools/taplo/taplo fmt --check *.toml
 	./tools/pinact/pinact run --check .github/workflows/*.yml
 	./tools/yamlfmt/yamlfmt --lint *.cff *.yml .github/workflows/*.yml
@@ -91,9 +84,8 @@ tool-clean:
 	cd tools && make clean
 
 update: tool
-	. .venv/bin/activate && python -m pip install --upgrade pip
 	@./tools/taplo/taplo get -f pyproject.toml project.optional-dependencies.dev | while read -r package; do \
-		. .venv/bin/activate && python -m pip install --upgrade "$$package" $(PIP_TIME_LIMIT); \
+		uv pip install --upgrade "$$package"; \
 	done
 
 clean: dist-clean doc-clean test-clean tool-clean
