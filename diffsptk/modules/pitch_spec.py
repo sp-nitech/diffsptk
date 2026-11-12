@@ -551,7 +551,7 @@ class SpectrumExtractionBySTRAIGHT(nn.Module):
 
         dpwt = self.fftfilt(self.ww, F.pad(torch.diff(pwch) ** 2, (0, len(self.ww))))
         dpwt = dpwt[..., begin : begin + nframe]
-        dpwt = torch.sqrt(dpwt + eps)
+        dpwt = torch.sqrt(torch.clip(dpwt, min=0) + eps)
         rr = safe_div(dpwt, apwt)
         lmbd = torch.sigmoid((torch.sqrt(rr) - 0.75) * 20)
 

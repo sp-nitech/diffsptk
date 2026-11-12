@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "Programming Language :: Python :: 3 :: Only",
 ]
 dependencies = [
@@ -40,9 +41,9 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
+cpu = ["torch >= 2.3.1", "torchaudio >= 2.3.1"]
+gpu = ["torch >= 2.3.1", "torchaudio >= 2.3.1"]
 dev = [
-  "build",
-  "codespell",
   "mdformat",
   "numpydoc",
   "pkginfo",
@@ -68,6 +69,30 @@ allow-direct-references = true
 
 [tool.hatch.version]
 path = "diffsptk/version.py"
+
+[tool.uv]
+exclude-newer = "14 days"
+conflicts = [[{ extra = "cpu" }, { extra = "gpu" }]]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-gpu", extra = "gpu" },
+]
+torchaudio = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-gpu", extra = "gpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu121"
+explicit = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
