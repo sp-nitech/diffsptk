@@ -1,5 +1,6 @@
 # project
 .venv/
+uv.lock
 dist/
 
 # codecov
