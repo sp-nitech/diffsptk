@@ -3334,7 +3334,7 @@ def zerodf(
     zeroth_index : int >= 0
         The index of the zeroth coefficient in the filter coefficients.
 
-    mode : ['direct', 'efficient']
+    mode : ['direct', 'efficient', 'cuda']
         The implementation mode for time-varying convolution.
 
     Returns
