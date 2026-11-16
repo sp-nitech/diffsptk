@@ -8,5 +8,6 @@ coverage:
 
 ignore:
   - "diffsptk/kernels/*"
+  - "tests/kernels/*"
   - "tests/utils.py"
   - "**/librosa/*.py"
