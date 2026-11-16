@@ -14,6 +14,7 @@
 # limitations under the License.                                           #
 # ------------------------------------------------------------------------ #
 
+import importlib
 import os
 
 import numpy as np
@@ -22,6 +23,7 @@ import torch
 
 import diffsptk
 import tests.utils as U
+from diffsptk.kernels import common as kernel_common
 
 
 @pytest.mark.parametrize("ignore_gain", [False, True])
@@ -298,3 +300,52 @@ def test_various_shape(mode, params, M=4, P=10, N=3):
         ],
         preprocess=lambda x: 0.1 * x,
     )
+
+
+@pytest.mark.skipif(
+    not kernel_common.is_available(),
+    reason="CUDA kernel compilation is not available.",
+)
+@pytest.mark.parametrize("mode", ["multi-stage", "single-stage"])
+@pytest.mark.parametrize("phase", ["minimum", "maximum", "zero", "mixed"])
+def test_cuda_kernel(monkeypatch, mode, phase, M=9, P=10, N=20, B=2):
+    zerodf_module = importlib.import_module("diffsptk.modules.zerodf")
+    original = zerodf_module.cuda_zerodf
+    calls = []
+
+    def spy(*args, **kwargs):
+        calls.append(1)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(zerodf_module, "cuda_zerodf", spy)
+
+    params = {"device": "cuda", "dtype": torch.double, "requires_grad": True}
+    D = 2 * M + 1 if phase == "mixed" else M + 1
+    x = torch.randn(B, N * P, **params)
+    mc = (0.1 * torch.randn(B, N, D, **params)).detach().requires_grad_()
+    if mode == "multi-stage":
+        mode_params = {"cep_order": 100}
+    else:
+        mode_params = {"ir_length": 100, "n_fft": 512}
+    mglsadf = diffsptk.MLSA(
+        M,
+        P,
+        alpha=0.42,
+        mode=mode,
+        phase=phase,
+        device="cuda",
+        dtype=torch.double,
+        zerodf_mode="cuda",
+        **mode_params,
+    )
+
+    y = mglsadf(x, mc)
+    grads = torch.autograd.grad(y.square().sum(), (x, mc))
+    assert calls
+
+    monkeypatch.setattr(kernel_common, "is_available", lambda: False)
+    y_ref = mglsadf(x, mc)
+    grads_ref = torch.autograd.grad(y_ref.square().sum(), (x, mc))
+    torch.testing.assert_close(y, y_ref, rtol=1e-10, atol=1e-10)
+    for g, g_ref in zip(grads, grads_ref, strict=True):
+        torch.testing.assert_close(g, g_ref, rtol=1e-10, atol=1e-10)

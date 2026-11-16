@@ -22,7 +22,7 @@ import tests.utils as U
 
 @pytest.mark.parametrize("module", [False, True])
 @pytest.mark.parametrize("ignore_gain", [False, True])
-@pytest.mark.parametrize("mode", ["efficient", "direct"])
+@pytest.mark.parametrize("mode", ["efficient", "direct", "cuda"])
 def test_compatibility(device, dtype, module, ignore_gain, mode, M=3, T=100, P=10, B=2):
     zerodf = U.choice(
         module,
@@ -50,7 +50,7 @@ def test_compatibility(device, dtype, module, ignore_gain, mode, M=3, T=100, P=1
         f"zerodf {tmp2} < {tmp1} -m {M} -p {P} {opt}",
         [f"rm {tmp1} {tmp2}"],
         dx=[None, M + 1],
-        factor=10 if mode == "efficient" else 1,
+        factor=1 if mode == "direct" else 10,
     )
 
     U.check_differentiability(device, dtype, zerodf, [(B, T), (B, T // P, M + 1)])

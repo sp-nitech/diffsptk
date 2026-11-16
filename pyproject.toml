@@ -126,6 +126,7 @@ exclude_lines = [
 
 [tool.coverage.run]
 disable_warnings = ["couldnt-parse"]
+omit = ["diffsptk/kernels/*"]
 
 [tool.pytest.ini_options]
 addopts = "--cov=. --cov-report xml -s -x"
