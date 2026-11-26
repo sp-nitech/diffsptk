@@ -3146,7 +3146,7 @@ def unframe(
     out_length : int >= 1 or None
         The length of the original waveform, :math:`T`.
 
-    frame_peirod : int >= 1
+    frame_period : int >= 1
         The frame period in samples, :math:`P`.
 
     center : bool
