@@ -106,14 +106,14 @@ def generate_sinusoidal(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
 
 
 def generate_sawtooth(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
-    e = torch.fmod(phase, 1)
+    e = torch.remainder(phase, 1)
     if bipolar:
         e = 2 * e - 1
     return e
 
 
 def generate_inverted_sawtooth(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
-    e = 1 - torch.fmod(phase, 1)
+    e = 1 - torch.remainder(phase, 1)
     if bipolar:
         e = 2 * e - 1
     return e
@@ -121,14 +121,14 @@ def generate_inverted_sawtooth(phase: torch.Tensor, bipolar: bool) -> torch.Tens
 
 def generate_triangle(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
     if bipolar:
-        e = 2 * torch.abs(2 * torch.fmod(phase + 0.75, 1) - 1) - 1
+        e = 2 * torch.abs(2 * torch.remainder(phase + 0.75, 1) - 1) - 1
     else:
-        e = torch.abs(2 * torch.fmod(phase + 0.5, 1) - 1)
+        e = torch.abs(2 * torch.remainder(phase + 0.5, 1) - 1)
     return e
 
 
 def generate_square(phase: torch.Tensor, bipolar: bool) -> torch.Tensor:
-    e = torch.le(torch.fmod(phase, 1), 0.5).to(phase.dtype)
+    e = torch.le(torch.remainder(phase, 1), 0.5).to(phase.dtype)
     if bipolar:
         e = 2 * e - 1
     return e
