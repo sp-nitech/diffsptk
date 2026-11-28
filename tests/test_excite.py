@@ -165,3 +165,31 @@ def test_waveform(voiced_region, polarity, init_phase, P=80, verbose=False):
         e = e / e.abs().max()
     if verbose:
         sf.write(f"excite_{voiced_region}_{polarity}_{init_phase}.wav", e, 16000)
+
+
+@pytest.mark.parametrize(
+    "voiced_region",
+    ["sawtooth", "inverted-sawtooth", "triangle", "square"],
+)
+@pytest.mark.parametrize("polarity", ["unipolar", "bipolar"])
+def test_negative_init_phase(voiced_region, polarity, P=4):
+    pitch = torch.full((4,), 4.0)
+    neg = diffsptk.functional.excite(
+        pitch,
+        P,
+        voiced_region=voiced_region,
+        unvoiced_region="zeros",
+        polarity=polarity,
+        init_phase=-2.5 * np.pi,
+    )
+    pos = diffsptk.functional.excite(
+        pitch,
+        P,
+        voiced_region=voiced_region,
+        unvoiced_region="zeros",
+        polarity=polarity,
+        init_phase=1.5 * np.pi,
+    )
+    assert torch.allclose(neg, pos)
+    lo = 0.0 if polarity == "unipolar" else -1.0
+    assert (neg >= lo - 1e-6).all() and (neg <= 1.0 + 1e-6).all()
