@@ -17,6 +17,8 @@
 import torch
 import torch.nn.functional as F
 
+from ..kernels import common as kernel_common
+from ..kernels.zerodf import zerodf as cuda_zerodf
 from ..typing import Callable
 from ..utils.private import check_size, filter_values, to
 from .base import BaseFunctionalModule, Precomputed
@@ -43,7 +45,7 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         is assumed to be minimum-phase. If `M`, the filter is assumed to be
         maximum-phase.
 
-    mode : ['direct', 'efficient']
+    mode : ['direct', 'efficient', 'cuda']
         The implementation mode for time-varying convolution. 'direct' applies
         convolution at the sample level, linearly interpolating the filter coefficients
         to match the length of the input signal. This approach is simple to understand
@@ -51,8 +53,12 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         convolutions - one with the original filter coefficients and one with the
         shifted coefficients - and interpolates between their outputs. This avoids the
         need to interpolate the filter coefficients themselves, resulting in lower
-        memory usage. Both modes are mathematically equivalent, though 'efficient' may
-        produce slight numerical differences owing to the different order of operations.
+        memory usage. 'cuda' computes the same operation as 'efficient' with a
+        dedicated CUDA kernel compiled at runtime, which avoids the intermediate
+        tensors of the convolutions. It falls back to 'efficient' if the kernel is not
+        available, e.g., for CPU tensors. All modes are mathematically equivalent,
+        though they may produce slight numerical differences owing to the different
+        order of operations.
 
     device : torch.device or None
         The device of this module.
@@ -154,13 +160,20 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         if mode == "direct":
             impl = AllZeroDigitalFilter._forward_direct
             tensors = {}
-        elif mode == "efficient":
-            impl = AllZeroDigitalFilter._forward_efficient
-            ramp = torch.arange(frame_period, device=device) / frame_period
+        elif mode in ("efficient", "cuda"):
+            impl = (
+                AllZeroDigitalFilter._forward_efficient
+                if mode == "efficient"
+                else AllZeroDigitalFilter._forward_cuda
+            )
+            ramp = (
+                torch.arange(frame_period, device=device, dtype=torch.double)
+                / frame_period
+            )
             ramp = ramp.view(1, 1, -1)
             tensors = {"ramp": to(ramp, dtype=dtype)}
         else:
-            raise ValueError("mode must be 'direct' or 'efficient'.")
+            raise ValueError("mode must be 'direct', 'efficient', or 'cuda'.")
 
         return Precomputed(
             values={
@@ -233,8 +246,40 @@ class AllZeroDigitalFilter(BaseFunctionalModule):
         y = y.view(*x_org_shape)
 
         if ignore_gain:
-            b0 = b1[..., :1] if padding[0] == 0 else b1[..., -1:]
-            g = LinearInterpolation._func(b0, frame_period)
-            g = g.reshape(*x_org_shape)
-            y = y / g
+            y = AllZeroDigitalFilter._remove_gain(y, b, frame_period, padding)
         return y
+
+    @staticmethod
+    def _forward_cuda(
+        x: torch.Tensor,
+        b: torch.Tensor,
+        frame_period: int,
+        ignore_gain: bool,
+        padding: tuple[int, int],
+        ramp: torch.Tensor,
+    ) -> torch.Tensor:
+        if (
+            kernel_common.is_supported(x, b) and x.shape[:-1] == b.shape[:-2]
+        ):  # pragma: no cover
+            try:
+                y = cuda_zerodf(x, b, ramp, padding[1])
+            except kernel_common.KernelUnavailableError:
+                pass
+            else:
+                if ignore_gain:
+                    y = AllZeroDigitalFilter._remove_gain(y, b, frame_period, padding)
+                return y
+        return AllZeroDigitalFilter._forward_efficient(
+            x, b, frame_period, ignore_gain, padding, ramp
+        )
+
+    @staticmethod
+    def _remove_gain(
+        y: torch.Tensor,
+        b: torch.Tensor,
+        frame_period: int,
+        padding: tuple[int, int],
+    ) -> torch.Tensor:
+        b0 = b[..., -1:] if padding[0] == 0 else b[..., :1]
+        g = LinearInterpolation._func(b0, frame_period)
+        return y / g.reshape(y.shape)

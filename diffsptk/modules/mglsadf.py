@@ -106,6 +106,10 @@ class PseudoMGLSADigitalFilter(BaseNonFunctionalModule):
         If True, the polynomial coefficients used in the approximation are learnable
         (valid only if **mode** is 'multi-stage' or 'pade-approx').
 
+    zerodf_mode : ['direct', 'efficient', 'cuda']
+        The implementation mode of the time-varying all-zero filter (valid only if
+        **mode** is 'multi-stage' or 'single-stage').
+
     device : torch.device or None
         The device of this module.
 
@@ -265,6 +269,7 @@ class MultiStageFIRFilter(nn.Module):
         cep_order: int | tuple[int, int] = 199,
         n_fft: int = 512,
         learnable: bool = False,
+        zerodf_mode: str = "efficient",
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -328,7 +333,7 @@ class MultiStageFIRFilter(nn.Module):
             frame_period,
             ignore_gain=False,
             zeroth_index=_cep_orders[1],
-            mode="efficient",
+            mode=zerodf_mode,
             device=device,
             dtype=dtype,
         )
@@ -398,6 +403,7 @@ class SingleStageFIRFilter(nn.Module):
         phase: str = "minimum",
         ir_length: int | tuple[int, int] = 2000,
         n_fft: int = 4096,
+        zerodf_mode: str = "efficient",
         device: torch.device | None = None,
         dtype: torch.dtype | None = None,
     ) -> None:
@@ -478,7 +484,7 @@ class SingleStageFIRFilter(nn.Module):
             frame_period,
             ignore_gain=False,
             zeroth_index=ir_orders[1],
-            mode="efficient",
+            mode=zerodf_mode,
             device=device,
             dtype=dtype,
         )
